@@ -20,7 +20,9 @@
 
 材料回收站与恢复已达到局部 `real-pass`：`GET /api/materials/deleted` 只返回已删除材料元数据，`POST /api/materials/{material_id}/restore` 只清空 `deleted_at` 并更新 `updated_at`，不重新解析、不创建 original/material/extraction/span。页面支持正常材料与回收站切换、真实恢复和刷新/重启回读。
 
-材料导出已达到局部 `real-pass`：`GET /api/materials/{material_id}/original` 只允许 active material，使用数据库 stored_path，经 originals_root 路径边界和 SHA-256 校验后下载当前展示文件名的 immutable original；`GET /api/materials/{material_id}/text` 从 extraction.text 导出 UTF-8 的 `<original_name>.extracted.txt`，不重新解析。rename 后只改变下载文件名，不改变内容。deleted material 恢复前两个导出接口均返回 404，恢复后重新可用。本阶段不提供批量下载、ZIP、文件夹导出、导出队列或物理 GC。
+材料导出已达到局部 `real-pass`：`GET /api/materials/{material_id}/original` 只允许 active material，使用数据库 stored_path，经 originals_root 路径边界和 SHA-256 校验后下载当前展示文件名的 immutable original；`GET /api/materials/{material_id}/text` 从 extraction.text 导出 UTF-8 的 `<original_name>.extracted.txt`，不重新解析。rename 后只改变下载文件名，不改变内容。deleted material 恢复前两个导出接口均返回 404，恢复后重新可用。
+
+材料搜索已达到局部 `real-pass`：`GET /api/materials?q=<query>` 搜索 active material 的展示名称和 extraction.text，可与 `status` 组合。ASCII token 使用 SQLite FTS5 的安全 AND 候选查询，中文或特殊 token 使用参数化 substring fallback；所有结果重新按 active source tables 过滤，返回元数据、match_fields 和最多 160 个字符的纯文本 snippet，不返回完整正文或 stored_path。rename 同事务更新索引，delete/restore 通过 active lifecycle filter 控制可见性。本阶段不支持语义/向量/AI 搜索、搜索历史或 saved search。
 
 这不代表整个 StudyBuddy 已 real-pass。当前没有文件夹导入、后台任务队列、OCR、转换器、真实 provider 或 S1-S7 业务实现；崩溃恢复、磁盘满、网络盘和长时间压力测试仍暂缓。
 

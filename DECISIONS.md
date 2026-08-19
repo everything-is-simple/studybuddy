@@ -51,3 +51,11 @@
 - Deleted materials return 404 from both export endpoints. Restore re-enables both endpoints without changing source_sha256, stored_path, extraction, spans or physical original. Rename changes the download filename but not original bytes or text export content.
 - Empty and active rejected/failed parser results export an empty text file with HTTP 200. Missing originals, invalid paths and hash mismatches return explicit 500 errors without exposing stack traces.
 - Export is `formal-material-export = real-pass`. Batch download, ZIP, folder export, background queue, physical GC, AI, provider, OCR, ASR and S1-S7 remain deferred.
+
+## 2026-08-24: material search foundation
+
+- SQLite FTS5 is available in the formal Python runtime and supplies a rebuildable `material_search` index over material_id, original_name and extraction.text. It is auxiliary only; materials and extractions remain the source of truth.
+- `GET /api/materials?q=...` searches active materials only and composes with the existing status filter. q trims whitespace and tokenizes on whitespace; tokens have AND semantics and case-insensitive matching.
+- ASCII alphanumeric tokens use safely quoted FTS5 MATCH as a candidate query, then receive strict substring verification. Chinese and special-character tokens use parameterized SQLite substring matching, which is a conservative fallback rather than advanced Chinese tokenization.
+- Search results contain metadata, match_fields and a maximum 160-character plain-text snippet. They never return extraction.text or stored_path. Rename replaces the FTS row in its transaction; delete/restore leave index data intact while active lifecycle filtering controls visibility.
+- Material search is `formal-material-search = real-pass`. Semantic/vector/AI search, deleted-material search, search history, saved searches, pagination, queues and S1-S7 remain deferred; whole StudyBuddy remains not real-pass.

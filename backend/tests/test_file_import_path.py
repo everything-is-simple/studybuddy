@@ -407,6 +407,53 @@ def test_export_rejects_invalid_or_corrupt_original(tmp_path: Path):
         assert response.status_code == 500 and response.json()["detail"] == "original_hash_mismatch"
 
 
+def test_material_search_query_lifecycle_and_index(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        text = upload_text(client, "search-name.txt", b"StudyBuddy TXT searchable body")
+        markdown = client.post("/api/materials", files={"file": ("notes.md", (FIXTURES / "sample.md").read_bytes(), "text/markdown")}).json()
+        chinese = client.post("/api/materials", files={"file": ("chinese.txt", (FIXTURES / "chinese.txt").read_bytes(), "text/plain")}).json()
+        rejected = client.post("/api/materials", files={"file": ("legacy.rtf", (FIXTURES / "sample.rtf").read_bytes(), "application/rtf")}).json()
+        all_items = client.get("/api/materials").json()
+        assert client.get("/api/materials?q=").json() == all_items
+        result = client.get("/api/materials?q=studybuddy").json()
+        assert {item["id"] for item in result} == {text["material_id"]}
+        assert result[0]["match_fields"] == ["text"] and len(result[0]["snippet"]) <= 160
+        assert "text" not in result[0] and "stored_path" not in result[0]
+        assert client.get("/api/materials?q=StudyBuddy%20TXT").json()[0]["id"] == text["material_id"]
+        assert client.get("/api/materials?q=%20StudyBuddy%20").json()[0]["id"] == text["material_id"]
+        assert client.get("/api/materials?q=Markdown&status=success").json()[0]["id"] == markdown["material_id"]
+        assert client.get("/api/materials?q=%E4%B8%AD%E6%96%87").json()[0]["id"] == chinese["material_id"]
+        assert client.get("/api/materials?q=not-present").json() == []
+        assert client.get("/api/materials?q=legacy").json()[0]["id"] == rejected["material_id"]
+        assert client.get("/api/materials?q=legacy&status=success").json() == []
+        assert client.get("/api/materials?q=StudyBuddy&status=wrong").status_code == 400
+        assert client.get("/api/materials?q=%3Cscript%3E").json() == []
+        assert client.patch(f"/api/materials/{text['material_id']}", json={"original_name": "renamed-search.txt"}).status_code == 200
+        assert client.get("/api/materials?q=renamed-search").json()[0]["id"] == text["material_id"]
+        assert client.get("/api/materials?q=search-name").json() == []
+        assert client.delete(f"/api/materials/{text['material_id']}").status_code == 204
+        assert client.get("/api/materials?q=StudyBuddy").json() == []
+        assert client.post(f"/api/materials/{text['material_id']}/restore").status_code == 200
+        assert client.get("/api/materials?q=StudyBuddy").json()[0]["id"] == text["material_id"]
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            assert connection.execute("SELECT COUNT(*) FROM material_search WHERE material_id = ?", (text["material_id"],)).fetchone()[0] == 1
+
+    with make_client(tmp_path) as restarted:
+        assert restarted.get("/api/materials?q=StudyBuddy").json()[0]["id"] == text["material_id"]
+
+
+def test_search_index_initializes_existing_material_without_duplicates(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "existing.txt", b"existing searchable text")
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        connection.execute("DELETE FROM material_search WHERE material_id = ?", (created["material_id"],))
+        connection.commit()
+    with make_client(tmp_path) as restarted:
+        assert restarted.get("/api/materials?q=searchable").json()[0]["id"] == created["material_id"]
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        assert connection.execute("SELECT COUNT(*) FROM material_search WHERE material_id = ?", (created["material_id"],)).fetchone()[0] == 1
+
+
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
         page = client.get("/")

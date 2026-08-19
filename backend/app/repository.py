@@ -16,6 +16,36 @@ CREATE TABLE IF NOT EXISTS text_spans (id TEXT PRIMARY KEY, extraction_id TEXT N
 """
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
+SEARCH_SCHEMA = "CREATE VIRTUAL TABLE IF NOT EXISTS material_search USING fts5(material_id UNINDEXED, original_name, text, tokenize='unicode61')"
+
+
+def _ensure_search_index(connection: sqlite3.Connection) -> None:
+    connection.execute(SEARCH_SCHEMA)
+    existing = {row[0] for row in connection.execute("SELECT material_id FROM material_search")}
+    rows = connection.execute(
+        "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id"
+    ).fetchall()
+    source_ids = {row[0] for row in rows}
+    for material_id in existing - source_ids:
+        connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
+    indexed = {row[0] for row in rows if row[0] in existing}
+    for row in rows:
+        if row[0] not in indexed:
+            connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)", tuple(row))
+
+
+def _replace_search_row(connection: sqlite3.Connection, material_id: str) -> None:
+    connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
+    row = connection.execute(
+        "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id WHERE m.id = ?",
+        (material_id,),
+    ).fetchone()
+    if row is not None:
+        connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)", tuple(row))
+
+
+def _search_tokens(query: str) -> list[str]:
+    return [token for token in query.strip().split() if token]
 
 
 def connect(path: Path) -> sqlite3.Connection:
@@ -34,6 +64,7 @@ def connect(path: Path) -> sqlite3.Connection:
     extraction_columns = {row[1] for row in connection.execute("PRAGMA table_info(extractions)")}
     if "error_code" not in extraction_columns:
         connection.execute("ALTER TABLE extractions ADD COLUMN error_code TEXT")
+    _ensure_search_index(connection)
     return connection
 
 
@@ -81,23 +112,81 @@ def save_material_with_extraction(connection: sqlite3.Connection, project_id: st
             [(f"span_{uuid.uuid4().hex}", extraction_id, span.ordinal, span.kind, span.label, span.text)
              for span in result.spans],
         )
+        connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)",
+                           (material_id, original_name, result.text))
     return material_id, extraction_id
 
 
-def list_materials(connection: sqlite3.Connection, status: str | None = None) -> list[sqlite3.Row]:
-    query = (
-        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, "
-        "e.created_at, m.updated_at, length(e.text) AS text_length, "
-        "(SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count "
+def _snippet(text: str, tokens: list[str]) -> str:
+    lowered = text.casefold()
+    positions = [lowered.find(token.casefold()) for token in tokens if token.casefold() in lowered]
+    if not positions:
+        return ""
+    start = max(0, min(positions) - 50)
+    end = min(len(text), start + 160)
+    return text[start:end]
+
+
+def _search_rows(connection: sqlite3.Connection, status: str | None, query: str) -> list[sqlite3.Row]:
+    tokens = _search_tokens(query)
+    if not tokens:
+        return []
+    query_sql = (
+        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, e.created_at, m.updated_at, "
+        "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, e.text AS search_text "
         "FROM materials m JOIN extractions e ON e.material_id = m.id "
         "WHERE m.deleted_at IS NULL"
     )
+    params: list[str] = []
+    if status is not None:
+        query_sql += " AND e.status = ?"
+        params.append(status)
+    if all(token.isascii() and token.replace("_", "").isalnum() for token in tokens):
+        match = " AND ".join(f'"{token.replace(chr(34), chr(34) * 2)}"' for token in tokens)
+        query_sql += " AND m.id IN (SELECT material_id FROM material_search WHERE material_search MATCH ?)"
+        params.append(match)
+    else:
+        for token in tokens:
+            query_sql += " AND (instr(lower(m.original_name), lower(?)) > 0 OR instr(lower(e.text), lower(?)) > 0)"
+            params.extend((token, token))
+    query_sql += " ORDER BY e.created_at DESC, m.id DESC"
+    rows = connection.execute(query_sql, params).fetchall()
+    return [row for row in rows if all(
+        token.casefold() in str(row[1]).casefold() or token.casefold() in str(row[10]).casefold()
+        for token in tokens
+    )]
+
+
+def list_materials(connection: sqlite3.Connection, status: str | None = None,
+                   query: str | None = None) -> list[sqlite3.Row | dict[str, object]]:
+    normalized = (query or "").strip()
+    if normalized:
+        results: list[dict[str, object]] = []
+        for row in _search_rows(connection, status, normalized):
+            payload = dict(row)
+            text = str(payload.pop("search_text"))
+            tokens = _search_tokens(normalized)
+            fields = []
+            if any(token.casefold() in str(payload["original_name"]).casefold() for token in tokens):
+                fields.append("original_name")
+            if any(token.casefold() in text.casefold() for token in tokens):
+                fields.append("text")
+            payload["match_fields"] = fields
+            payload["snippet"] = _snippet(text, tokens)
+            results.append(payload)
+        return results
+    query_sql = (
+        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, "
+        "e.created_at, m.updated_at, length(e.text) AS text_length, "
+        "(SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count "
+        "FROM materials m JOIN extractions e ON e.material_id = m.id WHERE m.deleted_at IS NULL"
+    )
     params: tuple[str, ...] = ()
     if status is not None:
-        query += " AND e.status = ?"
+        query_sql += " AND e.status = ?"
         params = (status,)
-    query += " ORDER BY e.created_at DESC, m.id DESC"
-    return connection.execute(query, params).fetchall()
+    query_sql += " ORDER BY e.created_at DESC, m.id DESC"
+    return connection.execute(query_sql, params).fetchall()
 
 
 def list_deleted_materials(connection: sqlite3.Connection) -> list[sqlite3.Row]:
@@ -162,6 +251,7 @@ def rename_material(connection: sqlite3.Connection, material_id: str, original_n
         )
         if cursor.rowcount != 1:
             return None
+        _replace_search_row(connection, material_id)
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, m.updated_at "
