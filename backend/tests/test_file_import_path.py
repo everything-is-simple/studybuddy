@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from app.config import AppConfig
+from app.config import AppConfig, DEFAULT_MAX_UPLOAD_BYTES
 from app.main import create_app
 from app.repository import connect
 
@@ -15,7 +15,7 @@ FIXTURES = Path("H:/studybuddy-test/fixtures/kaobuddy-foundation")
 
 
 def make_client(root: Path) -> TestClient:
-    return TestClient(create_app(AppConfig(data_root=root, max_upload_bytes=10 * 1024 * 1024)))
+    return TestClient(create_app(AppConfig(data_root=root, max_upload_bytes=DEFAULT_MAX_UPLOAD_BYTES)))
 
 
 def test_upload_parse_persist_and_restart_readback(tmp_path: Path):
@@ -56,6 +56,10 @@ def test_rejected_format_is_persisted_as_parser_result(tmp_path: Path):
         assert detail["status"] == "rejected"
         assert detail["text"] == ""
         assert detail["warnings"]
+
+
+def test_default_upload_limit_is_50_mib():
+    assert DEFAULT_MAX_UPLOAD_BYTES == 50 * 1024 * 1024
 
 
 def test_upload_size_limit_does_not_create_material(tmp_path: Path):

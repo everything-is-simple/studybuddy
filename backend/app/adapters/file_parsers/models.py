@@ -6,11 +6,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 Status = Literal["success", "empty", "rejected", "failed"]
 SpanKind = Literal["document", "page", "slide"]
+DEFAULT_MAX_FILE_BYTES = 50 * 1024 * 1024
 
 
 class ParseOptions(BaseModel):
     model_config = ConfigDict(frozen=True)
-    max_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
+    max_bytes: int = Field(default=DEFAULT_MAX_FILE_BYTES, ge=1)
     max_zip_members: int = Field(default=256, ge=1)
     max_uncompressed_bytes: int = Field(default=50 * 1024 * 1024, ge=1)
     max_compression_ratio: float = Field(default=1000.0, gt=0)

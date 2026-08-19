@@ -4,11 +4,13 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+DEFAULT_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
 
 @dataclass(frozen=True)
 class AppConfig:
     data_root: Path
-    max_upload_bytes: int = 10 * 1024 * 1024
+    max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
     project_id: str = "default"
 
     @property
@@ -26,6 +28,6 @@ def config_from_environment() -> AppConfig:
         configured_root = str(Path.home() / ".studybuddy" / "data")
     return AppConfig(
         data_root=Path(configured_root).resolve(),
-        max_upload_bytes=int(os.environ.get("STUDYBUDDY_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)),
+        max_upload_bytes=int(os.environ.get("STUDYBUDDY_MAX_UPLOAD_BYTES", DEFAULT_MAX_UPLOAD_BYTES)),
         project_id=os.environ.get("STUDYBUDDY_PROJECT_ID", "default"),
     )
