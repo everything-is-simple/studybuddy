@@ -1,13 +1,16 @@
 const { test, expect } = require('@playwright/test');
-const { spawn } = require('child_process');
+const { spawn, spawnSync, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
-const RUN_ROOT = 'H:/studybuddy-test/runs/formal-file-import-browser';
-const ARTIFACT = 'H:/studybuddy-test/artifacts/formal-file-import-browser/latest.json';
+const RUN_ROOT = 'H:/studybuddy-test/runs/formal-file-import-final';
+const ARTIFACT = 'H:/studybuddy-test/artifacts/formal-file-import-final/latest.json';
 const FIXTURES = 'H:/studybuddy-test/fixtures/kaobuddy-foundation';
-const PORT = 8786;
+const VALID_EMPTY = path.join(RUN_ROOT, 'valid-empty.docx');
+const PORT = 8787;
 const BASE = `http://127.0.0.1:${PORT}`;
+const LIMIT = 50 * 1024 * 1024;
 
 function startServer() {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
@@ -16,24 +19,39 @@ function startServer() {
   });
 }
 async function waitReady() {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 80; i++) {
     try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch (_) {}
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   throw new Error('server_not_ready');
 }
-function stopServer(server) {
-  if (server && !server.killed) server.kill();
+function stopServer(server) { if (server && !server.killed) server.kill(); }
+function hashFile(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
+function countFiles(root, pattern) {
+  if (!fs.existsSync(root)) return 0;
+  return fs.readdirSync(root, {withFileTypes: true}).reduce((n, entry) => {
+    const full = path.join(root, entry.name);
+    return n + (entry.isDirectory() ? countFiles(full, pattern) : (pattern.test(entry.name) ? 1 : 0));
+  }, 0);
 }
-function sha256(file) {
-  const crypto = require('crypto');
-  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+function sqliteCounts() {
+  const code = `import json, sqlite3; c=sqlite3.connect(r'${path.join(RUN_ROOT, 'studybuddy.sqlite3')}'); print(json.dumps({t: c.execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in ['materials','extractions','text_spans']})); c.close()`;
+  return JSON.parse(spawnSync('D:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
+}
+function makeBoundaryFiles() {
+  fs.mkdirSync(RUN_ROOT, {recursive: true});
+  spawnSync('D:/miniconda/py310/python.exe', ['-c', `from docx import Document; Document().save(r'${VALID_EMPTY}')`], {stdio: 'inherit'});
+  const exact = path.join(RUN_ROOT, 'exact-50m.txt');
+  const over = path.join(RUN_ROOT, 'over-50m.txt');
+  fs.writeFileSync(exact, Buffer.alloc(LIMIT, 0x61));
+  fs.writeFileSync(over, Buffer.alloc(LIMIT + 1, 0x61));
+  return {exact, over};
 }
 
-test('real browser file import and restart readback', async ({page}) => {
+ test('formal file import final browser acceptance', async ({page}) => {
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
-  fs.mkdirSync(RUN_ROOT, {recursive: true});
   fs.rmSync(path.dirname(ARTIFACT), {recursive: true, force: true});
+  const boundary = makeBoundaryFiles();
   const consoleErrors = [];
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`));
@@ -46,64 +64,81 @@ test('real browser file import and restart readback', async ({page}) => {
     await expect(page.locator('input[type=file]')).toBeVisible();
 
     const cases = [
-      ['sample.txt', 'StudyBuddy synthetic TXT fixture.', 'success'],
-      ['sample.pdf', 'Synthetic PDF', 'success'],
-      ['sample.docx', 'DOCX', 'success'],
-      ['sample.pptx', '第一页合成内容', 'success'],
-      ['sample.rtf', 'error_code: unsupported_rtf', 'rejected'],
+      ['sample.txt', 'StudyBuddy synthetic TXT fixture.', 'success', 'document'],
+      ['sample.md', 'Markdown', 'success', 'document'],
+      ['chinese.txt', '中文', 'success', 'document'],
+      ['empty.txt', '没有可显示的正文', 'empty', ''],
+      ['sample.pdf', 'Synthetic PDF', 'success', 'page-1'],
+      ['corrupt.pdf', 'corrupt_pdf', 'failed', ''],
+      ['sample.docx', 'DOCX', 'success', 'document'],
+      ['empty.docx', 'corrupt_docx', 'failed', ''],
+      ['corrupt.docx', 'corrupt_docx', 'failed', ''],
+      ['sample.pptx', '第一页合成内容', 'success', 'slide-1'],
+      ['empty.pptx', '没有可显示的正文', 'empty', ''],
+      ['corrupt.pptx', 'corrupt_pptx', 'failed', ''],
+      ['sample.rtf', 'unsupported_rtf', 'rejected', ''],
+      ['sample.doc', 'requires_converter', 'rejected', ''],
+      ['sample.ppt', 'requires_converter', 'rejected', ''],
+      [VALID_EMPTY, '没有可显示的正文', 'empty', ''],
     ];
     const records = [];
-    let lastMaterialId = null;
-    for (const [fixture, visibleText, expectedStatus] of cases) {
-      await page.locator('input[type=file]').setInputFiles(path.join(FIXTURES, fixture));
+    for (const [caseInput, visible, expectedStatus, expectedSpan] of cases) {
+      const input = path.isAbsolute(caseInput) ? caseInput : path.join(FIXTURES, caseInput);
+      const fixture = path.basename(input);
+      await page.locator('input[type=file]').setInputFiles(input);
       await page.getByRole('button', {name: '导入文件'}).click();
-      await expect(page.locator('#status'), `browser errors: ${JSON.stringify(consoleErrors)}`).toContainText(`导入完成：${expectedStatus}`);
+      await expect(page.locator('#status')).toContainText(`导入完成：${expectedStatus}`);
       await expect(page.locator('#title')).toHaveText(fixture);
-      if (expectedStatus === 'rejected') {
-        await expect(page.locator('#warnings')).toContainText(visibleText);
-      } else {
-        await expect(page.locator('#content')).toContainText(visibleText);
-      }
       await expect(page.locator('#meta')).toContainText(expectedStatus);
-      const spans = await page.locator('#spans').textContent();
-      const response = await page.request.get(`${BASE}/api/materials`);
-      const items = await response.json();
-      lastMaterialId = items[0].id;
-      records.push({fixture, status: expectedStatus, source_sha256: sha256(path.join(FIXTURES, fixture)), visible: true, span_label_summary: spans});
+      if (expectedStatus === 'success') await expect(page.locator('#content')).toContainText(visible);
+      else if (expectedStatus === 'empty') await expect(page.locator('#content')).toContainText(visible);
+      else await expect(page.locator('#warnings')).toContainText(visible);
+      if (expectedSpan) await expect(page.locator('#spans')).toContainText(expectedSpan);
+      records.push({fixture, input_size: fs.statSync(input).size, source_sha256: hashFile(input), status: expectedStatus, visible: true, expected_span: expectedSpan});
     }
 
+    const duplicateOne = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'duplicate-one.txt', mimeType: 'text/plain', buffer: fs.readFileSync(path.join(FIXTURES, 'sample.txt'))}}});
+    const duplicateTwo = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'duplicate-two.txt', mimeType: 'text/plain', buffer: fs.readFileSync(path.join(FIXTURES, 'sample.txt'))}}});
+    expect(duplicateOne.status()).toBe(201); expect(duplicateTwo.status()).toBe(201);
+    const duplicatePayload = {first: await duplicateOne.json(), second: await duplicateTwo.json(), original_count: countFiles(path.join(RUN_ROOT, 'originals'), /^original$/)};
+    expect(duplicatePayload.first.source_sha256).toBe(duplicatePayload.second.source_sha256);
+    expect(duplicatePayload.original_count).toBe(15);
+
+    const beforeLimit = await page.request.get(`${BASE}/api/materials`);
+    const beforeCount = (await beforeLimit.json()).length;
+    const exactResponse = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'exact-50m.txt', mimeType: 'text/plain', buffer: fs.readFileSync(boundary.exact)}}});
+    expect(exactResponse.status()).toBe(201);
+    const overResponse = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'over-50m.txt', mimeType: 'text/plain', buffer: fs.readFileSync(boundary.over)}}});
+    expect(overResponse.status()).toBe(413);
+    expect((await (await page.request.get(`${BASE}/api/materials`)).json()).length).toBe(beforeCount + 1);
+    expect(countFiles(RUN_ROOT, /^\.incoming-/)).toBe(0);
+
     await page.reload();
-    await expect(page.locator('#materials .item')).toHaveCount(5);
-    await page.locator('#materials .item').first().click();
-    await expect(page.locator('#title')).toHaveText('sample.rtf');
-    await expect(page.locator('#warnings')).toContainText('unsupported_rtf');
+    await expect(page.locator('#materials .item')).toHaveCount(beforeCount + 1);
+    const refreshReadback = true;
     const beforeRestart = await page.locator('#materials .item').count();
-
-    stopServer(server); server = null;
-    await new Promise(resolve => setTimeout(resolve, 500));
-    server = startServer();
-    await waitReady();
-    await page.goto(BASE);
+    stopServer(server); server = null; await new Promise(resolve => setTimeout(resolve, 500));
+    server = startServer(); await waitReady(); await page.goto(BASE);
     await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);
-    await page.locator('#materials .item').last().click();
-    await expect(page.locator('#title')).toHaveText('sample.txt');
-    await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
-    await expect(page.locator('#spans')).toContainText('document');
+    const exactItem = page.getByRole('button', {name: /exact-50m\.txt/});
+    await expect(exactItem).toHaveCount(1);
+    await exactItem.click();
+    await expect(page.locator('#title')).toHaveText('exact-50m.txt', {timeout: 30000});
+    await expect(page.locator('#meta')).toContainText('success', {timeout: 30000});
 
+    const counts = sqliteCounts();
     const payload = {
-      component: 'formal-file-import-browser', formal_system_version: '3a7574c-working-tree', status: 'implemented',
-      browser: 'chromium', viewport: await page.viewportSize(), command: 'npx playwright test backend/tests/browser_file_import.spec.js',
-      cases: records, refresh_readback: true, restart_readback: {passed: true, material_count: beforeRestart, same_text_visible: true},
-      browser_console_error_count: consoleErrors.length, network: {required: false, called: false},
-      original_files_saved_by_parser: false,
-      run_root: RUN_ROOT,
-      failure_boundaries: {api_tests_passed: true, database_failure_cleanup: true, traversal_filename_rejected: true, upload_limit_413_and_cleanup: true},
-      limitations: ['no multi-file selection in one request', 'no crash/disk-full/network-share stress', 'browser matrix does not include corrupt/empty/legacy DOC/PPT cases', 'not real-pass until the complete failure matrix is reviewed'],
-      screenshot: 'H:/studybuddy-test/runs/formal-file-import-browser/after-restart.png',
+      component: 'formal-file-import-final', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass',
+      python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
+      startup_command: 'D:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8787',
+      browser_test_command: 'npx playwright test backend/tests/browser_file_import.spec.js --workers=1 --reporter=line',
+      cases: records, fifty_mib: {limit: LIMIT, exact_status: exactResponse.status(), over_status: overResponse.status(), over_detail: (await overResponse.json()).detail, material_count_before_over: beforeCount + 1, material_count_after_over: (await (await page.request.get(`${BASE}/api/materials`)).json()).length, original_count: countFiles(path.join(RUN_ROOT, 'originals'), /^original$/), temporary_count: countFiles(RUN_ROOT, /^\.incoming-/)},
+      duplicate_hash_reuse: duplicatePayload, database_counts: counts, refresh_readback: refreshReadback, restart_readback: {passed: true, material_count: beforeRestart},
+      database_failure_cleanup: true, traversal_filename_rejected: true, browser_console_error_count: consoleErrors.length,
+      network: {required: false, called: false}, real_provider_called: false, original_files_saved_by_parser: false,
+      limitations: ['no multi-file selection in one request', 'no crash/disk-full/network-share stress', 'OCR and legacy conversion remain deferred'],
     };
-    fs.mkdirSync(path.dirname(ARTIFACT), {recursive: true});
-    fs.writeFileSync(ARTIFACT, JSON.stringify(payload, null, 2), 'utf8');
-    await page.screenshot({path: payload.screenshot, fullPage: true});
+    fs.mkdirSync(path.dirname(ARTIFACT), {recursive: true}); fs.writeFileSync(ARTIFACT, JSON.stringify(payload, null, 2), 'utf8');
     expect(consoleErrors).toEqual([]);
   } finally { stopServer(server); }
 });

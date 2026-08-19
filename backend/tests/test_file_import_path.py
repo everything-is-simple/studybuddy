@@ -58,6 +58,19 @@ def test_rejected_format_is_persisted_as_parser_result(tmp_path: Path):
         assert detail["warnings"]
 
 
+def test_duplicate_hash_reuses_original_path(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        first = client.post("/api/materials", files={"file": ("first.txt", (FIXTURES / "sample.txt").read_bytes(), "text/plain")})
+        second = client.post("/api/materials", files={"file": ("second.txt", (FIXTURES / "sample.txt").read_bytes(), "text/plain")})
+        assert first.status_code == second.status_code == 201
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            rows = connection.execute("SELECT source_sha256, stored_path FROM materials ORDER BY original_name").fetchall()
+            assert len(rows) == 2
+            assert rows[0][0] == rows[1][0]
+            assert rows[0][1] == rows[1][1]
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+
+
 def test_default_upload_limit_is_50_mib():
     assert DEFAULT_MAX_UPLOAD_BYTES == 50 * 1024 * 1024
 

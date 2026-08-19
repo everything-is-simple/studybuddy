@@ -12,6 +12,8 @@
 
 默认单文件上传上限为 50 MiB，可通过 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这不是免费版或解析组件的硬限制。ZIP/XML 容器仍执行 member 数量、解压总量和压缩比限制。`backend/app/storage.py` 提供最小原文件保存边界，`backend/app/repository.py` 提供最小 SQLite extraction/span 事务边界。`backend/app/main.py` 现在提供最小 FastAPI multipart 上传、材料查询和静态文件选择器页面：上传文件会保存原文件、调用 Parser、在同一 SQLite 事务写入 extraction/spans，并可在服务重启后通过 API 回读。
 
-当前没有完整多文件业务流程、OCR、转换器、真实 provider 或 S1-S7 业务实现。浏览器级用户路径证据位于 `H:\studybuddy-test\artifacts\formal-file-import-browser\latest.json`：TXT/PDF/DOCX/PPTX 成功展示、RTF rejection、刷新回读、服务重启回读和 0 个 console error 已通过。当前仍标记为 `implemented`，因为完整失败浏览器矩阵、崩溃恢复和压力边界尚未完成。
+正式文件导入基础链路已达到局部 `real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json`。真实 Chromium 已覆盖 TXT/Markdown/中文 TXT、合法空文件、PDF、DOCX、PPTX、损坏容器、RTF/旧 DOC/旧 PPT rejection；50 MiB 边界、重复 hash、原文件清理、刷新回读和服务重启回读均已通过。
+
+这不代表整个 StudyBuddy 已 real-pass。当前没有完整多文件业务流程、OCR、转换器、真实 provider 或 S1-S7 业务实现；崩溃恢复、磁盘满、网络盘和长时间压力测试仍暂缓。
 
 测试使用 `H:\studybuddy-test` 下的合成 fixture、runs 和脱敏 artifact，不写入本目录运行数据库或原文件副本。
