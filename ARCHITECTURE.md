@@ -18,4 +18,4 @@
 
 正式默认运行路径不指向 fixture；本阶段测试使用 `H:\studybuddy-test\runs`。`backend/app/main.py` 提供最小 FastAPI 用户路径：multipart 文件选择与上传、配置存储根下的原文件保存、Parser 调用、SQLite extraction/span 事务写入、材料列表/详情 API 和同服务的文件选择器页面。默认单文件上传上限为 50 MiB，可由 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这属于正式系统配置，不是免费版或 Parser 能力限制。服务重新启动后，材料详情从 SQLite 回读。
 
-尚未实现完整多文件业务交互、OCR、旧格式转换、provider 或 S1-S7。
+已通过 Chromium 浏览器真实选择文件、上传、页面展示、刷新回读和服务重启后页面回读；浏览器 console error 为 0。尚未实现完整多文件业务交互、OCR、旧格式转换、provider 或 S1-S7；完整失败浏览器矩阵、崩溃恢复和压力测试仍待完成。

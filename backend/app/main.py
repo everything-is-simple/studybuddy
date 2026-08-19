@@ -53,8 +53,10 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     @app.post("/api/materials", status_code=201)
     async def upload_material(file: Annotated[UploadFile, File(...)]) -> dict[str, object]:
         config: AppConfig = app.state.config
-        original_name = Path(file.filename or "").name
-        if not original_name or original_name in {".", ".."}:
+        raw_name = file.filename or ""
+        original_name = Path(raw_name).name
+        if (not raw_name or not original_name or original_name in {".", ".."}
+                or raw_name != original_name or "/" in raw_name or "\\" in raw_name):
             raise HTTPException(status_code=400, detail="invalid_filename")
         suffix = Path(original_name).suffix.lower()
         config.data_root.mkdir(parents=True, exist_ok=True)
@@ -74,11 +76,16 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             stored = store_original(temporary_path, original_name, digest, config.originals_root)
             result = parse_file(temporary_path, declared_media_type=file.content_type,
                                 options=ParseOptions(max_bytes=config.max_upload_bytes))
-            with connect(config.database_path) as connection:
-                material_id, extraction_id = save_material_with_extraction(
-                    connection, config.project_id, original_name, digest, stored.path,
-                    file.content_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream", result,
-                )
+            try:
+                with connect(config.database_path) as connection:
+                    material_id, extraction_id = save_material_with_extraction(
+                        connection, config.project_id, original_name, digest, stored.path,
+                        file.content_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream", result,
+                    )
+            except Exception as exc:
+                if stored.created:
+                    stored.path.unlink(missing_ok=True)
+                raise HTTPException(status_code=500, detail="material_persist_failed") from exc
             return {"material_id": material_id, "extraction_id": extraction_id, "original_name": original_name,
                     "status": result.status, "source_sha256": result.source_sha256, "text_length": len(result.text),
                     "span_count": len(result.spans), "error_code": result.error_code, "warnings": result.warnings}
@@ -97,10 +104,10 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 INDEX_HTML = """<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyBuddy 文件导入</title>
 <style>body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:32px;color:#17202a;background:#f6f7f9}main{background:white;border:1px solid #d8dde3;padding:24px;border-radius:8px}h1{margin-top:0}button{background:#1769aa;color:white;border:0;border-radius:4px;padding:9px 14px;cursor:pointer}input{margin:12px 0}.status{padding:12px 0;color:#52606d}.layout{display:grid;grid-template-columns:280px 1fr;gap:24px;margin-top:24px}.item{display:block;width:100%;text-align:left;border:1px solid #d8dde3;background:#fff;color:#17202a;margin:6px 0}.item:hover{background:#eef5fb}.meta{color:#52606d;font-size:14px}.content{white-space:pre-wrap;line-height:1.6;max-height:55vh;overflow:auto;border-top:1px solid #e5e7eb;padding-top:16px}@media(max-width:700px){body{padding:12px}.layout{grid-template-columns:1fr}}</style></head>
-<body><main><h1>StudyBuddy 文件导入</h1><form id="form"><input id="file" type="file" required><button type="submit">导入文件</button></form><div id="status" class="status"></div><section class="layout"><aside><h2>材料</h2><div id="materials"></div></aside><article><h2 id="title">选择材料</h2><div id="meta" class="meta"></div><div id="content" class="content"></div></article></section></main>
+<body><main><h1>StudyBuddy 文件导入</h1><form id="form"><input id="file" type="file" required><button type="submit">导入文件</button></form><div id="status" class="status"></div><section class="layout"><aside><h2>材料</h2><div id="materials"></div></aside><article><h2 id="title">选择材料</h2><div id="meta" class="meta"></div><div id="warnings" class="meta"></div><div id="spans" class="meta"></div><div id="content" class="content"></div></article></section></main>
 <script>const statusEl=document.querySelector('#status'),listEl=document.querySelector('#materials');
 async function loadList(){const r=await fetch('/api/materials');const items=await r.json();listEl.innerHTML=items.map(x=>`<button class="item" data-id="${x.id}">${x.original_name}<br><span class="meta">${x.status} · ${x.media_type}</span></button>`).join('')||'<p class="meta">暂无材料</p>';document.querySelectorAll('.item').forEach(x=>x.onclick=()=>loadMaterial(x.dataset.id));}
-async function loadMaterial(id){const r=await fetch('/api/materials/'+id);if(!r.ok){statusEl.textContent='读取失败';return}const x=await r.json();document.querySelector('#title').textContent=x.original_name;document.querySelector('#meta').textContent=`${x.status} · ${x.parser_id} ${x.parser_version} · SHA-256 ${x.source_sha256}`;document.querySelector('#content').textContent=x.text||x.spans.map(s=>`[${s.label}]\n${s.text}`).join('\n\n')||'没有可显示的正文';}
+async function loadMaterial(id){const r=await fetch('/api/materials/'+id);if(!r.ok){statusEl.textContent='读取失败';return}const x=await r.json();document.querySelector('#title').textContent=x.original_name;document.querySelector('#meta').textContent=`${x.status} · ${x.parser_id} ${x.parser_version} · SHA-256 ${x.source_sha256}`;document.querySelector('#warnings').textContent=x.error_code?`error_code: ${x.error_code} · ${x.warnings.join(' ')}`:x.warnings.join(' ');document.querySelector('#spans').textContent=`spans: ${x.spans.length} · ${x.spans.map(s=>s.label).join(', ')}`;document.querySelector('#content').textContent=x.text||x.spans.map(s=>`[${s.label}]\\n${s.text}`).join('\\n\\n')||'没有可显示的正文';}
 document.querySelector('#form').onsubmit=async e=>{e.preventDefault();const file=document.querySelector('#file').files[0];if(!file)return;statusEl.textContent='正在导入';const body=new FormData();body.append('file',file);const r=await fetch('/api/materials',{method:'POST',body});const x=await r.json();if(!r.ok){statusEl.textContent=typeof x.detail==='string'?x.detail:JSON.stringify(x.detail);return}statusEl.textContent=`导入完成：${x.status}，${x.text_length} 字符`;await loadList();await loadMaterial(x.material_id);};loadList();</script></body></html>"""
 
 app = create_app()

@@ -71,6 +71,16 @@ def test_parser_does_not_print_or_copy(tmp_path: Path, capsys: pytest.CaptureFix
     assert result.text
 
 
+def test_storage_reuses_same_hash_without_overwriting(tmp_path: Path):
+    source = FIXTURES / "sample.txt"
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    first = store_original(source, "first.txt", digest, tmp_path / "originals")
+    second = store_original(source, "second.txt", digest, tmp_path / "originals")
+    assert first.created is True
+    assert second.created is False
+    assert first.path == second.path
+
+
 def test_storage_and_sqlite_transaction(tmp_path: Path):
     source = FIXTURES / "sample.txt"
     digest = hashlib.sha256(source.read_bytes()).hexdigest()

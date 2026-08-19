@@ -62,14 +62,48 @@ def test_default_upload_limit_is_50_mib():
     assert DEFAULT_MAX_UPLOAD_BYTES == 50 * 1024 * 1024
 
 
+def test_upload_rejects_path_traversal_filename(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        response = client.post("/api/materials", files={"file": ("../escape.txt", b"body", "text/plain")})
+        assert response.status_code == 400
+        assert response.json()["detail"] == "invalid_filename"
+        assert client.get("/api/materials").json() == []
+
+
+def test_upload_limit_boundary_is_strictly_greater_than_configured_limit(tmp_path: Path):
+    config = AppConfig(data_root=tmp_path, max_upload_bytes=8)
+    with TestClient(create_app(config)) as client:
+        accepted = client.post("/api/materials", files={"file": ("exact.txt", b"12345678", "text/plain")})
+        assert accepted.status_code == 201
+        rejected = client.post("/api/materials", files={"file": ("over.txt", b"123456789", "text/plain")})
+        assert rejected.status_code == 413
+
+
 def test_upload_size_limit_does_not_create_material(tmp_path: Path):
     config = AppConfig(data_root=tmp_path, max_upload_bytes=4)
     with TestClient(create_app(config)) as client:
         response = client.post("/api/materials", files={"file": ("sample.txt", b"too large", "text/plain")})
         assert response.status_code == 413
         assert client.get("/api/materials").json() == []
+        assert list(tmp_path.glob(".incoming-*")) == []
+        assert not (tmp_path / "originals").exists()
         with connect(tmp_path / "studybuddy.sqlite3") as connection:
             assert connection.execute("SELECT COUNT(*) FROM materials").fetchone()[0] == 0
+
+
+def test_database_failure_cleans_new_original(tmp_path: Path, monkeypatch):
+    from app import main
+    original_save = main.save_material_with_extraction
+    def fail_save(*args, **kwargs):
+        raise RuntimeError("synthetic database failure")
+    monkeypatch.setattr(main, "save_material_with_extraction", fail_save)
+    with make_client(tmp_path) as client:
+        response = client.post("/api/materials", files={"file": ("sample.txt", (FIXTURES / "sample.txt").read_bytes(), "text/plain")})
+        assert response.status_code == 500
+        assert response.json()["detail"] == "material_persist_failed"
+        assert list((tmp_path / "originals").rglob("original")) == []
+        assert client.get("/api/materials").json() == []
+    monkeypatch.setattr(main, "save_material_with_extraction", original_save)
 
 
 def test_page_is_real_file_picker_and_shows_materials(tmp_path: Path):

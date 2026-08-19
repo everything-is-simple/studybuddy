@@ -18,3 +18,4 @@
 - The minimal SQLite boundary enables foreign keys and WAL. Extraction and spans are written in one transaction; test data belongs under `H:\studybuddy-test`.
 - This stage is `implemented`, not `real-pass`: the minimal FastAPI upload path and process restart API readback now pass with synthetic fixtures, but broader browser acceptance, multi-file behavior and failure recovery remain.
 - The default per-file upload limit is 50 MiB. It is an application safety setting, not a free-tier or parser-library restriction; operators may override it with `STUDYBUDDY_MAX_UPLOAD_BYTES` after considering disk and memory capacity.
+- Chromium browser acceptance now covers real file selection, TXT/PDF/DOCX/PPTX success display, RTF rejection, refresh readback, process restart readback and zero console errors. The import path remains `implemented` until the complete browser failure matrix, crash recovery and stress boundaries are covered.

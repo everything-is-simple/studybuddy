@@ -12,6 +12,7 @@ class StoredFile:
     original_name: str
     content_hash: str
     path: Path
+    created: bool
 
 
 def store_original(source_path: Path, original_name: str, content_hash: str, root: Path) -> StoredFile:
@@ -26,6 +27,10 @@ def store_original(source_path: Path, original_name: str, content_hash: str, roo
     target_dir = Path(root) / content_hash[:2] / content_hash[2:]
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / "original"
+    if target.exists():
+        if sha256_file(target) != content_hash:
+            raise ValueError("stored_hash_mismatch")
+        return StoredFile(original_name=original_name, content_hash=content_hash, path=target, created=False)
     with tempfile.NamedTemporaryFile(dir=target_dir, prefix=".upload-", delete=False) as handle:
         temporary = Path(handle.name)
         with source.open("rb") as input_file:
@@ -34,7 +39,7 @@ def store_original(source_path: Path, original_name: str, content_hash: str, roo
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(temporary, target)
-    return StoredFile(original_name=original_name, content_hash=content_hash, path=target)
+    return StoredFile(original_name=original_name, content_hash=content_hash, path=target, created=True)
 
 
 def sha256_file(path: Path) -> str:
