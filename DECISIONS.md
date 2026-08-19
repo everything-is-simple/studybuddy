@@ -16,4 +16,4 @@
 - RTF returns `rejected/unsupported_rtf`; legacy DOC/PPT return `rejected/requires_converter`. OCR, conversion, complex DOCX extraction, crash recovery and stress testing are deferred.
 - Parser owns neither original-file storage nor database persistence. The minimal storage boundary uses a configured root, hash-derived paths, traversal-safe names and atomic replacement.
 - The minimal SQLite boundary enables foreign keys and WAL. Extraction and spans are written in one transaction; test data belongs under `H:\studybuddy-test`.
-- This stage is `implemented`, not `real-pass`: no formal user upload path or restart readback exists yet.
+- This stage is `implemented`, not `real-pass`: the minimal FastAPI upload path and process restart API readback now pass with synthetic fixtures, but broader browser acceptance, multi-file behavior and failure recovery remain.
