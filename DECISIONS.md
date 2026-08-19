@@ -27,4 +27,11 @@
 - Single-file over-limit behavior remains HTTP 413. Batch over-limit behavior is HTTP 201 with item-level `rejected` and `file_too_large`; no material, original or temporary file is retained for that item.
 - Parser `rejected` and `failed` results remain persisted as inspectable materials. Persistence failures return item-level `failed/material_persist_failed` in batch and clean a newly-created original.
 - The material list supports `success`, `empty`, `rejected` and `failed` filtering and deliberately excludes full extraction text. Detail reads return text, parser metadata, warnings and spans.
-- The browser page supports real multi-file selection, batch summary, per-file statuses, material selection, detail view, filtering, refresh readback and process restart readback. This stage is `formal-multi-file-import = real-pass`; the whole StudyBuddy remains not real-pass. Folder upload, delete, rename, queues, OCR, legacy conversion, provider, AI and S1-S7 remain deferred.
+- The browser page supports real multi-file selection, batch summary, per-file statuses, material selection, detail view, filtering, refresh readback and process restart readback. This stage is `formal-multi-file-import = real-pass`; the whole StudyBuddy remains not real-pass.
+
+## 2026-08-21: material lifecycle foundation
+
+- Rename is metadata-only: `PATCH /api/materials/{material_id}` validates a basename and updates only `materials.original_name` and `updated_at`. It never changes source_sha256, stored_path, extraction, spans or the physical original.
+- Delete is logical: `DELETE /api/materials/{material_id}` sets `deleted_at` and returns 204. Active lists and detail reads exclude deleted materials; deleted detail returns 404. Extraction, text_spans and hash-derived originals remain preserved.
+- The schema migration adds nullable `materials.updated_at` and `materials.deleted_at` without rebuilding existing databases. Deleted material is not exposed through an include_deleted query, and restore, recycle bin and physical GC are intentionally not implemented.
+- Shared hash originals are immutable content objects. Deleting one material never removes an original still referenced by another material. Material management is currently `implemented`; the whole StudyBuddy remains not real-pass. Folder upload, queues, OCR, legacy conversion, provider, AI and S1-S7 remain deferred.

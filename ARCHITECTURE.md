@@ -20,4 +20,8 @@
 
 正式文件导入基础链路已通过 Chromium 真实选择文件、上传、页面展示、完整 fixture 失败矩阵、50 MiB 边界、重复 hash、刷新回读和服务重启后页面回读；浏览器 console error 为 0，可标记为局部 `real-pass`。这只表示文件导入基础链路，不代表整个 StudyBuddy。
 
-多文件基础能力新增 `POST /api/materials/batch`。batch 中每个文件复用同一单文件处理边界，但拥有独立临时文件、原文件 hash 复用和 material/extraction/spans 事务；一个文件失败不阻断其他文件。单文件超限保持 HTTP 413，批量超限是 item-level rejected；列表 API 支持四种 status 筛选且不带 extraction text，详情 API 才返回正文和 spans。页面真实支持 multiple file input、批量结果、材料筛选、详情及刷新/重启回读。当前状态为 `formal-multi-file-import = real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-multi-file-import\latest.json`；OCR、旧格式转换、provider、S1-S7、崩溃恢复和压力测试暂缓。
+多文件基础能力新增 `POST /api/materials/batch`。batch 中每个文件复用同一单文件处理边界，但拥有独立临时文件、原文件 hash 复用和 material/extraction/spans 事务；一个文件失败不阻断其他文件。单文件超限保持 HTTP 413，批量超限是 item-level rejected；列表 API 支持四种 status 筛选且不带 extraction text，详情 API 才返回正文和 spans。页面真实支持 multiple file input、批量结果、材料筛选、详情及刷新/重启回读。当前状态为 `formal-multi-file-import = real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-multi-file-import\latest.json`。
+
+材料管理使用 active material 语义：rename 只更新 `materials.original_name/updated_at`；delete 只设置 `materials.deleted_at`，不物理删除 hash 派生 original，不删除 extraction 或 text_spans。列表和详情默认只读取 `deleted_at IS NULL`，deleted detail 返回 404；同 hash material 删除一个时，其他 material 继续引用同一 original。当前 `formal-material-management = implemented`，本阶段不提供 include_deleted、恢复、物理 GC 或回收站。
+
+OCR、旧格式转换、provider、S1-S7、崩溃恢复和压力测试暂缓。

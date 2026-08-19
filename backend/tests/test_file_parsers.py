@@ -88,7 +88,7 @@ def test_storage_and_sqlite_transaction(tmp_path: Path):
     assert stored.path.exists() and stored.path.read_bytes() == source.read_bytes()
     db = connect(tmp_path / "test.sqlite3")
     db.execute("INSERT INTO projects VALUES (?, ?, ?)", ("p1", "test", "now"))
-    db.execute("INSERT INTO materials VALUES (?, ?, ?, ?, ?, ?, ?)", ("m1", "p1", "sample.txt", digest, str(stored.path), ".txt", "now"))
+    db.execute("INSERT INTO materials (id, project_id, original_name, source_sha256, stored_path, media_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", ("m1", "p1", "sample.txt", digest, str(stored.path), ".txt", "now"))
     extraction_id = save_extraction(db, "m1", parse_file(source))
     assert db.execute("SELECT COUNT(*) FROM text_spans WHERE extraction_id = ?", (extraction_id,)).fetchone()[0] == 1
     db.close()

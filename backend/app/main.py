@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import sqlite3
 import os
 import tempfile
 import uuid
@@ -10,11 +11,13 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
+from pydantic import BaseModel
 
 from .adapters.file_parsers import ParseOptions, parse_file
 from .config import AppConfig, config_from_environment
-from .repository import VALID_STATUSES, connect, get_material, get_spans, list_materials, save_material_with_extraction
+from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_materials,
+                         rename_material, save_material_with_extraction, soft_delete_material)
 from .storage import sha256_file, store_original
 
 
@@ -33,6 +36,17 @@ def _valid_filename(raw_name: str) -> str | None:
             or raw_name != original_name or "/" in raw_name or "\\" in raw_name):
         return None
     return original_name
+
+
+class RenameMaterialRequest(BaseModel):
+    original_name: str
+
+
+def _rename_name(raw_name: str) -> str | None:
+    name = raw_name.strip()
+    if len(name) > 255:
+        return None
+    return _valid_filename(name)
 
 
 def _item(original_name: str, status: str, *, material_id: str | None = None,
@@ -129,6 +143,31 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             payload["spans"] = [dict(span) for span in get_spans(connection, row["extraction_id"])]
             return payload
 
+    @app.patch("/api/materials/{material_id}")
+    def rename_existing_material(material_id: str, request: RenameMaterialRequest) -> dict[str, object]:
+        original_name = _rename_name(request.original_name)
+        if original_name is None:
+            raise HTTPException(status_code=400, detail="invalid_filename")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                row = rename_material(connection, material_id, original_name)
+        except sqlite3.Error as exc:
+            raise HTTPException(status_code=500, detail="material_update_failed") from exc
+        if row is None:
+            raise HTTPException(status_code=404, detail="material_not_found")
+        return dict(row)
+
+    @app.delete("/api/materials/{material_id}", status_code=204)
+    def delete_existing_material(material_id: str) -> Response:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                deleted = soft_delete_material(connection, material_id)
+        except sqlite3.Error as exc:
+            raise HTTPException(status_code=500, detail="material_delete_failed") from exc
+        if not deleted:
+            raise HTTPException(status_code=404, detail="material_not_found")
+        return Response(status_code=204)
+
     @app.post("/api/materials", status_code=201)
     async def upload_material(file: Annotated[UploadFile, File(...)]) -> dict[str, object]:
         return await _process_file(file, app.state.config, batch=False)
@@ -149,11 +188,16 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
 INDEX_HTML = """<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyBuddy 文件导入</title>
-<style>body{font-family:system-ui,sans-serif;max-width:1060px;margin:0 auto;padding:32px;color:#17202a;background:#f6f7f9}main{background:white;border:1px solid #d8dde3;padding:24px;border-radius:8px}h1{margin-top:0}button{background:#1769aa;color:white;border:0;border-radius:4px;padding:9px 14px;cursor:pointer}input{margin:12px 0}.status{padding:12px 0;color:#52606d}.summary{display:flex;gap:16px;flex-wrap:wrap;color:#52606d}.batch-item{border-top:1px solid #e5e7eb;padding:7px 0}.layout{display:grid;grid-template-columns:320px 1fr;gap:24px;margin-top:24px}.filters{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 12px}.filters button{background:#e8edf2;color:#17202a;padding:6px 9px}.filters button.active{background:#1769aa;color:white}.item{display:block;width:100%;text-align:left;border:1px solid #d8dde3;background:#fff;color:#17202a;margin:6px 0}.item:hover{background:#eef5fb}.meta{color:#52606d;font-size:14px}.content{white-space:pre-wrap;line-height:1.6;max-height:55vh;overflow:auto;border-top:1px solid #e5e7eb;padding-top:16px}@media(max-width:700px){body{padding:12px}.layout{grid-template-columns:1fr}}</style></head>
-<body><main><h1>StudyBuddy 文件导入</h1><form id="form"><input id="file" type="file" multiple required><button type="submit">导入文件</button></form><div id="status" class="status"></div><div id="summary" class="summary"></div><div id="batch-items"></div><section class="layout"><aside><h2>材料</h2><div id="filters" class="filters"></div><div id="materials"></div></aside><article><h2 id="title">选择材料</h2><div id="meta" class="meta"></div><div id="warnings" class="meta"></div><div id="spans" class="meta"></div><div id="content" class="content"></div></article></section></main>
+<style>body{font-family:system-ui,sans-serif;max-width:1060px;margin:0 auto;padding:32px;color:#17202a;background:#f6f7f9}main{background:white;border:1px solid #d8dde3;padding:24px;border-radius:8px}h1{margin-top:0}button{background:#1769aa;color:white;border:0;border-radius:4px;padding:9px 14px;cursor:pointer}input{margin:12px 0}.status{padding:12px 0;color:#52606d}.summary{display:flex;gap:16px;flex-wrap:wrap;color:#52606d}.batch-item{border-top:1px solid #e5e7eb;padding:7px 0}.layout{display:grid;grid-template-columns:320px 1fr;gap:24px;margin-top:24px}.filters{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 12px}.filters button{background:#e8edf2;color:#17202a;padding:6px 9px}.filters button.active{background:#1769aa;color:white}.item{display:block;width:100%;text-align:left;border:1px solid #d8dde3;background:#fff;color:#17202a;margin:6px 0}.item:hover{background:#eef5fb}#management{display:flex;gap:8px;margin:14px 0}#management button{background:#52606d}.meta{color:#52606d;font-size:14px}.content{white-space:pre-wrap;line-height:1.6;max-height:55vh;overflow:auto;border-top:1px solid #e5e7eb;padding-top:16px}@media(max-width:700px){body{padding:12px}.layout{grid-template-columns:1fr}}</style></head>
+<body><main><h1>StudyBuddy 文件导入</h1><form id="form"><input id="file" type="file" multiple required><button type="submit">导入文件</button></form><div id="status" class="status"></div><div id="summary" class="summary"></div><div id="batch-items"></div><section class="layout"><aside><h2>材料</h2><div id="filters" class="filters"></div><div id="materials"></div></aside><article><h2 id="title">选择材料</h2><div id="meta" class="meta"></div><div id="warnings" class="meta"></div><div id="spans" class="meta"></div><div id="management"><button id="rename" type="button">重命名</button><button id="delete" type="button">删除</button></div><div id="content" class="content"></div></article></section></main>
 <script>const statusEl=document.querySelector('#status'),listEl=document.querySelector('#materials'),summaryEl=document.querySelector('#summary'),batchItemsEl=document.querySelector('#batch-items'),filterEl=document.querySelector('#filters');let currentFilter='';
 async function loadList(){const url=currentFilter?`/api/materials?status=${currentFilter}`:'/api/materials';const r=await fetch(url);const items=await r.json();listEl.innerHTML=items.map(x=>`<button class="item" data-id="${x.id}">${x.original_name}<br><span class="meta">${x.status} · ${x.media_type} · ${x.text_length} 字 · ${x.span_count} spans${x.error_code?' · '+x.error_code:''}</span></button>`).join('')||'<p class="meta">暂无材料</p>';document.querySelectorAll('.item').forEach(x=>x.onclick=()=>loadMaterial(x.dataset.id));}
-async function loadMaterial(id){const r=await fetch('/api/materials/'+id);if(!r.ok){statusEl.textContent='读取失败';return}const x=await r.json();document.querySelector('#title').textContent=x.original_name;document.querySelector('#meta').textContent=`${x.status} · ${x.parser_id} ${x.parser_version} · SHA-256 ${x.source_sha256}`;document.querySelector('#warnings').textContent=x.error_code?`error_code: ${x.error_code} · ${x.warnings.join(' ')}`:x.warnings.join(' ');document.querySelector('#spans').textContent=`spans: ${x.spans.length} · ${x.spans.map(s=>s.label).join(', ')}`;document.querySelector('#content').textContent=x.text||x.spans.filter(s=>s.text.trim()).map(s=>`[${s.label}]\\n${s.text}`).join('\\n\\n')||'没有可显示的正文';}
+let selectedMaterialId=null;let selectedMaterial=null;
+function clearMaterial(){selectedMaterialId=null;selectedMaterial=null;document.querySelector('#title').textContent='选择材料';document.querySelector('#meta').textContent='';document.querySelector('#warnings').textContent='';document.querySelector('#spans').textContent='';document.querySelector('#content').textContent='';document.querySelector('#rename').disabled=true;document.querySelector('#delete').disabled=true;}
+async function loadMaterial(id){const r=await fetch('/api/materials/'+id);if(!r.ok){statusEl.textContent='材料不可用';clearMaterial();return}const x=await r.json();selectedMaterialId=id;selectedMaterial=x;document.querySelector('#rename').disabled=false;document.querySelector('#delete').disabled=false;document.querySelector('#title').textContent=x.original_name;document.querySelector('#meta').textContent=`${x.status} · ${x.parser_id} ${x.parser_version} · SHA-256 ${x.source_sha256}`;document.querySelector('#warnings').textContent=x.error_code?`error_code: ${x.error_code} · ${x.warnings.join(' ')}`:x.warnings.join(' ');document.querySelector('#spans').textContent=`spans: ${x.spans.length} · ${x.spans.map(s=>s.label).join(', ')}`;document.querySelector('#content').textContent=x.text||x.spans.filter(s=>s.text.trim()).map(s=>`[${s.label}]\\n${s.text}`).join('\\n\\n')||'没有可显示的正文';}
+async function renameSelected(){if(!selectedMaterialId)return;const name=window.prompt('输入新的材料名称',selectedMaterial.original_name);if(name===null)return;const r=await fetch('/api/materials/'+selectedMaterialId,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({original_name:name})});const x=await r.json();if(!r.ok){statusEl.textContent=typeof x.detail==='string'?x.detail:'重命名失败';return}statusEl.textContent='重命名成功';await loadList();await loadMaterial(selectedMaterialId)}
+async function deleteSelected(){if(!selectedMaterialId)return;if(!window.confirm(`确认删除材料“${selectedMaterial.original_name}”？`))return;const id=selectedMaterialId;const r=await fetch('/api/materials/'+id,{method:'DELETE'});if(!r.ok){const x=await r.json();statusEl.textContent=typeof x.detail==='string'?x.detail:'删除失败';return}statusEl.textContent='材料已删除';clearMaterial();await loadList();}
+document.querySelector('#rename').onclick=renameSelected;document.querySelector('#delete').onclick=deleteSelected;clearMaterial();
 function filters(){filterEl.innerHTML=['全部','成功','空文件','拒绝','失败'].map((label,i)=>`<button class="${(i?['success','empty','rejected','failed'][i-1]:'')===currentFilter?'active':''}" data-status="${i?['success','empty','rejected','failed'][i-1]:''}">${label}</button>`).join('');filterEl.querySelectorAll('button').forEach(b=>b.onclick=()=>{currentFilter=b.dataset.status;filters();loadList()})}
 document.querySelector('#form').onsubmit=async e=>{e.preventDefault();const files=[...document.querySelector('#file').files];if(!files.length)return;statusEl.textContent=`正在导入 ${files.length} 个文件`;const body=new FormData();if(files.length===1){body.append('file',files[0])}else{files.forEach(file=>body.append('files',file))}const r=await fetch(files.length===1?'/api/materials':'/api/materials/batch',{method:'POST',body});const x=await r.json();if(!r.ok){statusEl.textContent=typeof x.detail==='string'?x.detail:JSON.stringify(x.detail);return}if(files.length===1){statusEl.textContent=`导入完成：${x.status}，${x.text_length} 字符`;summaryEl.textContent='';batchItemsEl.innerHTML='';await loadList();if(x.material_id)await loadMaterial(x.material_id);return}statusEl.textContent=`批量导入完成：${x.total} 个文件`;summaryEl.textContent=`总数 ${x.total} · 成功 ${x.success} · 空文件 ${x.empty} · 拒绝 ${x.rejected} · 失败 ${x.failed}`;batchItemsEl.innerHTML=x.items.map(item=>`<div class="batch-item">${item.original_name} · ${item.status}${item.error_code?' · '+item.error_code:''}${item.warnings.length?' · '+item.warnings.join(' '):''}</div>`).join('');await loadList();const first=x.items.find(item=>item.material_id);if(first)await loadMaterial(first.material_id)};filters();loadList();</script></body></html>"""
 

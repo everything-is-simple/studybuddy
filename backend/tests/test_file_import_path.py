@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -203,6 +204,103 @@ def test_batch_database_failure_is_item_level_and_other_file_survives(tmp_path: 
         assert list(tmp_path.glob(".incoming-*")) == []
 
 
+def upload_text(client: TestClient, name: str, body: bytes | None = None) -> dict[str, object]:
+    response = client.post("/api/materials", files={"file": (name, body or (FIXTURES / "sample.txt").read_bytes(), "text/plain")})
+    assert response.status_code == 201
+    return response.json()
+
+
+def test_rename_preserves_content_identity_and_survives_restart(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "original.txt")
+        before = client.get(f"/api/materials/{created['material_id']}").json()
+        renamed = client.patch(f"/api/materials/{created['material_id']}", json={"original_name": "  renamed.txt  "})
+        assert renamed.status_code == 200
+        payload = renamed.json()
+        assert payload["original_name"] == "renamed.txt"
+        assert payload["source_sha256"] == before["source_sha256"]
+        assert payload["stored_path"] == before["stored_path"]
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+        assert list(tmp_path.glob(".incoming-*")) == []
+        assert "text" not in payload
+        assert client.get("/api/materials").json()[0]["original_name"] == "renamed.txt"
+
+    with make_client(tmp_path) as restarted:
+        detail = restarted.get(f"/api/materials/{created['material_id']}").json()
+        assert detail["original_name"] == "renamed.txt"
+        assert detail["source_sha256"] == before["source_sha256"]
+
+
+def test_rename_validation_duplicates_and_deleted_material(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        first = upload_text(client, "one.txt")
+        second = upload_text(client, "two.txt", b"different")
+        assert client.patch(f"/api/materials/{second['material_id']}", json={"original_name": "one.txt"}).status_code == 200
+        for bad_name in ["", "   ", ".", "..", "../escape.txt", "folder\\escape.txt", "x" * 256]:
+            response = client.patch(f"/api/materials/{first['material_id']}", json={"original_name": bad_name})
+            assert response.status_code == 400
+            assert response.json()["detail"] == "invalid_filename"
+        assert client.delete(f"/api/materials/{first['material_id']}").status_code == 204
+        assert client.patch(f"/api/materials/{first['material_id']}", json={"original_name": "cannot.txt"}).status_code == 404
+        assert client.patch("/api/materials/material_missing", json={"original_name": "missing.txt"}).status_code == 404
+
+
+def test_logical_delete_preserves_data_hash_reuse_and_restart(tmp_path: Path):
+    body = (FIXTURES / "sample.txt").read_bytes()
+    with make_client(tmp_path) as client:
+        first = upload_text(client, "one.txt", body)
+        second = upload_text(client, "two.txt", body)
+        first_detail = client.get(f"/api/materials/{first['material_id']}").json()
+        original_path = Path(first_detail["stored_path"])
+        assert original_path.exists()
+        assert client.delete(f"/api/materials/{first['material_id']}").status_code == 204
+        assert client.delete(f"/api/materials/{first['material_id']}").status_code == 404
+        assert client.get(f"/api/materials/{first['material_id']}").status_code == 404
+        assert all(item["id"] != first["material_id"] for item in client.get("/api/materials").json())
+        for status in ("success", "empty", "rejected", "failed"):
+            assert all(item["id"] != first["material_id"] for item in client.get(f"/api/materials?status={status}").json())
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            deleted_at = connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (first["material_id"],)).fetchone()[0]
+            assert deleted_at
+            assert connection.execute("SELECT COUNT(*) FROM extractions WHERE material_id = ?", (first["material_id"],)).fetchone()[0] == 1
+            extraction_id = connection.execute("SELECT id FROM extractions WHERE material_id = ?", (first["material_id"],)).fetchone()[0]
+            assert connection.execute("SELECT COUNT(*) FROM text_spans WHERE extraction_id = ?", (extraction_id,)).fetchone()[0] == 1
+        assert original_path.exists() and len(list((tmp_path / "originals").rglob("original"))) == 1
+        survivor = client.get(f"/api/materials/{second['material_id']}")
+        assert survivor.status_code == 200 and survivor.json()["text"]
+
+    with make_client(tmp_path) as restarted:
+        assert restarted.get(f"/api/materials/{first['material_id']}").status_code == 404
+        assert restarted.get(f"/api/materials/{second['material_id']}").status_code == 200
+        assert len(restarted.get("/api/materials").json()) == 1
+
+
+def test_rename_and_delete_database_failures_leave_active_material_unchanged(tmp_path: Path, monkeypatch):
+    from app import main
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "before.txt")
+        monkeypatch.setattr(main, "rename_material", lambda *args: (_ for _ in ()).throw(sqlite3.DatabaseError("rename failed")))
+        assert client.patch(f"/api/materials/{created['material_id']}", json={"original_name": "after.txt"}).status_code == 500
+        monkeypatch.undo()
+        assert client.get(f"/api/materials/{created['material_id']}").json()["original_name"] == "before.txt"
+        monkeypatch.setattr(main, "soft_delete_material", lambda *args: (_ for _ in ()).throw(sqlite3.DatabaseError("delete failed")))
+        assert client.delete(f"/api/materials/{created['material_id']}").status_code == 500
+        monkeypatch.undo()
+        assert client.get(f"/api/materials/{created['material_id']}").status_code == 200
+
+
+def test_material_schema_migrates_existing_database(tmp_path: Path):
+    db = tmp_path / "studybuddy.sqlite3"
+    connection = sqlite3.connect(db)
+    connection.execute("CREATE TABLE materials (id TEXT PRIMARY KEY, project_id TEXT, original_name TEXT, source_sha256 TEXT, stored_path TEXT, media_type TEXT, created_at TEXT)")
+    connection.execute("INSERT INTO materials VALUES ('m1', 'p1', 'old.txt', 'hash', 'path', 'text/plain', 'then')")
+    connection.commit()
+    connection.close()
+    with connect(db) as migrated:
+        row = migrated.execute("SELECT updated_at, deleted_at FROM materials WHERE id = 'm1'").fetchone()
+        assert row[0] == "then" and row[1] is None
+
+
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
         page = client.get("/")
@@ -210,3 +308,4 @@ def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
         assert 'type="file" multiple' in page.text
         assert "/api/materials/batch" in page.text
         assert "success','empty','rejected','failed" in page.text
+        assert 'id="rename"' in page.text and 'id="delete"' in page.text
