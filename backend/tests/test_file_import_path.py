@@ -301,6 +301,56 @@ def test_material_schema_migrates_existing_database(tmp_path: Path):
         assert row[0] == "then" and row[1] is None
 
 
+def test_recycle_bin_list_restore_and_invariants(tmp_path: Path):
+    body = (FIXTURES / "sample.txt").read_bytes()
+    with make_client(tmp_path) as client:
+        first = upload_text(client, "same-one.txt", body)
+        second = upload_text(client, "same-two.txt", body)
+        before = client.get(f"/api/materials/{first['material_id']}").json()
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            extraction_before = connection.execute("SELECT COUNT(*) FROM extractions").fetchone()[0]
+            spans_before = connection.execute("SELECT COUNT(*) FROM text_spans").fetchone()[0]
+        assert client.delete(f"/api/materials/{first['material_id']}").status_code == 204
+        deleted = client.get("/api/materials/deleted")
+        assert deleted.status_code == 200
+        deleted_item = deleted.json()[0]
+        assert deleted_item["id"] == first["material_id"]
+        assert deleted_item["deleted_at"]
+        assert "text" not in deleted_item
+        assert all(item["id"] != first["material_id"] for item in client.get("/api/materials").json())
+        assert client.get(f"/api/materials/{first['material_id']}").status_code == 404
+        restored = client.post(f"/api/materials/{first['material_id']}/restore")
+        assert restored.status_code == 200
+        restored_payload = restored.json()
+        assert restored_payload["deleted_at"] is None
+        assert restored_payload["source_sha256"] == before["source_sha256"]
+        assert restored_payload["stored_path"] == before["stored_path"]
+        assert "text" not in restored_payload
+        assert client.get("/api/materials/deleted").json() == []
+        assert client.get(f"/api/materials/{first['material_id']}").json()["text"]
+        assert client.get(f"/api/materials/{second['material_id']}").json()["text"]
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            assert connection.execute("SELECT COUNT(*) FROM extractions").fetchone()[0] == extraction_before
+            assert connection.execute("SELECT COUNT(*) FROM text_spans").fetchone()[0] == spans_before
+        assert list(tmp_path.glob(".incoming-*")) == []
+
+
+def test_restore_error_cases_and_database_failure(tmp_path: Path, monkeypatch):
+    from app import main
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "restore.txt")
+        assert client.post(f"/api/materials/{created['material_id']}/restore").status_code == 404
+        assert client.post("/api/materials/missing/restore").status_code == 404
+        assert client.delete(f"/api/materials/{created['material_id']}").status_code == 204
+        monkeypatch.setattr(main, "restore_material", lambda *args: (_ for _ in ()).throw(sqlite3.DatabaseError("restore failed")))
+        failed = client.post(f"/api/materials/{created['material_id']}/restore")
+        assert failed.status_code == 500 and failed.json()["detail"] == "material_restore_failed"
+        monkeypatch.undo()
+        assert client.get(f"/api/materials/{created['material_id']}").status_code == 404
+        assert client.get("/api/materials/deleted").json()[0]["id"] == created["material_id"]
+
+
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
         page = client.get("/")

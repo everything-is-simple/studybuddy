@@ -34,4 +34,12 @@
 - Rename is metadata-only: `PATCH /api/materials/{material_id}` validates a basename and updates only `materials.original_name` and `updated_at`. It never changes source_sha256, stored_path, extraction, spans or the physical original.
 - Delete is logical: `DELETE /api/materials/{material_id}` sets `deleted_at` and returns 204. Active lists and detail reads exclude deleted materials; deleted detail returns 404. Extraction, text_spans and hash-derived originals remain preserved.
 - The schema migration adds nullable `materials.updated_at` and `materials.deleted_at` without rebuilding existing databases. Deleted material is not exposed through an include_deleted query, and restore, recycle bin and physical GC are intentionally not implemented.
-- Shared hash originals are immutable content objects. Deleting one material never removes an original still referenced by another material. Material management is currently `implemented`; the whole StudyBuddy remains not real-pass. Folder upload, queues, OCR, legacy conversion, provider, AI and S1-S7 remain deferred.
+- Shared hash originals are immutable content objects. Deleting one material never removes an original still referenced by another material. Material management is `real-pass`; the whole StudyBuddy remains not real-pass.
+
+## 2026-08-22: material recycle bin and restore
+
+- `GET /api/materials/deleted` exposes deleted materials as metadata only. It never returns extraction text and is separate from active list status filters.
+- `POST /api/materials/{material_id}/restore` restores only the material lifecycle: `deleted_at = NULL` and a new `updated_at` in one SQLite transaction. It does not alter original_name, source_sha256, stored_path, extraction, text_spans or physical original files.
+- Restore of an active material returns `404/material_not_deleted`; restore of an unknown material returns `404/material_not_found`; database failures return `500/material_restore_failed` without changing deleted state.
+- The page provides a normal-material/recycle-bin switch. Deleted metadata can be selected without reading full text; restore is a real button operation and returns the material to the active list and detail view.
+- No include_deleted parameter, restore-all, purge, physical GC, restore history or bulk recycle-bin operation is implemented. This stage is `formal-material-recycle-bin = real-pass`; S1-S7, AI, provider, OCR, ASR, legacy conversion, queues and the whole StudyBuddy real-pass remain deferred.

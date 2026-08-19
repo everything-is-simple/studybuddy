@@ -16,7 +16,9 @@
 
 多文件导入与材料列表基础能力已实现：`POST /api/materials/batch` 接受多个 `files`，每个文件独立解析、保存和 SQLite 事务，允许 batch 部分成功；单文件超限仍返回 HTTP 413，batch 中超限文件返回 item-level `rejected/file_too_large`。`GET /api/materials?status=success|empty|rejected|failed` 只返回列表元数据，不返回正文；详情接口回读正文和 spans。页面支持真实多文件选择、批量摘要、逐文件结果、列表筛选、详情查看及刷新/重启回读。当前 `formal-multi-file-import = real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-multi-file-import\latest.json`。
 
-材料管理基础能力已实现：`PATCH /api/materials/{material_id}` 只修改展示名称和 `updated_at`，不改变 source hash、stored path 或解析结果；`DELETE /api/materials/{material_id}` 使用 `deleted_at` 逻辑删除，默认列表隐藏、详情返回 404，但保留 extraction、text_spans 和 hash 派生原文件。同 hash 的其他 material 不受影响。本阶段不提供 include_deleted、恢复、回收站或物理 GC。
+材料管理基础能力已达到局部 `real-pass`：`PATCH /api/materials/{material_id}` 只修改展示名称和 `updated_at`，不改变 source hash、stored path 或解析结果；`DELETE /api/materials/{material_id}` 使用 `deleted_at` 逻辑删除，默认列表隐藏、详情返回 404，但保留 extraction、text_spans 和 hash 派生原文件。同 hash 的其他 material 不受影响。
+
+材料回收站与恢复已达到局部 `real-pass`：`GET /api/materials/deleted` 只返回已删除材料元数据，`POST /api/materials/{material_id}/restore` 只清空 `deleted_at` 并更新 `updated_at`，不重新解析、不创建 original/material/extraction/span。页面支持正常材料与回收站切换、真实恢复和刷新/重启回读。本阶段不提供 include_deleted、批量恢复、回收站清空或物理 GC。
 
 这不代表整个 StudyBuddy 已 real-pass。当前没有文件夹导入、后台任务队列、OCR、转换器、真实 provider 或 S1-S7 业务实现；崩溃恢复、磁盘满、网络盘和长时间压力测试仍暂缓。
 

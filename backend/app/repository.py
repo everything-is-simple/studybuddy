@@ -100,6 +100,42 @@ def list_materials(connection: sqlite3.Connection, status: str | None = None) ->
     return connection.execute(query, params).fetchall()
 
 
+def list_deleted_materials(connection: sqlite3.Connection) -> list[sqlite3.Row]:
+    return connection.execute(
+        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, "
+        "e.created_at, m.updated_at, m.deleted_at, length(e.text) AS text_length, "
+        "(SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count "
+        "FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE m.deleted_at IS NOT NULL ORDER BY m.deleted_at DESC, m.id DESC"
+    ).fetchall()
+
+
+def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite3.Row | None:
+    updated_at = utc_now()
+    with connection:
+        cursor = connection.execute(
+            "UPDATE materials SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL",
+            (updated_at, material_id),
+        )
+        if cursor.rowcount != 1:
+            return None
+    return connection.execute(
+        "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
+        "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, "
+        "m.created_at, m.updated_at, m.deleted_at "
+        "FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE m.id = ? AND m.deleted_at IS NULL",
+        (material_id,),
+    ).fetchone()
+
+
+def material_state(connection: sqlite3.Connection, material_id: str) -> str:
+    row = connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (material_id,)).fetchone()
+    if row is None:
+        return "missing"
+    return "deleted" if row[0] is not None else "active"
+
+
 def get_material(connection: sqlite3.Connection, material_id: str) -> sqlite3.Row | None:
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, m.created_at, m.updated_at, "

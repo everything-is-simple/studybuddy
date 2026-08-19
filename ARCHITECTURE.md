@@ -22,6 +22,6 @@
 
 多文件基础能力新增 `POST /api/materials/batch`。batch 中每个文件复用同一单文件处理边界，但拥有独立临时文件、原文件 hash 复用和 material/extraction/spans 事务；一个文件失败不阻断其他文件。单文件超限保持 HTTP 413，批量超限是 item-level rejected；列表 API 支持四种 status 筛选且不带 extraction text，详情 API 才返回正文和 spans。页面真实支持 multiple file input、批量结果、材料筛选、详情及刷新/重启回读。当前状态为 `formal-multi-file-import = real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-multi-file-import\latest.json`。
 
-材料管理使用 active material 语义：rename 只更新 `materials.original_name/updated_at`；delete 只设置 `materials.deleted_at`，不物理删除 hash 派生 original，不删除 extraction 或 text_spans。列表和详情默认只读取 `deleted_at IS NULL`，deleted detail 返回 404；同 hash material 删除一个时，其他 material 继续引用同一 original。当前 `formal-material-management = implemented`，本阶段不提供 include_deleted、恢复、物理 GC 或回收站。
+材料管理使用 active material 语义：rename 只更新 `materials.original_name/updated_at`；delete 只设置 `materials.deleted_at`，不物理删除 hash 派生 original，不删除 extraction 或 text_spans。列表和详情默认只读取 `deleted_at IS NULL`，deleted detail 返回 404；同 hash material 删除一个时，其他 material 继续引用同一 original。当前 `formal-material-management = real-pass`。回收站新增 `GET /api/materials/deleted`，只返回 deleted material 元数据；恢复新增 `POST /api/materials/{material_id}/restore`，只在同一 SQLite 事务中清空 `deleted_at` 并更新 `updated_at`。恢复不改变 source_sha256、stored_path、extraction、text_spans 或 physical original，也不调用 Parser。页面提供正常材料/回收站切换和真实恢复流程，恢复后详情重新可读。当前 `formal-material-recycle-bin = real-pass`；不提供 include_deleted、批量恢复、回收站清空、恢复历史或物理 GC。
 
 OCR、旧格式转换、provider、S1-S7、崩溃恢复和压力测试暂缓。
