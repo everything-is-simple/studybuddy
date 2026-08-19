@@ -1,0 +1,17 @@
+node_modules/
+.venv/
+dist/
+build/
+*.log
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+/data/
+/tmp/
+/coverage/
+H:/studybuddy-test/
+H:/studybuddy-composer/results/
+H:/studybuddy-integration/results/
