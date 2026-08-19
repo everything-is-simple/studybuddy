@@ -80,11 +80,22 @@ def save_material_with_extraction(connection: sqlite3.Connection, project_id: st
     return material_id, extraction_id
 
 
-def list_materials(connection: sqlite3.Connection) -> list[sqlite3.Row]:
-    return connection.execute(
-        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.created_at "
-        "FROM materials m JOIN extractions e ON e.material_id = m.id ORDER BY e.created_at DESC"
-    ).fetchall()
+VALID_STATUSES = {"success", "empty", "rejected", "failed"}
+
+
+def list_materials(connection: sqlite3.Connection, status: str | None = None) -> list[sqlite3.Row]:
+    query = (
+        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, "
+        "e.created_at, length(e.text) AS text_length, "
+        "(SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count "
+        "FROM materials m JOIN extractions e ON e.material_id = m.id"
+    )
+    params: tuple[str, ...] = ()
+    if status is not None:
+        query += " WHERE e.status = ?"
+        params = (status,)
+    query += " ORDER BY e.created_at DESC, m.id DESC"
+    return connection.execute(query, params).fetchall()
 
 
 def get_material(connection: sqlite3.Connection, material_id: str) -> sqlite3.Row | None:

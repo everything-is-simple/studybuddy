@@ -119,9 +119,94 @@ def test_database_failure_cleans_new_original(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(main, "save_material_with_extraction", original_save)
 
 
-def test_page_is_real_file_picker_and_shows_materials(tmp_path: Path):
+def test_batch_imports_multiple_files_with_item_results_and_filters(tmp_path: Path):
+    config = AppConfig(data_root=tmp_path, max_upload_bytes=8)
+    with TestClient(create_app(config)) as client:
+        response = client.post("/api/materials/batch", files=[
+            ("files", ("small.txt", b"12345678", "text/plain")),
+            ("files", ("empty.txt", b"", "text/plain")),
+            ("files", ("large.txt", b"123456789", "text/plain")),
+            ("files", ("sample.rtf", b"{\\rtf1}", "application/rtf")),
+        ])
+        assert response.status_code == 201
+        payload = response.json()
+        assert payload["total"] == 4
+        assert (payload["success"], payload["empty"], payload["rejected"], payload["failed"]) == (1, 1, 2, 0)
+        by_name = {item["original_name"]: item for item in payload["items"]}
+        assert by_name["large.txt"]["error_code"] == "file_too_large"
+        assert by_name["sample.rtf"]["error_code"] == "unsupported_rtf"
+        assert client.get("/api/materials?status=success").json()[0]["original_name"] == "small.txt"
+        assert client.get("/api/materials?status=empty").json()[0]["original_name"] == "empty.txt"
+        assert client.get("/api/materials?status=rejected").json()[0]["original_name"] == "sample.rtf"
+        assert client.get("/api/materials?status=failed").json() == []
+        assert client.get("/api/materials?status=unknown").status_code == 400
+        assert all("text" not in item for item in client.get("/api/materials").json())
+        assert list(tmp_path.glob(".incoming-*")) == []
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            assert connection.execute("SELECT COUNT(*) FROM materials").fetchone()[0] == 3
+
+
+def test_batch_oversize_does_not_affect_other_files(tmp_path: Path):
+    config = AppConfig(data_root=tmp_path, max_upload_bytes=4)
+    with TestClient(create_app(config)) as client:
+        response = client.post("/api/materials/batch", files=[
+            ("files", ("over.txt", b"12345", "text/plain")),
+            ("files", ("ok.txt", b"1234", "text/plain")),
+        ])
+        assert response.status_code == 201
+        items = {item["original_name"]: item for item in response.json()["items"]}
+        assert items["over.txt"]["status"] == "rejected"
+        assert items["ok.txt"]["status"] == "success"
+        assert items["over.txt"]["material_id"] is None
+        assert items["over.txt"]["source_sha256"] == ""
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+        assert list(tmp_path.glob(".incoming-*")) == []
+
+
+def test_batch_duplicate_hash_reuses_original(tmp_path: Path):
+    body = (FIXTURES / "sample.txt").read_bytes()
+    with make_client(tmp_path) as client:
+        response = client.post("/api/materials/batch", files=[
+            ("files", ("one.txt", body, "text/plain")),
+            ("files", ("two.txt", body, "text/plain")),
+        ])
+        assert response.status_code == 201
+        assert response.json()["success"] == 2
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            rows = connection.execute("SELECT source_sha256, stored_path FROM materials ORDER BY original_name").fetchall()
+        assert len(rows) == 2 and rows[0][0] == rows[1][0] and rows[0][1] == rows[1][1]
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+
+
+def test_batch_database_failure_is_item_level_and_other_file_survives(tmp_path: Path, monkeypatch):
+    from app import main
+    original_save = main.save_material_with_extraction
+    calls = 0
+    def fail_first(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("synthetic database failure")
+        return original_save(*args, **kwargs)
+    monkeypatch.setattr(main, "save_material_with_extraction", fail_first)
+    with make_client(tmp_path) as client:
+        response = client.post("/api/materials/batch", files=[
+            ("files", ("failed.txt", b"first", "text/plain")),
+            ("files", ("saved.txt", b"second", "text/plain")),
+        ])
+        assert response.status_code == 201
+        items = {item["original_name"]: item for item in response.json()["items"]}
+        assert items["failed.txt"]["error_code"] == "material_persist_failed"
+        assert items["saved.txt"]["status"] == "success"
+        assert client.get("/api/materials").json()[0]["original_name"] == "saved.txt"
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+        assert list(tmp_path.glob(".incoming-*")) == []
+
+
+def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
         page = client.get("/")
         assert page.status_code == 200
-        assert 'type="file"' in page.text
-        assert "/api/materials" in page.text
+        assert 'type="file" multiple' in page.text
+        assert "/api/materials/batch" in page.text
+        assert "success','empty','rejected','failed" in page.text
