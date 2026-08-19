@@ -43,3 +43,11 @@
 - Restore of an active material returns `404/material_not_deleted`; restore of an unknown material returns `404/material_not_found`; database failures return `500/material_restore_failed` without changing deleted state.
 - The page provides a normal-material/recycle-bin switch. Deleted metadata can be selected without reading full text; restore is a real button operation and returns the material to the active list and detail view.
 - No include_deleted parameter, restore-all, purge, physical GC, restore history or bulk recycle-bin operation is implemented. This stage is `formal-material-recycle-bin = real-pass`; S1-S7, AI, provider, OCR, ASR, legacy conversion, queues and the whole StudyBuddy real-pass remain deferred.
+
+## 2026-08-23: material export foundation
+
+- `GET /api/materials/{material_id}/original` permits active materials only. It resolves the database stored_path, verifies the path remains inside configured originals_root, verifies the target is a file, and verifies SHA-256 equals source_sha256 before returning FileResponse.
+- `GET /api/materials/{material_id}/text` permits active materials only and returns extraction.text as UTF-8 plain text with the fixed filename `<original_name>.extracted.txt`. It never invokes Parser or reads the original.
+- Deleted materials return 404 from both export endpoints. Restore re-enables both endpoints without changing source_sha256, stored_path, extraction, spans or physical original. Rename changes the download filename but not original bytes or text export content.
+- Empty and active rejected/failed parser results export an empty text file with HTTP 200. Missing originals, invalid paths and hash mismatches return explicit 500 errors without exposing stack traces.
+- Export is `formal-material-export = real-pass`. Batch download, ZIP, folder export, background queue, physical GC, AI, provider, OCR, ASR and S1-S7 remain deferred.

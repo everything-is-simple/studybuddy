@@ -205,7 +205,8 @@ def test_batch_database_failure_is_item_level_and_other_file_survives(tmp_path: 
 
 
 def upload_text(client: TestClient, name: str, body: bytes | None = None) -> dict[str, object]:
-    response = client.post("/api/materials", files={"file": (name, body or (FIXTURES / "sample.txt").read_bytes(), "text/plain")})
+    content = (FIXTURES / "sample.txt").read_bytes() if body is None else body
+    response = client.post("/api/materials", files={"file": (name, content, "text/plain")})
     assert response.status_code == 201
     return response.json()
 
@@ -349,6 +350,61 @@ def test_restore_error_cases_and_database_failure(tmp_path: Path, monkeypatch):
         monkeypatch.undo()
         assert client.get(f"/api/materials/{created['material_id']}").status_code == 404
         assert client.get("/api/materials/deleted").json()[0]["id"] == created["material_id"]
+
+
+def test_material_exports_and_lifecycle(tmp_path: Path):
+    body = (FIXTURES / "sample.txt").read_bytes()
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "sample.txt", body)
+        detail = client.get(f"/api/materials/{created['material_id']}").json()
+        original = client.get(f"/api/materials/{created['material_id']}/original")
+        assert original.status_code == 200
+        assert original.content == body
+        assert original.headers["content-type"].startswith("text/plain")
+        assert 'filename="sample.txt"' in original.headers["content-disposition"]
+        text = client.get(f"/api/materials/{created['material_id']}/text")
+        assert text.status_code == 200 and text.content.decode("utf-8") == detail["text"]
+        assert 'filename="sample.txt.extracted.txt"' in text.headers["content-disposition"]
+        renamed = client.patch(f"/api/materials/{created['material_id']}", json={"original_name": "renamed.txt"}).json()
+        assert client.get(f"/api/materials/{created['material_id']}/original").headers["content-disposition"].find('filename="renamed.txt"') >= 0
+        assert client.get(f"/api/materials/{created['material_id']}/original").content == body
+        assert 'filename="renamed.txt.extracted.txt"' in client.get(f"/api/materials/{created['material_id']}/text").headers["content-disposition"]
+        assert renamed["source_sha256"] == detail["source_sha256"]
+        assert client.delete(f"/api/materials/{created['material_id']}").status_code == 204
+        assert client.get(f"/api/materials/{created['material_id']}/original").status_code == 404
+        assert client.get(f"/api/materials/{created['material_id']}/text").status_code == 404
+        assert client.post(f"/api/materials/{created['material_id']}/restore").status_code == 200
+        assert client.get(f"/api/materials/{created['material_id']}/original").status_code == 200
+        assert client.get(f"/api/materials/{created['material_id']}/text").status_code == 200
+        assert list(tmp_path.glob(".incoming-*")) == []
+        assert len(list((tmp_path / "originals").rglob("original"))) == 1
+
+
+def test_empty_and_rejected_text_exports(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        empty = upload_text(client, "empty.txt", b"")
+        rejected = client.post("/api/materials", files={"file": ("sample.rtf", (FIXTURES / "sample.rtf").read_bytes(), "application/rtf")}).json()
+        for material in (empty, rejected):
+            response = client.get(f"/api/materials/{material['material_id']}/text")
+            assert response.status_code == 200 and response.content == b""
+            assert response.headers["content-type"].startswith("text/plain")
+
+
+def test_export_rejects_invalid_or_corrupt_original(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "sample.txt")
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            connection.execute("UPDATE materials SET stored_path = ? WHERE id = ?", (str(tmp_path / "outside"), created["material_id"]))
+            connection.commit()
+        assert client.get(f"/api/materials/{created['material_id']}/original").status_code == 500
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            connection.execute("UPDATE materials SET stored_path = ? WHERE id = ?", (str(tmp_path / "originals" / created["source_sha256"][:2] / created["source_sha256"][2:] / "original"), created["material_id"]))
+            connection.commit()
+        target = Path(created["source_sha256"][:2])
+        original_path = tmp_path / "originals" / created["source_sha256"][:2] / created["source_sha256"][2:] / "original"
+        original_path.write_bytes(b"tampered")
+        response = client.get(f"/api/materials/{created['material_id']}/original")
+        assert response.status_code == 500 and response.json()["detail"] == "original_hash_mismatch"
 
 
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):

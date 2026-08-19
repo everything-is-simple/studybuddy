@@ -24,4 +24,6 @@
 
 材料管理使用 active material 语义：rename 只更新 `materials.original_name/updated_at`；delete 只设置 `materials.deleted_at`，不物理删除 hash 派生 original，不删除 extraction 或 text_spans。列表和详情默认只读取 `deleted_at IS NULL`，deleted detail 返回 404；同 hash material 删除一个时，其他 material 继续引用同一 original。当前 `formal-material-management = real-pass`。回收站新增 `GET /api/materials/deleted`，只返回 deleted material 元数据；恢复新增 `POST /api/materials/{material_id}/restore`，只在同一 SQLite 事务中清空 `deleted_at` 并更新 `updated_at`。恢复不改变 source_sha256、stored_path、extraction、text_spans 或 physical original，也不调用 Parser。页面提供正常材料/回收站切换和真实恢复流程，恢复后详情重新可读。当前 `formal-material-recycle-bin = real-pass`；不提供 include_deleted、批量恢复、回收站清空、恢复历史或物理 GC。
 
+材料导出新增 `GET /api/materials/{material_id}/original` 和 `GET /api/materials/{material_id}/text`。前者只读取 active material 的数据库 stored_path，并验证其位于 configured originals_root 内且 SHA-256 匹配；后者只读取 active extraction.text 并以 UTF-8 plain text 下载。两个 endpoint 都拒绝 deleted material；restore 后恢复。rename 不变更内容身份，但会改变 Content-Disposition 下载文件名。导出不调用 Parser、不创建数据库记录、不创建 original 或临时文件。本阶段不提供批量下载、ZIP、文件夹导出或后台导出队列。
+
 OCR、旧格式转换、provider、S1-S7、崩溃恢复和压力测试暂缓。
