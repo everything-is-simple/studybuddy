@@ -1,0 +1,265 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import sqlite3
+import stat
+import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+_FORMAT = "studybuddy-backup"
+_VERSION = 1
+_DB_NAME = "database.sqlite3"
+
+
+class BackupError(ValueError):
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
+
+
+def _lstat(path: Path, code: str) -> stat.stat_result:
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        raise BackupError(code) from None
+    except OSError:
+        raise BackupError(code) from None
+    if stat.S_ISLNK(info.st_mode):
+        raise BackupError(code)
+    return info
+
+
+def _regular(path: Path, code: str) -> None:
+    if not stat.S_ISREG(_lstat(path, code).st_mode):
+        raise BackupError(code)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(block)
+    except OSError:
+        raise BackupError("backup_read_failed") from None
+    return digest.hexdigest()
+
+
+def _safe_children(root: Path) -> list[Path]:
+    try:
+        return list(root.iterdir())
+    except OSError:
+        raise BackupError("backup_scan_failed") from None
+
+
+def _inside(child: Path, parent: Path) -> bool:
+    try:
+        return os.path.commonpath((os.path.abspath(child), os.path.abspath(parent))) == os.path.abspath(parent)
+    except ValueError:
+        return False
+
+
+def _sqlite_header(path: Path, code: str) -> None:
+    _regular(path, code)
+    try:
+        with path.open("rb") as handle:
+            if handle.read(16) != b"SQLite format 3\x00":
+                raise BackupError(code)
+    except BackupError:
+        raise
+    except OSError:
+        raise BackupError(code) from None
+
+
+def _checks(path: Path) -> tuple[str, str]:
+    try:
+        connection = sqlite3.connect(path)
+        integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0]).lower()
+        foreign = connection.execute("PRAGMA foreign_key_check").fetchall()
+        connection.close()
+    except (OSError, sqlite3.Error):
+        raise BackupError("backup_database_integrity_failed") from None
+    return integrity, "ok" if not foreign else "failed"
+
+
+def _atomic_json(path: Path, value: dict[str, Any]) -> None:
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".manifest-", suffix=".tmp", mode="w", encoding="utf-8", delete=False) as handle:
+            temporary = Path(handle.name)
+            json.dump(value, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except OSError:
+        if temporary:
+            try: temporary.unlink(missing_ok=True)
+            except OSError: pass
+        raise BackupError("backup_create_failed") from None
+
+
+def _copy_atomic(source: Path, target: Path, error: str = "backup_create_failed") -> None:
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target.parent, prefix=".copy-", delete=False) as handle:
+            temporary = Path(handle.name)
+            with source.open("rb") as source_handle:
+                shutil.copyfileobj(source_handle, handle, 1024 * 1024)
+            handle.flush(); os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    except OSError:
+        if temporary:
+            try: temporary.unlink(missing_ok=True)
+            except OSError: pass
+        raise BackupError(error) from None
+
+
+def _referenced_hashes(database: Path) -> tuple[set[str], dict[str, int]]:
+    try:
+        connection = sqlite3.connect(database)
+        rows = connection.execute("SELECT source_sha256 FROM materials").fetchall()
+        project = connection.execute("SELECT COUNT(*) FROM materials").fetchone()[0]
+        active = connection.execute("SELECT COUNT(*) FROM materials WHERE deleted_at IS NULL").fetchone()[0]
+        deleted = connection.execute("SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL").fetchone()[0]
+        connection.close()
+    except (OSError, sqlite3.Error):
+        raise BackupError("backup_database_read_failed") from None
+    hashes = {str(row[0]).lower() for row in rows}
+    if any(len(value) != 64 or any(c not in "0123456789abcdef" for c in value) for value in hashes):
+        raise BackupError("backup_reference_invalid")
+    return hashes, {"material_count": project, "active_material_count": active, "deleted_material_count": deleted, "source_hash_count": len(hashes)}
+
+
+def _validate_layout(originals: Path, digest: str) -> Path:
+    target = originals / digest[:2] / digest[2:] / "original"
+    try:
+        originals_stat = originals.lstat()
+    except OSError:
+        raise BackupError("backup_original_missing") from None
+    if stat.S_ISLNK(originals_stat.st_mode) or not stat.S_ISDIR(originals_stat.st_mode):
+        raise BackupError("backup_original_invalid")
+    current = originals
+    for part in (digest[:2], digest[2:], "original"):
+        current = current / part
+        try: info = current.lstat()
+        except OSError: raise BackupError("backup_original_missing") from None
+        if stat.S_ISLNK(info.st_mode): raise BackupError("backup_original_symlink")
+    _regular(target, "backup_original_invalid")
+    return target
+
+
+def backup_data(data_root: Path, output: Path, project_id: str = "default") -> dict[str, Any]:
+    data_root, output = Path(data_root), Path(output)
+    if output.exists() or output.is_symlink(): raise BackupError("backup_output_exists")
+    if _inside(output, data_root): raise BackupError("backup_output_inside_data_root")
+    _regular(data_root / "studybuddy.sqlite3", "backup_database_missing")
+    _sqlite_header(data_root / "studybuddy.sqlite3", "backup_database_not_sqlite")
+    originals = data_root / "originals"
+    _lstat(originals, "backup_originals_missing")
+    hashes, references = _referenced_hashes(data_root / "studybuddy.sqlite3")
+    try:
+        output.mkdir(parents=True)
+        (output / "originals").mkdir()
+    except OSError: raise BackupError("backup_create_failed") from None
+    try:
+        source = sqlite3.connect(data_root / "studybuddy.sqlite3")
+        destination = sqlite3.connect(output / _DB_NAME)
+        source.backup(destination)
+        destination.close(); source.close()
+        integrity, foreign = _checks(output / _DB_NAME)
+        if integrity != "ok": raise BackupError("backup_database_integrity_failed")
+        if foreign != "ok": raise BackupError("backup_foreign_key_check_failed")
+        files = []; total = 0
+        for digest in sorted(hashes):
+            source_file = _validate_layout(originals, digest)
+            if _sha256(source_file) != digest: raise BackupError("backup_original_hash_mismatch")
+            relative = Path(digest[:2]) / digest[2:] / "original"
+            target = output / "originals" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            _copy_atomic(source_file, target)
+            size = target.stat().st_size
+            files.append({"relative_path": str(Path("originals") / relative).replace("\\", "/"), "sha256": digest, "size": size})
+            total += size
+        manifest = {"format": _FORMAT, "format_version": _VERSION, "status": "complete", "created_at": datetime.now(timezone.utc).isoformat(), "project_id": project_id, "database": {"filename": _DB_NAME, "sha256": _sha256(output / _DB_NAME), "size": (output / _DB_NAME).stat().st_size, "integrity_check": integrity, "foreign_key_check": foreign}, "originals": {"root": "originals", "count": len(files), "total_bytes": total, "files": files}, "references": references}
+        _atomic_json(output / "manifest.json", manifest)
+        return {"status": "complete", "error_code": None, "original_count": len(files)}
+    except BackupError:
+        raise
+    except (OSError, sqlite3.Error):
+        raise BackupError("backup_create_failed") from None
+
+
+def _manifest(root: Path) -> dict[str, Any]:
+    path = root / "manifest.json"
+    _regular(path, "backup_manifest_missing")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError): raise BackupError("backup_manifest_invalid") from None
+    if not isinstance(value, dict) or value.get("format") != _FORMAT or value.get("format_version") != _VERSION or value.get("status") != "complete":
+        raise BackupError("backup_manifest_invalid")
+    return value
+
+
+def verify_backup(backup: Path) -> dict[str, Any]:
+    backup = Path(backup)
+    _lstat(backup, "invalid_backup_root")
+    if not stat.S_ISDIR(backup.stat().st_mode): raise BackupError("invalid_backup_root")
+    manifest = _manifest(backup)
+    database = backup / _DB_NAME
+    _sqlite_header(database, "backup_database_not_sqlite")
+    database_meta = manifest.get("database")
+    if not isinstance(database_meta, dict) or _sha256(database) != database_meta.get("sha256"): raise BackupError("backup_database_hash_mismatch")
+    integrity, foreign = _checks(database)
+    if integrity != "ok": raise BackupError("backup_database_integrity_failed")
+    if foreign != "ok": raise BackupError("backup_foreign_key_check_failed")
+    files = manifest.get("originals", {}).get("files", [])
+    if not isinstance(files, list): raise BackupError("backup_manifest_invalid")
+    for item in files:
+        relative = item.get("relative_path") if isinstance(item, dict) else None
+        if not isinstance(relative, str) or Path(relative).is_absolute() or ".." in Path(relative).parts: raise BackupError("backup_manifest_invalid")
+        expected_relative = Path("originals") / str(item.get("sha256", ""))[:2] / str(item.get("sha256", ""))[2:] / "original"
+        if Path(relative) != expected_relative: raise BackupError("backup_manifest_invalid")
+        target = backup / relative
+        if not _inside(target, backup): raise BackupError("backup_manifest_invalid")
+        _regular(target, "backup_original_invalid")
+        if _sha256(target) != item.get("sha256"): raise BackupError("backup_original_hash_mismatch")
+        if target.stat().st_size != item.get("size"): raise BackupError("backup_original_hash_mismatch")
+    hashes, _ = _referenced_hashes(database)
+    listed = {item.get("sha256") for item in files}
+    if hashes != listed: raise BackupError("backup_originals_incomplete")
+    return {"status": "valid", "error_code": None, "database_integrity": "ok", "foreign_key_check": "ok", "original_count": len(files)}
+
+
+def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict[str, Any]:
+    if not confirm: raise BackupError("restore_confirmation_required")
+    data_root, backup = Path(data_root), Path(backup)
+    if data_root.exists() or data_root.is_symlink():
+        _lstat(data_root, "restore_target_symlink")
+        if not stat.S_ISDIR(data_root.stat().st_mode): raise BackupError("restore_target_invalid")
+        if _safe_children(data_root): raise BackupError("restore_target_not_empty")
+    verify_backup(backup)
+    staging = data_root.parent / (data_root.name + ".restore-staging")
+    if staging.exists() or staging.is_symlink(): raise BackupError("restore_staging_failed")
+    try:
+        staging.mkdir(parents=True)
+        shutil.copy2(backup / _DB_NAME, staging / _DB_NAME)
+        shutil.copy2(backup / "manifest.json", staging / "manifest.json")
+        shutil.copytree(backup / "originals", staging / "originals")
+        verify_backup(staging)
+        (staging / _DB_NAME).rename(staging / "studybuddy.sqlite3")
+        (staging / "manifest.json").unlink()
+        if data_root.exists():
+            data_root.rmdir()
+        staging.rename(data_root)
+    except BackupError: raise
+    except (OSError, shutil.Error):
+        try: shutil.rmtree(staging, ignore_errors=True)
+        except OSError: pass
+        raise BackupError("restore_replace_failed") from None
+    return {"status": "restored", "error_code": None}

@@ -1,5 +1,7 @@
 # StudyBuddy
 
+Operator backup / restore 已提供 CLI，详见 `BACKUP_RESTORE.md`。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录，应用启动不会自动 backup、restore 或 repair。
+
 个人学习系统主目录。
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
