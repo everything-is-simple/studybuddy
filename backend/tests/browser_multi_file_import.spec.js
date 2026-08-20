@@ -57,7 +57,7 @@ test('formal multi-file import browser acceptance', async ({page}) => {
     await expect(page.locator('#batch-items')).toContainText('corrupt.pdf · failed · corrupt_pdf');
     await expect(page.locator('#batch-items')).toContainText('sample.rtf · rejected · unsupported_rtf');
     await expect(page.locator('#batch-items')).toContainText('corrupt.docx · failed · corrupt_docx');
-    await expect(page.locator('#batch-items')).toContainText('sample.doc · rejected · requires_converter');
+    await expect(page.locator('#batch-items')).toContainText('sample.doc · rejected · requires_converter');expect(await page.locator('#batch-items script').count()).toBe(0);expect(await page.locator('#batch-items img').count()).toBe(0);expect(await page.locator('#batch-items iframe').count()).toBe(0);expect(await page.locator('#batch-items style').count()).toBe(0);
 
     await page.getByRole('button', {name: /sample\.txt/}).last().click();
     await expect(page.locator('#title')).toHaveText('sample.txt');
@@ -65,7 +65,7 @@ test('formal multi-file import browser acceptance', async ({page}) => {
     await page.getByRole('button', {name: /sample\.rtf/}).last().click();
     await expect(page.locator('#warnings')).toContainText('unsupported_rtf');
 
-    await page.locator('#filters button', {hasText: '拒绝'}).click();
+    await expect(page.locator('#filters button')).toHaveCount(5);await expect(page.locator('#filters button', {hasText: '全部'})).toBeVisible();await page.locator('#filters button', {hasText: '拒绝'}).click();
     await expect(page.locator('#materials .item')).toHaveCount(3);
     await expect(page.locator('#materials .item').filter({hasText: 'sample.rtf'})).toHaveCount(1);
     await page.locator('#filters button', {hasText: '全部'}).click();
