@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from .adapters.file_parsers import ParseOptions, parse_file
 from .config import AppConfig, config_from_environment
+from .recovery import reconcile
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
                          list_materials, list_materials_page, list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
                          save_material_with_extraction, soft_delete_material)
@@ -49,6 +50,7 @@ async def lifespan(app: FastAPI):
     config.data_root.mkdir(parents=True, exist_ok=True)
     with connect(config.database_path):
         pass
+    reconcile(config)
     yield
 
 
@@ -98,6 +100,7 @@ async def _process_file(file: UploadFile, config: AppConfig, *, batch: bool) -> 
     temporary_path: Path | None = None
     stored_path: Path | None = None
     stored_created = False
+    stage = "temp_write"
     try:
         config.data_root.mkdir(parents=True, exist_ok=True)
         suffix = Path(original_name).suffix.lower()
@@ -114,8 +117,10 @@ async def _process_file(file: UploadFile, config: AppConfig, *, batch: bool) -> 
             handle.flush()
             os.fsync(handle.fileno())
         digest = sha256_file(temporary_path)
+        stage = "original_store"
         stored = store_original(temporary_path, original_name, digest, config.originals_root)
         stored_path, stored_created = stored.path, stored.created
+        stage = "parse"
         result = parse_file(temporary_path, declared_media_type=file.content_type,
                             options=ParseOptions(max_bytes=config.max_upload_bytes))
         try:
@@ -126,7 +131,10 @@ async def _process_file(file: UploadFile, config: AppConfig, *, batch: bool) -> 
                 )
         except Exception as exc:
             if stored.created:
-                stored.path.unlink(missing_ok=True)
+                try:
+                    stored.path.unlink(missing_ok=True)
+                except OSError:
+                    pass
             if not batch:
                 raise HTTPException(status_code=500, detail="material_persist_failed") from exc
             return _item(original_name, "failed", source_sha256=digest, error_code="material_persist_failed")
@@ -135,14 +143,23 @@ async def _process_file(file: UploadFile, config: AppConfig, *, batch: bool) -> 
                      span_count=len(result.spans), error_code=result.error_code, warnings=result.warnings)
     except HTTPException:
         raise
-    except (OSError, ValueError):
+    except (OSError, ValueError) as exc:
         if stored_created and stored_path is not None:
-            stored_path.unlink(missing_ok=True)
-        return _item(original_name, "failed", error_code="file_processing_failed")
+            try:
+                stored_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        if not batch:
+            raise HTTPException(status_code=500, detail="material_upload_failed") from exc
+        error_code = {"temp_write": "material_upload_failed", "original_store": "original_store_failed"}.get(stage, "file_processing_failed")
+        return _item(original_name, "failed", error_code=error_code)
     finally:
         await file.close()
         if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def create_app(config: AppConfig | None = None) -> FastAPI:

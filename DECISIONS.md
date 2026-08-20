@@ -35,7 +35,15 @@
 - Folder submissions always reuse repeated `files` on `POST /api/materials/batch`, including a one-file folder, so item-level partial-success behavior is unchanged. Existing regular file selection retains its single-file versus multi-file endpoint behavior.
 - Only basename is submitted as the multipart filename and persisted in `materials.original_name`. A browser `webkitRelativePath` is neither sent to the backend nor persisted, indexed, exported or included in API responses. It is displayed only for the immediate batch result after rejecting backslashes, absolute/drive prefixes, control characters and `.`/`..` segments; all display uses text nodes.
 - A dedicated import busy guard disables both selection paths during a request without changing mutation, export, list or detail guards. A successful import resets the active paging offset and performs the existing single list reload. Nested equal basenames remain separate batch items by response index and have distinct materials when content differs.
-- This is `formal-folder-import = real-pass`, not a global StudyBuddy real-pass. Background queues, crash recovery and disk-full/orphan consistency remain deferred.
+- This is `formal-folder-import = real-pass`, not a global StudyBuddy real-pass. Background queues remain deferred.
+
+## 2026-08-20: import recovery consistency
+
+- Startup runs one conservative reconciliation pass after database initialization and before requests are served. It removes only top-level regular `.incoming-*` files; it does not recurse or follow symlinks.
+- An orphan original is removable only when it is in the strict hash-derived layout, its content hash matches the directory-derived SHA-256, and no active or deleted material references that hash. Hash mismatch and unexpected-layout files are preserved for investigation.
+- Missing referenced originals are detection-only: recovery logs a bounded diagnostic and never deletes or mutates material rows, extraction, spans, search data, or lifecycle state.
+- Temporary write, original store, and SQLite persistence failures use safe public error codes. Newly created zero-reference originals and temporary files are cleaned best-effort; shared originals are never removed by persistence-failure cleanup. Batch partial-success and single-file 413 semantics remain unchanged.
+- Recovery has no timer, worker, queue, or cross-process lock. Multiple processes sharing one data root are outside this task's support boundary; the whole StudyBuddy remains not global real-pass.
 
 ## 2026-08-21: material lifecycle foundation
 

@@ -31,14 +31,23 @@ def store_original(source_path: Path, original_name: str, content_hash: str, roo
         if sha256_file(target) != content_hash:
             raise ValueError("stored_hash_mismatch")
         return StoredFile(original_name=original_name, content_hash=content_hash, path=target, created=False)
-    with tempfile.NamedTemporaryFile(dir=target_dir, prefix=".upload-", delete=False) as handle:
-        temporary = Path(handle.name)
-        with source.open("rb") as input_file:
-            while block := input_file.read(1024 * 1024):
-                handle.write(block)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(temporary, target)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target_dir, prefix=".upload-", delete=False) as handle:
+            temporary = Path(handle.name)
+            with source.open("rb") as input_file:
+                while block := input_file.read(1024 * 1024):
+                    handle.write(block)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    except OSError:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise
     return StoredFile(original_name=original_name, content_hash=content_hash, path=target, created=True)
 
 
