@@ -260,6 +260,19 @@ def rename_material(connection: sqlite3.Connection, material_id: str, original_n
     ).fetchone()
 
 
+def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[str | None, str | None, str | None]:
+    with connection:
+        row = connection.execute(
+            "SELECT source_sha256, stored_path, original_name FROM materials WHERE id = ? AND deleted_at IS NOT NULL",
+            (material_id,),
+        ).fetchone()
+        if row is None:
+            return None, None, None
+        connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
+        connection.execute("DELETE FROM materials WHERE id = ? AND deleted_at IS NOT NULL", (material_id,))
+    return row[0], row[1], row[2]
+
+
 def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bool:
     deleted_at = utc_now()
     with connection:

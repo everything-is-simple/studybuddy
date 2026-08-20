@@ -42,7 +42,7 @@
 - `POST /api/materials/{material_id}/restore` restores only the material lifecycle: `deleted_at = NULL` and a new `updated_at` in one SQLite transaction. It does not alter original_name, source_sha256, stored_path, extraction, text_spans or physical original files.
 - Restore of an active material returns `404/material_not_deleted`; restore of an unknown material returns `404/material_not_found`; database failures return `500/material_restore_failed` without changing deleted state.
 - The page provides a normal-material/recycle-bin switch. Deleted metadata can be selected without reading full text; restore is a real button operation and returns the material to the active list and detail view.
-- No include_deleted parameter, restore-all, purge, physical GC, restore history or bulk recycle-bin operation is implemented. This stage is `formal-material-recycle-bin = real-pass`; S1-S7, AI, provider, OCR, ASR, legacy conversion, queues and the whole StudyBuddy real-pass remain deferred.
+- No include_deleted parameter, restore-all or bulk recycle-bin operation is implemented. Explicit single-material purge is allowed only for deleted materials: it removes material/extraction/spans/search rows, uses source_sha256 reference counting before best-effort original deletion, and never deletes a shared original. This stage is `formal-material-recycle-bin = real-pass`; S1-S7, AI, provider, OCR, ASR, legacy conversion, queues and the whole StudyBuddy real-pass remain deferred.
 
 ## 2026-08-23: material export foundation
 

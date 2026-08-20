@@ -458,6 +458,48 @@ def test_search_index_initializes_existing_material_without_duplicates(tmp_path:
         assert connection.execute("SELECT COUNT(*) FROM material_search WHERE material_id = ?", (created["material_id"],)).fetchone()[0] == 1
 
 
+def test_purge_removes_deleted_rows_and_unshared_original(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "purge.txt")
+        material_id = created["material_id"]
+        stored_path = Path(client.get(f"/api/materials/{material_id}").json()["stored_path"])
+        assert client.delete(f"/api/materials/{material_id}").status_code == 204
+        response = client.post(f"/api/materials/{material_id}/purge")
+        assert response.status_code == 200 and response.json() == {"status": "purged", "material_id": material_id}
+        assert not stored_path.exists()
+        with connect(tmp_path / "studybuddy.sqlite3") as connection:
+            assert connection.execute("SELECT COUNT(*) FROM materials WHERE id = ?", (material_id,)).fetchone()[0] == 0
+            assert connection.execute("SELECT COUNT(*) FROM extractions WHERE material_id = ?", (material_id,)).fetchone()[0] == 0
+            assert connection.execute("SELECT COUNT(*) FROM material_search WHERE material_id = ?", (material_id,)).fetchone()[0] == 0
+        assert client.post(f"/api/materials/{material_id}/restore").status_code == 404
+
+
+def test_purge_shared_hash_preserves_then_removes_original(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        first = upload_text(client, "first.txt")
+        second = upload_text(client, "second.txt")
+        first_detail = client.get(f"/api/materials/{first['material_id']}").json()
+        second_detail = client.get(f"/api/materials/{second['material_id']}").json()
+        assert first_detail["source_sha256"] == second_detail["source_sha256"]
+        original = Path(first_detail["stored_path"])
+        assert original == Path(second_detail["stored_path"]) and original.exists()
+        assert client.delete(f"/api/materials/{first['material_id']}").status_code == 204
+        assert client.post(f"/api/materials/{first['material_id']}/purge").status_code == 200
+        assert original.exists() and client.get(f"/api/materials/{second['material_id']}").status_code == 200
+        assert client.get(f"/api/materials/{second['material_id']}/original").status_code == 200
+        assert client.delete(f"/api/materials/{second['material_id']}").status_code == 204
+        assert client.post(f"/api/materials/{second['material_id']}/purge").status_code == 200
+        assert not original.exists()
+
+
+def test_purge_active_and_missing_return_404(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        created = upload_text(client, "active.txt")
+        assert client.post(f"/api/materials/{created['material_id']}/purge").status_code == 404
+        assert client.get(f"/api/materials/{created['material_id']}").status_code == 200
+        assert client.post("/api/materials/missing/purge").status_code == 404
+
+
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
         page = client.get("/")
@@ -465,4 +507,4 @@ def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
         assert 'type="file" multiple' in page.text
         assert "/api/materials/batch" in page.text
         assert "success','empty','rejected','failed" in page.text
-        assert 'id="rename"' in page.text and 'id="delete"' in page.text
+        assert 'id="rename"' in page.text and 'id="delete"' in page.text and 'id="purge"' in page.text
