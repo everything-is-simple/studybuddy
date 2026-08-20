@@ -24,6 +24,6 @@
 
 材料搜索已达到局部 `real-pass`：`GET /api/materials?q=<query>` 搜索 active material 的展示名称和 extraction.text，可与 `status` 组合。ASCII token 使用 SQLite FTS5 的安全 AND 候选查询，中文或特殊 token 使用参数化 substring fallback；所有结果重新按 active source tables 过滤，返回元数据、match_fields 和最多 160 个字符的纯文本 snippet，不返回完整正文或 stored_path。浏览器搜索结果现在以安全的纯文本 DOM 节点显示命中字段和 snippet；进入 active 详情后会定位并标示首个正文命中，名称-only 命中不会伪造正文高亮；页面动态内容（批量文件名、warning、error_code、筛选按钮）统一使用安全 DOM 文本节点渲染；搜索计数和列表共用一次 API 响应；请求代数保护快速搜索、筛选和清除操作，已通过真实 Chromium 验证过期响应和过期错误不会覆盖新状态；详情请求同样受 generation 保护，快速切换材料时旧详情不会覆盖当前选择；rename、delete、restore 在 mutation 期间禁用重复操作，并使旧列表/详情响应失效；成功和失败后管理、详情与导出按钮状态会恢复一致；rename/delete/restore 的重复操作、错误状态和 active/deleted 边界已由真实 Chromium 验收；非搜索及回收站列表不显示搜索上下文。rename 同事务更新索引，delete/restore 通过 active lifecycle filter 控制可见性。本阶段不支持语义/向量/AI 搜索、搜索历史或 saved search。
 
-回收站支持显式单材料永久删除：purge 仅接受已删除材料，事务清理 material/extraction/spans/search 行；仅当没有任何其他 material 引用同一 hash 时才 best-effort 删除经路径和 SHA-256 校验的 original，共享 hash 不会误删。该操作不可恢复且不自动触发。这不代表整个 StudyBuddy 已 real-pass。当前没有文件夹导入、后台任务队列、OCR、转换器、真实 provider 或 S1-S7 业务实现；崩溃恢复、磁盘满、网络盘和长时间压力测试仍暂缓。
+材料导出现在支持 active materials 的批量 original/text/bundle ZIP，安全处理同名 entry、shared hash、路径和 SHA-256 校验；导出不调用 parser、不修改数据库，deleted/mixed 材料整体拒绝。回收站支持显式单材料永久删除：purge 仅接受已删除材料，事务清理 material/extraction/spans/search 行；仅当没有任何其他 material 引用同一 hash 时才 best-effort 删除经路径和 SHA-256 校验的 original，共享 hash 不会误删。该操作不可恢复且不自动触发。这不代表整个 StudyBuddy 已 real-pass。当前没有文件夹导入、后台任务队列、OCR、转换器、真实 provider 或 S1-S7 业务实现；崩溃恢复、磁盘满、网络盘和长时间压力测试仍暂缓。
 
 测试使用 `H:\studybuddy-test` 下的合成 fixture、runs 和脱敏 artifact，不写入本目录运行数据库或原文件副本。
