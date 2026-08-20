@@ -34,6 +34,11 @@ def _ensure_search_index(connection: sqlite3.Connection) -> None:
             connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)", tuple(row))
 
 
+def _insert_search_row(connection: sqlite3.Connection, material_id: str, original_name: str, text: str) -> None:
+    connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)",
+                       (material_id, original_name, text))
+
+
 def _replace_search_row(connection: sqlite3.Connection, material_id: str) -> None:
     connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
     row = connection.execute(
@@ -41,7 +46,7 @@ def _replace_search_row(connection: sqlite3.Connection, material_id: str) -> Non
         (material_id,),
     ).fetchone()
     if row is not None:
-        connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)", tuple(row))
+        _insert_search_row(connection, str(row[0]), str(row[1]), str(row[2]))
 
 
 def _search_tokens(query: str) -> list[str]:
@@ -112,8 +117,7 @@ def save_material_with_extraction(connection: sqlite3.Connection, project_id: st
             [(f"span_{uuid.uuid4().hex}", extraction_id, span.ordinal, span.kind, span.label, span.text)
              for span in result.spans],
         )
-        connection.execute("INSERT INTO material_search (material_id, original_name, text) VALUES (?, ?, ?)",
-                           (material_id, original_name, result.text))
+        _insert_search_row(connection, material_id, original_name, result.text)
     return material_id, extraction_id
 
 
