@@ -46,6 +46,7 @@
 - Recovery has no timer, worker, queue, or cross-process lock. Multiple processes sharing one data root are outside this task's support boundary; the whole StudyBuddy remains not global real-pass.
 - Import failure tests inject controlled OSError and SQLite failures; they prove safe cleanup and error boundaries but do not claim a real disk-full or network-share stress pass. Shared originals remain protected by creation/reference state.
 - SQLite persistence treats materials/extractions as source of truth: material, extraction, spans and FTS row share a transaction; each batch item has an independent transaction. connect idempotently rebuilds missing FTS rows and removes orphan rows, never reverse-creates material data. Rename/search replacement and purge/search deletion are transactional.
+- Physical original access requires configured-root containment and regular non-symlink checks. `originals_root`, hash directories and `original` symlinks are never followed; only hash-correct regular originals are reused. Hash mismatch and unexpected layout remain for inspection. Download/export fail safely while text export remains SQLite-backed; purge performs physical cleanup only after DB commit. Controlled path-race monkeypatches are not a real concurrency proof.
 
 ## 2026-08-21: material lifecycle foundation
 

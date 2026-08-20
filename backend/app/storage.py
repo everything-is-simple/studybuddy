@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,10 +25,39 @@ def store_original(source_path: Path, original_name: str, content_hash: str, roo
         raise ValueError("invalid_original_name")
     if len(content_hash) != 64 or any(char not in "0123456789abcdef" for char in content_hash.lower()):
         raise ValueError("invalid_content_hash")
-    target_dir = Path(root) / content_hash[:2] / content_hash[2:]
-    target_dir.mkdir(parents=True, exist_ok=True)
+    storage_root = Path(root)
+    if storage_root.is_symlink():
+        raise OSError("invalid storage root")
+    prefix_dir = storage_root / content_hash[:2]
+    target_dir = prefix_dir / content_hash[2:]
+    try:
+        if storage_root.exists() and not stat.S_ISDIR(storage_root.lstat().st_mode):
+            raise OSError("invalid storage root")
+        storage_root.mkdir(parents=True, exist_ok=True)
+        if storage_root.is_symlink():
+            raise OSError("invalid storage root")
+        for directory in (prefix_dir, target_dir):
+            if directory.is_symlink():
+                raise OSError("invalid storage directory")
+            try:
+                mode = directory.lstat().st_mode
+            except FileNotFoundError:
+                directory.mkdir()
+                mode = directory.lstat().st_mode
+            if not stat.S_ISDIR(mode) or directory.is_symlink():
+                raise OSError("invalid storage directory")
+    except OSError:
+        raise
     target = target_dir / "original"
-    if target.exists():
+    if target.is_symlink():
+        raise OSError("invalid existing original")
+    try:
+        target_mode = target.lstat().st_mode
+    except FileNotFoundError:
+        target_mode = None
+    if target_mode is not None:
+        if not stat.S_ISREG(target_mode):
+            raise OSError("invalid existing original")
         if sha256_file(target) != content_hash:
             raise ValueError("stored_hash_mismatch")
         return StoredFile(original_name=original_name, content_hash=content_hash, path=target, created=False)
