@@ -22,7 +22,7 @@
 
 材料导出已达到局部 `real-pass`：`GET /api/materials/{material_id}/original` 只允许 active material，使用数据库 stored_path，经 originals_root 路径边界和 SHA-256 校验后下载当前展示文件名的 immutable original；`GET /api/materials/{material_id}/text` 从 extraction.text 导出 UTF-8 的 `<original_name>.extracted.txt`，不重新解析。rename 后只改变下载文件名，不改变内容。deleted material 恢复前两个导出接口均返回 404，恢复后重新可用。
 
-材料搜索已达到局部 `real-pass`：`GET /api/materials?q=<query>` 搜索 active material 的展示名称和 extraction.text，可与 `status` 组合。ASCII token 使用 SQLite FTS5 的安全 AND 候选查询，中文或特殊 token 使用参数化 substring fallback；所有结果重新按 active source tables 过滤，返回元数据、match_fields 和最多 160 个字符的纯文本 snippet，不返回完整正文或 stored_path。浏览器搜索结果现在以安全的纯文本 DOM 节点显示命中字段和 snippet；进入 active 详情后会定位并标示首个正文命中，名称-only 命中不会伪造正文高亮；页面动态内容（批量文件名、warning、error_code、筛选按钮）统一使用安全 DOM 文本节点渲染；搜索计数和列表共用一次 API 响应；请求代数保护快速搜索、筛选和清除操作，过期响应不会覆盖新状态；非搜索及回收站列表不显示搜索上下文。rename 同事务更新索引，delete/restore 通过 active lifecycle filter 控制可见性。本阶段不支持语义/向量/AI 搜索、搜索历史或 saved search。
+材料搜索已达到局部 `real-pass`：`GET /api/materials?q=<query>` 搜索 active material 的展示名称和 extraction.text，可与 `status` 组合。ASCII token 使用 SQLite FTS5 的安全 AND 候选查询，中文或特殊 token 使用参数化 substring fallback；所有结果重新按 active source tables 过滤，返回元数据、match_fields 和最多 160 个字符的纯文本 snippet，不返回完整正文或 stored_path。浏览器搜索结果现在以安全的纯文本 DOM 节点显示命中字段和 snippet；进入 active 详情后会定位并标示首个正文命中，名称-only 命中不会伪造正文高亮；页面动态内容（批量文件名、warning、error_code、筛选按钮）统一使用安全 DOM 文本节点渲染；搜索计数和列表共用一次 API 响应；请求代数保护快速搜索、筛选和清除操作，已通过真实 Chromium 验证过期响应和过期错误不会覆盖新状态；非搜索及回收站列表不显示搜索上下文。rename 同事务更新索引，delete/restore 通过 active lifecycle filter 控制可见性。本阶段不支持语义/向量/AI 搜索、搜索历史或 saved search。
 
 这不代表整个 StudyBuddy 已 real-pass。当前没有文件夹导入、后台任务队列、OCR、转换器、真实 provider 或 S1-S7 业务实现；崩溃恢复、磁盘满、网络盘和长时间压力测试仍暂缓。
 
