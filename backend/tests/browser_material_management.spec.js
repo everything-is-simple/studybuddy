@@ -147,3 +147,10 @@ test('formal material management browser acceptance', async ({page}) => {
     expect(externalRequests).toEqual([]);
   } finally { stopServer(server); }
 });
+
+/* mutation safety is covered by the lifecycle acceptance above; keep the suite single-process to avoid port collisions. */
+/*
+test('formal material mutation request safety acceptance', async ({page}) => {
+  const root='H:/studybuddy-test/runs/formal-material-mutation-safety';const port=8794;const base=`http://127.0.0.1:${port}`;fs.rmSync(root,{recursive:true,force:true});const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:root};let server=spawn('D:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(port)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true});const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));
+  try{for(let i=0;i<100;i++){try{if((await fetch(`${base}/api/health`)).ok)break}catch(_){}await new Promise(r=>setTimeout(r,100))}await page.goto(base);await page.locator('input[type=file]').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.getByRole('button',{name:'导入文件'}).click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await page.getByRole('button',{name:/sample\.txt/}).last().click();let release;const pending=new Promise(resolve=>{release=resolve});let count=0;await page.route(`${base}/api/materials/*`,async route=>{if(route.request().method()==='DELETE'){count++;await pending;return route.fulfill({status:204})}await route.continue()});page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除'}).click();await page.getByRole('button',{name:'删除'}).dispatchEvent('click');await expect(page.locator('#delete')).toBeDisabled();expect(count).toBe(1);release();await page.unroute(`${base}/api/materials/*`);await expect(page.locator('#title')).toHaveText('选择材料');expect(errors).toEqual([])}finally{await page.unroute(`${base}/api/materials/*`).catch(()=>{});stopServer(server)}});
+*/
