@@ -44,8 +44,8 @@ test('formal multi-file import browser acceptance', async ({page}) => {
   try {
     await waitReady();
     await page.goto(BASE);
-    await page.locator('input[type=file]').setInputFiles(paths);
-    await page.getByRole('button', {name: '导入文件'}).click();
+    await page.locator('#file').setInputFiles(paths);
+    await page.locator('#file-import').click();
     await page.waitForTimeout(1000);
     if (!(await page.locator('#status').textContent()).trim()) throw new Error(`batch_submit_not_started console=${JSON.stringify(consoleErrors)} url=${page.url()}`);
     await expect(page.locator('#status')).toContainText('批量导入完成：13', {timeout: 30000});

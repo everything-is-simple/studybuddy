@@ -61,7 +61,7 @@ function makeBoundaryFiles() {
     await waitReady();
     await page.goto(BASE);
     await expect(page.getByRole('heading', {name: 'StudyBuddy 文件导入'})).toBeVisible();
-    await expect(page.locator('input[type=file]')).toBeVisible();
+    await expect(page.locator('#file')).toBeVisible();
 
     const cases = [
       ['sample.txt', 'StudyBuddy synthetic TXT fixture.', 'success', 'document'],
@@ -85,8 +85,8 @@ function makeBoundaryFiles() {
     for (const [caseInput, visible, expectedStatus, expectedSpan] of cases) {
       const input = path.isAbsolute(caseInput) ? caseInput : path.join(FIXTURES, caseInput);
       const fixture = path.basename(input);
-      await page.locator('input[type=file]').setInputFiles(input);
-      await page.getByRole('button', {name: '导入文件'}).click();
+      await page.locator('#file').setInputFiles(input);
+      await page.locator('#file-import').click();
       await expect(page.locator('#status')).toContainText(`导入完成：${expectedStatus}`);
       await expect(page.locator('#title')).toHaveText(fixture);
       await expect(page.locator('#meta')).toContainText(expectedStatus);

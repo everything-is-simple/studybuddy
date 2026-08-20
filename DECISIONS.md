@@ -29,6 +29,14 @@
 - The material list supports `success`, `empty`, `rejected` and `failed` filtering and deliberately excludes full extraction text. Detail reads return text, parser metadata, warnings and spans.
 - The browser page supports real multi-file selection, batch summary, per-file statuses, material selection, detail view, filtering, refresh readback and process restart readback. This stage is `formal-multi-file-import = real-pass`; the whole StudyBuddy remains not real-pass.
 
+## 2026-08-25: folder import user path
+
+- Chromium folder selection uses `webkitdirectory` and `multiple`; the browser provides the selected folder's actual recursive files. There is no server-side directory scanning, local-path API, directory schema, ZIP import or folder export.
+- Folder submissions always reuse repeated `files` on `POST /api/materials/batch`, including a one-file folder, so item-level partial-success behavior is unchanged. Existing regular file selection retains its single-file versus multi-file endpoint behavior.
+- Only basename is submitted as the multipart filename and persisted in `materials.original_name`. A browser `webkitRelativePath` is neither sent to the backend nor persisted, indexed, exported or included in API responses. It is displayed only for the immediate batch result after rejecting backslashes, absolute/drive prefixes, control characters and `.`/`..` segments; all display uses text nodes.
+- A dedicated import busy guard disables both selection paths during a request without changing mutation, export, list or detail guards. A successful import resets the active paging offset and performs the existing single list reload. Nested equal basenames remain separate batch items by response index and have distinct materials when content differs.
+- This is `formal-folder-import = real-pass`, not a global StudyBuddy real-pass. Background queues, crash recovery and disk-full/orphan consistency remain deferred.
+
 ## 2026-08-21: material lifecycle foundation
 
 - Rename is metadata-only: `PATCH /api/materials/{material_id}` validates a basename and updates only `materials.original_name` and `updated_at`. It never changes source_sha256, stored_path, extraction, spans or the physical original.
