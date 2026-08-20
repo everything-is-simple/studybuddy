@@ -21,6 +21,7 @@ from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
 from .import_locks import acquire_hash_lock, release_hash_lock
 from .recovery import reconcile
+from .startup_preflight import preflight
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
                          list_materials, list_materials_page, list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
                          save_material_with_extraction, soft_delete_material)
@@ -71,7 +72,7 @@ def _checked_original_path(config: AppConfig, stored_path: str, expected_hash: s
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config: AppConfig = app.state.config
-    config.data_root.mkdir(parents=True, exist_ok=True)
+    preflight(config)
     with connect(config.database_path):
         pass
     run_audit(config.database_path)

@@ -26,8 +26,18 @@ def config_from_environment() -> AppConfig:
     configured_root = os.environ.get("STUDYBUDDY_DATA_ROOT")
     if not configured_root:
         configured_root = str(Path.home() / ".studybuddy" / "data")
+    raw_limit = os.environ.get("STUDYBUDDY_MAX_UPLOAD_BYTES")
+    if raw_limit is None:
+        max_upload_bytes = DEFAULT_MAX_UPLOAD_BYTES
+    else:
+        try:
+            max_upload_bytes = int(raw_limit)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("invalid_max_upload_bytes") from exc
+        if max_upload_bytes < 1:
+            raise ValueError("invalid_max_upload_bytes")
     return AppConfig(
-        data_root=Path(configured_root).resolve(),
-        max_upload_bytes=int(os.environ.get("STUDYBUDDY_MAX_UPLOAD_BYTES", DEFAULT_MAX_UPLOAD_BYTES)),
+        data_root=Path(configured_root),
+        max_upload_bytes=max_upload_bytes,
         project_id=os.environ.get("STUDYBUDDY_PROJECT_ID", "default"),
     )

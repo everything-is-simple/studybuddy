@@ -54,6 +54,7 @@
 - A deterministic lifecycle state-machine regression covers active/deleted/purged transitions, shared hashes, parser statuses, search/FTS, pagination, exports, failure follow-up, and restart invariants. It is a system regression, not a performance or multi-process guarantee.
 - A deterministic API input matrix covers malformed multipart/JSON, invalid filenames/IDs, pagination/status/export bodies, methods/content types, and mutation state errors. It preserves the 413, batch partial-success, response contract, and list/search privacy boundaries; it is not random fuzzing or a performance test.
 - Frontend route-failure tests verify fixed safe Chinese messages and busy-control recovery for import, folder/batch, malformed payload, and network failures. UI never renders backend detail, paths, SQL, raw exceptions, or traceback; route mocks are UI-contract tests rather than real disk-failure claims.
+- Startup preflight validates configuration and existing data_root/originals_root/database topology before connect. It creates only a missing ordinary data_root, rejects regular-file and symlink topologies with fixed safe codes, performs no repair/deletion, and never converts startup failure into healthy API behavior.
 
 ## 2026-08-21: material lifecycle foundation
 
