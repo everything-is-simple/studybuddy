@@ -418,6 +418,10 @@ def test_material_search_query_lifecycle_and_index(tmp_path: Path):
         result = client.get("/api/materials?q=studybuddy").json()
         assert {item["id"] for item in result} == {text["material_id"]}
         assert result[0]["match_fields"] == ["text"] and len(result[0]["snippet"]) <= 160
+        assert all(len(item["snippet"]) <= 160 for item in result)
+        name_result = client.get("/api/materials?q=search-name").json()[0]
+        assert "original_name" in name_result["match_fields"]
+        assert "text" not in name_result and "stored_path" not in name_result
         assert "text" not in result[0] and "stored_path" not in result[0]
         assert client.get("/api/materials?q=StudyBuddy%20TXT").json()[0]["id"] == text["material_id"]
         assert client.get("/api/materials?q=%20StudyBuddy%20").json()[0]["id"] == text["material_id"]
