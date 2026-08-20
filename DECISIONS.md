@@ -52,6 +52,7 @@
 - SQLite retains WAL, foreign keys, and a 2000 ms busy_timeout. Controlled `BEGIN IMMEDIATE` tests prove write-contention failures roll back import and lifecycle mutations safely; batch retains item-level failure, newly-created originals are cleaned, existing shared originals remain. This is not a performance benchmark or a multi-process shared-data-root guarantee.
 - Purge and import use the same process-local SHA-256 lock. Purge commits database deletion first, then rechecks active/deleted references inside the hash lock before safe best-effort unlink. Transaction, reference-count, unlink, mismatch and symlink failures preserve safe boundaries; no physical deletion occurs before DB commit.
 - A deterministic lifecycle state-machine regression covers active/deleted/purged transitions, shared hashes, parser statuses, search/FTS, pagination, exports, failure follow-up, and restart invariants. It is a system regression, not a performance or multi-process guarantee.
+- A deterministic API input matrix covers malformed multipart/JSON, invalid filenames/IDs, pagination/status/export bodies, methods/content types, and mutation state errors. It preserves the 413, batch partial-success, response contract, and list/search privacy boundaries; it is not random fuzzing or a performance test.
 
 ## 2026-08-21: material lifecycle foundation
 
