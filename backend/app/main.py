@@ -341,19 +341,23 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=500, detail="material_purge_failed") from exc
         if source_sha256 is None or stored_path is None:
             raise HTTPException(status_code=404, detail="material_not_found")
+        lock = acquire_hash_lock(source_sha256)
         try:
-            with connect(config.database_path) as connection:
-                remaining = connection.execute(
-                    "SELECT COUNT(*) FROM materials WHERE source_sha256 = ?", (source_sha256,)
-                ).fetchone()[0]
-        except sqlite3.Error:
-            remaining = 1
-        if remaining == 0:
             try:
-                target = _checked_original_path(config, stored_path, source_sha256)
-                target.unlink(missing_ok=True)
-            except (HTTPException, OSError):
-                pass
+                with connect(config.database_path) as connection:
+                    remaining = connection.execute(
+                        "SELECT COUNT(*) FROM materials WHERE source_sha256 = ?", (source_sha256,)
+                    ).fetchone()[0]
+            except sqlite3.Error:
+                remaining = 1
+            if remaining == 0:
+                try:
+                    target = _checked_original_path(config, stored_path, source_sha256)
+                    target.unlink(missing_ok=True)
+                except (HTTPException, OSError):
+                    pass
+        finally:
+            release_hash_lock(source_sha256, lock)
         return {"status": "purged", "material_id": material_id}
 
     @app.patch("/api/materials/{material_id}")
