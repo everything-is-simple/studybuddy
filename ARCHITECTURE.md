@@ -26,6 +26,6 @@
 
 材料导出新增 `GET /api/materials/{material_id}/original` 和 `GET /api/materials/{material_id}/text`。前者只读取 active material 的数据库 stored_path，并验证其位于 configured originals_root 内且 SHA-256 匹配；后者只读取 active extraction.text 并以 UTF-8 plain text 下载。两个 endpoint 都拒绝 deleted material；restore 后恢复。rename 不变更内容身份，但会改变 Content-Disposition 下载文件名。导出不调用 Parser、不创建数据库记录、不创建 original 或临时文件。本阶段不提供批量下载、ZIP、文件夹导出或后台导出队列。
 
-材料搜索扩展 `GET /api/materials` 的可选 `q` 参数。`material_search` 是 SQLite FTS5 可重建索引，不是 source of truth；connect 初始化时对已有 material/extraction 补齐缺失索引行，上传和 rename 在 SQLite 事务中同步写入或替换索引行。查询始终 join materials/extractions 并限定 `deleted_at IS NULL`，所以 delete 不删除索引且 restore 不需要重新解析。q 会 trim、按空白切 token、按 AND 匹配；ASCII token 以安全引用的 FTS5 MATCH 候选查询，中文和特殊 token 走参数化 `instr` fallback。结果不含 extraction text 或 stored_path，snippet 最长 160 字符。内嵌页面使用 `textContent`/DOM 节点渲染 snippet 和 match_fields，不将用户内容作为 HTML 执行；active/deleted lifecycle 规则不变。
+材料搜索扩展 `GET /api/materials` 的可选 `q` 参数。`material_search` 是 SQLite FTS5 可重建索引，不是 source of truth；connect 初始化时对已有 material/extraction 补齐缺失索引行，上传和 rename 在 SQLite 事务中同步写入或替换索引行。查询始终 join materials/extractions 并限定 `deleted_at IS NULL`，所以 delete 不删除索引且 restore 不需要重新解析。q 会 trim、按空白切 token、按 AND 匹配；ASCII token 以安全引用的 FTS5 MATCH 候选查询，中文和特殊 token 走参数化 `instr` fallback。结果不含 extraction text 或 stored_path，snippet 最长 160 字符。内嵌页面使用 `textContent`/DOM 节点渲染 snippet、match_fields 和详情正文命中，不将用户内容作为 HTML 执行；active 搜索详情会安全标示首个正文命中，名称-only 命中不伪造高亮；active/deleted lifecycle 规则不变。
 
 OCR、旧格式转换、provider、S1-S7、崩溃恢复和压力测试暂缓。
