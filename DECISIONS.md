@@ -1,5 +1,16 @@
 # StudyBuddy Decisions
 
+## 2026-08-20: AI / learning architecture boundary
+
+- AI/学习当前只完成 architecture-only 设计，不接入真实 provider、不自动索引历史材料、不引入外部 vector DB、不引入后台队列。
+- `materials`、`extractions`、`text_spans` 保持 source of truth；revision、chunks、embeddings、retrieval、answers、cards、exercises、plans 都是派生数据或用户状态，不能覆盖 source。
+- 第一阶段明确采用 SQLite FTS5 lexical retrieval first；embedding 先预留 provider/model/content-hash 接口，规模证据充分前不引入外部向量数据库。
+- provider 通过独立 Protocol/adapter 接收已组装 messages/texts，不读本地文件、不写 SQLite、不接触 FastAPI request；provider 未配置时应用仍应启动，AI 请求返回稳定 `provider_not_configured`。
+- 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
+- citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
+- AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
+- 现阶段不创建 AI migration 或表，先完成 schema/Protocol/fake-provider/citation contract 设计；设计文档为 `docs/ai-learning-architecture.md`。
+
 ## 2026-08-19: four-directory boundary
 
 - `H:\studybuddy` is the only formal product directory.

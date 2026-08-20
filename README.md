@@ -2,6 +2,8 @@
 
 Operator backup / restore 已提供 CLI，详见 `BACKUP_RESTORE.md`。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录，应用启动不会自动 backup、restore 或 repair。
 
+AI / 学习功能当前处于 architecture-only 阶段，设计文档见 `docs/ai-learning-architecture.md`。方案保持 materials/extractions/text_spans 为 source of truth，第一阶段采用 SQLite FTS5 lexical retrieval、可追溯 chunk/citation、provider Protocol 与 deterministic fake provider；暂不接入真实 provider、不引入外部 vector DB、不自动生成 embedding、不引入后台队列、不自动 repair，也未实现完整 Q&A、卡片、练习或学习计划。
+
 个人学习系统主目录。
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
