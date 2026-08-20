@@ -16,9 +16,13 @@ from app.startup_preflight import StartupPreflightError
 
 def test_normal_and_missing_root_start_safely(tmp_path: Path):
     root = tmp_path / "missing"
-    with TestClient(create_app(AppConfig(data_root=root, max_upload_bytes=8))) as client:
+    app = create_app(AppConfig(data_root=root, max_upload_bytes=8))
+    assert app.state.ready is False
+    with TestClient(app) as client:
+        assert app.state.ready is True
         assert client.get("/api/health").status_code == 200
         assert client.post("/api/materials", files={"file": ("x.txt", b"12345678", "text/plain")}).status_code == 201
+    assert app.state.ready is False
     assert root.is_dir() and (root / "studybuddy.sqlite3").is_file()
 
 
