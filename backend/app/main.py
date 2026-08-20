@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from .adapters.file_parsers import ParseOptions, parse_file
 from .config import AppConfig, config_from_environment
+from .db_audit import run_audit
 from .import_locks import acquire_hash_lock, release_hash_lock
 from .recovery import reconcile
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
@@ -73,6 +74,7 @@ async def lifespan(app: FastAPI):
     config.data_root.mkdir(parents=True, exist_ok=True)
     with connect(config.database_path):
         pass
+    run_audit(config.database_path)
     reconcile(config)
     yield
 
