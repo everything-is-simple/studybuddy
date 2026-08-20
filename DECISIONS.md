@@ -44,6 +44,7 @@
 - Missing referenced originals are detection-only: recovery logs a bounded diagnostic and never deletes or mutates material rows, extraction, spans, search data, or lifecycle state.
 - Temporary write, original store, and SQLite persistence failures use safe public error codes. Newly created zero-reference originals and temporary files are cleaned best-effort; shared originals are never removed by persistence-failure cleanup. Batch partial-success and single-file 413 semantics remain unchanged.
 - Recovery has no timer, worker, queue, or cross-process lock. Multiple processes sharing one data root are outside this task's support boundary; the whole StudyBuddy remains not global real-pass.
+- Import failure tests inject controlled OSError and SQLite failures; they prove safe cleanup and error boundaries but do not claim a real disk-full or network-share stress pass. Shared originals remain protected by creation/reference state.
 
 ## 2026-08-21: material lifecycle foundation
 

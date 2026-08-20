@@ -26,7 +26,7 @@
 
 材料导出现在支持 active materials 的批量 original/text/bundle ZIP，安全处理同名 entry、shared hash、路径和 SHA-256 校验；active、搜索和 deleted 列表支持可选 limit/offset 分页，返回 total/has_more，页面提供稳定翻页，旧无参数请求仍返回数组；导出不调用 parser、不修改数据库，deleted/mixed 材料整体拒绝。回收站支持显式单材料永久删除：purge 仅接受已删除材料，事务清理 material/extraction/spans/search 行；仅当没有任何其他 material 引用同一 hash 时才 best-effort 删除经路径和 SHA-256 校验的 original，共享 hash 不会误删。该操作不可恢复且不自动触发。这不代表整个 StudyBuddy 已 real-pass。页面现支持 Chromium `webkitdirectory` 文件夹选择：浏览器递归枚举用户选定目录及子目录中的实际文件，并复用 `POST /api/materials/batch` 的逐文件 partial-success 语义；服务端绝不扫描用户目录、不接收服务器/客户端路径输入，也不保存 `webkitRelativePath`。材料名仍是安全 basename；同一批中嵌套目录的同 basename 文件按发送顺序独立导入，不会覆盖。页面仅在本次 batch 结果中以安全纯文本显示浏览器提供的相对路径，导入后回到 active 列表第一页并刷新分页；导入 busy guard 会阻止重复请求。未实现 ZIP 导入、文件夹导出、后台队列或服务器路径输入。
 
-应用启动时执行一次保守的存储 recovery：只清理 data root 顶层遗留的 `.incoming-*` 普通文件，并只删除严格 hash-derived layout 中、内容 hash 正确且没有 active/deleted SQLite material 引用的 orphan original；hash mismatch 与 unexpected-layout 文件保留，缺失 original 只记录诊断、不删除 material。临时写入、original 落盘和 SQLite 持久化失败均返回安全错误并清理新建且无引用的文件；单文件仍保持 413，batch 仍保持 item-level partial-success。recovery 不运行后台任务、不支持多个进程共享同一 data_root；ZIP、队列、AI/provider 仍不支持。
+应用启动时执行一次保守的存储 recovery：只清理 data root 顶层遗留的 `.incoming-*` 普通文件，并只删除严格 hash-derived layout 中、内容 hash 正确且没有 active/deleted SQLite material 引用的 orphan original；hash mismatch 与 unexpected-layout 文件保留，缺失 original 只记录诊断、不删除 material。临时写入、original 落盘和 SQLite 持久化失败均返回安全错误并清理新建且无引用的文件；单文件仍保持 413，batch 仍保持 item-level partial-success。故障注入测试使用 monkeypatch 模拟 OSError/数据库失败，不等于真实磁盘填满或网络盘验收。recovery 不运行后台任务、不支持多个进程共享同一 data_root；ZIP、队列、AI/provider 仍不支持。
 
 整个 StudyBuddy 仍不是全局 `real-pass`；磁盘满真实压力、网络盘和长时间压力测试仍暂缓。
 
