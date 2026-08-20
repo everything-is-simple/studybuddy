@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from .adapters.file_parsers import ParseOptions, parse_file
 from .config import AppConfig, config_from_environment
+from .import_locks import acquire_hash_lock, release_hash_lock
 from .recovery import reconcile
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
                          list_materials, list_materials_page, list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
@@ -139,30 +140,34 @@ async def _process_file(file: UploadFile, config: AppConfig, *, batch: bool) -> 
             handle.flush()
             os.fsync(handle.fileno())
         digest = sha256_file(temporary_path)
-        stage = "original_store"
-        stored = store_original(temporary_path, original_name, digest, config.originals_root)
-        stored_path, stored_created = stored.path, stored.created
-        stage = "parse"
-        result = parse_file(temporary_path, declared_media_type=file.content_type,
-                            options=ParseOptions(max_bytes=config.max_upload_bytes))
+        lock = acquire_hash_lock(digest)
         try:
-            with connect(config.database_path) as connection:
-                material_id, extraction_id = save_material_with_extraction(
-                    connection, config.project_id, original_name, digest, stored.path,
-                    file.content_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream", result,
-                )
-        except Exception as exc:
-            if stored.created:
-                try:
-                    stored.path.unlink(missing_ok=True)
-                except OSError:
-                    pass
-            if not batch:
-                raise HTTPException(status_code=500, detail="material_persist_failed") from exc
-            return _item(original_name, "failed", source_sha256=digest, error_code="material_persist_failed")
-        return _item(original_name, result.status, material_id=material_id, extraction_id=extraction_id,
-                     source_sha256=result.source_sha256, text_length=len(result.text),
-                     span_count=len(result.spans), error_code=result.error_code, warnings=result.warnings)
+            stage = "original_store"
+            stored = store_original(temporary_path, original_name, digest, config.originals_root)
+            stored_path, stored_created = stored.path, stored.created
+            stage = "parse"
+            result = parse_file(temporary_path, declared_media_type=file.content_type,
+                                options=ParseOptions(max_bytes=config.max_upload_bytes))
+            try:
+                with connect(config.database_path) as connection:
+                    material_id, extraction_id = save_material_with_extraction(
+                        connection, config.project_id, original_name, digest, stored.path,
+                        file.content_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream", result,
+                    )
+            except Exception as exc:
+                if stored.created:
+                    try:
+                        stored.path.unlink(missing_ok=True)
+                    except OSError:
+                        pass
+                if not batch:
+                    raise HTTPException(status_code=500, detail="material_persist_failed") from exc
+                return _item(original_name, "failed", source_sha256=digest, error_code="material_persist_failed")
+            return _item(original_name, result.status, material_id=material_id, extraction_id=extraction_id,
+                         source_sha256=result.source_sha256, text_length=len(result.text),
+                         span_count=len(result.spans), error_code=result.error_code, warnings=result.warnings)
+        finally:
+            release_hash_lock(digest, lock)
     except HTTPException:
         raise
     except (OSError, ValueError) as exc:
