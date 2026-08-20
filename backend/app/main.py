@@ -21,7 +21,7 @@ from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
 from .import_locks import acquire_hash_lock, release_hash_lock
 from .recovery import reconcile
-from .startup_preflight import preflight
+from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
                          list_materials, list_materials_page, list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
                          save_material_with_extraction, soft_delete_material)
@@ -71,13 +71,24 @@ def _checked_original_path(config: AppConfig, stored_path: str, expected_hash: s
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Do not expose a ready service until persistent storage is usable."""
     config: AppConfig = app.state.config
+    app.state.ready = False
     preflight(config)
-    with connect(config.database_path):
-        pass
+    try:
+        with connect(config.database_path):
+            pass
+    except (OSError, sqlite3.Error, ValueError):
+        # The stable code is safe for logs and avoids exposing a local path or
+        # database-driver traceback through an application failure response.
+        raise StartupPreflightError("database_startup_failed") from None
     run_audit(config.database_path)
     reconcile(config)
-    yield
+    app.state.ready = True
+    try:
+        yield
+    finally:
+        app.state.ready = False
 
 
 def _valid_filename(raw_name: str) -> str | None:
@@ -195,9 +206,12 @@ async def _process_file(file: UploadFile, config: AppConfig, *, batch: bool) -> 
 def create_app(config: AppConfig | None = None) -> FastAPI:
     app = FastAPI(title="StudyBuddy", lifespan=lifespan)
     app.state.config = config or config_from_environment()
+    app.state.ready = False
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
+        if not app.state.ready:
+            raise HTTPException(status_code=503, detail="service_not_ready")
         return {"status": "ok"}
 
     def pagination_values(limit: str | None, offset: str | None) -> tuple[int, int, bool]:

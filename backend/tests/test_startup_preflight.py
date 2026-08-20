@@ -55,6 +55,52 @@ def test_database_directory_rejected(tmp_path: Path):
             pass
 
 
+def test_data_root_and_database_symlinks_are_rejected_when_supported(tmp_path: Path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root_link = tmp_path / "root-link"
+    database_root = tmp_path / "database-root"
+    database_root.mkdir()
+    try:
+        root_link.symlink_to(outside, target_is_directory=True)
+        (database_root / "studybuddy.sqlite3").symlink_to(outside / "database.sqlite3")
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink unavailable")
+    with pytest.raises(StartupPreflightError, match="data_root_symlink"):
+        with TestClient(create_app(AppConfig(data_root=root_link))):
+            pass
+    with pytest.raises(StartupPreflightError, match="database_path_symlink"):
+        with TestClient(create_app(AppConfig(data_root=database_root))):
+            pass
+    assert not (outside / "studybuddy.sqlite3").exists()
+
+
+def test_existing_non_sqlite_database_is_rejected_without_exposing_content(tmp_path: Path):
+    root = tmp_path / "root"
+    root.mkdir()
+    database = root / "studybuddy.sqlite3"
+    database.write_bytes(b"private non sqlite database payload")
+    with pytest.raises(StartupPreflightError, match="database_path_not_sqlite") as error:
+        with TestClient(create_app(AppConfig(data_root=root))):
+            pass
+    assert "private" not in str(error.value)
+    assert error.value.__cause__ is None
+    assert database.read_bytes() == b"private non sqlite database payload"
+
+
+def test_database_open_oserror_is_stable_and_not_ready(monkeypatch, tmp_path: Path):
+    from app import main
+
+    monkeypatch.setattr(main, "connect", lambda path: (_ for _ in ()).throw(OSError("private path")))
+    app = create_app(AppConfig(data_root=tmp_path))
+    assert app.state.ready is False
+    with pytest.raises(StartupPreflightError, match="database_startup_failed") as error:
+        with TestClient(app):
+            pass
+    assert "private path" not in str(error.value)
+    assert error.value.__cause__ is None
+
+
 def test_invalid_environment_limits_rejected(monkeypatch):
     for value in ("", "0", "-1", "abc", "1.5"):
         monkeypatch.setenv("STUDYBUDDY_MAX_UPLOAD_BYTES", value)

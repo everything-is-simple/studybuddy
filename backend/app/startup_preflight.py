@@ -10,21 +10,32 @@ class StartupPreflightError(ValueError):
     pass
 
 
-def _check_existing(path: Path, kind: str) -> None:
+_SQLITE_HEADER = b"SQLite format 3\x00"
+
+
+def _check_existing(path: Path, kind: str) -> bool:
+    """Check a configured path with lstat so links are never followed."""
     try:
         mode = path.lstat().st_mode
     except FileNotFoundError:
-        return
-    except OSError as exc:
-        raise StartupPreflightError(f"{kind}_unavailable") from exc
+        return False
+    except OSError:
+        raise StartupPreflightError(f"{kind}_unavailable") from None
     if stat.S_ISLNK(mode):
         raise StartupPreflightError(f"{kind}_symlink")
-    if kind == "data_root" and not stat.S_ISDIR(mode):
-        raise StartupPreflightError("data_root_invalid")
-    if kind == "originals_root" and not stat.S_ISDIR(mode):
-        raise StartupPreflightError("originals_root_invalid")
-    if kind == "database_path" and not stat.S_ISREG(mode):
-        raise StartupPreflightError("database_path_invalid")
+    if kind in {"data_root", "originals_root"} and not stat.S_ISDIR(mode):
+        raise StartupPreflightError(f"{kind}_invalid")
+    if kind == "database_path":
+        if not stat.S_ISREG(mode):
+            raise StartupPreflightError("database_path_invalid")
+        try:
+            with path.open("rb") as database:
+                header = database.read(len(_SQLITE_HEADER))
+        except OSError:
+            raise StartupPreflightError("database_path_unavailable") from None
+        if header != _SQLITE_HEADER:
+            raise StartupPreflightError("database_path_not_sqlite")
+    return True
 
 
 def validate_config(config: AppConfig) -> None:
@@ -41,8 +52,8 @@ def preflight(config: AppConfig) -> None:
     _check_existing(data_root, "data_root")
     try:
         data_root.mkdir(parents=True, exist_ok=True)
-    except OSError as exc:
-        raise StartupPreflightError("data_root_create_failed") from exc
+    except OSError:
+        raise StartupPreflightError("data_root_create_failed") from None
     _check_existing(data_root, "data_root")
     _check_existing(config.originals_root, "originals_root")
     _check_existing(config.database_path, "database_path")
