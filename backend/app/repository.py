@@ -199,6 +199,18 @@ def list_deleted_materials(connection: sqlite3.Connection) -> list[sqlite3.Row]:
     ).fetchall()
 
 
+def list_materials_page(connection: sqlite3.Connection, status: str | None = None, query: str | None = None,
+                        limit: int = 20, offset: int = 0) -> tuple[list[sqlite3.Row | dict[str, object]], int]:
+    rows = list_materials(connection, status, query)
+    return rows[offset:offset + limit], len(rows)
+
+
+def list_deleted_materials_page(connection: sqlite3.Connection, limit: int = 20,
+                                offset: int = 0) -> tuple[list[sqlite3.Row], int]:
+    rows = list_deleted_materials(connection)
+    return rows[offset:offset + limit], len(rows)
+
+
 def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite3.Row | None:
     updated_at = utc_now()
     with connection:
