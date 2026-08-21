@@ -26,6 +26,7 @@
 
 - [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)：I1/I2/I3 完成，I4 时间盒验收，基础设施 v1 基本完工。
 - [`LOCAL_ENVIRONMENT_MAP.md`](LOCAL_ENVIRONMENT_MAP.md)：全部本地目录、远端、Git 状态和治理关系。
+- [`HISTORICAL_SCENARIO_REVIEW.md`](HISTORICAL_SCENARIO_REVIEW.md)：祖宗版本与两个前辈版本的核心场景设计回顾。
 - `STATUS.md`：能力状态表和测试证据索引。
 
 ## 文档维护规则
