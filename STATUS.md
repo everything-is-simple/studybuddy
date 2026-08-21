@@ -1,5 +1,7 @@
 # StudyBuddy Status
 
+> Phase 路线图：[`docs/PHASE_ROADMAP.md`](docs/PHASE_ROADMAP.md)。基础设施收尾：[`docs/INFRASTRUCTURE_CLOSEOUT.md`](docs/INFRASTRUCTURE_CLOSEOUT.md)。项目进度总报告：[`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)。执行清单：[`docs/TODO.md`](docs/TODO.md)。当前整体阶段性估算为 **40%–45%**：文件材料管理局部 `real-pass`，完整 StudyBuddy 尚未达到全局 `real-pass`。
+
 | Area | Status | Evidence |
 |---|---|---|
 | Main directory | prepared | `H:\studybuddy` |
@@ -28,7 +30,9 @@
 | API input boundaries | implemented | `backend/tests/test_api_input_boundaries.py` |
 | Frontend mutation/export failure contract | implemented | `backend/tests/browser_frontend_failure_contract.spec.js` |
 | Startup preflight and readiness safety | implemented | `backend/app/startup_preflight.py`, `backend/app/main.py` and `backend/tests/test_startup_preflight.py` |
+| Database migration / schema versioning | implemented | `backend/app/migrations/`, `backend/tests/test_migrations.py`, `MIGRATIONS.md` |
 | Operator backup / restore | implemented | `backend/app/backup.py`, `backend/app/cli.py`, `backend/tests/test_backup_restore.py`, `BACKUP_RESTORE.md` |
+| Overall project progress | phase estimate 40%–45% | `docs/PROJECT_PROGRESS_REPORT.md` |
 | AI / learning architecture | researching | `docs/ai-learning-architecture.md`；architecture-only，provider/Q&A/cards/exercises/plans 尚未实现 |
 | S1-S7 / AI / provider implementation | not started | explicitly deferred |
 

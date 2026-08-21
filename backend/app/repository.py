@@ -7,13 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .adapters.file_parsers.models import ParseResult
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS materials (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, original_name TEXT NOT NULL, source_sha256 TEXT NOT NULL, stored_path TEXT NOT NULL, media_type TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT, deleted_at TEXT NULL);
-CREATE TABLE IF NOT EXISTS extractions (id TEXT PRIMARY KEY, material_id TEXT NOT NULL REFERENCES materials(id) ON DELETE CASCADE, parser_id TEXT NOT NULL, parser_version TEXT NOT NULL, status TEXT NOT NULL, text TEXT NOT NULL, warnings_json TEXT NOT NULL, created_at TEXT NOT NULL, error_code TEXT);
-CREATE TABLE IF NOT EXISTS text_spans (id TEXT PRIMARY KEY, extraction_id TEXT NOT NULL REFERENCES extractions(id) ON DELETE CASCADE, ordinal INTEGER NOT NULL, span_kind TEXT NOT NULL, label TEXT NOT NULL, text TEXT NOT NULL);
-"""
+from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
 SEARCH_SCHEMA = "CREATE VIRTUAL TABLE IF NOT EXISTS material_search USING fts5(material_id UNINDEXED, original_name, text, tokenize='unicode61')"
@@ -59,17 +53,17 @@ def connect(path: Path) -> sqlite3.Connection:
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA journal_mode = WAL")
     connection.execute("PRAGMA busy_timeout = 2000")
-    connection.executescript(SCHEMA)
-    material_columns = {row[1] for row in connection.execute("PRAGMA table_info(materials)")}
-    if "updated_at" not in material_columns:
-        connection.execute("ALTER TABLE materials ADD COLUMN updated_at TEXT")
-        connection.execute("UPDATE materials SET updated_at = created_at WHERE updated_at IS NULL")
-    if "deleted_at" not in material_columns:
-        connection.execute("ALTER TABLE materials ADD COLUMN deleted_at TEXT NULL")
-    extraction_columns = {row[1] for row in connection.execute("PRAGMA table_info(extractions)")}
-    if "error_code" not in extraction_columns:
-        connection.execute("ALTER TABLE extractions ADD COLUMN error_code TEXT")
-    _ensure_search_index(connection)
+    try:
+        migrate(connection)
+        assert_schema_version(connection)
+        _ensure_search_index(connection)
+        connection.commit()
+    except MigrationError:
+        connection.close()
+        raise
+    except sqlite3.Error:
+        connection.close()
+        raise
     return connection
 
 

@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from .backup import BackupError, backup_data, restore_backup, verify_backup
+from .migrations.runner import MigrationError, assert_schema_version
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -21,15 +22,24 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--data-root", required=True, type=Path)
     restore.add_argument("--backup", required=True, type=Path)
     restore.add_argument("--confirm", action="store_true")
+    version = sub.add_parser("schema-version")
+    version.add_argument("--database", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
         if args.command == "backup":
             result = backup_data(args.data_root, args.output, args.project_id)
         elif args.command == "verify-backup":
             result = verify_backup(args.backup)
+        elif args.command == "schema-version":
+            import sqlite3
+            connection = sqlite3.connect(args.database)
+            try:
+                result = {"schema_version": assert_schema_version(connection)}
+            finally:
+                connection.close()
         else:
             result = restore_backup(args.data_root, args.backup, args.confirm)
-    except BackupError as error:
+    except (BackupError, MigrationError) as error:
         print(json.dumps({"status": "failed", "error_code": error.code}, ensure_ascii=False))
         return 1
     print(json.dumps(result, ensure_ascii=False))

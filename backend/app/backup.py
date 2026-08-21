@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .migrations.runner import MigrationError, assert_schema_version
+
 _FORMAT = "studybuddy-backup"
 _VERSION = 1
 _DB_NAME = "database.sqlite3"
@@ -76,15 +78,21 @@ def _sqlite_header(path: Path, code: str) -> None:
         raise BackupError(code) from None
 
 
-def _checks(path: Path) -> tuple[str, str]:
+def _checks(path: Path) -> tuple[str, str, int]:
     try:
         connection = sqlite3.connect(path)
         integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0]).lower()
         foreign = connection.execute("PRAGMA foreign_key_check").fetchall()
+        try:
+            version = assert_schema_version(connection)
+        except MigrationError:
+            raise BackupError("backup_schema_version_invalid") from None
         connection.close()
+    except BackupError:
+        raise
     except (OSError, sqlite3.Error):
         raise BackupError("backup_database_integrity_failed") from None
-    return integrity, "ok" if not foreign else "failed"
+    return integrity, "ok" if not foreign else "failed", version
 
 
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -172,7 +180,7 @@ def backup_data(data_root: Path, output: Path, project_id: str = "default") -> d
         destination = sqlite3.connect(output / _DB_NAME)
         source.backup(destination)
         destination.close(); source.close()
-        integrity, foreign = _checks(output / _DB_NAME)
+        integrity, foreign, schema_version = _checks(output / _DB_NAME)
         if integrity != "ok": raise BackupError("backup_database_integrity_failed")
         if foreign != "ok": raise BackupError("backup_foreign_key_check_failed")
         files = []; total = 0
@@ -186,7 +194,7 @@ def backup_data(data_root: Path, output: Path, project_id: str = "default") -> d
             size = target.stat().st_size
             files.append({"relative_path": str(Path("originals") / relative).replace("\\", "/"), "sha256": digest, "size": size})
             total += size
-        manifest = {"format": _FORMAT, "format_version": _VERSION, "status": "complete", "created_at": datetime.now(timezone.utc).isoformat(), "project_id": project_id, "database": {"filename": _DB_NAME, "sha256": _sha256(output / _DB_NAME), "size": (output / _DB_NAME).stat().st_size, "integrity_check": integrity, "foreign_key_check": foreign}, "originals": {"root": "originals", "count": len(files), "total_bytes": total, "files": files}, "references": references}
+        manifest = {"format": _FORMAT, "format_version": _VERSION, "status": "complete", "created_at": datetime.now(timezone.utc).isoformat(), "project_id": project_id, "database": {"filename": _DB_NAME, "sha256": _sha256(output / _DB_NAME), "size": (output / _DB_NAME).stat().st_size, "integrity_check": integrity, "foreign_key_check": foreign, "schema_version": schema_version}, "originals": {"root": "originals", "count": len(files), "total_bytes": total, "files": files}, "references": references}
         _atomic_json(output / "manifest.json", manifest)
         return {"status": "complete", "error_code": None, "original_count": len(files)}
     except BackupError:
@@ -214,10 +222,15 @@ def verify_backup(backup: Path) -> dict[str, Any]:
     database = backup / _DB_NAME
     _sqlite_header(database, "backup_database_not_sqlite")
     database_meta = manifest.get("database")
-    if not isinstance(database_meta, dict) or _sha256(database) != database_meta.get("sha256"): raise BackupError("backup_database_hash_mismatch")
-    integrity, foreign = _checks(database)
+    if not isinstance(database_meta, dict):
+        raise BackupError("backup_manifest_invalid")
+    if _sha256(database) != database_meta.get("sha256"):
+        raise BackupError("backup_database_hash_mismatch")
+    integrity, foreign, schema_version = _checks(database)
     if integrity != "ok": raise BackupError("backup_database_integrity_failed")
     if foreign != "ok": raise BackupError("backup_foreign_key_check_failed")
+    if database_meta.get("schema_version") != schema_version:
+        raise BackupError("backup_schema_version_mismatch")
     files = manifest.get("originals", {}).get("files", [])
     if not isinstance(files, list): raise BackupError("backup_manifest_invalid")
     for item in files:

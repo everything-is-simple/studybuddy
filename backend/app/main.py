@@ -20,6 +20,7 @@ from .adapters.file_parsers import ParseOptions, parse_file
 from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
 from .import_locks import acquire_hash_lock, release_hash_lock
+from .migrations.runner import MigrationError
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
@@ -78,6 +79,8 @@ async def lifespan(app: FastAPI):
     try:
         with connect(config.database_path):
             pass
+    except MigrationError as error:
+        raise StartupPreflightError(error.code) from None
     except (OSError, sqlite3.Error, ValueError):
         # The stable code is safe for logs and avoids exposing a local path or
         # database-driver traceback through an application failure response.
