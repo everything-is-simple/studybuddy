@@ -13,6 +13,9 @@ from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
 SEARCH_SCHEMA = "CREATE VIRTUAL TABLE IF NOT EXISTS material_search USING fts5(material_id UNINDEXED, original_name, text, tokenize='unicode61')"
+RETRIEVAL_POLICY_VERSION = "lexical_fts_v1"
+MAX_RETRIEVAL_QUERY_LENGTH = 1000
+MAX_RETRIEVAL_TOP_K = 50
 
 
 def _ensure_search_index(connection: sqlite3.Connection) -> None:
@@ -49,6 +52,66 @@ def _search_tokens(query: str) -> list[str]:
     return [token for token in query.strip().split() if token]
 
 
+def _delete_chunk_search_rows(connection: sqlite3.Connection, chunk_ids: list[str]) -> None:
+    if not chunk_ids:
+        return
+    placeholders = ",".join("?" for _ in chunk_ids)
+    connection.execute(f"DELETE FROM chunks_search WHERE id IN ({placeholders})", chunk_ids)
+
+
+def _ensure_chunk_search_index(connection: sqlite3.Connection) -> None:
+    rows = connection.execute(
+        "SELECT c.id, c.text, c.normalized_text FROM chunks c "
+        "JOIN materials m ON m.id = c.material_id "
+        "JOIN material_revisions r ON r.id = c.revision_id "
+        "WHERE c.status = 'ready' AND m.deleted_at IS NULL AND r.is_current = 1 "
+        "AND r.material_id = c.material_id AND r.extraction_id = c.extraction_id"
+    ).fetchall()
+    valid = {str(row["id"]): row for row in rows}
+    existing = {str(row[0]) for row in connection.execute("SELECT id FROM chunks_search").fetchall()}
+    _delete_chunk_search_rows(connection, sorted(existing - set(valid)))
+    missing = [row for chunk_id, row in valid.items() if chunk_id not in existing]
+    connection.executemany(
+        "INSERT INTO chunks_search (id, text, normalized_text) VALUES (?, ?, ?)",
+        [(str(row["id"]), str(row["text"]), str(row["normalized_text"])) for row in missing],
+    )
+
+
+def _sync_chunk_search_for_revision(connection: sqlite3.Connection, revision_id: str) -> None:
+    rows = connection.execute(
+        "SELECT id, text, normalized_text FROM chunks WHERE revision_id = ? AND status = 'ready' "
+        "ORDER BY chunk_index, id", (revision_id,)
+    ).fetchall()
+    _delete_chunk_search_rows(connection, [str(row["id"]) for row in rows])
+    connection.executemany(
+        "INSERT INTO chunks_search (id, text, normalized_text) VALUES (?, ?, ?)",
+        [(str(row["id"]), str(row["text"]), str(row["normalized_text"])) for row in rows],
+    )
+
+
+def _retrieval_tokens(query: str) -> list[str]:
+    return [token for token in query.strip().split() if token]
+
+
+def _retrieval_preview(text: str, tokens: list[str], limit: int = 240) -> str:
+    lowered = text.casefold()
+    positions = [lowered.find(token.casefold()) for token in tokens if token.casefold() in lowered]
+    start = max(0, min(positions) - 60) if positions else 0
+    return text[start:start + limit]
+
+
+def _create_retrieval_run(connection: sqlite3.Connection, *, query: str, normalized_query: str,
+                          project_id: str, status: str, error_code: str | None) -> str:
+    run_id = f"retrieval_{uuid.uuid4().hex}"
+    connection.execute(
+        "INSERT INTO retrieval_runs (id, query, normalized_query, project_id, thread_id, policy_version, "
+        "embedding_provider_id, embedding_model_id, status, error_code, created_at) "
+        "VALUES (?, ?, ?, ?, NULL, ?, NULL, NULL, ?, ?, ?)",
+        (run_id, query, normalized_query, project_id, RETRIEVAL_POLICY_VERSION, status, error_code, utc_now()),
+    )
+    return run_id
+
+
 def connect(path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
     connection.row_factory = sqlite3.Row
@@ -59,6 +122,7 @@ def connect(path: Path) -> sqlite3.Connection:
         migrate(connection)
         assert_schema_version(connection)
         _ensure_search_index(connection)
+        _ensure_chunk_search_index(connection)
         connection.commit()
     except MigrationError:
         connection.close()
@@ -281,6 +345,10 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
         if row is None:
             return None, None, None
         connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
+        chunk_ids = [str(value[0]) for value in connection.execute(
+            "SELECT id FROM chunks WHERE material_id = ?", (material_id,)
+        ).fetchall()]
+        _delete_chunk_search_rows(connection, chunk_ids)
         connection.execute("DELETE FROM materials WHERE id = ? AND deleted_at IS NOT NULL", (material_id,))
     return row[0], row[1], row[2]
 
@@ -367,7 +435,12 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
             "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
         ).fetchone()[0]
         if existing:
+            _sync_chunk_search_for_revision(connection, str(revision["id"]))
             return revision
+        old_chunk_ids = [str(value[0]) for value in connection.execute(
+            "SELECT id FROM chunks WHERE revision_id = ?", (revision["id"],)
+        ).fetchall()]
+        _delete_chunk_search_rows(connection, old_chunk_ids)
         connection.execute("DELETE FROM chunks WHERE revision_id = ?", (revision["id"],))
         spans = [SourceSpan(str(span["id"]), int(span["ordinal"]), str(span["span_kind"]),
                             str(span["label"]), str(span["text"]))
@@ -391,7 +464,92 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
                 "INSERT INTO chunk_spans (chunk_id, span_id, overlap_start, overlap_end) VALUES (?, ?, ?, ?)",
                 [(chunk_id, span_id, start, end) for span_id, start, end in draft.span_overlaps],
             )
+        _sync_chunk_search_for_revision(connection, str(revision["id"]))
         return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
+
+
+def run_chunk_retrieval(connection: sqlite3.Connection, *, project_id: str, query: str,
+                        material_ids: list[str] | None = None, top_k: int = 5) -> dict[str, object]:
+    normalized = query.strip()
+    tokens = _retrieval_tokens(normalized)
+    if not tokens or len(normalized) > MAX_RETRIEVAL_QUERY_LENGTH:
+        raise ValueError("retrieval_invalid_query")
+    if not isinstance(top_k, int) or isinstance(top_k, bool) or not 1 <= top_k <= MAX_RETRIEVAL_TOP_K:
+        raise ValueError("retrieval_invalid_top_k")
+    requested = material_ids or []
+    if len(set(requested)) != len(requested):
+        raise ValueError("retrieval_invalid_materials")
+    with connection:
+        if requested:
+            placeholders = ",".join("?" for _ in requested)
+            rows = connection.execute(
+                f"SELECT id, deleted_at FROM materials WHERE project_id = ? AND id IN ({placeholders})",
+                [project_id, *requested],
+            ).fetchall()
+            if len(rows) != len(requested):
+                raise ValueError("material_not_found")
+            if any(row["deleted_at"] is not None for row in rows):
+                raise ValueError("source_deleted")
+        scope = ""
+        params: list[object] = [project_id]
+        if requested:
+            scope = " AND c.material_id IN (" + ",".join("?" for _ in requested) + ")"
+            params.extend(requested)
+        ready_count = connection.execute(
+            "SELECT COUNT(*) FROM chunks c JOIN materials m ON m.id = c.material_id "
+            "JOIN material_revisions r ON r.id = c.revision_id "
+            "WHERE c.project_id = ? AND m.deleted_at IS NULL AND r.is_current = 1 "
+            "AND c.status = 'ready' AND r.material_id = c.material_id AND r.extraction_id = c.extraction_id" + scope,
+            params,
+        ).fetchone()[0]
+        if not ready_count:
+            run_id = _create_retrieval_run(connection, query=query, normalized_query=normalized,
+                                           project_id=project_id, status="failed", error_code="retrieval_not_ready")
+            return {"run_id": run_id, "status": "failed", "error_code": "retrieval_not_ready", "query": normalized,
+                    "policy_version": RETRIEVAL_POLICY_VERSION, "hits": []}
+        common = (
+            " FROM chunks c JOIN chunks_search s ON s.id = c.id "
+            "JOIN materials m ON m.id = c.material_id JOIN material_revisions r ON r.id = c.revision_id "
+            "WHERE c.project_id = ? AND m.deleted_at IS NULL AND r.is_current = 1 AND c.status = 'ready' "
+            "AND r.material_id = c.material_id AND r.extraction_id = c.extraction_id" + scope
+        )
+        ascii_tokens = all(token.isascii() and token.replace("_", "").isalnum() for token in tokens)
+        if ascii_tokens:
+            match = " AND ".join(f'"{token.replace(chr(34), chr(34) * 2)}"' for token in tokens)
+            sql = ("SELECT c.id, c.material_id, c.revision_id, c.start_offset, c.end_offset, c.text, "
+                   "-bm25(chunks_search) AS lexical_score" + common + " AND chunks_search MATCH ? "
+                   "ORDER BY lexical_score DESC, c.start_offset ASC, c.id ASC LIMIT ?")
+            rows = connection.execute(sql, [*params, match, top_k]).fetchall()
+        else:
+            filters = "".join(" AND instr(lower(c.text), lower(?)) > 0" for _ in tokens)
+            sql = ("SELECT c.id, c.material_id, c.revision_id, c.start_offset, c.end_offset, c.text, "
+                   "1.0 AS lexical_score" + common + filters + " "
+                   "ORDER BY lexical_score DESC, c.start_offset ASC, c.id ASC LIMIT ?")
+            rows = connection.execute(sql, [*params, *tokens, top_k]).fetchall()
+        if not rows:
+            run_id = _create_retrieval_run(connection, query=query, normalized_query=normalized,
+                                           project_id=project_id, status="empty", error_code="retrieval_empty")
+            return {"run_id": run_id, "status": "empty", "error_code": "retrieval_empty", "query": normalized,
+                    "policy_version": RETRIEVAL_POLICY_VERSION, "hits": []}
+        run_id = _create_retrieval_run(connection, query=query, normalized_query=normalized,
+                                       project_id=project_id, status="succeeded", error_code=None)
+        hits: list[dict[str, object]] = []
+        for rank, row in enumerate(rows, 1):
+            score = float(row["lexical_score"])
+            connection.execute(
+                "INSERT INTO retrieval_hits (run_id, chunk_id, rank, score, lexical_score, vector_score, "
+                "rerank_score, selected, citation_label) VALUES (?, ?, ?, ?, ?, NULL, NULL, 1, ?)",
+                (run_id, row["id"], rank, score, score, f"chunk-{rank}"),
+            )
+            span_ids = [str(value[0]) for value in connection.execute(
+                "SELECT span_id FROM chunk_spans WHERE chunk_id = ? ORDER BY span_id", (row["id"],)
+            ).fetchall()]
+            hits.append({"chunk_id": row["id"], "material_id": row["material_id"], "revision_id": row["revision_id"],
+                         "rank": rank, "score": score, "lexical_score": score, "citation_label": f"chunk-{rank}",
+                         "text_preview": _retrieval_preview(str(row["text"]), tokens),
+                         "start_offset": row["start_offset"], "end_offset": row["end_offset"], "span_ids": span_ids})
+        return {"run_id": run_id, "status": "succeeded", "error_code": None, "query": normalized,
+                "policy_version": RETRIEVAL_POLICY_VERSION, "hits": hits}
 
 
 def get_material_index_status(connection: sqlite3.Connection, material_id: str) -> dict[str, object] | None:

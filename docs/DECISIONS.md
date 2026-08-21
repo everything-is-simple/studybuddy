@@ -29,7 +29,15 @@
 - A revision fingerprint is derived from source hash, extraction text hash, parser id and parser version. Repeating indexing for the same source reuses the current revision and ready chunks; a new extraction supersedes the previous current revision.
 - The first chunk strategy is deterministic `boundary_window` version `1.0.0`, using Python Unicode code-point offsets, stable whitespace normalization and a bounded overlap. Empty extraction produces zero chunks and reports `empty`.
 - Existing `text_spans` store span text but not absolute offsets. Chunk-to-span links therefore use ordinal/id order plus exact sequential text matching in the extraction text. Unmatched or ambiguous source text is not linked; the system does not fabricate page/slide offsets.
-- Purge relies on the existing foreign-key cascade to remove revisions, chunks and chunk_spans. Restore reuses derived rows and does not duplicate them. Chunk FTS5 retrieval, citations, provider and Q&A remain the next implementation boundary.
+- Purge relies on the existing foreign-key cascade to remove revisions, chunks and chunk_spans; chunk FTS rows are removed explicitly. Restore reuses derived rows and does not duplicate them.
+
+## 2026-08-26: lexical chunk retrieval boundary
+
+- Retrieval is explicit through `POST /api/retrieval`; it never auto-indexes materials and never calls a provider.
+- Policy `lexical_fts_v1` uses safe ASCII token AND queries through `chunks_search` and parameterized substring fallback for Unicode/special tokens. Results are restricted to active material, current revision and ready chunks, with stable score/start-offset/id ordering and top-k 1–50.
+- Each request persists a `retrieval_runs` row. Successful hits persist `retrieval_hits`; empty results use `retrieval_empty`; unindexed scope uses `retrieval_not_ready`. Lexical retrieval leaves embedding/provider/rerank fields NULL.
+- `chunks_search` is synchronized when indexing and by an idempotent connection check that only reflects existing ready chunks and removes orphan rows; it never creates chunks or runs AI repair. Preview text is bounded and API responses do not expose paths, SQL, tracebacks or full source text.
+- Citation verification, context assembly, fake provider and Q&A remain separate next steps.
 
 ## 2026-08-20: AI / learning architecture boundary
 

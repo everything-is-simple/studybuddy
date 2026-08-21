@@ -18,7 +18,8 @@
 | Local single-process infrastructure v1 | basically complete | I1+I2+I3 implemented; I4 time-box closed with declared limits |
 | AI/learning architecture | researching | `ai-learning-architecture.md`; architecture-only |
 | Material revision / deterministic chunks | implemented / backend-tested | `backend/app/chunking.py`, `backend/app/repository.py`, `backend/tests/test_ai_indexing.py` |
-| Chunk FTS5 retrieval / citations / Q&A | not started | `TODO.md` |
+| Chunk FTS5 retrieval | implemented / backend-tested | `backend/app/repository.py`, `backend/tests/test_retrieval.py` |
+| Citations / provider / Q&A | not started | `TODO.md` |
 | Cards/exercises/study plans | not started | `TODO.md` |
 
 ## Current limits
@@ -27,6 +28,6 @@
 - Multiple workers or multiple instances must not share one `data_root`.
 - I4 is time-box closed for infrastructure v1: synthetic TXT S0–S3 capacity and 40-cycle lifecycle smoke are real; disk-full, power-loss, network filesystem, hardware corruption, ACL, peak memory and S4 capacity are explicitly recorded as not verified and accepted as v1 deployment limits.
 - Metrics are process-local, reset on restart, and do not provide cross-process aggregation; operation IDs are request-scoped correlation only.
-- Material revision and explicit deterministic chunk indexing are implemented; chunk retrieval, citations, provider, RAG, Q&A, cards, exercises and study plans are not implemented.
+- Material revision, explicit deterministic chunk indexing and lexical chunk retrieval are implemented; citations, provider, RAG, Q&A, cards, exercises and study plans are not implemented.
 
 For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), and [`TODO.md`](TODO.md).

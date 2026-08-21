@@ -30,7 +30,7 @@ from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, connect, create_or_get_revision, get_material, get_material_index_status,
                          get_spans, index_material_revision, list_deleted_materials, list_materials, list_materials_page,
                          list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
-                         save_material_with_extraction, soft_delete_material)
+                         run_chunk_retrieval, save_material_with_extraction, soft_delete_material)
 from .storage import sha256_file, store_original
 
 
@@ -127,6 +127,12 @@ class ExportMaterialsRequest(BaseModel):
     material_ids: list[str]
     include_original: bool = True
     include_text: bool = True
+
+
+class RetrievalRequest(BaseModel):
+    query: str
+    material_ids: list[str] | None = None
+    top_k: int = 5
 
 
 def _rename_name(raw_name: str) -> str | None:
@@ -352,6 +358,26 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         buffer.seek(0)
         return Response(content=buffer.getvalue(), media_type="application/zip",
                         headers={"Content-Disposition": 'attachment; filename="studybuddy-materials.zip"'})
+
+    @app.post("/api/retrieval")
+    def retrieve(request: RetrievalRequest) -> dict[str, object]:
+        if request.material_ids is not None and (not request.material_ids or len(request.material_ids) > 200):
+            raise HTTPException(status_code=400, detail="retrieval_invalid_materials")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return run_chunk_retrieval(
+                    connection,
+                    project_id=app.state.config.project_id,
+                    query=request.query,
+                    material_ids=request.material_ids,
+                    top_k=request.top_k,
+                )
+        except ValueError as exc:
+            code = str(exc)
+            status = 404 if code in {"material_not_found", "source_deleted"} else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="retrieval_failed") from None
 
     @app.post("/api/materials/{material_id}/ai-index")
     def index_material(material_id: str) -> dict[str, object]:
