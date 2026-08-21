@@ -190,9 +190,9 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 
 ## 六、权威文档索引
 
-- 当前状态总表：[`STATUS.md`](../STATUS.md)
+- 当前状态总表：[`STATUS.md`](STATUS.md)
 - 项目入口说明：[`README.md`](../README.md)
-- 架构边界：[`ARCHITECTURE.md`](../ARCHITECTURE.md)
+- 架构边界：[`ARCHITECTURE.md`](ARCHITECTURE.md)
 - AI/学习架构：[`ai-learning-architecture.md`](ai-learning-architecture.md)
-- 设计决策：[`DECISIONS.md`](../DECISIONS.md)
-- 备份恢复操作：[`BACKUP_RESTORE.md`](../BACKUP_RESTORE.md)
+- 设计决策：[`DECISIONS.md`](DECISIONS.md)
+- 备份恢复操作：[`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)

@@ -1,0 +1,29 @@
+# StudyBuddy Status
+
+> 当前整体阶段性估算为 **45%–50%**：文件材料管理局部 `real-pass`，完整 StudyBuddy 尚未达到全局 `real-pass`。
+
+| Area | Status | Evidence |
+|---|---|---|
+| Formal file parser Adapter | implemented / local real-pass | `backend/app/adapters/file_parsers/` and test artifacts |
+| Formal file import | real-pass | `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json` |
+| Batch and folder import | real-pass | formal multi-file/folder artifacts |
+| Material management and recycle bin | real-pass | formal management/recycle-bin artifacts |
+| Material export and search | real-pass | formal export/search artifacts |
+| SQLite/storage consistency | implemented | backend transaction, recovery, security and contention tests |
+| Startup preflight/readiness | implemented | `backend/app/startup_preflight.py`, tests |
+| I1 migration/schema versioning | implemented | `backend/app/migrations/`, `backend/tests/test_migrations.py` |
+| I2 operator backup/restore | implemented | `backend/app/backup.py`, CLI, restore acceptance tests |
+| I3 minimal observability | not started | `docs/INFRASTRUCTURE_CLOSEOUT.md` |
+| I4 real environment/capacity baseline | not started | `docs/INFRASTRUCTURE_CLOSEOUT.md` |
+| AI/learning architecture | researching | `ai-learning-architecture.md`; architecture-only |
+| Revision/chunks/retrieval/citations/Q&A | not started | `TODO.md` |
+| Cards/exercises/study plans | not started | `TODO.md` |
+
+## Current limits
+
+- Supported deployment: single process, single instance, local storage.
+- Multiple workers or multiple instances must not share one `data_root`.
+- Real disk-full, power-loss, network filesystem, hardware corruption, ACL and capacity limits are not claimed as verified.
+- AI, provider, RAG, Q&A, cards, exercises and study plans are not implemented.
+
+For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), and [`TODO.md`](TODO.md).

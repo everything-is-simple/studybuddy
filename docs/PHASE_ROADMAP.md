@@ -1,7 +1,7 @@
 # StudyBuddy Phase 路线图与进度报告
 
 > 更新：2026-08-25（I1/I2 收口后）  
-> 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `docs/TODO.md` 为准。
+> 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `TODO.md` 为准。
 >
 > `real-pass` 只表示有真实用户路径和验收证据的局部能力通过，**不代表整个 StudyBuddy 已达到全局生产级 real-pass**。
 
