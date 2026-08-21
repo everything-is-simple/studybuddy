@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-状态：architecture plus partial implementation；material revision、deterministic chunks、chunk lexical retrieval 和 retrieval persistence 已实现，citation/provider/Q&A 仍未实现。
+状态：architecture plus partial implementation；material revision、deterministic chunks、chunk lexical retrieval、retrieval persistence、context assembly with citation contract 和 deterministic fake provider 已实现，Q&A 仍未实现。
 
 ## 1. 范围与原则
 
@@ -228,7 +228,7 @@ assistant answer 必须关联 operation、retrieval_run 和独立 citations。pr
 Provider Protocol、error constants、revision/schema migration proposal、fake provider、citation contract、backup impact、ADR。当前已完成 revision/chunk schema、deterministic chunker 和显式 indexing 的第一部分。
 
 ### Phase 1
-chunk FTS5、deterministic lexical retrieval 和 retrieval run/hit persistence 已实现。下一步实现 context assembly、fake provider Q&A、引用验证。已验收部分包括中文/Unicode offsets、空材料、deleted 排除、重复 indexing 确定性、稳定 top-k 排序、retrieval_empty 和 purge 级联清理；stale/citation/provider/Q&A 仍未实现。
+chunk FTS5、deterministic lexical retrieval、retrieval run/hit persistence、context assembly with citation contract 和 deterministic fake provider 已实现。下一步实现 Q&A API。已验收部分包括中文/Unicode offsets、空材料、deleted 排除、重复 indexing 确定性、稳定 top-k 排序、retrieval_empty、purge 级联清理、token-budgeted context 截断、citation 四态验证和未配置 provider 的稳定失败边界；stale/Q&A 仍未实现。
 
 ### Phase 2
 真实 provider adapter、timeout/retry/rate-limit、structured output、capability endpoint、secret/error leakage tests。

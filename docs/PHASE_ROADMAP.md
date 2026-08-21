@@ -114,13 +114,13 @@ migration / schema versioning
 3. deterministic chunker 已实现，覆盖中文/Unicode offset 和现有 text_spans 的 page/slide/document 顺序映射；
 4. chunk FTS5、top-k、确定性排序、active/current/ready 过滤已实现；
 5. `retrieval_runs` / `retrieval_hits` 和 `retrieval_empty` 已实现；
-6. citation 只能来自 retrieval/context 的可验证 key，不能信任模型自造引用；
-7. context token budget 和 source text 不可信边界；
-8. deterministic fake provider、`provider_not_configured`；
+6. citation 只能来自 retrieval/context 的可验证 key，不能信任模型自造引用；已实现 `ctx-{mid8}-{cid8}` 格式和 `validate_citation_key`。
+7. context token budget 和 source text 不可信边界；已实现 context assembler 截断逻辑。
+8. deterministic fake provider、`provider_not_configured`；已实现 provider registry、fake provider 和 capabilities API。
 9. Q&A API、回答持久化、citation 持久化和最小 UI；
 10. API/repository/failure/browser 验收和文档同步。
 
-**当前进度：** lexical chunk retrieval、retrieval_runs / retrieval_hits 已实现；context assembly、citation、fake provider 和 Q&A 仍未实现。
+**当前进度：** lexical chunk retrieval、retrieval_runs / retrieval_hits、context assembly、citation contract 和 deterministic fake provider 已实现；Q&A 仍未实现。
 
 **完成标准：** fake provider 下完成端到端问答；每个展示的 citation 都能回到 material/chunk/span；deleted/stale source 被排除；purge 后历史 citation 标记 `source_unavailable`；未配置 provider 时应用照常启动且安全失败。
 

@@ -25,12 +25,15 @@ from .migrations.runner import MigrationError
 from .observability import (emit_event, increment, metrics_snapshot, new_id, observe_http,
                             record_import, reset_correlation, route_class, set_correlation,
                             valid_request_id)
+from .providers import provider_registry
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
-from .repository import (VALID_STATUSES, connect, create_or_get_revision, get_material, get_material_index_status,
-                         get_spans, index_material_revision, list_deleted_materials, list_materials, list_materials_page,
-                         list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
-                         run_chunk_retrieval, save_material_with_extraction, soft_delete_material)
+from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_context, create_or_get_revision,
+                         get_material, get_material_index_status, get_spans, index_material_revision,
+                         list_deleted_materials, list_materials, list_materials_page,
+                         list_deleted_materials_page, material_state, purge_material, rename_material,
+                         restore_material, run_chunk_retrieval, save_material_with_extraction,
+                         soft_delete_material, validate_citation_key)
 from .storage import sha256_file, store_original
 
 
@@ -133,6 +136,15 @@ class RetrievalRequest(BaseModel):
     query: str
     material_ids: list[str] | None = None
     top_k: int = 5
+
+
+class ContextRequest(BaseModel):
+    hit_ids: list[str]
+    max_tokens: int = 2000
+
+
+class CitationValidateRequest(BaseModel):
+    key: str
 
 
 def _rename_name(raw_name: str) -> str | None:
@@ -272,6 +284,11 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail="service_not_ready")
         return {"status": "ok"}
 
+    @app.get("/api/ai/capabilities")
+    def ai_capabilities() -> dict[str, object]:
+        config = app.state.config
+        return provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
+
     def pagination_values(limit: str | None, offset: str | None) -> tuple[int, int, bool]:
         paged = limit is not None or offset is not None
         try:
@@ -378,6 +395,33 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=status, detail=code) from None
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="retrieval_failed") from None
+
+    @app.post("/api/context/assemble")
+    def assemble_context_endpoint(request: ContextRequest) -> dict[str, object]:
+        if request.hit_ids is None or len(request.hit_ids) > 200:
+            if request.hit_ids is not None and len(request.hit_ids) > 200:
+                raise HTTPException(status_code=400, detail="context_invalid_hits")
+        if request.max_tokens <= 0 or request.max_tokens > MAX_CONTEXT_TOKENS:
+            raise HTTPException(status_code=400, detail="context_invalid_max_tokens")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return assemble_context(connection, project_id=app.state.config.project_id,
+                                        hits=[{"chunk_id": h, "rank": i + 1} for i, h in enumerate(request.hit_ids)],
+                                        max_tokens=request.max_tokens)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="context_assemble_failed") from None
+
+    @app.post("/api/citation/validate")
+    def validate_citation(request: CitationValidateRequest) -> dict[str, object]:
+        if not request.key or len(request.key) > 80:
+            raise HTTPException(status_code=400, detail="citation_invalid_key")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return validate_citation_key(connection, request.key)
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="citation_validate_failed") from None
 
     @app.post("/api/materials/{material_id}/ai-index")
     def index_material(material_id: str) -> dict[str, object]:

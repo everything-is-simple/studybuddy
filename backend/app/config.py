@@ -12,6 +12,8 @@ class AppConfig:
     data_root: Path
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
     project_id: str = "default"
+    ai_provider_id: str | None = None
+    ai_model_id: str | None = None
 
     @property
     def originals_root(self) -> Path:
@@ -40,4 +42,6 @@ def config_from_environment() -> AppConfig:
         data_root=Path(configured_root),
         max_upload_bytes=max_upload_bytes,
         project_id=os.environ.get("STUDYBUDDY_PROJECT_ID", "default"),
+        ai_provider_id=os.environ.get("STUDYBUDDY_AI_PROVIDER") or None,
+        ai_model_id=os.environ.get("STUDYBUDDY_AI_MODEL") or None,
     )

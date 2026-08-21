@@ -37,7 +37,8 @@
 - Policy `lexical_fts_v1` uses safe ASCII token AND queries through `chunks_search` and parameterized substring fallback for Unicode/special tokens. Results are restricted to active material, current revision and ready chunks, with stable score/start-offset/id ordering and top-k 1–50.
 - Each request persists a `retrieval_runs` row. Successful hits persist `retrieval_hits`; empty results use `retrieval_empty`; unindexed scope uses `retrieval_not_ready`. Lexical retrieval leaves embedding/provider/rerank fields NULL.
 - `chunks_search` is synchronized when indexing and by an idempotent connection check that only reflects existing ready chunks and removes orphan rows; it never creates chunks or runs AI repair. Preview text is bounded and API responses do not expose paths, SQL, tracebacks or full source text.
-- Citation verification, context assembly, fake provider and Q&A remain separate next steps.
+- Context assembly and citation contract are now implemented. `assemble_context()` produces ordered context blocks with `ctx-{mid8}-{cid8}` citation keys; `validate_citation_key()` returns one of four statuses: `valid`, `invalid_format`, `source_deleted`, `source_purged`. Token budget truncation preserves complete blocks.
+- Provider configuration is explicit. The default state is `provider_not_configured`; `GET /api/ai/capabilities` reports that stable boundary without leaking secrets. `STUDYBUDDY_AI_PROVIDER=fake` enables deterministic fake generation through the provider registry for the upcoming Q&A API.
 
 ## 2026-08-20: AI / learning architecture boundary
 

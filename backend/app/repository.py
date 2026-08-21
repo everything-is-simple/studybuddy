@@ -14,6 +14,9 @@ from .migrations.runner import MigrationError, assert_schema_version, migrate
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
 SEARCH_SCHEMA = "CREATE VIRTUAL TABLE IF NOT EXISTS material_search USING fts5(material_id UNINDEXED, original_name, text, tokenize='unicode61')"
 RETRIEVAL_POLICY_VERSION = "lexical_fts_v1"
+CONTEXT_ASSEMBLER_POLICY_VERSION = "context_assembler_v1"
+MAX_CONTEXT_TOKENS = 2000
+CITATION_KEY_PREFIX = "ctx-"
 MAX_RETRIEVAL_QUERY_LENGTH = 1000
 MAX_RETRIEVAL_TOP_K = 50
 
@@ -571,3 +574,117 @@ def get_material_index_status(connection: sqlite3.Connection, material_id: str) 
     return {"material_id": material_id, "status": "deleted" if material["deleted_at"] else status,
             "revision_id": revision["id"], "chunk_count": count,
             "is_current": bool(revision["is_current"]), "chunking_version": CHUNKING_VERSION}
+
+
+def _citation_key(material_id: str, chunk_id: str) -> str:
+    # IDs are prefixed (material_xxx / chunk_xxx); use the UUID portion only
+    mid = material_id.split("_", 1)[1] if "_" in material_id else material_id
+    cid = chunk_id.split("_", 1)[1] if "_" in chunk_id else chunk_id
+    return f"{CITATION_KEY_PREFIX}{mid[:8]}-{cid[:8]}"
+
+
+def _parse_citation_key(key: str) -> tuple[str, str] | None:
+    if not key.startswith(CITATION_KEY_PREFIX):
+        return None
+    parts = key[len(CITATION_KEY_PREFIX):].split("-", 1)
+    if len(parts) != 2 or len(parts[0]) != 8 or len(parts[1]) != 8:
+        return None
+    # Verify each part is a valid hex string (UUID prefix, not full UUID)
+    for part in parts:
+        try:
+            int(part, 16)
+        except ValueError:
+            return None
+    return parts[0], parts[1]
+
+
+def validate_citation_key(connection: sqlite3.Connection, key: str) -> dict[str, object] | None:
+    parsed = _parse_citation_key(key)
+    if parsed is None:
+        return {"status": "invalid_format"}
+    material_id_hint, chunk_id_hint = parsed
+    # IDs are prefixed (material_xxx / chunk_xxx); search with prefix included
+    material = connection.execute(
+        "SELECT id, deleted_at FROM materials WHERE id LIKE ?",
+        (f"material_{material_id_hint}%",),
+    ).fetchone()
+    if material is None:
+        return {"status": "source_purged"}
+    if material["deleted_at"] is not None:
+        return {"status": "source_deleted", "material_id": material["id"]}
+    # Verify chunk exists and links to active current revision
+    chunk = connection.execute(
+        "SELECT c.id, c.status, c.revision_id, m.id AS material_id "
+        "FROM chunks c JOIN materials m ON m.id = c.material_id "
+        "JOIN material_revisions r ON r.id = c.revision_id "
+        "WHERE c.id LIKE ? AND m.deleted_at IS NULL AND r.is_current = 1 "
+        "AND r.material_id = c.material_id AND r.extraction_id = c.extraction_id",
+        (f"chunk_{chunk_id_hint}%",),
+    ).fetchone()
+    if chunk is None:
+        return {"status": "source_purged"}
+    return {
+        "status": "valid",
+        "material_id": chunk["material_id"],
+        "chunk_id": chunk["id"],
+        "revision_id": chunk["revision_id"],
+    }
+
+
+def assemble_context(connection: sqlite3.Connection, *, project_id: str, hits: list[dict[str, object]],
+                     max_tokens: int = MAX_CONTEXT_TOKENS) -> dict[str, object]:
+    if not isinstance(hits, list) or max_tokens <= 0:
+        raise ValueError("context_invalid_input")
+    if not hits:
+        return {"context_blocks": [], "total_tokens_estimate": 0,
+                "policy_version": CONTEXT_ASSEMBLER_POLICY_VERSION, "truncated": False}
+    seen_chunks: set[str] = set()
+    ordered: list[tuple[str, int]] = []
+    for h in hits:
+        cid = str(h.get("chunk_id", ""))
+        if cid in seen_chunks or not cid:
+            continue
+        seen_chunks.add(cid)
+        ordered.append((cid, h.get("rank", 0)))
+    placeholders = ",".join("?" for _ in ordered)
+    sql = ("SELECT c.id, c.material_id, c.revision_id, c.start_offset, c.end_offset, c.text, "
+           "m.original_name FROM chunks c JOIN materials m ON m.id = c.material_id "
+           "JOIN material_revisions r ON r.id = c.revision_id "
+           "WHERE c.project_id = ? AND m.project_id = ? AND m.deleted_at IS NULL "
+           "AND r.is_current = 1 AND c.status = 'ready' "
+           "AND r.material_id = c.material_id AND r.extraction_id = c.extraction_id "
+           "AND c.id IN ({})".format(placeholders))
+    chunk_params = [project_id, project_id] + [cid for cid, _ in ordered]
+    rows_by_id: dict[str, sqlite3.Row] = {}
+    for row in connection.execute(sql, chunk_params).fetchall():
+        rows_by_id[str(row["id"])] = row
+    blocks: list[dict[str, object]] = []
+    total_chars = 0
+    truncated = False
+    for cid, _rank in ordered:
+        row = rows_by_id.get(cid)
+        if row is None:
+            continue
+        text = str(row["text"])
+        token_estimate = len(text)
+        if total_chars + token_estimate > max_tokens * 4:
+            truncated = True
+            break
+        total_chars += token_estimate
+        span_ids = [str(s["span_id"]) for s in connection.execute(
+            "SELECT span_id FROM chunk_spans WHERE chunk_id = ? ORDER BY span_id", (row["id"],)
+        ).fetchall()]
+        blocks.append({
+            "citation_key": _citation_key(str(row["material_id"]), str(row["id"])),
+            "material_name": str(row["original_name"]),
+            "text": text,
+            "source_info": {
+                "material_id": str(row["material_id"]),
+                "revision_id": str(row["revision_id"]),
+                "start_offset": row["start_offset"],
+                "end_offset": row["end_offset"],
+            },
+            "span_ids": span_ids,
+        })
+    return {"context_blocks": blocks, "total_tokens_estimate": total_chars // 4,
+            "policy_version": CONTEXT_ASSEMBLER_POLICY_VERSION, "truncated": truncated}
