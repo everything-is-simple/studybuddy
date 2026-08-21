@@ -59,10 +59,10 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 实现 citation key 验证：`valid` / `invalid_format` / `source_deleted` / `source_purged` 四态。
 - [x] 实现 Provider Protocol、registry、deterministic fake provider、`provider_not_configured` 和 `GET /api/ai/capabilities`。
 - [x] 实现 `ai_operations`、Q&A thread/message/answer/citation repository 和同步 `POST /api/qa/ask`。
-- [ ] 实现最小 Q&A UI：loading/empty/error/retry、citation 展示与原文定位。
-- [ ] 补 browser E2E、Q&A AI 表 backup/restore 与 purge 后历史 citation `source_unavailable` 生命周期测试。
+- [x] 实现最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示与当前材料正文定位。
+- [x] 实现 purge 后历史 citation `source_unavailable` 生命周期、Q&A browser E2E 与 AI 表 backup/restore 专项验收。
 
-**当前进度：** revision/chunk 显式 indexing、chunk lexical retrieval、context assembler、citation contract、deterministic fake provider 和 Q&A API/persistence 已实现并由 backend tests 验证；Q&A UI 尚未实现。
+**当前进度：** revision/chunk 显式 indexing、chunk lexical retrieval、context assembler、citation contract、deterministic fake provider、Q&A API/persistence 和最小 Q&A UI 已实现并验证；完整历史浏览、多材料 UX 与真实 provider 尚未实现。
 
 **完成标准：** fake provider 下端到端问答通过；展示 citation 可追溯到 material/revision/chunk/span；deleted/stale 被排除；purge 后历史 citation 正确显示 unavailable；未配置 provider 时应用照常启动并安全失败。
 

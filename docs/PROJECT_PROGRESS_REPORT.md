@@ -107,14 +107,15 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - source of truth、revision、deterministic chunk、chunk FTS5 retrieval、retrieval run/hit、context assembly、citation contract、provider 和 AI operation 的边界。
 - deterministic fake provider、未配置 provider 的稳定 `provider_not_configured`，以及 capabilities API。
 - 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
+- 当前材料最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示和 chunk offset 定位；purge 后历史 citation 标记 `source_unavailable`，并有 browser 与 backup/restore 验收。
 
-未完成：真实 provider、Q&A UI、purge 后历史 citation `source_unavailable` lifecycle、Q&A browser E2E、cards、练习和学习计划。
+未完成：真实 provider、完整 Q&A history/multi-material UX、cards、练习和学习计划。
 
 ### Phase 7：AI 与学习工作流 — 部分开始
 
 以下核心产品能力尚未形成可用用户路径：
 
-- Q&A UI、对话历史浏览、citation 原文定位、loading/error/retry。
+- 完整 Q&A 对话历史浏览、多材料 scope UX 与跨材料 citation 导航。
 - 真实 provider / embedding、RAG 扩展。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。

@@ -22,7 +22,8 @@
 | Context assembler + citation contract | implemented / backend-tested | `backend/app/repository.py`, `backend/tests/test_context_assembler.py` |
 | Deterministic fake provider | implemented / backend-tested | `backend/app/providers.py`, `backend/tests/test_ai_provider.py` |
 | Q&A API + persistence | implemented / backend-tested | `backend/app/repository.py`, `backend/app/main.py`, `backend/tests/test_qa_api.py` |
-| Q&A UI | not started | `TODO.md` |
+| Minimal Q&A UI + citation location | implemented / browser-tested | `backend/app/main.py`, `backend/tests/browser_qa.spec.js` |
+| Q&A citation lifecycle + backup/restore | implemented / backend-tested | `backend/tests/test_ai_citation_lifecycle.py`, `backend/tests/test_ai_backup_restore.py` |
 | Cards/exercises/study plans | not started | `TODO.md` |
 
 ## Current limits
@@ -31,6 +32,6 @@
 - Multiple workers or multiple instances must not share one `data_root`.
 - I4 is time-box closed for infrastructure v1: synthetic TXT S0–S3 capacity and 40-cycle lifecycle smoke are real; disk-full, power-loss, network filesystem, hardware corruption, ACL, peak memory and S4 capacity are explicitly recorded as not verified and accepted as v1 deployment limits.
 - Metrics are process-local, reset on restart, and do not provide cross-process aggregation; operation IDs are request-scoped correlation only.
-- Material revision, explicit deterministic chunk indexing, lexical chunk retrieval, context assembly with citation contract, deterministic fake provider and synchronous Q&A API/persistence are implemented. Q&A UI, real provider integration, cards, exercises and study plans are not implemented.
+- Material revision, explicit deterministic chunk indexing, lexical chunk retrieval, context assembly with citation contract, deterministic fake provider, synchronous Q&A API/persistence and a minimal Q&A UI are implemented. Real provider integration, complete Q&A history/multi-material UX, cards, exercises and study plans are not implemented.
 
 For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), and [`TODO.md`](TODO.md).

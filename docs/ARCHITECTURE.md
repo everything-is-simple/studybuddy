@@ -32,7 +32,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 ## AI boundary
 
-AI 当前处于 staged implementation 阶段。revision/chunk/retrieval/context/citation、deterministic fake provider 和同步 Q&A API/persistence 已实现；最小 Q&A UI 及后续学习能力仍未实现。依赖顺序固定为：
+AI 当前处于 staged implementation 阶段。revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence 和最小 Q&A UI/citation location 已实现；完整 Q&A history/multi-material UX 及后续学习能力仍未实现。依赖顺序固定为：
 
 ```text
 material revision

@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-状态：architecture plus partial implementation；material revision、deterministic chunks、chunk lexical retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider 和同步 Q&A API/persistence 已实现，Q&A UI 仍未实现。
+状态：architecture plus partial implementation；material revision、deterministic chunks、chunk lexical retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence 和最小 Q&A UI/citation location 已实现。
 
 ## 1. 范围与原则
 
@@ -228,7 +228,7 @@ assistant answer 必须关联 operation、retrieval_run 和独立 citations。pr
 Provider Protocol、error constants、revision/schema migration proposal、fake provider、citation contract、backup impact、ADR。当前已完成 revision/chunk schema、deterministic chunker 和显式 indexing 的第一部分。
 
 ### Phase 1
-chunk FTS5、deterministic lexical retrieval、retrieval run/hit persistence、context assembly with citation contract、deterministic fake provider 和同步 Q&A API/persistence 已实现。Q&A 调用显式 scope retrieval、server-side citation verification，并持久化 operation/thread/user message/assistant message/answer/citation；下一步实现最小 Q&A UI。已验收部分包括中文/Unicode offsets、空材料、deleted 排除、重复 indexing 确定性、稳定 top-k 排序、retrieval_empty、purge 级联清理、token-budgeted context 截断、citation 四态验证、未配置 provider 的稳定失败边界和 answer/citation rollback；purge 后历史 citation unavailable lifecycle 和 UI 仍未实现。
+chunk FTS5、deterministic lexical retrieval、retrieval run/hit persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence 和最小 Q&A UI 已实现。Q&A 调用显式 scope retrieval、server-side citation verification，并持久化 operation/thread/user message/assistant message/answer/citation；UI 支持显式 indexing、loading/error/retry、citation 展示和当前材料 chunk offset 定位。已验收部分包括中文/Unicode offsets、空材料、deleted 排除、重复 indexing 确定性、稳定 top-k 排序、retrieval_empty、purge 级联清理、token-budgeted context 截断、citation 四态验证、未配置 provider 的稳定失败边界、answer/citation rollback、browser Q&A 路径和 AI backup/restore；历史 citation 在 purge 后标记 `source_unavailable`；完整 Q&A history/multi-material UX 与真实 provider 仍未实现。
 
 ### Phase 2
 真实 provider adapter、timeout/retry/rate-limit、structured output、capability endpoint、secret/error leakage tests。
