@@ -6,13 +6,14 @@ import mimetypes
 import sqlite3
 import os
 import tempfile
+import time
 import uuid
 import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel
 
@@ -21,6 +22,9 @@ from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
 from .import_locks import acquire_hash_lock, release_hash_lock
 from .migrations.runner import MigrationError
+from .observability import (emit_event, increment, metrics_snapshot, new_id, observe_http,
+                            record_import, reset_correlation, route_class, set_correlation,
+                            valid_request_id)
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
@@ -75,19 +79,31 @@ async def lifespan(app: FastAPI):
     """Do not expose a ready service until persistent storage is usable."""
     config: AppConfig = app.state.config
     app.state.ready = False
-    preflight(config)
+    try:
+        preflight(config)
+        increment("startup", "preflight", "success")
+    except StartupPreflightError as error:
+        increment("startup", "preflight", "failed")
+        emit_event("startup_preflight_failed", level=40, error_code=str(error))
+        raise
     try:
         with connect(config.database_path):
             pass
+        increment("startup", "database", "success")
     except MigrationError as error:
+        increment("startup", "database", "failed")
+        emit_event("startup_database_failed", level=40, error_code=error.code)
         raise StartupPreflightError(error.code) from None
     except (OSError, sqlite3.Error, ValueError):
-        # The stable code is safe for logs and avoids exposing a local path or
-        # database-driver traceback through an application failure response.
+        increment("startup", "database", "failed")
+        emit_event("startup_database_failed", level=40, error_code="database_startup_failed")
         raise StartupPreflightError("database_startup_failed") from None
     run_audit(config.database_path)
+    increment("startup", "audit", "completed")
     reconcile(config)
+    increment("startup", "recovery", "completed")
     app.state.ready = True
+    emit_event("startup_ready", component="startup", outcome="ready")
     try:
         yield
     finally:
@@ -210,6 +226,38 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app = FastAPI(title="StudyBuddy", lifespan=lifespan)
     app.state.config = config or config_from_environment()
     app.state.ready = False
+
+    @app.middleware("http")
+    async def observability_middleware(request: Request, call_next):
+        supplied = request.headers.get("X-Request-ID")
+        request_id = supplied if valid_request_id(supplied) else new_id("req")
+        operation_id = new_id("op")
+        tokens = set_correlation(request_id, operation_id)
+        started = time.perf_counter()
+        route = route_class(request.url.path)
+        status_code = 500
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+        finally:
+            duration_ms = (time.perf_counter() - started) * 1000
+            status_class = f"{status_code // 100}xx"
+            increment("http_requests", request.method, route, status_class)
+            observe_http(route, duration_ms)
+            emit_event("http_request", method=request.method, route=route,
+                       status_class=status_class, duration_ms=round(duration_ms, 3))
+            if 'response' in locals():
+                response.headers["X-Request-ID"] = request_id
+            reset_correlation(tokens)
+
+    @app.get("/api/liveness")
+    def liveness() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/api/metrics")
+    def metrics() -> dict[str, object]:
+        return metrics_snapshot()
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
@@ -405,11 +453,15 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
     @app.post("/api/materials", status_code=201)
     async def upload_material(file: Annotated[UploadFile, File(...)]) -> dict[str, object]:
-        return await _process_file(file, app.state.config, batch=False)
+        result = await _process_file(file, app.state.config, batch=False)
+        record_import(str(result.get("status", "failed")))
+        return result
 
     @app.post("/api/materials/batch", status_code=201)
     async def upload_materials(files: Annotated[list[UploadFile], File(...)]) -> dict[str, object]:
         items = [await _process_file(file, app.state.config, batch=True) for file in files]
+        for item in items:
+            record_import(str(item.get("status", "failed")))
         counts = {status: sum(item["status"] == status for item in items)
                   for status in ("success", "empty", "rejected", "failed")}
         return {"batch_id": f"batch_{uuid.uuid4().hex}", "total": len(items), **counts, "items": items}

@@ -3,7 +3,7 @@
 > 更新：2026-08-25  
 > 本文只评估 StudyBuddy 的**本地单进程文件材料基础设施**；不把 AI、学习工作流、多用户、云同步或分布式部署计入完成范围。
 >
-> **结论：** I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成。基础设施已可用于当前文件材料管理系统，并可安全作为 AI MVP 的数据基础；要宣告“本地单进程基础设施 v1 基本完工”，还剩 **2 个工作包**：I3 最小可观察性（必须）与 I4 真实环境/容量基线（时间盒验收，必须给出实测结果或明确未验证边界）。
+> **结论：** I1 migration/schema versioning、I2 backup/restore 运维闭环与 I3 最小可观察性已完成。基础设施已可用于当前文件材料管理系统，并可安全作为 AI MVP 的数据基础；要宣告“本地单进程基础设施 v1 基本完工”，还剩 **1 个工作包**：I4 真实环境/容量基线（时间盒验收，必须给出实测结果或明确未验证边界）。
 
 ## 1. 已完成能力
 
@@ -37,19 +37,16 @@
 - restore 使用外部 staging，目标只允许不存在或空目录；不会启动服务、迁移或 repair。
 - `verify-restored-data` 覆盖 offline/online 恢复后验收；保留策略、操作说明与 restore drill 文档已提供。
 
-## 2. 剩余 2 个收尾工作包
+## 2. 已完成 I3 与剩余 I4
 
-### I3（必须）：最小可观察性与运行边界
+### I3（完成）：最小可观察性与运行边界
 
-**目的：** AI/provider/任务增加后，operator 必须能用安全的稳定信息定位失败，而非依赖 traceback 或源码。
-
-- [ ] 定义结构化安全日志字段：`event`、`level`、时间、稳定 `error_code`、request/operation ID；禁止正文、路径、secret、SQL 与原始异常。
-- [ ] 为 HTTP 请求增加 request ID；为导入和后续 AI 操作贯通 operation ID。
-- [ ] 增加最小 metrics：请求量、导入成功/失败、耗时、SQLite/recovery/backup 事件。
-- [ ] 明确 `liveness`、`readiness`、`degraded` 的语义和 operator 可见输出。
-- [ ] 为 startup preflight、audit、recovery、backup/restore 的失败输出补稳定性和脱敏测试。
-
-**完成标准：** 一次失败导入、启动预检失败和 backup verify 失败均可通过稳定 error code/ID 定位；日志、API 与 UI 不泄露正文、路径、secret、SQL 或 traceback。
+- `backend/app/observability.py` 提供 JSON structured event、request/operation correlation 与低基数进程内 counters。
+- HTTP middleware 为每个响应回写 `X-Request-ID`；非法或超长输入会安全替换。operation ID 仅用于 request-scoped 日志关联，未写入数据库。
+- `/api/liveness` 表示进程可响应；`/api/health` 继续表示 readiness。preflight、migration/connect 失败时不 ready；diagnostic audit/recovery 的非阻断诊断事件不将服务误报为不可用。当前没有独立 degraded runtime 状态：不可安全运行即 not ready；仅诊断事件记录为 warning，不降低已 ready 服务为不可写状态。
+- `/api/metrics` 仅返回有限的进程内聚合，不含正文、路径、ID、query、文件名、secret、SQL 或异常文本；重启后归零且不支持跨进程聚合。
+- startup、audit、recovery、backup 事件写入安全 structured event；日志失败不阻断业务。
+- `backend/tests/test_observability.py` 覆盖 request ID、metrics、liveness/readiness、startup 与 backup verify 脱敏边界。
 
 ### I4（时间盒验收）：真实环境与容量基线
 
@@ -66,8 +63,7 @@
 ## 3. 完成顺序
 
 ```text
-I3 最小可观察性（必须）
-→ I4 真实环境与容量基线（时间盒）
+I4 真实环境与容量基线（时间盒）
 → 宣告本地单进程基础设施 v1 基本完工
 → AI Phase 1：revision / chunks / retrieval / citations / Q&A
 ```

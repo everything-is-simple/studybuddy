@@ -125,7 +125,7 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 ### Phase 8：生产化与扩展 — 未完成
 
 - I1 migration framework 与 schema versioning 已完成；I2 backup/restore 运维闭环已完成。
-- I3 最小可观察性、I4 真实环境/容量基线仍待收尾。
+- I3 最小可观察性已实现；I4 真实环境/容量基线仍待收尾。
 - 多用户、认证、授权和项目隔离 UI。
 - 多进程/多实例写协议。
 - 云同步、外部存储和协作。
@@ -135,27 +135,22 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 
 ## 四、当前急需完成的事项
 
-### P0-I3/I4：先完成基础设施收尾
+### P0-I4：完成基础设施最后收尾
 
-1. **I3：最小可观察性与运行边界（必须）**
-   - 结构化安全日志、request/operation ID、最小 metrics。
-   - 明确 liveness/readiness/degraded 语义。
-   - 补齐启动、审计、恢复、backup/restore 的稳定错误和脱敏测试。
-
-2. **I4：真实环境与容量基线（时间盒）**
+1. **I4：真实环境与容量基线（时间盒）**
    - ACL/只读目录、资源不足等效测试、容量/耗时基线和长时间 smoke。
    - 无法实测的项目必须明确标记 not verified。
 
 ### P0：基础设施收尾后实现 AI 第一阶段最小闭环
 
-3. **实现可信 Q&A 最小闭环**
+2. **实现可信 Q&A 最小闭环**
    - 实现 material revision/chunk 数据模型和可追溯 citation。
    - 实现 SQLite FTS5 retrieval API。
    - 实现 provider Protocol 与 deterministic fake provider。
    - 增加一个基于材料引用的 Q&A 用户路径。
    - 未配置 provider 时返回稳定 `provider_not_configured`，不能阻塞应用启动。
 
-4. **明确 S1–S7 的首个可交付范围**
+3. **明确 S1–S7 的首个可交付范围**
    - 先选择一个最小学习闭环：材料 → 检索 → 引用问答 → 用户确认的卡片/练习。
    - 暂不同时开发卡片、Quiz、计划、OCR、ASR 和云同步，避免范围失控。
 

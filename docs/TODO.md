@@ -11,16 +11,18 @@
 - [x] I2：backup、verify-backup、restore staging、恢复后 offline/online 验收、保留/轮换策略文档、restore drill 模板、integrity/manifest 失败隔离流程。
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。
 
-## 当前最高优先级：基础设施收尾（还剩 2 个工作包）
+## 当前最高优先级：基础设施收尾（还剩 1 个工作包）
 
 ### P0-I3：最小可观察性与运行边界（必须）
 
-- [ ] 定义并实现结构化安全日志：event、level、timestamp、stable error code、request/operation ID。
-- [ ] 禁止日志、API/UI 输出正文、路径、secret、SQL、原始异常和 traceback。
-- [ ] HTTP request ID；导入和未来 AI operation ID 的贯通。
-- [ ] 最小 metrics：请求量、导入成功/失败、耗时、SQLite/recovery/backup 事件。
-- [ ] 定义 liveness/readiness/degraded 语义与 operator 可见输出。
-- [ ] 补 startup、audit、recovery、backup/restore 失败的稳定性/脱敏测试。
+- [x] 定义并实现结构化安全日志：event、level、timestamp、stable error code、request/operation ID。
+- [x] 禁止日志、API/UI 输出正文、路径、secret、SQL、原始异常和 traceback。
+- [x] HTTP request ID；导入和未来 AI operation ID 的贯通。
+- [x] 最小 metrics：请求量、导入成功/失败、耗时、SQLite/recovery/backup 事件。
+- [x] 定义 liveness/readiness/degraded 语义与 operator 可见输出。
+- [x] 补 startup、audit、recovery、backup/restore 失败的稳定性/脱敏测试。
+
+**状态：已完成（implemented）。** Metrics 是低基数、进程内、重启后归零的 operator snapshot；operation ID 当前仅用于 request-scoped 日志关联，不是持久化 AI operation。
 
 **完成标准：** 失败导入、启动预检失败、backup verify 失败可由稳定 error code/ID 定位，且不泄露敏感内容。
 
@@ -37,7 +39,7 @@
 
 ## P0：AI 第一阶段——可信 Q&A 最小闭环（基础设施 I3 后启动）
 
-目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。第一轮使用 deterministic fake provider，不以真实厂商接入为前置。
+目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。第一轮使用 deterministic fake provider，不以真实厂商接入为前置。I3 已完成；I4 仍为真实环境/容量验收门槛。
 
 ### 顺序与任务
 

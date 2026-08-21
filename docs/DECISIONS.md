@@ -3,11 +3,19 @@
 ## 2026-08-25: project progress and priority boundary
 
 - 当前项目整体阶段性完成度按功能加权估算为 45%–50%；该估算不是测试通过率。
-- 文件材料导入、管理、搜索、导出已形成局部 `real-pass`；I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成，I3/I4 仍需收尾。
+- 文件材料导入、管理、搜索、导出已形成局部 `real-pass`；I1 migration/schema versioning、I2 backup/restore 运维闭环与 I3 最小可观察性已完成，I4 仍需收尾。
 - 下一产品优先级是实现 AI/学习最小闭环：material revision/chunk → SQLite FTS5 retrieval → citation → provider/fake provider → Q&A。
 - I1 migration/schema versioning 是 AI Phase 4 的硬前置，现已满足；Cards / Exercises 仍必须等待可信 revision/chunk/retrieval/citation/Q&A 链路。
 - S1–S7、卡片、练习、学习计划、OCR、ASR、后台队列、多用户、云同步和多进程支持继续分阶段推进，不在同一阶段并行承诺。
 - 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 为准；进度总报告以 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md) 为汇总入口；具体执行勾选项以 [`TODO.md`](TODO.md) 为准。
+
+## 2026-08-25: minimal observability boundary
+
+- Structured events use JSON fields `event`, `level`, UTC timestamp, stable `error_code`, optional request/operation correlation, fixed route/component/outcome fields and duration; they never include body, source text, paths, secrets, SQL, raw exceptions or traceback.
+- `X-Request-ID` is generated or safely echoed per HTTP response. Invalid or oversized values are replaced. Operation IDs are currently request-scoped correlation IDs only; persistent `ai_operations` records remain an AI business-layer concern.
+- `/api/liveness` means the process can respond; `/api/health` remains readiness and is not healthy before preflight, database migration/connect, audit/recovery startup sequence completes. Diagnostic-only audit events do not automatically make a usable service unready.
+- `/api/metrics` is a bounded, in-process snapshot with low-cardinality counters and duration aggregates. It resets on restart and does not claim cross-process aggregation or persistence.
+- Logging/metrics failure must never block startup or a business request. I4 real ACL, capacity and resource-exhaustion evidence remains separate and not implemented by this decision.
 
 ## 2026-08-20: AI / learning architecture boundary
 

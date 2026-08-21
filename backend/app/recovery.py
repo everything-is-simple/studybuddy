@@ -6,6 +6,7 @@ import stat
 from pathlib import Path
 
 from .config import AppConfig
+from .observability import emit_event, increment
 from .repository import connect
 from .storage import sha256_file
 
@@ -14,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 def _note(event: str) -> None:
     # Recovery diagnostics deliberately contain no paths, filenames, or exception text.
-    logger.warning("storage recovery: %s", event)
+    increment("recovery_events", event)
+    emit_event(event, level=logging.WARNING, component="recovery", outcome="diagnostic")
 
 
 def _regular_file(path: Path) -> bool:
@@ -103,6 +105,7 @@ def _reconcile_originals(config: AppConfig) -> None:
 
 def reconcile(config: AppConfig) -> None:
     """Run the one-shot, conservative startup reconciliation pass."""
+    increment("recovery", "started")
     _cleanup_stale_incoming(config.data_root)
     _reconcile_originals(config)
     # Missing referenced originals are intentionally detection-only.  Do not use
@@ -119,3 +122,5 @@ def reconcile(config: AppConfig) -> None:
                 _note("referenced_original_missing")
     except Exception:
         _note("missing_original_check_failed")
+    finally:
+        increment("recovery", "completed")

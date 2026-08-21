@@ -7,7 +7,7 @@
 
 ## 基础设施真实状态
 
-基础设施的 I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；当前仍需 I3 最小可观察性与 I4 真实环境/容量基线收尾。I1 是 AI Phase 4 的硬前置，已满足；I3/I4 是宣告“本地单进程基础设施 v1 基本完工”的剩余门槛。准确范围见 [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)。
+基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环与 I3 最小可观察性已完成；当前仅剩 I4 真实环境/容量基线收尾。I1 是 AI Phase 4 的硬前置，已满足；I4 是宣告“本地单进程基础设施 v1 基本完工”的剩余门槛。准确范围见 [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)。
 
 ## 总体进度
 
@@ -184,8 +184,7 @@ migration / schema versioning
 ## 固定执行顺序
 
 ```text
-I3：最小可观察性
-→ I4：真实环境与容量基线（时间盒）
+I4：真实环境与容量基线（时间盒）
 → Phase 4：AI 最小闭环（fake provider）
 → Phase 5：真实 provider
 → Phase 6：AI MVP 前端和整体验收

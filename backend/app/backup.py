@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .migrations.runner import MigrationError, assert_schema_version
+from .observability import emit_event, increment
 
 _FORMAT = "studybuddy-backup"
 _VERSION = 1
@@ -163,6 +164,8 @@ def _validate_layout(originals: Path, digest: str) -> Path:
 
 
 def backup_data(data_root: Path, output: Path, project_id: str = "default") -> dict[str, Any]:
+    increment("backup", "started")
+    emit_event("backup_started", component="backup", outcome="started")
     data_root, output = Path(data_root), Path(output)
     if output.exists() or output.is_symlink(): raise BackupError("backup_output_exists")
     if _inside(output, data_root): raise BackupError("backup_output_inside_data_root")
@@ -196,10 +199,16 @@ def backup_data(data_root: Path, output: Path, project_id: str = "default") -> d
             total += size
         manifest = {"format": _FORMAT, "format_version": _VERSION, "status": "complete", "created_at": datetime.now(timezone.utc).isoformat(), "project_id": project_id, "database": {"filename": _DB_NAME, "sha256": _sha256(output / _DB_NAME), "size": (output / _DB_NAME).stat().st_size, "integrity_check": integrity, "foreign_key_check": foreign, "schema_version": schema_version}, "originals": {"root": "originals", "count": len(files), "total_bytes": total, "files": files}, "references": references}
         _atomic_json(output / "manifest.json", manifest)
+        increment("backup", "succeeded")
+        emit_event("backup_completed", component="backup", outcome="succeeded")
         return {"status": "complete", "error_code": None, "original_count": len(files)}
-    except BackupError:
+    except BackupError as error:
+        increment("backup", "failed")
+        emit_event("backup_failed", level=40, error_code=error.code, component="backup", outcome="failed")
         raise
     except (OSError, sqlite3.Error):
+        increment("backup", "failed")
+        emit_event("backup_failed", level=40, error_code="backup_create_failed", component="backup", outcome="failed")
         raise BackupError("backup_create_failed") from None
 
 
@@ -214,7 +223,8 @@ def _manifest(root: Path) -> dict[str, Any]:
     return value
 
 
-def verify_backup(backup: Path) -> dict[str, Any]:
+def _verify_backup(backup: Path) -> dict[str, Any]:
+    increment("backup_verify", "started")
     backup = Path(backup)
     _lstat(backup, "invalid_backup_root")
     if not stat.S_ISDIR(backup.stat().st_mode): raise BackupError("invalid_backup_root")
@@ -246,7 +256,19 @@ def verify_backup(backup: Path) -> dict[str, Any]:
     hashes, _ = _referenced_hashes(database)
     listed = {item.get("sha256") for item in files}
     if hashes != listed: raise BackupError("backup_originals_incomplete")
+    increment("backup_verify", "succeeded")
+    emit_event("backup_verify_completed", component="backup", outcome="succeeded")
     return {"status": "valid", "error_code": None, "database_integrity": "ok", "foreign_key_check": "ok", "original_count": len(files)}
+
+
+def verify_backup(backup: Path) -> dict[str, Any]:
+    try:
+        return _verify_backup(backup)
+    except BackupError as error:
+        increment("backup_verify", "failed")
+        emit_event("backup_verify_failed", level=40, error_code=error.code,
+                   component="backup", outcome="failed")
+        raise
 
 
 def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict[str, Any]:

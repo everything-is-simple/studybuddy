@@ -13,7 +13,7 @@
 | Startup preflight/readiness | implemented | `backend/app/startup_preflight.py`, tests |
 | I1 migration/schema versioning | implemented | `backend/app/migrations/`, `backend/tests/test_migrations.py` |
 | I2 operator backup/restore | implemented | `backend/app/backup.py`, CLI, restore acceptance tests |
-| I3 minimal observability | not started | `docs/INFRASTRUCTURE_CLOSEOUT.md` |
+| I3 minimal observability | implemented | `backend/app/observability.py`, `backend/tests/test_observability.py` |
 | I4 real environment/capacity baseline | not started | `docs/INFRASTRUCTURE_CLOSEOUT.md` |
 | AI/learning architecture | researching | `ai-learning-architecture.md`; architecture-only |
 | Revision/chunks/retrieval/citations/Q&A | not started | `TODO.md` |
@@ -24,6 +24,7 @@
 - Supported deployment: single process, single instance, local storage.
 - Multiple workers or multiple instances must not share one `data_root`.
 - Real disk-full, power-loss, network filesystem, hardware corruption, ACL and capacity limits are not claimed as verified.
+- Metrics are process-local, reset on restart, and do not provide cross-process aggregation; operation IDs are request-scoped correlation only.
 - AI, provider, RAG, Q&A, cards, exercises and study plans are not implemented.
 
 For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), and [`TODO.md`](TODO.md).

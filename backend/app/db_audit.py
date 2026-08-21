@@ -4,6 +4,7 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from .observability import emit_event, increment
 from .repository import connect
 
 logger = logging.getLogger(__name__)
@@ -12,10 +13,8 @@ _REQUIRED = {"projects", "materials", "extractions", "text_spans", "material_sea
 
 def _event(name: str) -> None:
     # Deliberately no database path, ids, SQL, or exception text.
-    try:
-        logger.warning(name)
-    except Exception:
-        pass
+    increment("audit_events", name)
+    emit_event(name, level=logging.WARNING, component="database", outcome="diagnostic")
 
 
 def _run(connection: sqlite3.Connection, sql: str, event: str, *, expect_rows: bool = False) -> list[sqlite3.Row]:
@@ -47,7 +46,9 @@ def run_audit(database_path: Path) -> None:
         connection = connect(database_path)
     except Exception:
         _event("database_audit_connect_error")
+        increment("audit", "failed")
         return
+    increment("audit", "started")
     try:
         integrity = _run(connection, "PRAGMA integrity_check", "database_integrity_check_failed")
         if integrity and str(integrity[0][0]).lower() != "ok":
@@ -69,5 +70,6 @@ def run_audit(database_path: Path) -> None:
     finally:
         try:
             connection.close()
+            increment("audit", "completed")
         except Exception:
             _event("database_audit_close_error")
