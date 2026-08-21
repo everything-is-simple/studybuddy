@@ -22,9 +22,10 @@
 - [`BACKUP_OPERATIONS.md`](BACKUP_OPERATIONS.md)：备份存放、保留、轮换与失败隔离。
 - [`RESTORE_DRILL.md`](RESTORE_DRILL.md)：恢复演练流程和记录模板。
 
-## 基础设施状态
+## 基础设施与治理
 
-- [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)：I1/I2 完成情况，以及 I3/I4 剩余收尾项。
+- [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)：I1/I2/I3 完成，I4 时间盒验收，基础设施 v1 基本完工。
+- [`LOCAL_ENVIRONMENT_MAP.md`](LOCAL_ENVIRONMENT_MAP.md)：全部本地目录、远端、Git 状态和治理关系。
 - `STATUS.md`：能力状态表和测试证据索引。
 
 ## 文档维护规则
