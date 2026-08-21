@@ -3,8 +3,8 @@
 ## 2026-08-25: project progress and priority boundary
 
 - 当前项目整体阶段性完成度按功能加权估算为 45%–50%；该估算不是测试通过率。
-- 文件材料导入、管理、搜索、导出已形成局部 `real-pass`；I1 migration/schema versioning、I2 backup/restore 运维闭环与 I3 最小可观察性已完成，I4 仍需收尾。
-- 下一产品优先级是实现 AI/学习最小闭环：material revision/chunk → SQLite FTS5 retrieval → citation → provider/fake provider → Q&A。
+- 文件材料导入、管理、搜索、导出已形成局部 `real-pass`；I1 migration/schema versioning、I2 backup/restore、I3 最小可观察性和 I4 时间盒基线均已完成，基础设施 v1 已按声明边界收口。
+- 当前项目 Phase 4 的 AI 最小闭环已完成：material revision/chunk → SQLite FTS5 retrieval → citation → deterministic fake provider → Q&A/history/multi-material/citation navigation。下一产品优先级是 Phase 5 真实 Provider 接入。
 - I1 migration/schema versioning 是 AI Phase 4 的硬前置，现已满足；Cards / Exercises 仍必须等待可信 revision/chunk/retrieval/citation/Q&A 链路。
 - S1–S7、卡片、练习、学习计划、OCR、ASR、后台队列、多用户、云同步和多进程支持继续分阶段推进，不在同一阶段并行承诺。
 - 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 为准；进度总报告以 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md) 为汇总入口；具体执行勾选项以 [`TODO.md`](TODO.md) 为准。
@@ -44,14 +44,14 @@
 
 ## 2026-08-20: AI / learning architecture boundary
 
-- AI/学习当前只完成 architecture-only 设计，不接入真实 provider、不自动索引历史材料、不引入外部 vector DB、不引入后台队列。
+- AI/学习架构仍包含后续 architecture-only 设计；当前项目 Phase 4 的 deterministic fake provider Q&A 已实现并验收。真实 provider、不自动索引历史材料、外部 vector DB 和后台队列仍不在当前支持范围。
 - `materials`、`extractions`、`text_spans` 保持 source of truth；revision、chunks、embeddings、retrieval、answers、cards、exercises、plans 都是派生数据或用户状态，不能覆盖 source。
 - 第一阶段明确采用 SQLite FTS5 lexical retrieval first；embedding 先预留 provider/model/content-hash 接口，规模证据充分前不引入外部向量数据库。
 - provider 通过独立 Protocol/adapter 接收已组装 messages/texts，不读本地文件、不写 SQLite、不接触 FastAPI request；provider 未配置时应用仍应启动，AI 请求返回稳定 `provider_not_configured`。
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- 当前 migration v2 已为 Phase 0/1 schema 预留表；AI 业务逻辑仍未实现。
+- 当前 migration v2 已包含 revision/chunk/retrieval/Q&A 所需 schema；对应 Phase 4 AI 业务逻辑已实现。Cards、Exercises、Plans 等后续业务逻辑仍未实现。
 
 ## 2026-08-19: four-directory boundary
 
@@ -76,7 +76,7 @@
 - I1 migration/schema versioning、I2 backup/restore operator 闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成。
 - I4 中 Windows ACL/只读目录、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏等项保持 `not_verified`，并已明确作为 v1 运行边界接受；这些项目不阻塞基础设施 v1 收口，也不得标记为已通过。
 - 自此可以正式宣告 StudyBuddy **本地单进程文件材料基础设施 v1 基本完工**，并作为 AI MVP 的数据基础。
-- 下一产品优先级为 AI Phase 1：material revision → deterministic chunking → chunk FTS5 lexical retrieval → citation contract → deterministic fake provider → Q&A API/UI。
+- 当前项目 Phase 4 的可信 Q&A 用户闭环已收口。下一优先级为 Phase 5 真实 Provider 接入；Phase 4 已完成的 history/multi-material/citation navigation 不应重新列为待办。
 
 ## 2026-08-25: local environment governance map
 

@@ -4,7 +4,7 @@
 
 ## Runtime target
 
-`127.0.0.1` 本机 Web 应用：React/Vite 前端 + FastAPI 后端 + SQLite + 本地文件。AI 通过当前选中的单一 OpenAI-compatible provider 直接请求。不引入 pi、Electron、自动 fallback 或多进程 AgentSession。
+`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径使用 deterministic fake provider；真实 provider 属于 Phase 5，尚未接入。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
 
 ## Evidence flow
 
@@ -32,7 +32,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 ## AI boundary
 
-AI 当前处于 staged implementation 阶段。revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence 和最小 Q&A UI/citation location 已实现；完整 Q&A history/multi-material UX 及后续学习能力仍未实现。依赖顺序固定为：
+AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 真实 provider 及后续学习能力仍未实现。依赖顺序固定为：
 
 ```text
 material revision
@@ -43,4 +43,4 @@ material revision
 → cards / exercises
 ```
 
-第一阶段采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation。真实 provider、embedding、Q&A UI、cards、exercises、plans、worker 和多用户能力必须按路线图逐阶段实现，不得因 schema 已预留而宣称功能已可用。
+Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation。真实 provider、embedding、cards、exercises、plans、worker 和多用户能力必须按路线图逐阶段实现；Phase 4 已完成不等于真实 provider、embedding 或全局产品化已完成，不得因 schema 已预留而宣称功能已可用。

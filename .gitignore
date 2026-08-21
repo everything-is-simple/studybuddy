@@ -8,3 +8,6 @@ __pycache__/
 .venv/
 node_modules/
 test-results/
+
+# pi API key material (personal, never commit)
+。backup/

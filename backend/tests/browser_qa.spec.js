@@ -54,6 +54,40 @@ test('Q&A UI requires explicit indexing and locates citations', async ({page}) =
   } finally { stop(server); }
 });
 
+test('Q&A UI supports multi-material scope, history, citation detail and narrow layout', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer();
+  try {
+    await ready();
+    await page.goto(BASE);
+    await page.locator('#file').setInputFiles([
+      {name: 'alpha.txt', mimeType: 'text/plain', buffer: Buffer.from('Alpha material establishes the first answer source.')},
+      {name: 'beta.txt', mimeType: 'text/plain', buffer: Buffer.from('Beta material establishes the second answer source.')},
+    ]);
+    await page.locator('#file-import').click();
+    await expect(page.locator('#status')).toContainText('批量导入完成', {timeout: 30000});
+    await expect(page.locator('#qa-scope-list input')).toHaveCount(2);
+    await page.locator('#qa-scope-list input').nth(0).check();
+    await page.locator('#qa-scope-list input').nth(1).check();
+    await page.locator('#qa-index').click();
+    await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
+    await page.locator('#qa-question').fill('material establishes');
+    await page.locator('#qa-ask').click();
+    await expect(page.locator('#qa-status')).toContainText('回答已生成');
+    await expect(page.locator('#qa-citations button')).toHaveCount(2);
+    await page.locator('#qa-citations button').first().click();
+    await expect(page.locator('[role="dialog"]')).toContainText('引用详情');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[role="dialog"]')).toHaveCount(0);
+    await expect(page.locator('#qa-history-list button')).toHaveCount(1);
+    await page.locator('#qa-history-list button').click();
+    await expect(page.locator('#qa-answer')).toContainText('Fake answer');
+    await page.setViewportSize({width: 390, height: 844});
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(overflow).toBe(false);
+  } finally { stop(server); }
+});
+
 test('Q&A UI safely reports an unconfigured provider', async ({page}) => {
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   let server = startServer('');

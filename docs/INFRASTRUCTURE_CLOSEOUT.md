@@ -74,10 +74,11 @@ H:\studybuddy-test\artifacts\infrastructure-i4\latest.md
 ```text
 I4 真实环境与容量基线（时间盒） ✅ 已验收
 → 本地单进程基础设施 v1 基本完工 ✅ 已宣告
-→ AI Phase 1：revision / chunks / retrieval / citations / Q&A（当前最高优先级）
+→ Phase 4：AI 最小闭环 ✅ 已完成
+→ Phase 5：真实 Provider 接入（下一阶段）
 ```
 
-I1 是 AI Phase 4（Cards / Exercises）的硬前置，现已完成；AI 功能本身尚未实现，不能因 schema 已预留而宣称已有 RAG、Q&A 或卡片能力。
+I1 是当前 AI Phase 4（AI 最小闭环）的硬前置，现已完成；Phase 4 的 deterministic fake provider Q&A 已实现并验收。Cards / Exercises 属于当前路线图后续学习能力，不得因 schema 已预留而宣称已实现。
 
 ## 4. 当前准确声明
 
@@ -85,4 +86,4 @@ I1 是 AI Phase 4（Cards / Exercises）的硬前置，现已完成；AI 功能�
 
 > StudyBuddy 的**本地单进程基础设施 v1 已基本完工**：支持单实例、本地磁盘、SQLite、versioned migration 和手工 backup/restore；文件材料管理核心路径局部 real-pass，基础安全、一致性、恢复和运维边界已实现并有明确运行限制。
 
-仍不得宣称支持多进程共享 data root、云同步、多用户、分布式生产部署、真实断电/磁盘损坏/网络盘恢复或全局生产级 real-pass。下一优先级为 AI Phase 1：revision / chunks / retrieval / citations / Q&A。
+仍不得宣称支持多进程共享 data root、云同步、多用户、分布式生产部署、真实断电/磁盘损坏/网络盘恢复或全局生产级 real-pass。当前项目 Phase 4 Q&A 闭环已完成，下一优先级为 Phase 5 真实 Provider 接入。

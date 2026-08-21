@@ -25,14 +25,14 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 > 下列状态仅表示该阶段当前约定的第一版范围已经交付，或其设计已经沉淀；不表示对应领域已最终完成。特别是可靠性、备份恢复和 AI 架构均仍有后续 Phase。
 
-### Phase 0：工程边界与验证体系 — v1 范围已完成
+### 已交付能力 0：工程边界与验证体系 — v1 范围已完成
 
 - 正式产品目录、Composer、Integration、系统测试目录边界已确定。
 - 正式实现不得直接依赖参考项目。
 - 组件必须经过独立 smoke、组合测试和正式系统验证。
 - 已形成架构边界、决策记录和脱敏测试 artifact 约束。
 
-### Phase 1：正式文件解析与存储基础 — v1 范围已完成 / 局部 real-pass
+### 已交付能力 A：正式文件解析与存储基础 — v1 范围已完成 / 局部 real-pass
 
 已完成：
 
@@ -45,7 +45,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 局部 `real-pass` 已覆盖真实 Chromium 文件选择、解析成功/空文件/拒绝/失败、50 MiB 边界、重复 hash、刷新与重启回读。
 
-### Phase 2：文件导入与材料列表 — v1 范围已完成 / 局部 real-pass
+### 已交付能力 B：文件导入与材料列表 — v1 范围已完成 / 局部 real-pass
 
 - 单文件导入。
 - 多文件 batch 导入。
@@ -55,7 +55,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 材料详情、正文和 spans 回读。
 - 分页、稳定排序、total/has_more。
 
-### Phase 3：材料生命周期、搜索与导出 — v1 范围已完成 / 局部 real-pass
+### 已交付能力 C：材料生命周期、搜索与导出 — v1 范围已完成 / 局部 real-pass
 
 - rename：只修改展示名称。
 - delete：逻辑删除并进入回收站。
@@ -69,7 +69,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 尚未完成：语义搜索、向量检索、AI 搜索、搜索历史和 saved search。
 
-### Phase 4：可靠性、安全边界与 Operator 能力 — 基础版已实现（v1 边界内）
+### 已交付能力 D：可靠性、安全边界与 Operator 能力 — 基础版已实现（v1 边界内）
 
 - 启动 preflight：配置、data root、originals root、database topology 和 symlink 拒绝。
 - ready 生命周期与 health 503 边界。
@@ -85,7 +85,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 限制：不支持多进程/多实例共用 data_root；真实磁盘满、断电、硬件/文件系统损坏、真实 ACL 和长时间压力等已明确记录为 `not_verified`，作为 v1 运行边界接受，不阻塞基础设施 v1 收口。
 
-### Phase 5：前端基础用户路径 — 部分完成，仍待产品化
+### 已交付能力 E：前端基础用户路径 — 部分完成，仍待产品化
 
 已完成一个可用的内嵌单页路径：
 
@@ -96,11 +96,11 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - busy guard、stale response guard 和安全 DOM 文本渲染。
 - 多项真实 Chromium failure contract。
 
-尚未达到产品前端：独立 React/Vite 应用、统一组件和错误状态体系、可访问性、国际化、移动端体验、上传进度、toast、retry interaction、loading skeleton、完整 E2E 和高延迟/离线体验。
+尚未达到完整产品前端：统一应用级组件和导航、国际化、上传进度、loading skeleton、高延迟/离线体验以及真实 Provider 下的整体验收仍属于 Phase 6；当前内嵌 UI 已覆盖 Phase 4 Q&A 的状态、retry、toast、响应式、基础可访问性和 Chromium E2E。
 
 ## 三、尚未完成 Phase
 
-### Phase 6：AI / Learning staged implementation
+### 当前 Phase 4：AI 最小闭环 — 已完成
 
 已完成并由 backend tests 覆盖：
 
@@ -109,20 +109,19 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
 - 当前材料最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示和 chunk offset 定位；purge 后历史 citation 标记 `source_unavailable`，并有 browser 与 backup/restore 验收。
 
-未完成：真实 provider、完整 Q&A history/multi-material UX、cards、练习和学习计划。
+Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。真实 provider 属于下一阶段 Phase 5；cards、练习和学习计划属于后续阶段。
 
-### Phase 7：AI 与学习工作流 — 部分开始
+### Phase 5 之后：AI 与学习工作流 — 尚未进入
 
 以下核心产品能力尚未形成可用用户路径：
 
-- 完整 Q&A 对话历史浏览、多材料 scope UX 与跨材料 citation 导航。
-- 真实 provider / embedding、RAG 扩展。
+- 真实 provider / embedding、RAG 扩展（真实 provider 先属于 Phase 5，embedding/RAG 扩展按后续路线推进）。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
 - OCR、ASR、旧格式转换。
 - 后台任务、进度、暂停/取消、retry 和导入历史。
 
-### Phase 8：生产化与扩展 — 未完成
+### Phase 6 及以后：产品化、生产化与扩展 — 未完成
 
 - I1 migration framework 与 schema versioning 已完成；I2 backup/restore 运维闭环已完成。
 - I3 最小可观察性已实现；I4 已时间盒验收，本地单进程基础设施 v1 基本完工。
@@ -141,24 +140,19 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
    - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
    - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏已明确记录为 `not_verified`，并作为 v1 运行边界接受。
 
-### P0：当前最高优先级——实现 AI 第一阶段最小闭环
+### 当前下一步：Phase 5 真实 Provider 接入
 
-1. **实现可信 Q&A 最小闭环**
-   - 实现 material revision/chunk 数据模型和可追溯 citation。
-   - 实现 SQLite FTS5 retrieval API。
-   - 实现 provider Protocol 与 deterministic fake provider。
-   - 增加一个基于材料引用的 Q&A 用户路径。
-   - 未配置 provider 时返回稳定 `provider_not_configured`，不能阻塞应用启动。
+Phase 4 的 deterministic fake provider Q&A 闭环已经完成。下一阶段只推进真实 Provider 边界，不回退或重复 Phase 4 的历史、多材料、citation 和基础 UI 任务：
 
-2. **明确 S1–S7 的首个可交付范围**
-   - 先选择一个最小学习闭环：材料 → 检索 → 引用问答 → 用户确认的卡片/练习。
-   - 暂不同时开发卡片、Quiz、计划、OCR、ASR 和云同步，避免范围失控。
+- 正式 LLMProvider / EmbeddingProvider adapter 与 registry；
+- 环境变量配置、timeout、output limits；
+- provider timeout、rate-limit、auth、quota、unavailable、malformed response、refusal 的稳定错误映射；
+- provider/model/request ID、usage、latency metadata；
+- provider secret、原始异常和原始 provider response 的隔离。
 
-3. **把当前前端从“可用测试页面”推进为产品 MVP**
-   - 统一 loading/empty/error/success 状态。
-   - 添加 retry、toast、上传进度和任务状态。
-   - 统一 mutation/export API 错误处理。
-   - 建立可访问性和响应式布局基线。
+### 后续阶段：学习能力和生产化
+
+Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 6–10 顺序推进，不在当前阶段并行承诺。
 
 ### P1：在 AI 闭环后补齐运行保障
 
@@ -179,7 +173,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 全局生产级 `real-pass`。
 - 多进程或多 Uvicorn worker 共享同一 data_root。
 - 真实断电、磁盘损坏、网络文件系统恢复。
-- 已具备 AI、RAG、Q&A、卡片、练习或学习计划。
+- 不宣称已具备真实 Provider、RAG、Cards、Exercises 或学习计划；Phase 4 的 deterministic fake provider Q&A 已实现并通过对应验收。
 - 已具备 OCR、ASR、ZIP import、文件夹 export 或后台任务队列。
 - 已完成多用户、认证授权、云同步和协作。
 

@@ -64,11 +64,12 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`。
-- 下一步最高优先级：AI Phase 1 可信 Q&A 最小闭环。
+- 当前项目 Phase 4 可信 Q&A 最小闭环已完成。
+- 下一步最高优先级：Phase 5 真实 Provider 接入。
 
 ## 五、下一步准备
 
-进入 AI Phase 4 之前，在 `studybuddy-composer` 准备以下组件 smoke：
+在进入 Phase 5 真实 Provider 阶段之前，在 `studybuddy-composer` 保持以下组件 smoke 证据可复核：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序

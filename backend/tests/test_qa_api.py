@@ -80,6 +80,45 @@ def test_qa_ask_reuses_thread_and_fake_answer_is_deterministic(tmp_path: Path):
             assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE thread_id = ?", (first["thread_id"],)).fetchone()[0] == 4
 
 
+def test_qa_history_lists_threads_and_returns_citations(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        first = upload(client, "history-a.txt", "Alpha history source is here.")
+        second = upload(client, "history-b.txt", "Beta history source is here.")
+        index(client, first["material_id"])
+        index(client, second["material_id"])
+        answer = ask(client, "history source", first["material_id"]).json()
+        follow_up = ask(client, "history source", first["material_id"], thread_id=answer["thread_id"])
+        assert follow_up.status_code == 200
+        threads = client.get("/api/qa/threads")
+        assert threads.status_code == 200
+        assert threads.json()["items"][0]["id"] == answer["thread_id"]
+        history = client.get(f"/api/qa/threads/{answer['thread_id']}")
+        assert history.status_code == 200
+        messages = history.json()["messages"]
+        assert [message["role"] for message in messages] == ["user", "assistant", "user", "assistant"]
+        citation = messages[1]["citations"][0]
+        assert citation["material_name"] == "history-a.txt"
+        assert citation["status"] == "valid"
+        assert "stored_path" not in history.text
+        assert client.get("/api/qa/threads/thread_missing").status_code == 404
+
+
+def test_qa_history_refreshes_deleted_citation_status(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "history-delete.txt", "A source that will be deleted.")
+        index(client, material["material_id"])
+        answer = ask(client, "source deleted", material["material_id"]).json()
+        assert client.delete(f"/api/materials/{material['material_id']}").status_code == 204
+        history = client.get(f"/api/qa/threads/{answer['thread_id']}").json()
+        assert history["messages"][1]["citations"][0]["status"] == "source_deleted"
+
+
+def test_qa_history_rejects_invalid_limit(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        assert client.get("/api/qa/threads?limit=0").status_code == 400
+        assert client.get("/api/qa/threads?limit=101").status_code == 400
+
+
 def test_qa_not_configured_persists_failed_operation_without_answer(tmp_path: Path):
     with make_client(tmp_path, fake=False) as client:
         material = upload(client, "not-configured.txt", "Provider configuration should be required.")

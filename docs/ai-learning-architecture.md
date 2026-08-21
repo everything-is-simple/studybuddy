@@ -1,12 +1,12 @@
 # AI / 学习功能架构设计
 
-状态：architecture plus partial implementation；material revision、deterministic chunks、chunk lexical retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence 和最小 Q&A UI/citation location 已实现。
+状态：architecture plus Phase 4 implementation；material revision、deterministic chunks、chunk lexical retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。真实 provider 与后续学习能力仍按主路线图推进。
 
 ## 1. 范围与原则
 
-StudyBuddy 当前的 source of truth 仍是 `materials`、`extractions`、`text_spans`。AI 数据全部是可追溯的派生数据或用户状态，不替代原始材料和解析正文。第一阶段面向单用户、单进程、SQLite、本地文件存储；provider 未配置时应用必须照常启动，AI endpoint 返回稳定的 `provider_not_configured`。
+StudyBuddy 当前的 source of truth 仍是 `materials`、`extractions`、`text_spans`。AI 数据全部是可追溯的派生数据或用户状态，不替代原始材料和解析正文。Phase 4 面向单用户、单进程、SQLite、本地文件存储；provider 未配置时应用必须照常启动，AI endpoint 返回稳定的 `provider_not_configured`。
 
-第一阶段不接入真实 provider、不自动为历史材料生成 chunk/embedding、不引入外部向量数据库、不在 startup repair AI 数据、不引入后台队列，不自动修改用户确认过的卡片、练习或计划。
+Phase 4 不接入真实 provider、不自动为历史材料生成 chunk/embedding、不引入外部向量数据库、不在 startup repair AI 数据、不引入后台队列，不自动修改用户确认过的卡片、练习或计划。
 
 ## 2. 分层
 
@@ -224,26 +224,19 @@ assistant answer 必须关联 operation、retrieval_run 和独立 citations。pr
 
 ## 16. 路线图与验收
 
-### Phase 0
-Provider Protocol、error constants、revision/schema migration proposal、fake provider、citation contract、backup impact、ADR。当前已完成 revision/chunk schema、deterministic chunker 和显式 indexing 的第一部分。
+以下是 AI 子路线与项目主路线图的对应关系。项目主路线图的 Phase 4 是当前 AI 最小闭环；本节不再使用独立的 Phase 0/1/2 编号，避免与项目阶段冲突。
 
-### Phase 1
-chunk FTS5、deterministic lexical retrieval、retrieval run/hit persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence 和最小 Q&A UI 已实现。Q&A 调用显式 scope retrieval、server-side citation verification，并持久化 operation/thread/user message/assistant message/answer/citation；UI 支持显式 indexing、loading/error/retry、citation 展示和当前材料 chunk offset 定位。已验收部分包括中文/Unicode offsets、空材料、deleted 排除、重复 indexing 确定性、稳定 top-k 排序、retrieval_empty、purge 级联清理、token-budgeted context 截断、citation 四态验证、未配置 provider 的稳定失败边界、answer/citation rollback、browser Q&A 路径和 AI backup/restore；历史 citation 在 purge 后标记 `source_unavailable`；完整 Q&A history/multi-material UX 与真实 provider 仍未实现。
+### 当前项目 Phase 4：AI 最小闭环
 
-### Phase 2
+Provider Protocol、revision/chunk schema、deterministic chunker、显式 indexing、chunk FTS5、deterministic lexical retrieval、retrieval run/hit persistence、context assembly、citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/跨材料导航和完整浏览器 E2E 已实现并验证。Q&A 调用显式 scope retrieval、server-side citation verification，并持久化 operation/thread/user message/assistant message/answer/citation；purge 后历史 citation 标记 `source_unavailable`。Phase 4 已完成；真实 provider 和后续学习能力属于后续项目 Phase。
+
+### 项目 Phase 5：真实 Provider 接入
+
 真实 provider adapter、timeout/retry/rate-limit、structured output、capability endpoint、secret/error leakage tests。
 
-### Phase 3
-embedding provider、SQLite embedding payload、hybrid retrieval、rebuild/verify 和 stale semantics；仅在规模证据充分后评估外部 ANN。
+### 项目 Phase 6 及以后：AI MVP 产品化与扩展
 
-### Phase 4
-cards/exercises：draft、citation、user edit、schema validation、deterministic grading、attempts/review。
-
-### Phase 5
-plans：draft/confirm/active、dependency、progress；不自动覆盖用户状态。
-
-### Phase 6
-明确需求后再引入 worker、cancel、concurrency、observability 和 provider 长任务恢复。
+embedding provider、SQLite embedding payload、hybrid retrieval、rebuild/verify 和 stale semantics；cards/exercises 的 draft、citation、user edit、schema validation、deterministic grading；plans 的 draft/confirm/active、dependency、progress；以及在需求明确后引入 worker、cancel、concurrency、observability 和 provider 长任务恢复。
 
 ## 17. 测试矩阵
 
@@ -251,4 +244,4 @@ Fake provider 覆盖未配置、timeout、rate-limit、auth/quota、malformed JS
 
 ## 18. 当前不实现
 
-本次只完成架构设计，不接真实 provider，不新增 migration，不创建 AI 表，不改现有 API，不自动索引历史材料，不引入 vector DB、worker、AI UI、cards/exercises/plans 完整功能，也不执行 git commit/push。
+后续设计仍不接真实 provider、不自动索引历史材料、不引入 vector DB、worker、cards/exercises/plans 完整功能。当前 Phase 4 的 AI 表、API、Q&A UI 和 browser 验收已经实现；后续变更仍必须遵循项目主 Phase 路线和 migration 治理。

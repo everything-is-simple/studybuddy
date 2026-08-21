@@ -19,11 +19,11 @@
 | AI / 学习产品能力 | 25%–35% | 目前仅完成架构设计，未形成用户功能 |
 | **项目整体（功能加权估算）** | **45%–50%** | 不是测试通过率，不能标记为全局 `real-pass` |
 
-## 阶段状态（不等于“Phase 已全部完成”）
+## 已交付能力与基础设施状态
 
-以下 Phase 只表示其**已定义的第一版范围**已经交付或形成设计结论；它们仍有明确缺口，不能据此宣称基础设施、可靠性、运维或 AI 架构已经最终完成。
+以下内容是当前项目主 Phase 4 之前已经交付的能力层，不使用独立 Phase 编号，避免与当前项目主路线混用。
 
-### Phase 0：文件材料基础设施（v1 范围已交付）
+### 文件材料基础设施（v1 范围已交付）
 
 **状态：v1 范围完成；核心用户路径局部 `real-pass`；不是完整文件平台。**
 
@@ -41,7 +41,7 @@
 
 **明确未包含：** OCR、ASR、ZIP import、旧格式转换、文件夹 export、语义/向量/AI 搜索。
 
-### Phase 1：可靠性、安全与一致性（基础边界已实现）
+### 可靠性、安全与一致性（基础边界已实现）
 
 **状态：基础边界 `implemented`；不是生产级可靠性完成，也不是整体 `real-pass`。**
 
@@ -58,7 +58,7 @@
 
 **明确限制：** 不支持多进程、多 worker 或多实例共享同一个 `data_root`；真实磁盘满、断电、硬件/文件系统损坏、网络盘、真实 ACL、性能或容量极限已记录为 `not_verified`，作为 v1 运行边界接受。
 
-### Phase 2：Operator 备份与恢复（手工基础能力已实现）
+### Operator 备份与恢复（手工基础能力已实现）
 
 **状态：手工基础能力 `implemented`；不是完整备份运维体系。**
 
@@ -70,9 +70,9 @@
 
 **待补：** 定期备份、保留策略、恢复演练、corruption quarantine、read-only mode、管理修复工具。
 
-### Phase 3：AI / 学习架构设计（规划阶段）
+### AI / 学习架构设计（规划和 Phase 4 前置）
 
-**状态：架构设计已记录；`researching / architecture-only`，不属于已实现的产品 Phase，也无真实 AI 功能。**
+**状态：架构设计已记录；其中 Phase 4 所需的 revision/chunk/retrieval/citation/Q&A 设计已经实现，真实 provider 和后续学习能力仍属于后续项目 Phase。**
 
 已定义：
 
@@ -86,11 +86,11 @@
 
 设计依据见 [`ai-learning-architecture.md`](ai-learning-architecture.md)。
 
-## 急需完成的 Phase
+## 当前主 Phase 与后续路线
 
 ### Phase 4：AI 最小闭环
 
-**状态：已开始；revision/chunk 显式 indexing 已实现，当前继续推进 chunk retrieval、citation 和可信 Q&A 业务闭环。**
+**状态：已完成；deterministic fake provider 下的可信 Q&A 用户闭环、浏览器验收和文档证据已收口。**
 
 **目标：** 用户针对已导入材料提问，系统通过可追溯检索返回带可验证来源引用的回答。第一轮可使用 deterministic fake provider，不以接入某家真实模型为前置条件。
 
@@ -120,9 +120,9 @@ migration / schema versioning
 9. Q&A API、回答持久化、citation 持久化和最小 UI；同步 `POST /api/qa/ask`、thread/message/answer/citation persistence、当前材料 Q&A UI、citation 定位、purge unavailable lifecycle 与 browser/backup-restore 验收已实现；
 10. API/repository/failure/browser 验收和文档同步。
 
-**当前进度：** lexical chunk retrieval、retrieval_runs / retrieval_hits、context assembly、citation contract、deterministic fake provider、同步 Q&A API/persistence、最小 Q&A UI、citation 定位、purge 后历史 citation unavailable lifecycle、browser E2E 和 AI table backup/restore 验收已实现；真实 provider、完整 Q&A history/multi-material UX 尚未实现。
+**当前进度：** lexical chunk retrieval、retrieval_runs / retrieval_hits、context assembly、citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A thread/history API、单材料和多材料 Q&A UI、citation 详情与跨材料定位、purge 后历史 citation unavailable lifecycle、统一 loading/empty/error/success/retry 状态、toast、响应式/键盘基础支持、backend 全套测试和 Chromium E2E 均已实现并验证。
 
-**完成标准：** fake provider 下完成端到端问答；每个展示的 citation 都能回到 material/chunk/span；deleted/stale source 被排除；purge 后历史 citation 标记 `source_unavailable`；未配置 provider 时应用照常启动且安全失败。
+**Phase 4 完成结论：** deterministic fake provider 下已完成导入 → indexing → 检索 → 问答 → citation → 原文定位完整用户路径；citation 可追溯到 material/revision/chunk/span；deleted/stale source 被排除；purge 后历史 citation 标记 `source_unavailable`；未配置 provider 时应用正常启动并安全失败；失败、重复点击和过期响应不破坏 UI；桌面和窄屏路径通过当前浏览器验收。Phase 4 已完成，下一阶段为 Phase 5：真实 Provider 接入。
 
 ### Phase 5：真实 Provider 接入
 
@@ -137,15 +137,17 @@ migration / schema versioning
 
 > 真实 provider 很重要，但 revision/chunk/retrieval/citation 才是可信 Q&A 的内部前置条件；不得让厂商 API 接入阻塞 Phase 4 架构验收。
 
-### Phase 6：AI MVP 前端与整体验收
+### Phase 6：AI MVP 产品化与整体验收
 
-**状态：未开始。**
+**状态：未开始；依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
 
-- Q&A thread、材料范围选择、回答加载/失败/retry。
-- citation 来源标记、原文定位和 source unavailable 状态。
-- 统一 loading / empty / error / success、toast 和安全错误提示。
-- 基础响应式布局、键盘操作、可访问性基线。
-- 导入 → 检索 → 问答 → 引用 → 导出等核心 E2E 验收。
+Phase 4 已负责 fake provider 下 Q&A 的完整可验收用户路径。Phase 6 不重复定义历史、材料范围、citation 定位或基础 loading/error 任务，而是在真实 Provider 接入后完成产品级整合：
+
+- 真实 provider 下的端到端回归和 provider failure UX 验收；
+- 更完整的 Q&A thread 工作区、跨材料浏览和导出衔接；
+- 统一应用级组件、导航、通知、可访问性和响应式体验；
+- 导入 → 检索 → 问答 → 引用 → 导出核心工作流的整体验收；
+- 高延迟、离线、长回答和真实 provider 限制下的前端体验收口。
 
 ### Phase 7：Embedding 与 Hybrid Retrieval
 
@@ -188,9 +190,9 @@ migration / schema versioning
 ```text
 I4：真实环境与容量基线（时间盒） ✅ 已验收
 → 本地单进程基础设施 v1 基本完工 ✅ 已宣告
-→ Phase 4：AI 最小闭环（fake provider）【当前最高优先级】
-→ Phase 5：真实 provider
-→ Phase 6：AI MVP 前端和整体验收
+→ Phase 4：AI 最小闭环（fake provider）✅ 已完成
+→ Phase 5：真实 provider【当前最高优先级】
+→ Phase 6：AI MVP 产品化与整体验收
 → Phase 7：embedding / hybrid retrieval（按需）
 → Phase 8：卡片与练习
 → Phase 9：学习计划 / S1–S7
@@ -203,11 +205,11 @@ I4：真实环境与容量基线（时间盒） ✅ 已验收
 
 > 本地单进程文件材料基础设施 v1 基本完工，支持 versioned migration、手工 backup/restore 和已声明的 local-disk/single-instance 运行边界。
 
-这不是全局生产级完成，也不代表 AI、Q&A、Cards 或 Exercises 已实现。
+这不是全局生产级完成，也不代表真实 Provider、Embedding、Cards、Exercises 或学习计划已实现；当前项目 Phase 4 的 deterministic fake provider Q&A 已按独立完成标准验收。
 
 ## 不应作出的当前声明
 
 - 不宣称全局生产级 `real-pass`。
-- 不宣称已实现 AI、RAG、Q&A、卡片、练习、学习计划或 S1–S7。
+- 不宣称已实现真实 Provider、Embedding、Cards、Exercises、学习计划或 S1–S7；Phase 4 的 deterministic fake provider Q&A 已实现并通过对应验收。
 - 不宣称支持多进程、多实例共享 `data_root`。
 - 不宣称覆盖真实断电、磁盘损坏、网络盘、真实磁盘满或容量压力。

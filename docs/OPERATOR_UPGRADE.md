@@ -10,12 +10,10 @@
 
 ```text
 1 | canonical_material_schema
-2 | ai_phase0_schema
+2 | ai_schema_v2 (revision/chunk/retrieval/Q&A tables)
 ```
 
-v2 增加 AI Phase 0/1 的持久化表，但不会自动创建 revision、chunk、embedding 或
-Q&A 数据，也不会调用 provider 或后台任务。Cards、Exercises、Plans 的表不属于本次
-升级范围。
+v2 增加当前项目 Phase 4 使用的 revision/chunk/retrieval/Q&A 持久化表；应用不会在导入或启动时自动创建 AI 索引，不调用真实 provider，也不启动后台任务。Cards、Exercises、Plans 的表不属于本次升级范围。
 
 支持的部署前提是单进程、单实例、单一 `data_root`、本地存储。升级期间不得让多个
 StudyBuddy 进程或其他 SQLite writer 使用同一个数据库。

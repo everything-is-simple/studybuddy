@@ -407,6 +407,70 @@ def get_qa_citation_detail(connection: sqlite3.Connection, citation_key: str) ->
             "end_offset": chunk["end_offset"], "span_ids": span_ids, "excerpt": excerpt}
 
 
+def list_qa_threads(connection: sqlite3.Connection, *, project_id: str, limit: int = 50) -> list[dict[str, object]]:
+    rows = connection.execute(
+        "SELECT t.id, t.title, t.created_at, t.updated_at, "
+        "(SELECT COUNT(*) FROM qa_messages m WHERE m.thread_id = t.id) AS message_count "
+        "FROM qa_threads t WHERE t.project_id = ? AND t.archived_at IS NULL "
+        "ORDER BY t.updated_at DESC, t.id DESC LIMIT ?",
+        (project_id, limit),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_qa_thread_history(connection: sqlite3.Connection, *, project_id: str,
+                          thread_id: str) -> dict[str, object] | None:
+    thread = connection.execute(
+        "SELECT id, title, created_at, updated_at FROM qa_threads "
+        "WHERE id = ? AND project_id = ? AND archived_at IS NULL",
+        (thread_id, project_id),
+    ).fetchone()
+    if thread is None:
+        return None
+    messages: list[dict[str, object]] = []
+    rows = connection.execute(
+        "SELECT m.id, m.role, m.content, m.created_at, a.id AS answer_id, "
+        "a.status AS answer_status, a.provider_id, a.model_id "
+        "FROM qa_messages m LEFT JOIN qa_answers a ON a.message_id = m.id "
+        "WHERE m.thread_id = ? ORDER BY m.rowid",
+        (thread_id,),
+    ).fetchall()
+    for row in rows:
+        message = {"id": row["id"], "role": row["role"], "content": row["content"],
+                   "created_at": row["created_at"]}
+        if row["answer_id"] is not None:
+            citations = connection.execute(
+                "SELECT citation_key, material_id, revision_id, chunk_id, position "
+                "FROM qa_citations WHERE answer_id = ? ORDER BY position, id",
+                (row["answer_id"],),
+            ).fetchall()
+            citation_items: list[dict[str, object]] = []
+            for citation in citations:
+                detail = get_qa_citation_detail(connection, str(citation["citation_key"])) or {
+                    "citation_key": citation["citation_key"], "status": "source_unavailable",
+                    "material_id": citation["material_id"], "revision_id": citation["revision_id"],
+                    "chunk_id": citation["chunk_id"], "span_ids": [],
+                }
+                material = connection.execute(
+                    "SELECT original_name FROM materials WHERE id = ?", (citation["material_id"],)
+                ).fetchone()
+                citation_items.append({
+                    "citation_key": citation["citation_key"], "position": citation["position"],
+                    "material_id": citation["material_id"], "material_name": material[0] if material else None,
+                    "revision_id": detail.get("revision_id"), "chunk_id": detail.get("chunk_id"),
+                    "span_ids": detail.get("span_ids", []), "status": detail.get("status", "source_unavailable"),
+                    "start_offset": detail.get("start_offset"), "end_offset": detail.get("end_offset"),
+                    "excerpt": detail.get("excerpt"),
+                })
+            message["answer_id"] = row["answer_id"]
+            message["answer_status"] = row["answer_status"]
+            message["provider_id"] = row["provider_id"]
+            message["model_id"] = row["model_id"]
+            message["citations"] = citation_items
+        messages.append(message)
+    return {"thread": dict(thread), "messages": messages}
+
+
 def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bool:
     deleted_at = utc_now()
     with connection:

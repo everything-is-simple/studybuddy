@@ -128,12 +128,12 @@ AssessmentAttempt + StudyTask + StudyEvent -> ParentReport（脱敏聚合）
 
 ## 四、三个版本的核心场景对比
 
-| 场景 | 祖宗 KaoBuddy | 前辈一 ai-studybuddy | 前辈二 pi-studybuddy | StudyBuddy 正式系统当前 |
+| 场景 | 祖宗 KaoBuddy | 前辈一 ai-studybuddy | 前辈二 pi-studybuddy | StudyBuddy 正式系统当前（主系统快照） |
 |---|---|---|---|---|
 | 资料导入 | ✅ 浏览器端解析 | ✅ 后端 Adapter | ✅ agent tools | ✅ Phase 0 已完成 |
-| 知识模块 | ✅ AI 拆分 | ✅ KnowledgeModule 对象 | ✅ s2 工具 | ❌ Phase 4 待实现 |
+| 知识模块 | ✅ AI 拆分 | ✅ KnowledgeModule 对象 | ✅ s2 工具 | ❌ 后续学习能力待实现 |
 | 学习计划 | ✅ 每日计划 | ✅ S1 StudyTask/StudyEvent | ✅ s1 工具 | ❌ Phase 9 待实现 |
-| 笔记生成 | ✅ AI 讲解 | ✅ S2 笔记/重点/导图 | ✅ s2 工具 | ❌ Phase 4 Q&A 前置 |
+| 笔记生成 | ✅ AI 讲解 | ✅ S2 笔记/重点/导图 | ✅ s2 工具 | ❌ 后续学习能力待实现（Phase 4 Q&A 已完成） |
 | 限时练习 | ✅ 模拟题 | ✅ S3 PracticeRunner | ✅ s3 工具 | ❌ Phase 8 待实现 |
 | 错题改错 | ✅ 错题本 | ✅ S4 ErrorFixer | ✅ s4 工具 | ❌ Phase 8 待实现 |
 | 模拟考 | ✅ 模拟考 | ✅ S5 ExamCrammer | ✅ s5 工具 | ❌ Phase 8 待实现 |
@@ -141,7 +141,7 @@ AssessmentAttempt + StudyTask + StudyEvent -> ParentReport（脱敏聚合）
 | 家长报告 | ❌ | ✅ S6 ParentReport | ✅ s6 工具 | ❌ 暂不做 |
 | 课堂采集 | ✅ 视频字幕 | ✅ S7 ClassCapture | ✅ s7/ocr/tts | ❌ 暂不做 |
 | AI Provider | ✅ BYOK | ✅ AiProviderRouter | ✅ pi 底座 | ❌ Phase 5 待实现 |
-| 本地存储 | ✅ IndexedDB | ✅ SQLite | ✅ SQLite | ✅ Phase 0 已完成 |
+| 本地存储 | ✅ IndexedDB | ✅ SQLite | ✅ SQLite | ✅ 文件材料基础设施已完成 |
 | 部署形态 | PWA | Express localhost | Electron | FastAPI localhost |
 
 ---
