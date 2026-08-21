@@ -1,5 +1,7 @@
 # StudyBuddy Architecture Boundary
 
+> 当前项目阶段与优先级见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)。当前重点是从文件材料基础设施进入 AI/学习最小闭环；多进程、多用户和云同步仍不在支持范围。
+
 ## Runtime target
 
 `127.0.0.1` 本机 Web 应用：React/Vite 前端 + FastAPI 后端 + SQLite + 本地文件。AI 通过当前选中的单一 OpenAI-compatible provider 直接请求。不引入 pi、Electron、自动 fallback 或多进程 AgentSession。

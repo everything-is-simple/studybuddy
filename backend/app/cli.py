@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .backup import BackupError, backup_data, restore_backup, verify_backup
 from .migrations.runner import MigrationError, assert_schema_version
+from .restore_acceptance import verify_restored_data
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,6 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--confirm", action="store_true")
     version = sub.add_parser("schema-version")
     version.add_argument("--database", required=True, type=Path)
+    acceptance = sub.add_parser("verify-restored-data")
+    acceptance.add_argument("--data-root", required=True, type=Path)
+    acceptance.add_argument("--base-url")
     args = parser.parse_args(argv)
     try:
         if args.command == "backup":
@@ -37,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
                 result = {"schema_version": assert_schema_version(connection)}
             finally:
                 connection.close()
+        elif args.command == "verify-restored-data":
+            result = verify_restored_data(args.data_root, args.base_url)
+            if result.get("status") != "passed":
+                print(json.dumps(result, ensure_ascii=False))
+                return 1
         else:
             result = restore_backup(args.data_root, args.backup, args.confirm)
     except (BackupError, MigrationError) as error:

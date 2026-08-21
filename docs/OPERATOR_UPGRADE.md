@@ -1,0 +1,187 @@
+# Operator upgrade runbook
+
+本 runbook 用于 StudyBuddy 数据库 schema 升级，当前目标版本为 **schema version 2**。
+升级会由 application startup 触发 migration runner；operator 不应手工修改
+`schema_migrations` 或 `PRAGMA user_version`。
+
+## 适用范围
+
+当前迁移链为：
+
+```text
+1 | canonical_material_schema
+2 | ai_phase0_schema
+```
+
+v2 增加 AI Phase 0/1 的持久化表，但不会自动创建 revision、chunk、embedding 或
+Q&A 数据，也不会调用 provider 或后台任务。Cards、Exercises、Plans 的表不属于本次
+升级范围。
+
+支持的部署前提是单进程、单实例、单一 `data_root`、本地存储。升级期间不得让多个
+StudyBuddy 进程或其他 SQLite writer 使用同一个数据库。
+
+## 升级前检查
+
+1. 停止 StudyBuddy 服务和所有可能访问该 `data_root` 的进程。
+2. 确认目标目录、数据库和 originals 没有 symlink；确认备份目录位于 live data root
+   之外。
+3. 记录当前 schema version：
+
+```bat
+cd /d H:\studybuddy\backend
+D:\miniconda\py310\python.exe -m app.cli schema-version ^
+  --database <live-data-root>\studybuddy.sqlite3
+```
+
+如果命令不能返回稳定的 schema version，停止升级并保留数据库副本；不要手工修复
+history。
+
+4. 创建 live data root 的备份：
+
+```bat
+D:\miniconda\py310\python.exe -m app.cli backup ^
+  --data-root <live-data-root> ^
+  --output <backup-root>
+```
+
+5. 验证备份：
+
+```bat
+D:\miniconda\py310\python.exe -m app.cli verify-backup ^
+  --backup <backup-root>
+```
+
+只有 `status = valid` 的备份才是升级回退依据。记录备份路径、时间、schema version
+和 verification 结果。
+
+## 执行升级
+
+启动新版本 StudyBuddy。应用启动顺序为：
+
+```text
+preflight
+-> SQLite connect
+-> migration runner
+-> schema/index consistency check
+-> diagnostic audit
+-> storage recovery
+-> ready
+```
+
+对于 v1 数据库，runner 只执行缺失的 v2：
+
+```text
+BEGIN IMMEDIATE
+-> execute ai_phase0_schema
+-> insert (2, 'ai_phase0_schema') into schema_migrations
+-> set PRAGMA user_version = 2
+-> COMMIT
+```
+
+新数据库会按 v1、v2 的连续顺序创建。重复启动不会重复执行或新增 history row。
+
+## 升级后验收
+
+服务 ready 后检查 health：
+
+```text
+GET /api/health
+```
+
+期望：
+
+```json
+{"status":"ok"}
+```
+
+再次检查 schema version：
+
+```bat
+D:\miniconda\py310\python.exe -m app.cli schema-version ^
+  --database <live-data-root>\studybuddy.sqlite3
+```
+
+期望：
+
+```json
+{"schema_version":2}
+```
+
+必要时直接核对 migration history：
+
+```bat
+D:\miniconda\py310\python.exe -c "import sqlite3; c=sqlite3.connect(r'<live-data-root>\studybuddy.sqlite3'); print(c.execute('SELECT version,name FROM schema_migrations ORDER BY version').fetchall()); print(c.execute('PRAGMA user_version').fetchone()[0]); c.close()"
+```
+
+期望结果：
+
+```text
+[(1, 'canonical_material_schema'), (2, 'ai_phase0_schema')]
+2
+```
+
+同时执行现有功能 smoke check：
+
+- active materials list
+- deleted materials list
+- material detail
+- original download
+- extracted text export
+- search
+
+## 失败处理与半升级防护
+
+migration DDL、history row、`PRAGMA user_version` 在同一个 SQLite migration transaction
+内完成。任意一步失败都应 rollback：
+
+- 不写入 v2 history row；
+- 不将 `PRAGMA user_version` 更新为 2；
+- 不把应用置为 ready；
+- 不继续以普通读写模式运行；
+- 不手工删除残留表或编辑版本号。
+
+稳定错误可能包括：
+
+```text
+database_schema_unsupported
+database_schema_version_unknown
+database_migration_history_mismatch
+database_migration_incomplete
+database_migration_failed
+```
+
+失败后：
+
+1. 停止服务并保留失败数据库及日志中的稳定错误码。
+2. 不要覆盖 live data root，不要删除 `schema_migrations`，不要执行 `PRAGMA user_version`。
+3. 如果数据库仍可诊断，先复制一份用于诊断；不要在原库上反复尝试未知修复。
+4. 优先使用原升级前已验证的 backup，恢复到一个**新的空目录**：
+
+```bat
+D:\miniconda\py310\python.exe -m app.cli restore ^
+  --data-root <new-empty-target> ^
+  --backup <verified-backup-root> ^
+  --confirm
+```
+
+5. 对恢复目录执行 restore acceptance，再将服务指向该新目录；不要直接覆盖正在使用
+   的 live data root。
+
+当前没有 automatic down migration。升级失败的数据库和备份必须保留，直到新目录通过
+schema、完整性、材料和原文件验收。
+
+## 完成标准
+
+升级只有在以下条件全部满足时才算完成：
+
+```text
+schema version = 2
+history = [(1, canonical_material_schema), (2, ai_phase0_schema)]
+PRAGMA user_version = 2
+/api/health = 200 / ok
+backup/restore version consistency 已通过
+现有材料读写、搜索、导出 smoke check 已通过
+```
+
+通过后才能进入依赖 I1 schema versioning 的后续 AI 开发。该升级不会自动索引历史
+材料，也不会进入 Cards、Exercises 或 Plans 实现。

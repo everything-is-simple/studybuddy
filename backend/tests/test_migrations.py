@@ -21,12 +21,16 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 1
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 1
-        assert connection.execute("SELECT name FROM sqlite_master WHERE name = 'material_search'").fetchone()
+        assert assert_schema_version(connection) == 2
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 2
+        ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
+        assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
+                             "material_revisions", "chunks", "chunk_spans", "embeddings",
+                             "retrieval_runs", "retrieval_hits", "qa_citations",
+                             "ai_operations", "qa_threads", "qa_messages", "qa_answers"}
     with connect(database) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 1
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
 
 
 def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
@@ -53,8 +57,12 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 2
         assert connection.execute("SELECT COUNT(*) FROM material_search").fetchone()[0] == 1
+        ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
+        assert ai_tables >= {"material_revisions", "chunks", "chunk_spans", "embeddings",
+                             "retrieval_runs", "retrieval_hits", "qa_citations",
+                             "ai_operations", "qa_threads", "qa_messages", "qa_answers"}
 
 
 def test_unknown_future_version_fails_without_ready(tmp_path: Path):
@@ -90,7 +98,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 1
+    assert manifest["database"]["schema_version"] == 2
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))

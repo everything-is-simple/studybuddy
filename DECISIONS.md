@@ -1,5 +1,14 @@
 # StudyBuddy Decisions
 
+## 2026-08-25: project progress and priority boundary
+
+- 当前项目整体阶段性完成度按功能加权估算为 40%–45%；该估算不是测试通过率。
+- 文件材料导入、管理、搜索、导出已形成局部 `real-pass`；恢复与基础运维边界为 `implemented`。这些都只代表第一版范围，不得表述为对应领域或整个 StudyBuddy 已最终完成，更不得标记为全局 `real-pass`。
+- 基础设施尚未最终完成，但可支持 AI MVP 开发；收尾范围以 `docs/INFRASTRUCTURE_CLOSEOUT.md` 为准。migration/schema versioning 是 AI 数据表演进的硬前置，backup/restore 运维闭环和最小可观察性必须在 AI MVP 后优先完成。
+- 下一产品优先级是实现 AI/学习最小闭环：material revision/chunk → SQLite FTS5 retrieval → citation → provider/fake provider → Q&A。
+- S1–S7、卡片、练习、学习计划、OCR、ASR、后台队列、多用户、云同步和多进程支持继续分阶段推进，不在同一阶段并行承诺。
+- 长期 Phase 顺序、范围和完成标准以 `docs/PHASE_ROADMAP.md` 为准；进度总报告以 `docs/PROJECT_PROGRESS_REPORT.md` 为汇总入口；具体执行勾选项以 `docs/TODO.md` 为准。
+
 ## 2026-08-20: AI / learning architecture boundary
 
 - AI/学习当前只完成 architecture-only 设计，不接入真实 provider、不自动索引历史材料、不引入外部 vector DB、不引入后台队列。

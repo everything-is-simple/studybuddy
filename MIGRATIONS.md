@@ -1,6 +1,6 @@
 # Database migrations
 
-StudyBuddy uses a versioned SQLite schema. The current schema version is `1`.
+StudyBuddy uses a versioned SQLite schema. The current schema version is `2`.
 The authoritative history is stored in `schema_migrations`; SQLite `PRAGMA user_version`
 is kept in sync and is checked at startup and during backup verification.
 
@@ -31,11 +31,15 @@ startup preflight
 -> ready
 ```
 
-A new database is created by migration 1. A database created by an older StudyBuddy
-build without `schema_migrations` is adopted only after its known core objects are
-validated. Missing legacy columns (`updated_at`, `deleted_at`, `error_code`) are
-added and existing material timestamps are backfilled from `created_at`. Unknown
-objects or incomplete schemas are rejected; data is never silently declared current.
+A new database is created by migrations 1 and 2. Migration 1 creates the core
+schema (projects, materials, extractions, text_spans, material_search). Migration 2
+adds the AI Phase 0/1 tables: material_revisions, chunks, chunk_spans, embeddings,
+retrieval_runs, retrieval_hits, qa_citations, ai_operations, qa_threads, qa_messages,
+qa_answers. A database created by an older StudyBuddy build without
+`schema_migrations` is adopted only after its known core objects are validated.
+Missing legacy columns (`updated_at`, `deleted_at`, `error_code`) are added and
+existing material timestamps are backfilled from `created_at`. Unknown objects or
+incomplete schemas are rejected; data is never silently declared current.
 
 Migrations execute in consecutive version order under a SQLite write transaction.
 A successful migration is recorded only after its schema work succeeds. Repeated
@@ -51,10 +55,13 @@ repaired and retried, stop the service, preserve the failed database for diagnos
 verify a known-good backup, and restore it into a new empty target directory.
 Never overwrite a live data root with an unverified copy.
 
-## Pre-upgrade operator procedure
+## Operator upgrade runbook
+
+完整的停机、备份、升级、验收和失败恢复步骤见 [`docs/OPERATOR_UPGRADE.md`](docs/OPERATOR_UPGRADE.md)。以下是简版流程。
+
 
 1. Stop StudyBuddy and ensure no other process uses the data root.
-2. Create a backup outside the live data root:
+2. Record the current schema version, then create a backup outside the live data root:
 
 ```text
 D:/miniconda/py310/python.exe -m app.cli backup \
@@ -102,7 +109,7 @@ Start the application against the restored target and check:
 - a material detail is readable;
 - original and extracted-text exports work;
 - search returns the expected material;
-- `schema_migrations` and `PRAGMA user_version` remain at version `1`;
+- `schema_migrations` and `PRAGMA user_version` remain at version `2`;
 - startup does not add another migration history row.
 
 If backup verification or restore fails, the live data root is not modified. Isolate
