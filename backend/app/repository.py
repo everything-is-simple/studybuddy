@@ -19,6 +19,8 @@ MAX_CONTEXT_TOKENS = 2000
 CITATION_KEY_PREFIX = "ctx-"
 MAX_RETRIEVAL_QUERY_LENGTH = 1000
 MAX_RETRIEVAL_TOP_K = 50
+MAX_QA_QUESTION_LENGTH = 1000
+QA_PROMPT_VERSION = "qa_fake_v1"
 
 
 def _ensure_search_index(connection: sqlite3.Connection) -> None:
@@ -574,6 +576,140 @@ def get_material_index_status(connection: sqlite3.Connection, material_id: str) 
     return {"material_id": material_id, "status": "deleted" if material["deleted_at"] else status,
             "revision_id": revision["id"], "chunk_count": count,
             "is_current": bool(revision["is_current"]), "chunking_version": CHUNKING_VERSION}
+
+
+def create_qa_request(connection: sqlite3.Connection, *, project_id: str, question: str,
+                      material_ids: list[str], thread_id: str | None,
+                      request_id: str | None) -> dict[str, str]:
+    normalized = question.strip()
+    if not normalized or len(normalized) > MAX_QA_QUESTION_LENGTH:
+        raise ValueError("qa_invalid_question")
+    if not material_ids or len(material_ids) != len(set(material_ids)):
+        raise ValueError("qa_invalid_materials")
+    created_at = utc_now()
+    fingerprint = hashlib.sha256(
+        (normalized + "\x1f" + "\x1f".join(sorted(material_ids))).encode("utf-8")
+    ).hexdigest()
+    with connection:
+        if thread_id is None:
+            thread_id = f"thread_{uuid.uuid4().hex}"
+            title = normalized[:120]
+            connection.execute(
+                "INSERT INTO qa_threads (id, project_id, title, created_at, updated_at, archived_at) "
+                "VALUES (?, ?, ?, ?, ?, NULL)",
+                (thread_id, project_id, title, created_at, created_at),
+            )
+        else:
+            thread = connection.execute(
+                "SELECT id, archived_at FROM qa_threads WHERE id = ? AND project_id = ?",
+                (thread_id, project_id),
+            ).fetchone()
+            if thread is None:
+                raise ValueError("qa_thread_not_found")
+            if thread["archived_at"] is not None:
+                raise ValueError("qa_thread_archived")
+        operation_id = f"operation_{uuid.uuid4().hex}"
+        user_message_id = f"message_{uuid.uuid4().hex}"
+        connection.execute(
+            "INSERT INTO ai_operations (id, operation_type, status, project_id, material_id, thread_id, "
+            "input_fingerprint, source_revision, retrieval_policy_version, prompt_version, provider_id, "
+            "model_id, request_id, retry_count, error_code, output_artifact_id, prompt_tokens, "
+            "completion_tokens, latency_ms, created_at, started_at, finished_at) "
+            "VALUES (?, 'qa_answer', 'running', ?, NULL, ?, ?, NULL, ?, ?, NULL, NULL, ?, 0, NULL, "
+            "NULL, NULL, NULL, NULL, ?, ?, NULL)",
+            (operation_id, project_id, thread_id, fingerprint, RETRIEVAL_POLICY_VERSION,
+             QA_PROMPT_VERSION, request_id, created_at, created_at),
+        )
+        connection.execute(
+            "INSERT INTO qa_messages (id, thread_id, role, content, created_at, ai_operation_id) "
+            "VALUES (?, ?, 'user', ?, ?, ?)",
+            (user_message_id, thread_id, normalized, created_at, operation_id),
+        )
+        connection.execute("UPDATE qa_threads SET updated_at = ? WHERE id = ?", (created_at, thread_id))
+    return {"thread_id": thread_id, "operation_id": operation_id, "user_message_id": user_message_id}
+
+
+def fail_qa_operation(connection: sqlite3.Connection, operation_id: str, error_code: str) -> None:
+    with connection:
+        connection.execute(
+            "UPDATE ai_operations SET status = 'failed', error_code = ?, finished_at = ? "
+            "WHERE id = ? AND status = 'running'",
+            (error_code, utc_now(), operation_id),
+        )
+
+
+def persist_qa_answer(connection: sqlite3.Connection, *, project_id: str, operation_id: str,
+                      thread_id: str, provider_id: str, model_id: str, answer_text: str,
+                      citation_keys: list[str], context_blocks: list[dict[str, object]],
+                      prompt_tokens: int, completion_tokens: int, latency_ms: int) -> dict[str, object]:
+    allowed = {str(block.get("citation_key")): block for block in context_blocks}
+    verified: list[tuple[str, dict[str, object], dict[str, object]]] = []
+    for key in citation_keys:
+        if key not in allowed or any(key == existing[0] for existing in verified):
+            continue
+        validation = validate_citation_key(connection, key)
+        block = allowed[key]
+        source = block.get("source_info", {})
+        if (validation.get("status") == "valid" and isinstance(source, dict)
+                and validation["material_id"] == source.get("material_id")
+                and validation["revision_id"] == source.get("revision_id")):
+            verified.append((key, validation, block))
+    if not verified:
+        raise ValueError("citation_verification_failed")
+    created_at = utc_now()
+    assistant_message_id = f"message_{uuid.uuid4().hex}"
+    answer_id = f"answer_{uuid.uuid4().hex}"
+    with connection:
+        extraction_rows = {
+            str(row["id"]): str(row["extraction_id"])
+            for row in connection.execute(
+                "SELECT id, extraction_id FROM material_revisions WHERE id IN ({})".format(
+                    ",".join("?" for _key, validation, _block in verified)
+                ),
+                [validation["revision_id"] for _key, validation, _block in verified],
+            ).fetchall()
+        }
+        connection.execute(
+            "INSERT INTO qa_messages (id, thread_id, role, content, created_at, ai_operation_id) "
+            "VALUES (?, ?, 'assistant', ?, ?, ?)",
+            (assistant_message_id, thread_id, answer_text, created_at, operation_id),
+        )
+        connection.execute(
+            "INSERT INTO qa_answers (id, message_id, ai_operation_id, answer_text, answer_format, "
+            "source_coverage, status, prompt_version, provider_id, model_id, generated_at) "
+            "VALUES (?, ?, ?, ?, 'plain_text', 'cited', 'ready', ?, ?, ?, ?)",
+            (answer_id, assistant_message_id, operation_id, answer_text, QA_PROMPT_VERSION,
+             provider_id, model_id, created_at),
+        )
+        for position, (key, validation, block) in enumerate(verified, 1):
+            span_ids = block.get("span_ids", [])
+            span_id = str(span_ids[0]) if isinstance(span_ids, list) and span_ids else None
+            revision_id = str(validation["revision_id"])
+            connection.execute(
+                "INSERT INTO qa_citations (id, answer_id, citation_key, material_id, revision_id, extraction_id, "
+                "chunk_id, span_id, quote, position, source_revision, status) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'valid')",
+                (f"citation_{uuid.uuid4().hex}", answer_id, key, validation["material_id"], revision_id,
+                 extraction_rows.get(revision_id), validation["chunk_id"], span_id, position, revision_id),
+            )
+        connection.execute(
+            "UPDATE ai_operations SET status = 'succeeded', provider_id = ?, model_id = ?, "
+            "output_artifact_id = ?, prompt_tokens = ?, completion_tokens = ?, latency_ms = ?, "
+            "finished_at = ? WHERE id = ? AND project_id = ? AND status = 'running'",
+            (provider_id, model_id, answer_id, prompt_tokens, completion_tokens, latency_ms,
+             created_at, operation_id, project_id),
+        )
+        connection.execute("UPDATE qa_threads SET updated_at = ? WHERE id = ?", (created_at, thread_id))
+    return {
+        "assistant_message_id": assistant_message_id,
+        "answer_id": answer_id,
+        "citations": [
+            {"citation_key": key, "material_id": validation["material_id"],
+             "revision_id": validation["revision_id"], "chunk_id": validation["chunk_id"],
+             "span_ids": block.get("span_ids", []), "position": position, "status": "valid"}
+            for position, (key, validation, block) in enumerate(verified, 1)
+        ],
+    }
 
 
 def _citation_key(material_id: str, chunk_id: str) -> str:

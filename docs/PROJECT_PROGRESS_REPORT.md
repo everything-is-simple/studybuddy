@@ -100,23 +100,22 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 ## 三、尚未完成 Phase
 
-### Phase 6：AI / Learning architecture — researching / architecture-only
+### Phase 6：AI / Learning staged implementation
 
-已完成：
+已完成并由 backend tests 覆盖：
 
-- source of truth、revision、chunk、retrieval、citation、provider、AI operation 的边界设计。
-- 第一阶段采用 SQLite FTS5 lexical retrieval first 的方向。
-- provider Protocol、deterministic fake provider、citation 可追溯性和 draft 状态原则已记录。
+- source of truth、revision、deterministic chunk、chunk FTS5 retrieval、retrieval run/hit、context assembly、citation contract、provider 和 AI operation 的边界。
+- deterministic fake provider、未配置 provider 的稳定 `provider_not_configured`，以及 capabilities API。
+- 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
 
-I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现：chunk pipeline、retrieval API、真实 provider、Q&A、卡片、练习、学习计划。
+未完成：真实 provider、Q&A UI、purge 后历史 citation `source_unavailable` lifecycle、Q&A browser E2E、cards、练习和学习计划。
 
-### Phase 7：AI 与学习工作流 — 未开始
+### Phase 7：AI 与学习工作流 — 部分开始
 
-以下核心产品能力均未开始或未形成可用用户路径：
+以下核心产品能力尚未形成可用用户路径：
 
-- AI/provider 配置与调用。
-- 材料 chunk/retrieval/RAG。
-- 基于引用的问答。
+- Q&A UI、对话历史浏览、citation 原文定位、loading/error/retry。
+- 真实 provider / embedding、RAG 扩展。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
 - OCR、ASR、旧格式转换。

@@ -58,12 +58,11 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 实现 context assembler：token budget 截断、active/current/ready 过滤、dedup、citation key 生成（`ctx-{mid8}-{cid8}`）。
 - [x] 实现 citation key 验证：`valid` / `invalid_format` / `source_deleted` / `source_purged` 四态。
 - [x] 实现 Provider Protocol、registry、deterministic fake provider、`provider_not_configured` 和 `GET /api/ai/capabilities`。
-- [ ] 实现 `ai_operations`、Q&A thread/message/answer repository 和 API。
+- [x] 实现 `ai_operations`、Q&A thread/message/answer/citation repository 和同步 `POST /api/qa/ask`。
 - [ ] 实现最小 Q&A UI：loading/empty/error/retry、citation 展示与原文定位。
-- [ ] 补单元、repository、API failure、browser E2E、backup/restore AI 表测试。
-- [ ] 同步 `STATUS.md`、`DECISIONS.md`、AI architecture、roadmap 与 API 文档。
+- [ ] 补 browser E2E、Q&A AI 表 backup/restore 与 purge 后历史 citation `source_unavailable` 生命周期测试。
 
-**当前进度：** revision/chunk 显式 indexing、chunk lexical retrieval、context assembler、citation contract 和 deterministic fake provider 已实现并由 focused/backend tests 验证；Q&A 尚未实现。
+**当前进度：** revision/chunk 显式 indexing、chunk lexical retrieval、context assembler、citation contract、deterministic fake provider 和 Q&A API/persistence 已实现并由 backend tests 验证；Q&A UI 尚未实现。
 
 **完成标准：** fake provider 下端到端问答通过；展示 citation 可追溯到 material/revision/chunk/span；deleted/stale 被排除；purge 后历史 citation 正确显示 unavailable；未配置 provider 时应用照常启动并安全失败。
 

@@ -1,0 +1,174 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from app.config import AppConfig
+from app.main import create_app
+from app.providers import ProviderResult
+from app.repository import connect
+
+
+def make_client(root: Path, *, fake: bool = True) -> TestClient:
+    return TestClient(create_app(AppConfig(
+        data_root=root, max_upload_bytes=4096, ai_provider_id="fake" if fake else None,
+    )))
+
+
+def upload(client: TestClient, name: str, text: str) -> dict:
+    response = client.post("/api/materials", files={"file": (name, text.encode(), "text/plain")})
+    assert response.status_code == 201
+    return response.json()
+
+
+def index(client: TestClient, material_id: str) -> None:
+    assert client.post(f"/api/materials/{material_id}/ai-index").status_code == 200
+
+
+def ask(client: TestClient, question: str, material_id: str, **extra) -> object:
+    return client.post("/api/qa/ask", json={
+        "question": question, "material_ids": [material_id], **extra,
+    })
+
+
+def test_qa_ask_success_persists_traceable_answer(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "notes.txt", "Alpha establishes the central study conclusion.")
+        index(client, material["material_id"])
+        response = ask(client, "Alpha establishes", material["material_id"])
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "succeeded"
+        assert payload["provider_id"] == "fake"
+        assert payload["model_id"] == "fake-studybuddy-v1"
+        assert payload["citations"]
+        assert all(citation["status"] == "valid" for citation in payload["citations"])
+        assert all("stored_path" not in citation for citation in payload["citations"])
+        for forbidden in ("stored_path", "sqlite", "traceback", "select ", "h:/", "g:/"):
+            assert forbidden not in response.text.lower()
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT status FROM ai_operations WHERE id = ?", (payload["operation_id"],)).fetchone()[0] == "succeeded"
+            assert db.execute("SELECT role FROM qa_messages WHERE id = ?", (payload["user_message_id"],)).fetchone()[0] == "user"
+            assert db.execute("SELECT role FROM qa_messages WHERE id = ?", (payload["assistant_message_id"],)).fetchone()[0] == "assistant"
+            answer = db.execute("SELECT status, source_coverage FROM qa_answers WHERE id = ?", (payload["answer_id"],)).fetchone()
+            assert tuple(answer) == ("ready", "cited")
+            rows = db.execute(
+                "SELECT citation_key, material_id, revision_id, chunk_id, status FROM qa_citations WHERE answer_id = ?",
+                (payload["answer_id"],),
+            ).fetchall()
+            assert len(rows) == len(payload["citations"])
+            assert all(row[1] == material["material_id"] and row[4] == "valid" for row in rows)
+            assert db.execute("SELECT COUNT(*) FROM retrieval_hits WHERE run_id = ?", (payload["retrieval_run_id"],)).fetchone()[0] > 0
+
+
+def test_qa_ask_reuses_thread_and_fake_answer_is_deterministic(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "thread.txt", "The repeatable answer is grounded in this sentence.")
+        index(client, material["material_id"])
+        first = ask(client, "repeatable grounded", material["material_id"]).json()
+        second_response = ask(client, "repeatable grounded", material["material_id"], thread_id=first["thread_id"])
+        assert second_response.status_code == 200
+        second = second_response.json()
+        assert second["thread_id"] == first["thread_id"]
+        assert second["answer_text"] == first["answer_text"]
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE thread_id = ?", (first["thread_id"],)).fetchone()[0] == 4
+
+
+def test_qa_not_configured_persists_failed_operation_without_answer(tmp_path: Path):
+    with make_client(tmp_path, fake=False) as client:
+        material = upload(client, "not-configured.txt", "Provider configuration should be required.")
+        index(client, material["material_id"])
+        response = ask(client, "Provider required", material["material_id"])
+        assert response.status_code == 503
+        assert response.json()["detail"] == "provider_not_configured"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "provider_not_configured"
+            assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE role = 'assistant'").fetchone()[0] == 0
+
+
+def test_qa_unindexed_and_empty_retrieval_fail_without_answer(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        unindexed = upload(client, "unindexed.txt", "No indexing has occurred.")
+        response = ask(client, "What occurred?", unindexed["material_id"])
+        assert response.status_code == 409
+        assert response.json()["detail"] == "retrieval_not_ready"
+        index(client, unindexed["material_id"])
+        empty = ask(client, "completely absent token", unindexed["material_id"])
+        assert empty.status_code == 409
+        assert empty.json()["detail"] == "retrieval_empty"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM ai_operations WHERE status = 'failed'").fetchone()[0] == 2
+
+
+def test_qa_rejects_provider_forged_citation(monkeypatch, tmp_path: Path):
+    from app import main
+
+    class ForgingProvider:
+        provider_id = "fake"
+        model_id = "fake-studybuddy-v1"
+
+        def generate_answer(self, request):
+            return ProviderResult("forged response", ["ctx-aaaaaaaa-bbbbbbbb"], "fake", "fake-studybuddy-v1", 1, 1)
+
+    class ForgingRegistry:
+        def configured_provider(self):
+            return ForgingProvider()
+
+    monkeypatch.setattr(main, "provider_registry", lambda *_args: ForgingRegistry())
+    with make_client(tmp_path) as client:
+        material = upload(client, "forged.txt", "A trusted chunk exists for citation validation.")
+        index(client, material["material_id"])
+        response = ask(client, "trusted chunk", material["material_id"])
+        assert response.status_code == 500
+        assert response.json()["detail"] == "qa_generation_failed"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "citation_verification_failed"
+            assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
+
+
+def test_qa_answer_persistence_rolls_back_on_citation_failure(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "rollback.txt", "Rollback requires trusted citation evidence.")
+        index(client, material["material_id"])
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            db.execute(
+                "CREATE TRIGGER fail_qa_citation BEFORE INSERT ON qa_citations "
+                "BEGIN SELECT RAISE(ABORT, 'injected'); END"
+            )
+            db.commit()
+        response = ask(client, "trusted citation", material["material_id"])
+        assert response.status_code == 500
+        assert response.json()["detail"] == "qa_generation_failed"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE role = 'assistant'").fetchone()[0] == 0
+            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "qa_persist_failed"
+
+
+def test_qa_input_and_deleted_source_boundaries(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "boundaries.txt", "Boundary text.")
+        index(client, material["material_id"])
+        cases = [
+            client.post("/api/qa/ask", json={"question": " ", "material_ids": [material["material_id"]]}),
+            client.post("/api/qa/ask", json={"question": "x" * 1001, "material_ids": [material["material_id"]]}),
+            client.post("/api/qa/ask", json={"question": "x", "material_ids": []}),
+            client.post("/api/qa/ask", json={"question": "x", "material_ids": [material["material_id"]], "top_k": 0}),
+        ]
+        assert [response.status_code for response in cases] == [400, 400, 400, 400]
+        assert client.delete(f"/api/materials/{material['material_id']}").status_code == 204
+        deleted = ask(client, "Boundary?", material["material_id"])
+        assert deleted.status_code == 404
+        assert deleted.json()["detail"] == "source_deleted"

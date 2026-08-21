@@ -22,18 +22,18 @@ from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
 from .import_locks import acquire_hash_lock, release_hash_lock
 from .migrations.runner import MigrationError
-from .observability import (emit_event, increment, metrics_snapshot, new_id, observe_http,
+from .observability import (correlation, emit_event, increment, metrics_snapshot, new_id, observe_http,
                             record_import, reset_correlation, route_class, set_correlation,
                             valid_request_id)
-from .providers import provider_registry
+from .providers import ProviderError, ProviderRequest, provider_registry
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_context, create_or_get_revision,
-                         get_material, get_material_index_status, get_spans, index_material_revision,
-                         list_deleted_materials, list_materials, list_materials_page,
-                         list_deleted_materials_page, material_state, purge_material, rename_material,
-                         restore_material, run_chunk_retrieval, save_material_with_extraction,
-                         soft_delete_material, validate_citation_key)
+                         create_qa_request, fail_qa_operation, get_material, get_material_index_status,
+                         get_spans, index_material_revision, list_deleted_materials, list_materials,
+                         list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
+                         purge_material, rename_material, restore_material, run_chunk_retrieval,
+                         save_material_with_extraction, soft_delete_material, validate_citation_key)
 from .storage import sha256_file, store_original
 
 
@@ -145,6 +145,13 @@ class ContextRequest(BaseModel):
 
 class CitationValidateRequest(BaseModel):
     key: str
+
+
+class QaAskRequest(BaseModel):
+    question: str
+    material_ids: list[str]
+    thread_id: str | None = None
+    top_k: int = 5
 
 
 def _rename_name(raw_name: str) -> str | None:
@@ -422,6 +429,81 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                 return validate_citation_key(connection, request.key)
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="citation_validate_failed") from None
+
+    @app.post("/api/qa/ask")
+    def ask_question(request: QaAskRequest) -> dict[str, object]:
+        if not request.material_ids or len(request.material_ids) > 200 or any(not item for item in request.material_ids):
+            raise HTTPException(status_code=400, detail="qa_invalid_materials")
+        request_id, _operation_correlation_id = correlation()
+        operation: dict[str, str] | None = None
+        try:
+            with connect(app.state.config.database_path) as connection:
+                operation = create_qa_request(
+                    connection, project_id=app.state.config.project_id, question=request.question,
+                    material_ids=request.material_ids, thread_id=request.thread_id, request_id=request_id,
+                )
+                retrieval = run_chunk_retrieval(
+                    connection, project_id=app.state.config.project_id, query=request.question,
+                    material_ids=request.material_ids, top_k=request.top_k,
+                )
+                if retrieval["status"] != "succeeded":
+                    fail_qa_operation(connection, operation["operation_id"], str(retrieval["error_code"]))
+                    raise HTTPException(status_code=409, detail=str(retrieval["error_code"]))
+                context = assemble_context(
+                    connection, project_id=app.state.config.project_id, hits=list(retrieval["hits"]),
+                )
+                if not context["context_blocks"]:
+                    fail_qa_operation(connection, operation["operation_id"], "retrieval_empty")
+                    raise HTTPException(status_code=409, detail="retrieval_empty")
+                try:
+                    provider = provider_registry(
+                        app.state.config.ai_provider_id, app.state.config.ai_model_id,
+                    ).configured_provider()
+                    started = time.perf_counter()
+                    result = provider.generate_answer(ProviderRequest(
+                        question=request.question, context_blocks=list(context["context_blocks"]),
+                    ))
+                    latency_ms = round((time.perf_counter() - started) * 1000)
+                except ProviderError as error:
+                    fail_qa_operation(connection, operation["operation_id"], error.code)
+                    raise HTTPException(status_code=503, detail=error.code) from None
+                try:
+                    persisted = persist_qa_answer(
+                        connection, project_id=app.state.config.project_id,
+                        operation_id=operation["operation_id"], thread_id=operation["thread_id"],
+                        provider_id=result.provider_id, model_id=result.model_id,
+                        answer_text=result.answer_text, citation_keys=result.citation_keys,
+                        context_blocks=list(context["context_blocks"]), prompt_tokens=result.prompt_tokens,
+                        completion_tokens=result.completion_tokens, latency_ms=latency_ms,
+                    )
+                except ValueError as error:
+                    fail_qa_operation(connection, operation["operation_id"], str(error))
+                    raise HTTPException(status_code=500, detail="qa_generation_failed") from None
+        except HTTPException:
+            raise
+        except ValueError as error:
+            code = str(error)
+            if operation is not None:
+                with connect(app.state.config.database_path) as connection:
+                    fail_qa_operation(connection, operation["operation_id"], code)
+            status = 404 if code in {"material_not_found", "source_deleted", "qa_thread_not_found"} else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            if operation is not None:
+                try:
+                    with connect(app.state.config.database_path) as connection:
+                        fail_qa_operation(connection, operation["operation_id"], "qa_persist_failed")
+                except sqlite3.Error:
+                    pass
+            raise HTTPException(status_code=500, detail="qa_generation_failed") from None
+        return {
+            "status": "succeeded", "thread_id": operation["thread_id"],
+            "user_message_id": operation["user_message_id"],
+            "assistant_message_id": persisted["assistant_message_id"], "answer_id": persisted["answer_id"],
+            "operation_id": operation["operation_id"], "answer_text": result.answer_text,
+            "provider_id": result.provider_id, "model_id": result.model_id,
+            "retrieval_run_id": retrieval["run_id"], "citations": persisted["citations"],
+        }
 
     @app.post("/api/materials/{material_id}/ai-index")
     def index_material(material_id: str) -> dict[str, object]:

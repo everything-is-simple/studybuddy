@@ -32,7 +32,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 ## AI boundary
 
-AI 当前处于 architecture-only / staged implementation 阶段。依赖顺序固定为：
+AI 当前处于 staged implementation 阶段。revision/chunk/retrieval/context/citation、deterministic fake provider 和同步 Q&A API/persistence 已实现；最小 Q&A UI 及后续学习能力仍未实现。依赖顺序固定为：
 
 ```text
 material revision
@@ -43,4 +43,4 @@ material revision
 → cards / exercises
 ```
 
-第一阶段采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation。真实 provider、embedding、Q&A、cards、exercises、plans、worker 和多用户能力必须按路线图逐阶段实现，不得因 schema 已预留而宣称功能已可用。
+第一阶段采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation。真实 provider、embedding、Q&A UI、cards、exercises、plans、worker 和多用户能力必须按路线图逐阶段实现，不得因 schema 已预留而宣称功能已可用。

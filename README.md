@@ -8,7 +8,7 @@
 
 Operator backup / restore 已提供 CLI，详见 [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity/schema-version metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录；`verify-restored-data` 提供 offline/online restore 后验收。备份保留、轮换和 restore drill 见 `docs/BACKUP_OPERATIONS.md` 与 `docs/RESTORE_DRILL.md`。应用启动不会自动 backup、restore 或 repair。数据库 migration/schema versioning 已实现，升级和不可自动回滚流程见 [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
 
-AI / 学习功能当前处于 architecture-only 阶段，设计文档见 [`docs/ai-learning-architecture.md`](docs/ai-learning-architecture.md)；项目阶段性总进度见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)。方案保持 materials/extractions/text_spans 为 source of truth，第一阶段采用 SQLite FTS5 lexical retrieval、可追溯 chunk/citation、provider Protocol 与 deterministic fake provider；暂不接入真实 provider、不引入外部 vector DB、不自动生成 embedding、不引入后台队列、不自动 repair，也未实现完整 Q&A、卡片、练习或学习计划。
+AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai-learning-architecture.md`](docs/ai-learning-architecture.md)；项目阶段性总进度见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)。materials/extractions/text_spans 保持 source of truth；第一阶段已实现 SQLite FTS5 lexical retrieval、可追溯 chunk/citation、deterministic fake provider 和同步 `POST /api/qa/ask` 持久化。暂不接入真实 provider、不引入外部 vector DB、不自动生成 embedding、不引入后台队列、不自动 repair；Q&A UI、卡片、练习和学习计划仍未实现。
 
 个人学习系统主目录。
 
