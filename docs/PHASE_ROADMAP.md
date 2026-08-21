@@ -1,19 +1,19 @@
 # StudyBuddy Phase 路线图与进度报告
 
-> 更新：2026-08-25（I1/I2 收口后）  
+> 更新：2026-08-25（I4 时间盒收口、基建 v1 基本完工后）  
 > 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `TODO.md` 为准。
 >
 > `real-pass` 只表示有真实用户路径和验收证据的局部能力通过，**不代表整个 StudyBuddy 已达到全局生产级 real-pass**。
 
 ## 基础设施真实状态
 
-基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环与 I3 最小可观察性已完成；I4 已有首轮真实 TXT 基线但仍为 partial。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界必须持续记录。准确范围见 [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)。
+基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)。
 
 ## 总体进度
 
 | 评估维度 | 完成度 | 说明 |
 |---|---:|---|
-| 本地单进程基础设施 | 85%–90% | 导入、SQLite、storage、一致性、恢复、migration、backup/restore 和启动安全已具备；I3/I4 收尾中 |
+| 本地单进程基础设施 | 90%–95% | 导入、SQLite、storage、一致性、恢复、migration、backup/restore 和启动安全已具备；I4 已时间盒验收 |
 | 文件材料管理 | 80%–85% | 当前最成熟，核心路径为局部 `real-pass` |
 | 前端体验 | 45%–55% | 内嵌可用单页，不是完整产品前端 |
 | AI / 学习产品能力 | 25%–35% | 目前仅完成架构设计，未形成用户功能 |
@@ -56,7 +56,7 @@
 - controlled subprocess crash/restart recovery。
 - lifecycle invariant、API input boundary、frontend mutation/export failure contract。
 
-**明确限制：** 不支持多进程、多 worker 或多实例共享同一个 `data_root`；尚未验证真实磁盘满、断电、硬件/文件系统损坏、网络盘、真实 ACL、性能或容量极限。
+**明确限制：** 不支持多进程、多 worker 或多实例共享同一个 `data_root`；真实磁盘满、断电、硬件/文件系统损坏、网络盘、真实 ACL、性能或容量极限已记录为 `not_verified`，作为 v1 运行边界接受。
 
 ### Phase 2：Operator 备份与恢复（手工基础能力已实现）
 
@@ -90,7 +90,7 @@
 
 ### Phase 4：AI 最小闭环
 
-**状态：准备开始；I1 已完成，当前最高优先级为可信 Q&A 业务闭环。**
+**状态：已开始；基础设施 v1 基本完工，当前最高优先级为可信 Q&A 业务闭环。**
 
 **目标：** 用户针对已导入材料提问，系统通过可追溯检索返回带可验证来源引用的回答。第一轮可使用 deterministic fake provider，不以接入某家真实模型为前置条件。
 
@@ -184,8 +184,9 @@ migration / schema versioning
 ## 固定执行顺序
 
 ```text
-I4：真实环境与容量基线（时间盒）
-→ Phase 4：AI 最小闭环（fake provider）
+I4：真实环境与容量基线（时间盒） ✅ 已验收
+→ 本地单进程基础设施 v1 基本完工 ✅ 已宣告
+→ Phase 4：AI 最小闭环（fake provider）【当前最高优先级】
 → Phase 5：真实 provider
 → Phase 6：AI MVP 前端和整体验收
 → Phase 7：embedding / hybrid retrieval（按需）

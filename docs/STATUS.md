@@ -14,7 +14,8 @@
 | I1 migration/schema versioning | implemented | `backend/app/migrations/`, `backend/tests/test_migrations.py` |
 | I2 operator backup/restore | implemented | `backend/app/backup.py`, CLI, restore acceptance tests |
 | I3 minimal observability | implemented | `backend/app/observability.py`, `backend/tests/test_observability.py` |
-| I4 real environment/capacity baseline | partial | `H:\studybuddy-test\artifacts\infrastructure-i4\latest.json`, `latest.md` |
+| I4 real environment/capacity baseline | time-box closed (v1) | `H:\studybuddy-test\artifacts\infrastructure-i4\latest.json`, `latest.md` |
+| Local single-process infrastructure v1 | basically complete | I1+I2+I3 implemented; I4 time-box closed with declared limits |
 | AI/learning architecture | researching | `ai-learning-architecture.md`; architecture-only |
 | Revision/chunks/retrieval/citations/Q&A | not started | `TODO.md` |
 | Cards/exercises/study plans | not started | `TODO.md` |
@@ -23,7 +24,7 @@
 
 - Supported deployment: single process, single instance, local storage.
 - Multiple workers or multiple instances must not share one `data_root`.
-- I4 is partial: synthetic TXT S0–S3 capacity and 40-cycle lifecycle smoke are real; disk-full, power-loss, network filesystem, hardware corruption, ACL, peak memory and S4 capacity are not verified.
+- I4 is time-box closed for infrastructure v1: synthetic TXT S0–S3 capacity and 40-cycle lifecycle smoke are real; disk-full, power-loss, network filesystem, hardware corruption, ACL, peak memory and S4 capacity are explicitly recorded as not verified and accepted as v1 deployment limits.
 - Metrics are process-local, reset on restart, and do not provide cross-process aggregation; operation IDs are request-scoped correlation only.
 - AI, provider, RAG, Q&A, cards, exercises and study plans are not implemented.
 

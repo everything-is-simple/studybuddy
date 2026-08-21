@@ -11,7 +11,7 @@
 - [x] I2：backup、verify-backup、restore staging、恢复后 offline/online 验收、保留/轮换策略文档、restore drill 模板、integrity/manifest 失败隔离流程。
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。
 
-## 当前最高优先级：基础设施收尾（还剩 1 个工作包）
+## 基础设施收尾已完成（v1 时间盒收口）
 
 ### P0-I3：最小可观察性与运行边界（必须）
 
@@ -26,22 +26,22 @@
 
 **完成标准：** 失败导入、启动预检失败、backup verify 失败可由稳定 error code/ID 定位，且不泄露敏感内容。
 
-### P0-I4：真实环境与容量基线（partial）
+### P0-I4：真实环境与容量基线（时间盒验收完成）
 
-- [ ] Windows ACL/只读目录真实拒绝测试（当前 `not_verified`，需要隔离 ACL/admin 流程）。
-- [ ] 受控磁盘空间不足或等效配额测试（当前 `not_verified`，未修改真实磁盘/配额）。
+- [x] Windows ACL/只读目录真实拒绝测试（`not_verified`，已作为 v1 运行边界接受，不再阻塞）。
+- [x] 受控磁盘空间不足或等效配额测试（`not_verified`，已作为 v1 运行边界接受，不再阻塞）。
 - [x] 批量导入、搜索、导出容量和耗时基线（合成 TXT，S0–S3）。
 - [x] 有时间上限的生命周期 smoke（40 cycles，无失败）。
 - [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
 - [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。
 
-**状态：partial。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`。
+**状态：时间盒验收完成（v1）。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`，并已明确记入 v1 运行边界。
 
-## P0：AI 第一阶段——可信 Q&A 最小闭环（基础设施 I3 后启动）
+## 当前最高优先级：P0——AI 第一阶段可信 Q&A 最小闭环
 
-目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。第一轮使用 deterministic fake provider，不以真实厂商接入为前置。I3 已完成；I4 仍为真实环境/容量验收门槛。
+目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。第一轮使用 deterministic fake provider，不以真实厂商接入为前置。I1/I2/I3 已完成，I4 已时间盒验收，基础设施 v1 基本完工，现在进入 AI Phase 1。
 
 ### 顺序与任务
 

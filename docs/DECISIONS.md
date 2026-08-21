@@ -51,3 +51,10 @@
 - SQLite is the current local source of persistence; database evolution must use the migration runner.
 - Backup/restore is explicit operator functionality. Verify never repairs; restore targets a new empty directory and preserves schema version/history.
 - AI follows revision → chunks → retrieval → citations → Q&A → cards/exercises. Generated artifacts begin as drafts and must preserve user edits.
+
+## 2026-08-25: infrastructure v1 closeout
+
+- I1 migration/schema versioning、I2 backup/restore operator 闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成。
+- I4 中 Windows ACL/只读目录、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏等项保持 `not_verified`，并已明确作为 v1 运行边界接受；这些项目不阻塞基础设施 v1 收口，也不得标记为已通过。
+- 自此可以正式宣告 StudyBuddy **本地单进程文件材料基础设施 v1 基本完工**，并作为 AI MVP 的数据基础。
+- 下一产品优先级为 AI Phase 1：material revision → deterministic chunking → chunk FTS5 lexical retrieval → citation contract → deterministic fake provider → Q&A API/UI。

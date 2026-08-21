@@ -1,6 +1,6 @@
 # StudyBuddy 项目进度报告
 
-> 更新日期：2026-08-25（I1/I2 收口后）
+> 更新日期：2026-08-25（I4 时间盒收口、基建 v1 基本完工后）
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
 
@@ -8,11 +8,11 @@
 
 ### 结论
 
-StudyBuddy 当前已经完成了一个**可靠的本地单进程文件材料管理基础系统**，但还不是完整的 AI 学习产品。
+StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，当前是一个可靠的本地单进程文件材料管理基础系统，可作为 AI MVP 的数据基础；但完整 AI 学习产品尚未实现。
 
 | 评估口径 | 当前完成度 | 结论 |
 |---|---:|---|
-| 本地单进程基础设施 | 85%–90% | 导入、SQLite、Storage、一致性、恢复、migration、backup/restore 和启动保护已具备；I3/I4 收尾中 |
+| 本地单进程基础设施 | 90%–95% | 导入、SQLite、Storage、一致性、恢复、migration、backup/restore 和启动保护已具备；I4 已时间盒验收 |
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
 | 前端用户体验 | 45%–55% | 可用的内嵌单页路径，尚未产品化 |
@@ -69,7 +69,7 @@ StudyBuddy 当前已经完成了一个**可靠的本地单进程文件材料管�
 
 尚未完成：语义搜索、向量检索、AI 搜索、搜索历史和 saved search。
 
-### Phase 4：可靠性、安全边界与 Operator 能力 — 基础版已实现，仍待生产化
+### Phase 4：可靠性、安全边界与 Operator 能力 — 基础版已实现（v1 边界内）
 
 - 启动 preflight：配置、data root、originals root、database topology 和 symlink 拒绝。
 - ready 生命周期与 health 503 边界。
@@ -83,7 +83,7 @@ StudyBuddy 当前已经完成了一个**可靠的本地单进程文件材料管�
 - operator SQLite backup、original snapshot、manifest、verify 和显式 confirm restore。
 - 前端 import、mutation、export failure contract、busy recovery 和 stale response protection。
 
-限制：不支持多进程/多实例共用 data_root；真实磁盘满、断电、硬件/文件系统损坏、真实 ACL 和长时间压力尚未验收。
+限制：不支持多进程/多实例共用 data_root；真实磁盘满、断电、硬件/文件系统损坏、真实 ACL 和长时间压力等已明确记录为 `not_verified`，作为 v1 运行边界接受，不阻塞基础设施 v1 收口。
 
 ### Phase 5：前端基础用户路径 — 部分完成，仍待产品化
 
@@ -125,7 +125,7 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 ### Phase 8：生产化与扩展 — 未完成
 
 - I1 migration framework 与 schema versioning 已完成；I2 backup/restore 运维闭环已完成。
-- I3 最小可观察性已实现；I4 已完成首轮合成 TXT 容量与生命周期 smoke，但仍为 partial。
+- I3 最小可观察性已实现；I4 已时间盒验收，本地单进程基础设施 v1 基本完工。
 - 多用户、认证、授权和项目隔离 UI。
 - 多进程/多实例写协议。
 - 云同步、外部存储和协作。
@@ -135,22 +135,22 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 
 ## 四、当前急需完成的事项
 
-### P0-I4：完成基础设施最后收尾
+### P0-I4：基础设施最后收尾 — 已完成（时间盒验收）
 
-1. **I4：真实环境与容量基线（partial）**
+1. **I4：真实环境与容量基线（时间盒验收完成）**
    - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
-   - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏仍为 `not_verified`。
+   - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏已明确记录为 `not_verified`，并作为 v1 运行边界接受。
 
-### P0：基础设施收尾后实现 AI 第一阶段最小闭环
+### P0：当前最高优先级——实现 AI 第一阶段最小闭环
 
-2. **实现可信 Q&A 最小闭环**
+1. **实现可信 Q&A 最小闭环**
    - 实现 material revision/chunk 数据模型和可追溯 citation。
    - 实现 SQLite FTS5 retrieval API。
    - 实现 provider Protocol 与 deterministic fake provider。
    - 增加一个基于材料引用的 Q&A 用户路径。
    - 未配置 provider 时返回稳定 `provider_not_configured`，不能阻塞应用启动。
 
-3. **明确 S1–S7 的首个可交付范围**
+2. **明确 S1–S7 的首个可交付范围**
    - 先选择一个最小学习闭环：材料 → 检索 → 引用问答 → 用户确认的卡片/练习。
    - 暂不同时开发卡片、Quiz、计划、OCR、ASR 和云同步，避免范围失控。
 
@@ -162,7 +162,7 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 
 ### P1：在 AI 闭环后补齐运行保障
 
-- I1 migration/versioning 与 I2 backup/restore operator 闭环已完成；剩余 I3 可观察性、I4 真实环境与容量验收。
+- I1 migration/versioning、I2 backup/restore operator 闭环、I3 可观察性与 I4 真实环境/容量基线（时间盒）已完成。
 - 后台任务与可观察的任务状态；需要时再引入队列。
 - structured logging、metrics、trace/request id 和 readiness 分级。
 - 真实 ACL、磁盘满、长时间压力和容量测试。
