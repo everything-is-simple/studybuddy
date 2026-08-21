@@ -26,16 +26,18 @@
 
 **完成标准：** 失败导入、启动预检失败、backup verify 失败可由稳定 error code/ID 定位，且不泄露敏感内容。
 
-### P0-I4：真实环境与容量基线（时间盒验收）
+### P0-I4：真实环境与容量基线（partial）
 
-- [ ] Windows ACL/只读目录真实拒绝测试（隔离目录）。
-- [ ] 受控磁盘空间不足或等效配额测试。
-- [ ] 批量导入、搜索、导出容量和耗时基线。
-- [ ] 长时间导入/删除/恢复/导出 smoke。
-- [ ] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
-- [ ] 记录可复现命令、环境、结果与未验证边界。
+- [ ] Windows ACL/只读目录真实拒绝测试（当前 `not_verified`，需要隔离 ACL/admin 流程）。
+- [ ] 受控磁盘空间不足或等效配额测试（当前 `not_verified`，未修改真实磁盘/配额）。
+- [x] 批量导入、搜索、导出容量和耗时基线（合成 TXT，S0–S3）。
+- [x] 有时间上限的生命周期 smoke（40 cycles，无失败）。
+- [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
+- [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-**完成标准：** 有结果或明确 `not verified` 的边界说明；不将 controlled failure 测试伪称为真实环境验收。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`。
+
+**状态：partial。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`。
 
 ## P0：AI 第一阶段——可信 Q&A 最小闭环（基础设施 I3 后启动）
 

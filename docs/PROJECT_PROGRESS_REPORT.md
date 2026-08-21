@@ -125,7 +125,7 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 ### Phase 8：生产化与扩展 — 未完成
 
 - I1 migration framework 与 schema versioning 已完成；I2 backup/restore 运维闭环已完成。
-- I3 最小可观察性已实现；I4 真实环境/容量基线仍待收尾。
+- I3 最小可观察性已实现；I4 已完成首轮合成 TXT 容量与生命周期 smoke，但仍为 partial。
 - 多用户、认证、授权和项目隔离 UI。
 - 多进程/多实例写协议。
 - 云同步、外部存储和协作。
@@ -137,9 +137,9 @@ I1 schema/migration 已实现并通过测试，但 AI 业务链路仍未实现�
 
 ### P0-I4：完成基础设施最后收尾
 
-1. **I4：真实环境与容量基线（时间盒）**
-   - ACL/只读目录、资源不足等效测试、容量/耗时基线和长时间 smoke。
-   - 无法实测的项目必须明确标记 not verified。
+1. **I4：真实环境与容量基线（partial）**
+   - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
+   - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏仍为 `not_verified`。
 
 ### P0：基础设施收尾后实现 AI 第一阶段最小闭环
 

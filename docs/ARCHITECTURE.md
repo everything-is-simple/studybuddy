@@ -28,7 +28,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 启动顺序为 preflight、SQLite connect/schema/index init、diagnostic audit、recovery、ready。SQLite 使用 WAL、foreign keys、2000 ms busy timeout 和事务边界。storage 操作要求 configured root containment、regular-file 和 non-symlink 校验；hash mismatch、unexpected layout、missing original 和失败清理均使用稳定错误边界。
 
-系统支持 process-local 同 hash coordination、controlled crash/restart recovery、write contention rollback、backup/verify/restore 和 restore acceptance。Observability 提供安全 structured events、`X-Request-ID`、request-scoped operation correlation、`/api/liveness`、readiness health 和有限的 process-local `/api/metrics`；metrics 不持久化、不跨进程聚合。支持范围仍是单进程、单实例、本地磁盘；不支持多个 worker 或多个实例共享 `data_root`。
+系统支持 process-local 同 hash coordination、controlled crash/restart recovery、write contention rollback、backup/verify/restore 和 restore acceptance。Observability 提供安全 structured events、`X-Request-ID`、request-scoped operation correlation、`/api/liveness`、readiness health 和有限的 process-local `/api/metrics`；metrics 不持久化、不跨进程聚合。支持范围仍是单进程、单实例、本地磁盘；I4 已有合成 TXT S0–S3 与 bounded lifecycle smoke 证据，但 ACL、资源耗尽、S4、peak memory、断电、网络盘和硬件损坏仍未验证；不支持多个 worker 或多个实例共享 `data_root`。
 
 ## AI boundary
 

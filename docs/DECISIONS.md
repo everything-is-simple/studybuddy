@@ -17,6 +17,12 @@
 - `/api/metrics` is a bounded, in-process snapshot with low-cardinality counters and duration aggregates. It resets on restart and does not claim cross-process aggregation or persistence.
 - Logging/metrics failure must never block startup or a business request. I4 real ACL, capacity and resource-exhaustion evidence remains separate and not implemented by this decision.
 
+## 2026-08-25: I4 evidence boundary
+
+- I4 capacity evidence uses synthetic TXT only and records S0–S3 import/search/export timings and a bounded 40-cycle lifecycle smoke.
+- Windows ACL, real disk-full/quota, S4 pressure scale, peak memory, power-loss, network filesystem and hardware corruption remain `not_verified`; controlled failure tests must not be reported as real resource exhaustion evidence.
+- The deployment contract remains one process, one instance, local storage and one data_root owner. I4 does not introduce cross-process locks, workers, queues or distributed coordination.
+
 ## 2026-08-20: AI / learning architecture boundary
 
 - AI/学习当前只完成 architecture-only 设计，不接入真实 provider、不自动索引历史材料、不引入外部 vector DB、不引入后台队列。

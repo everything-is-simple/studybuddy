@@ -48,17 +48,24 @@
 - startup、audit、recovery、backup 事件写入安全 structured event；日志失败不阻断业务。
 - `backend/tests/test_observability.py` 覆盖 request ID、metrics、liveness/readiness、startup 与 backup verify 脱敏边界。
 
-### I4（时间盒验收）：真实环境与容量基线
+### I4（partial）：真实环境与容量基线
 
-**目的：** 将当前“controlled failure 已测”与“真实环境未验证”的边界量化，而不是伪称生产级通过。
+**已完成并有 artifact：**
 
-- [ ] Windows 真实 ACL / 只读目录拒绝测试（隔离目录）。
-- [ ] 受控磁盘空间不足或等效配额测试。
-- [ ] 批量导入、搜索、导出的容量/耗时基线。
-- [ ] 长时间导入/删除/恢复/导出 smoke。
-- [ ] 固化单进程、单实例、local disk 部署限制；明确拒绝多 worker/shared `data_root`。
+- 合成 TXT S0–S3：1 / 10 / 100 / 500 文件，约 1 KiB / 100 KiB / 1 MiB / 10 MiB。
+- 记录导入、搜索、文本导出耗时、数据库大小、originals 大小和 health 状态。
+- 40-cycle 导入 → rename → delete → restore → purge 生命周期 smoke，无失败。
+- 固化单进程、单实例、本地磁盘和单一 data_root owner 限制。
 
-**完成标准：** 形成可复现命令、测试环境、结果与支持边界；无法完成的真实资源测试必须标记 `not verified`，不得伪造通过。
+证据：
+
+```text
+H:\studybuddy-test\scripts\i4_baseline.py
+H:\studybuddy-test\artifacts\infrastructure-i4\latest.json
+H:\studybuddy-test\artifacts\infrastructure-i4\latest.md
+```
+
+**仍未验证：** Windows ACL/只读目录真实拒绝、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏。上述项目不得标记为通过。
 
 ## 3. 完成顺序
 
