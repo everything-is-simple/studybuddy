@@ -50,9 +50,9 @@ revision → chunks → retrieval → citations → Q&A
 ```
 
 - [ ] 确定 MVP 用户流程：选择材料 → 提问 → 检索 → 回答 → 查看引用。
-- [ ] 实现 `material_revisions` 的创建、current/superseded/stale 生命周期。
-- [ ] 实现 deterministic chunker、Unicode code-point offsets、page/slide span 映射与显式 indexing。
-- [ ] 实现 `chunks` / `chunk_spans` 持久化和 chunk FTS5 索引一致性。
+- [x] 实现 `material_revisions` 的创建、current/superseded 生命周期；stale 语义留给后续重解析链路。
+- [x] 实现 deterministic chunker、Unicode code-point offsets、显式 indexing；现有 text_spans 通过按序文本匹配建立安全 page/slide/document 映射。
+- [x] 实现 `chunks` / `chunk_spans` 持久化；chunk FTS5 retrieval 一致性留给下一步 retrieval 闭环。
 - [ ] 实现 lexical retrieval：active/current/ready 过滤、AND 查询、top-k、稳定排序、`retrieval_empty`。
 - [ ] 持久化 `retrieval_runs` / `retrieval_hits`。
 - [ ] 实现 context assembler：token budget、不可信 source boundary、可验证 citation key。
@@ -62,6 +62,8 @@ revision → chunks → retrieval → citations → Q&A
 - [ ] 实现最小 Q&A UI：loading/empty/error/retry、citation 展示与原文定位。
 - [ ] 补单元、repository、API failure、browser E2E、backup/restore AI 表测试。
 - [ ] 同步 `STATUS.md`、`DECISIONS.md`、AI architecture、roadmap 与 API 文档。
+
+**当前进度：** revision/chunk 显式 indexing 已实现并由 focused/backend tests 验证；fake provider、retrieval、citation 和 Q&A 尚未实现。
 
 **完成标准：** fake provider 下端到端问答通过；展示 citation 可追溯到 material/revision/chunk/span；deleted/stale 被排除；purge 后历史 citation 正确显示 unavailable；未配置 provider 时应用照常启动并安全失败。
 

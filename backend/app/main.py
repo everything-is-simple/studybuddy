@@ -27,8 +27,9 @@ from .observability import (emit_event, increment, metrics_snapshot, new_id, obs
                             valid_request_id)
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
-from .repository import (VALID_STATUSES, connect, get_material, get_spans, list_deleted_materials,
-                         list_materials, list_materials_page, list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
+from .repository import (VALID_STATUSES, connect, create_or_get_revision, get_material, get_material_index_status,
+                         get_spans, index_material_revision, list_deleted_materials, list_materials, list_materials_page,
+                         list_deleted_materials_page, material_state, purge_material, rename_material, restore_material,
                          save_material_with_extraction, soft_delete_material)
 from .storage import sha256_file, store_original
 
@@ -351,6 +352,46 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         buffer.seek(0)
         return Response(content=buffer.getvalue(), media_type="application/zip",
                         headers={"Content-Disposition": 'attachment; filename="studybuddy-materials.zip"'})
+
+    @app.post("/api/materials/{material_id}/ai-index")
+    def index_material(material_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                state = material_state(connection, material_id)
+                if state == "missing":
+                    raise HTTPException(status_code=404, detail="material_not_found")
+                if state == "deleted":
+                    raise HTTPException(status_code=404, detail="source_deleted")
+                extraction = connection.execute(
+                    "SELECT id FROM extractions WHERE material_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+                    (material_id,),
+                ).fetchone()
+                if extraction is None:
+                    raise HTTPException(status_code=404, detail="extraction_not_found")
+                revision = index_material_revision(connection, material_id, str(extraction["id"]))
+                result = get_material_index_status(connection, material_id)
+        except HTTPException:
+            raise
+        except ValueError as exc:
+            code = str(exc)
+            status = 404 if code in {"source_deleted", "material_extraction_mismatch"} else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="ai_index_failed") from None
+        if result is None:
+            raise HTTPException(status_code=404, detail="material_not_found")
+        return {**result, "revision_id": revision["id"]}
+
+    @app.get("/api/materials/{material_id}/ai-index")
+    def material_index_status(material_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                result = get_material_index_status(connection, material_id)
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="ai_index_status_failed") from None
+        if result is None:
+            raise HTTPException(status_code=404, detail="material_not_found")
+        return result
 
     @app.get("/api/materials/{material_id}/original")
     def download_original(material_id: str):

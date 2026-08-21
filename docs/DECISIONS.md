@@ -23,6 +23,14 @@
 - Windows ACL, real disk-full/quota, S4 pressure scale, peak memory, power-loss, network filesystem and hardware corruption remain `not_verified`; controlled failure tests must not be reported as real resource exhaustion evidence.
 - The deployment contract remains one process, one instance, local storage and one data_root owner. I4 does not introduce cross-process locks, workers, queues or distributed coordination.
 
+## 2026-08-26: explicit revision and deterministic chunk indexing
+
+- AI indexing is explicit through `POST /api/materials/{id}/ai-index`; import and startup never auto-index existing materials.
+- A revision fingerprint is derived from source hash, extraction text hash, parser id and parser version. Repeating indexing for the same source reuses the current revision and ready chunks; a new extraction supersedes the previous current revision.
+- The first chunk strategy is deterministic `boundary_window` version `1.0.0`, using Python Unicode code-point offsets, stable whitespace normalization and a bounded overlap. Empty extraction produces zero chunks and reports `empty`.
+- Existing `text_spans` store span text but not absolute offsets. Chunk-to-span links therefore use ordinal/id order plus exact sequential text matching in the extraction text. Unmatched or ambiguous source text is not linked; the system does not fabricate page/slide offsets.
+- Purge relies on the existing foreign-key cascade to remove revisions, chunks and chunk_spans. Restore reuses derived rows and does not duplicate them. Chunk FTS5 retrieval, citations, provider and Q&A remain the next implementation boundary.
+
 ## 2026-08-20: AI / learning architecture boundary
 
 - AI/学习当前只完成 architecture-only 设计，不接入真实 provider、不自动索引历史材料、不引入外部 vector DB、不引入后台队列。

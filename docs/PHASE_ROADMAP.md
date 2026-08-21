@@ -90,7 +90,7 @@
 
 ### Phase 4：AI 最小闭环
 
-**状态：已开始；基础设施 v1 基本完工，当前最高优先级为可信 Q&A 业务闭环。**
+**状态：已开始；revision/chunk 显式 indexing 已实现，当前继续推进 chunk retrieval、citation 和可信 Q&A 业务闭环。**
 
 **目标：** 用户针对已导入材料提问，系统通过可追溯检索返回带可验证来源引用的回答。第一轮可使用 deterministic fake provider，不以接入某家真实模型为前置条件。
 
@@ -110,8 +110,8 @@ migration / schema versioning
 必须交付：
 
 1. 已完成 migration runner、schema version、migration history 和失败边界；后续 AI 表变更仍必须继续通过 migration；
-2. `material_revisions`、`chunks`、`chunk_spans`；
-3. deterministic chunker，覆盖中文/Unicode offset 和 page/slide 映射；
+2. `material_revisions`、`chunks`、`chunk_spans` 已有 migration 且业务 indexing 已实现；
+3. deterministic chunker 已实现，覆盖中文/Unicode offset 和现有 text_spans 的 page/slide/document 顺序映射；
 4. chunk FTS5、top-k、确定性排序、active/current/ready 过滤；
 5. `retrieval_runs` / `retrieval_hits`，空结果返回 `retrieval_empty`；
 6. citation 只能来自 retrieval/context 的可验证 key，不能信任模型自造引用；

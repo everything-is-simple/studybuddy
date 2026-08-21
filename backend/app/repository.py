@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 import uuid
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .adapters.file_parsers.models import ParseResult
+from .chunking import CHUNKING_STRATEGY, CHUNKING_VERSION, SourceSpan, chunk_text
 from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
@@ -291,3 +293,123 @@ def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bo
             (deleted_at, deleted_at, material_id),
         )
     return cursor.rowcount == 1
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _revision_payload(connection: sqlite3.Connection, material_id: str, extraction_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT m.id AS material_id, m.source_sha256, e.id AS extraction_id, e.parser_id, "
+        "e.parser_version, e.text, e.status FROM materials m JOIN extractions e "
+        "ON e.material_id = m.id WHERE m.id = ? AND e.id = ?",
+        (material_id, extraction_id),
+    ).fetchone()
+
+
+def _revision_fingerprint(row: sqlite3.Row) -> str:
+    values = (str(row["source_sha256"]), _sha256_text(str(row["text"])),
+              str(row["parser_id"]), str(row["parser_version"]))
+    return hashlib.sha256("\\x1f".join(values).encode("utf-8")).hexdigest()
+
+
+def create_or_get_revision(connection: sqlite3.Connection, material_id: str,
+                            extraction_id: str) -> sqlite3.Row:
+    row = _revision_payload(connection, material_id, extraction_id)
+    if row is None:
+        raise ValueError("material_extraction_mismatch")
+    fingerprint = _revision_fingerprint(row)
+    existing = connection.execute(
+        "SELECT * FROM material_revisions WHERE revision_fingerprint = ?", (fingerprint,)
+    ).fetchone()
+    if existing is not None:
+        if existing["material_id"] != material_id or existing["extraction_id"] != extraction_id:
+            raise ValueError("revision_fingerprint_conflict")
+        connection.execute(
+            "UPDATE material_revisions SET is_current = 1, superseded_at = NULL "
+            "WHERE id = ?", (existing["id"],)
+        )
+        connection.execute(
+            "UPDATE material_revisions SET is_current = 0, superseded_at = COALESCE(superseded_at, ?) "
+            "WHERE material_id = ? AND id != ? AND is_current = 1",
+            (utc_now(), material_id, existing["id"]),
+        )
+        return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (existing["id"],)).fetchone()
+    now = utc_now()
+    connection.execute(
+        "UPDATE material_revisions SET is_current = 0, superseded_at = COALESCE(superseded_at, ?) "
+        "WHERE material_id = ? AND is_current = 1",
+        (now, material_id),
+    )
+    revision_id = f"revision_{uuid.uuid4().hex}"
+    connection.execute(
+        "INSERT INTO material_revisions "
+        "(id, material_id, extraction_id, source_sha256, extraction_sha256, parser_id, parser_version, "
+        "revision_fingerprint, is_current, created_at, superseded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL)",
+        (revision_id, material_id, extraction_id, row["source_sha256"], _sha256_text(str(row["text"])),
+         row["parser_id"], row["parser_version"], fingerprint, now),
+    )
+    return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision_id,)).fetchone()
+
+
+def index_material_revision(connection: sqlite3.Connection, material_id: str,
+                            extraction_id: str, *, chunk_size: int = 800,
+                            overlap: int = 80) -> sqlite3.Row:
+    row = _revision_payload(connection, material_id, extraction_id)
+    if row is None:
+        raise ValueError("material_extraction_mismatch")
+    if connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (material_id,)).fetchone()[0] is not None:
+        raise ValueError("source_deleted")
+    with connection:
+        revision = create_or_get_revision(connection, material_id, extraction_id)
+        existing = connection.execute(
+            "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
+        ).fetchone()[0]
+        if existing:
+            return revision
+        connection.execute("DELETE FROM chunks WHERE revision_id = ?", (revision["id"],))
+        spans = [SourceSpan(str(span["id"]), int(span["ordinal"]), str(span["span_kind"]),
+                            str(span["label"]), str(span["text"]))
+                 for span in connection.execute(
+                     "SELECT id, ordinal, span_kind, label, text FROM text_spans "
+                     "WHERE extraction_id = ? ORDER BY ordinal, id", (extraction_id,)).fetchall()]
+        drafts = chunk_text(str(row["text"]), spans, chunk_size=chunk_size, overlap=overlap,
+                            strategy=CHUNKING_STRATEGY, version=CHUNKING_VERSION)
+        for draft in drafts:
+            chunk_id = f"chunk_{uuid.uuid4().hex}"
+            connection.execute(
+                "INSERT INTO chunks (id, project_id, material_id, revision_id, extraction_id, chunk_index, text, "
+                "normalized_text, start_offset, end_offset, token_count_estimate, overlap_before, overlap_after, "
+                "strategy, chunking_version, status, error_code, created_at, superseded_at) "
+                "VALUES (?, (SELECT project_id FROM materials WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ready', NULL, ?, NULL)",
+                (chunk_id, material_id, material_id, revision["id"], extraction_id, draft.chunk_index, draft.text,
+                 draft.normalized_text, draft.start_offset, draft.end_offset, draft.token_count_estimate,
+                 draft.overlap_before, draft.overlap_after, CHUNKING_STRATEGY, CHUNKING_VERSION, utc_now()),
+            )
+            connection.executemany(
+                "INSERT INTO chunk_spans (chunk_id, span_id, overlap_start, overlap_end) VALUES (?, ?, ?, ?)",
+                [(chunk_id, span_id, start, end) for span_id, start, end in draft.span_overlaps],
+            )
+        return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
+
+
+def get_material_index_status(connection: sqlite3.Connection, material_id: str) -> dict[str, object] | None:
+    material = connection.execute(
+        "SELECT id, deleted_at FROM materials WHERE id = ?", (material_id,)
+    ).fetchone()
+    if material is None:
+        return None
+    revision = connection.execute(
+        "SELECT * FROM material_revisions WHERE material_id = ? AND is_current = 1 "
+        "ORDER BY created_at DESC, id DESC LIMIT 1", (material_id,)
+    ).fetchone()
+    if revision is None:
+        return {"material_id": material_id, "status": "not_indexed", "revision_id": None, "chunk_count": 0}
+    count = connection.execute(
+        "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
+    ).fetchone()[0]
+    status = "ready" if count else "empty"
+    return {"material_id": material_id, "status": "deleted" if material["deleted_at"] else status,
+            "revision_id": revision["id"], "chunk_count": count,
+            "is_current": bool(revision["is_current"]), "chunking_version": CHUNKING_VERSION}

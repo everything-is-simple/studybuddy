@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-状态：architecture-only / not implemented
+状态：architecture plus partial implementation；material revision、deterministic chunks 和显式 indexing 已实现，retrieval/citation/provider/Q&A 仍未实现。
 
 ## 1. 范围与原则
 
@@ -78,7 +78,7 @@ material_revisions(
 )
 ```
 
-当前导入不会自动创建 AI revision；只有显式 AI indexing 或未来迁移任务创建。新问题只检索 current revision 且 active material。purge 删除 material 后，历史回答/卡片可保留，但 citation 状态为 `source_unavailable`，不伪造可点击来源。
+当前导入不会自动创建 AI revision；只有显式 AI indexing 或未来迁移任务创建。当前 indexing 对同一 extraction 幂等复用 revision，新 extraction 会 supersede 旧 current revision。现有 text_spans 没有绝对 offset，因此 chunker 按 span ordinal/id 和 extraction.text 中的顺序文本匹配建立映射；无法安全匹配的 span 不建立关联。新问题只检索 current revision 且 active material。purge 删除 material 后，未来历史回答/卡片可保留，但 citation 状态为 `source_unavailable`，不伪造可点击来源。
 
 ## 5. Chunk
 
@@ -225,10 +225,10 @@ assistant answer 必须关联 operation、retrieval_run 和独立 citations。pr
 ## 16. 路线图与验收
 
 ### Phase 0
-Provider Protocol、error constants、revision/schema migration proposal、fake provider、citation contract、backup impact、ADR。
+Provider Protocol、error constants、revision/schema migration proposal、fake provider、citation contract、backup impact、ADR。当前已完成 revision/chunk schema、deterministic chunker 和显式 indexing 的第一部分。
 
 ### Phase 1
-显式 indexing、revision/chunk、chunk FTS5、deterministic retrieval、context assembly、fake provider Q&A、引用验证。验收：中文/Unicode offsets、空材料、deleted/stale 排除、重复输入确定性、citation 追溯、无 provider 安全失败。
+下一步实现 chunk FTS5、deterministic retrieval、context assembly、fake provider Q&A、引用验证。已验收部分包括中文/Unicode offsets、空材料、deleted 排除、重复 indexing 确定性和 purge 级联清理；stale/retrieval/citation/provider/Q&A 仍未实现。
 
 ### Phase 2
 真实 provider adapter、timeout/retry/rate-limit、structured output、capability endpoint、secret/error leakage tests。
