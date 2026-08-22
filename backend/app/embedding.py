@@ -7,24 +7,36 @@ from dataclasses import dataclass
 from typing import Protocol
 
 EMBEDDING_ENCODING = "f32le_v1"
+FAKE_EMBEDDING_PROVIDER_ID = "fake"
+FAKE_EMBEDDING_MODEL_ID = "fake-embedding-v1"
+FAKE_EMBEDDING_MODEL_REVISION = "1"
+FAKE_EMBEDDING_ALGORITHM_VERSION = "sha256_bucket_v1"
 MAX_EMBEDDING_BATCH = 32
 MAX_EMBEDDING_TEXT_CHARS = 12000
 MAX_EMBEDDING_DIMENSIONS = 4096
+
 
 class EmbeddingError(ValueError):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
 
+
 class EmbeddingProvider(Protocol):
     provider_id: str
     model_id: str
     model_revision: str
     dimensions: int
+    encoding: str
+
     def embed(self, texts: list[str]) -> list[list[float]]: ...
+
+    def capabilities(self) -> dict[str, object]: ...
 
 
 def normalize_embedding_text(text: str) -> str:
+    if not isinstance(text, str):
+        raise EmbeddingError("embedding_invalid_request")
     return " ".join(text.split())
 
 
@@ -32,21 +44,41 @@ def embedding_content_hash(text: str) -> str:
     return hashlib.sha256(normalize_embedding_text(text).encode("utf-8")).hexdigest()
 
 
-def encode_vector(values: list[float] | tuple[float, ...]) -> bytes:
-    if not values or len(values) > MAX_EMBEDDING_DIMENSIONS:
-        raise EmbeddingError("embedding_invalid_vector")
-    checked = []
-    for value in values:
-        if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+def _validate_limits(batch: object, dimensions: object) -> None:
+    if isinstance(batch, bool) or not isinstance(batch, int) or batch < 1 or batch > MAX_EMBEDDING_BATCH:
+        raise EmbeddingError("embedding_batch_too_large")
+    if isinstance(dimensions, bool) or not isinstance(dimensions, int) or dimensions < 1 or dimensions > MAX_EMBEDDING_DIMENSIONS:
+        raise EmbeddingError("embedding_invalid_dimensions")
+
+
+def _validate_vectors(vectors: object, count: int, dimensions: int) -> list[list[float]]:
+    if not isinstance(vectors, list) or len(vectors) != count:
+        raise EmbeddingError("embedding_invalid_response")
+    result: list[list[float]] = []
+    for vector in vectors:
+        if not isinstance(vector, list) or len(vector) != dimensions:
+            raise EmbeddingError("embedding_dimension_mismatch")
+        if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) for value in vector):
             raise EmbeddingError("embedding_invalid_vector")
-        checked.append(float(value))
-    if not any(value != 0.0 for value in checked):
+        values = [float(value) for value in vector]
+        if not any(value != 0.0 for value in values):
+            raise EmbeddingError("embedding_invalid_vector")
+        result.append(values)
+    return result
+
+
+def encode_vector(values: list[float] | tuple[float, ...]) -> bytes:
+    if not isinstance(values, (list, tuple)) or not values or len(values) > MAX_EMBEDDING_DIMENSIONS:
         raise EmbeddingError("embedding_invalid_vector")
-    return struct.pack("<" + "f" * len(checked), *checked)
+    checked = _validate_vectors([list(values)], 1, len(values))[0]
+    try:
+        return struct.pack("<" + "f" * len(checked), *checked)
+    except (OverflowError, struct.error):
+        raise EmbeddingError("embedding_invalid_vector") from None
 
 
 def decode_vector(payload: bytes, dimensions: int) -> list[float]:
-    if not isinstance(dimensions, int) or dimensions <= 0 or dimensions > MAX_EMBEDDING_DIMENSIONS:
+    if isinstance(dimensions, bool) or not isinstance(dimensions, int) or dimensions <= 0 or dimensions > MAX_EMBEDDING_DIMENSIONS:
         raise EmbeddingError("embedding_invalid_dimensions")
     if not isinstance(payload, (bytes, bytearray)) or len(payload) != dimensions * 4:
         raise EmbeddingError("embedding_payload_length_mismatch")
@@ -54,33 +86,56 @@ def decode_vector(payload: bytes, dimensions: int) -> list[float]:
         values = list(struct.unpack("<" + "f" * dimensions, bytes(payload)))
     except struct.error:
         raise EmbeddingError("embedding_payload_invalid") from None
-    if not values or not all(math.isfinite(value) for value in values) or not any(value != 0.0 for value in values):
-        raise EmbeddingError("embedding_invalid_vector")
-    return values
+    return _validate_vectors([values], 1, dimensions)[0]
 
 
 @dataclass(frozen=True)
 class FakeEmbeddingProvider:
-    provider_id: str = "fake"
-    model_id: str = "fake-embedding-v1"
-    model_revision: str = "1"
+    provider_id: str = FAKE_EMBEDDING_PROVIDER_ID
+    model_id: str = FAKE_EMBEDDING_MODEL_ID
+    model_revision: str = FAKE_EMBEDDING_MODEL_REVISION
     dimensions: int = 32
+    encoding: str = EMBEDDING_ENCODING
+    max_batch_size: int = MAX_EMBEDDING_BATCH
+    max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS
+
+    def capabilities(self) -> dict[str, object]:
+        return {
+            "status": "demo", "configured": True, "runtime_kind": "deterministic_demo",
+            "verification_status": "not_applicable", "network_required": False,
+            "provider_id": self.provider_id, "model_id": self.model_id,
+            "model_revision": self.model_revision, "dimensions": self.dimensions,
+            "encoding": self.encoding, "algorithm_version": FAKE_EMBEDDING_ALGORITHM_VERSION,
+            "limits": {"max_batch_size": MAX_EMBEDDING_BATCH, "max_text_chars": MAX_EMBEDDING_TEXT_CHARS,
+                       "max_dimensions": MAX_EMBEDDING_DIMENSIONS, "max_response_bytes": 0},
+            "supports": {"embeddings": True, "batch": True},
+        }
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        if len(texts) > MAX_EMBEDDING_BATCH:
+        if not isinstance(texts, list) or not texts:
+            raise EmbeddingError("embedding_invalid_request")
+        if isinstance(self.max_batch_size, bool) or not isinstance(self.max_batch_size, int) or len(texts) > self.max_batch_size:
             raise EmbeddingError("embedding_batch_too_large")
-        result = []
+        _validate_limits(len(texts), self.dimensions)
+        normalized_texts: list[str] = []
         for text in texts:
             normalized = normalize_embedding_text(text)
-            if not normalized or len(normalized) > MAX_EMBEDDING_TEXT_CHARS:
+            if not normalized:
                 raise EmbeddingError("embedding_invalid_request")
-            digest = hashlib.sha256(("studybuddy-fake-embedding-v1\x1f" + normalized).encode("utf-8")).digest()
+            if len(normalized) > self.max_text_chars:
+                raise EmbeddingError("embedding_text_too_long")
+            normalized_texts.append(normalized)
+        result: list[list[float]] = []
+        for normalized in normalized_texts:
             values = []
             for index in range(self.dimensions):
-                block = hashlib.sha256(digest + index.to_bytes(2, "little")).digest()
-                values.append((int.from_bytes(block[:4], "little") / 2147483647.5) - 1.0)
-            result.append(values)
-        return result
+                seed = f"{FAKE_EMBEDDING_ALGORITHM_VERSION}\x1f{self.provider_id}\x1f{self.model_id}\x1f{self.model_revision}\x1f{normalized}\x1f{index}".encode("utf-8")
+                block = hashlib.sha256(seed).digest()
+                raw = int.from_bytes(block[:8], "little", signed=False)
+                values.append((raw / 9223372036854775807.5) - 1.0)
+            norm = math.sqrt(sum(value * value for value in values))
+            result.append([value / norm for value in values])
+        return _validate_vectors(result, len(texts), self.dimensions)
 
 
 def cosine_similarity(left: list[float], right: list[float]) -> float:

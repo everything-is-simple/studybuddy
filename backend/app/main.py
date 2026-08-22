@@ -25,7 +25,7 @@ from .migrations.runner import MigrationError
 from .observability import (correlation, emit_event, increment, metrics_snapshot, new_id, observe_http,
                             record_import, reset_correlation, route_class, set_correlation,
                             valid_request_id)
-from .providers import ProviderError, ProviderRequest, provider_registry
+from .providers import EmbeddingProviderRegistry, ProviderError, ProviderRequest, provider_registry
 from .embedding import EmbeddingError, FakeEmbeddingProvider
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
@@ -310,12 +310,29 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     def ai_capabilities() -> dict[str, object]:
         config = app.state.config
         if config.ai_provider_id == "fake":
-            return provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
-        return provider_registry(
-            config.ai_provider_id, config.ai_model_id,
-            base_url=config.ai_base_url, api_key=config.ai_api_key,
-            timeout_seconds=config.ai_timeout_seconds, max_retries=config.ai_max_retries,
+            llm = provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
+        else:
+            llm = provider_registry(
+                config.ai_provider_id, config.ai_model_id,
+                base_url=config.ai_base_url, api_key=config.ai_api_key,
+                timeout_seconds=config.ai_timeout_seconds, max_retries=config.ai_max_retries,
+            ).capabilities()
+        embedding_provider_id = config.embedding_provider_id
+        embedding_model_id = config.embedding_model_id
+        embedding = EmbeddingProviderRegistry(
+            embedding_provider_id, embedding_model_id,
+            model_revision=config.embedding_model_revision,
+            timeout_seconds=config.embedding_timeout_seconds,
+            max_batch_size=config.embedding_max_batch_size,
+            max_text_chars=config.embedding_max_text_chars,
+            max_dimensions=config.embedding_max_dimensions,
+            max_response_bytes=config.embedding_max_response_bytes,
+            max_retries=config.embedding_max_retries,
         ).capabilities()
+        # Preserve the legacy response exactly until embedding is explicitly configured.
+        if embedding_provider_id is None:
+            return llm
+        return {**llm, "llm": llm, "embedding": embedding}
 
     def pagination_values(limit: str | None, offset: str | None) -> tuple[int, int, bool]:
         paged = limit is not None or offset is not None
@@ -413,7 +430,17 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                 if request.mode not in {"lexical", "vector"}:
                     raise HTTPException(status_code=400, detail="retrieval_invalid_mode")
                 if request.mode == "vector":
-                    provider = provider_registry(app.state.config.ai_provider_id, app.state.config.ai_model_id).embedding_provider()
+                    config = app.state.config
+                    embedding_provider_id = config.embedding_provider_id or "fake"
+                    provider = provider_registry(embedding_provider_id, config.embedding_model_id).embedding_provider(
+                        model_revision=config.embedding_model_revision,
+                        timeout_seconds=config.embedding_timeout_seconds,
+                        max_batch_size=config.embedding_max_batch_size,
+                        max_text_chars=config.embedding_max_text_chars,
+                        max_dimensions=config.embedding_max_dimensions,
+                        max_response_bytes=config.embedding_max_response_bytes,
+                        max_retries=config.embedding_max_retries,
+                    )
                     from .repository import run_vector_retrieval
                     return run_vector_retrieval(connection, project_id=app.state.config.project_id, query=request.query,
                                                  provider=provider, material_ids=request.material_ids, top_k=request.top_k)
@@ -617,11 +644,20 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     raise HTTPException(status_code=404, detail="extraction_not_found")
                 revision = index_material_revision(connection, material_id, str(extraction["id"]))
                 result = get_material_index_status(connection, material_id)
-                if app.state.config.ai_provider_id == "fake":
-                    from .repository import index_embeddings_for_material
-                    result = {**result, "embedding": index_embeddings_for_material(
-                        connection, material_id=material_id,
-                        provider=FakeEmbeddingProvider())}
+                config = app.state.config
+                embedding_provider_id = config.embedding_provider_id or "fake"
+                provider = EmbeddingProviderRegistry(
+                    embedding_provider_id, config.embedding_model_id,
+                    model_revision=config.embedding_model_revision,
+                    max_batch_size=config.embedding_max_batch_size,
+                    max_text_chars=config.embedding_max_text_chars,
+                    max_dimensions=config.embedding_max_dimensions,
+                    max_response_bytes=config.embedding_max_response_bytes,
+                    max_retries=config.embedding_max_retries,
+                ).configured_provider()
+                from .repository import index_embeddings_for_material
+                result = {**result, "embedding": index_embeddings_for_material(
+                    connection, material_id=material_id, provider=provider)}
         except HTTPException:
             raise
         except ValueError as exc:

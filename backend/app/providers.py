@@ -7,7 +7,9 @@ import time
 from dataclasses import dataclass
 from typing import Protocol
 
-from .embedding import EmbeddingError, EmbeddingProvider, FakeEmbeddingProvider
+from .embedding import (EmbeddingError, EmbeddingProvider, FakeEmbeddingProvider,
+                         EMBEDDING_ENCODING, FAKE_EMBEDDING_MODEL_ID, FAKE_EMBEDDING_MODEL_REVISION,
+                         MAX_EMBEDDING_BATCH, MAX_EMBEDDING_TEXT_CHARS, MAX_EMBEDDING_DIMENSIONS)
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPSHandler, Request, build_opener, install_opener, urlopen
 
@@ -299,6 +301,55 @@ def _extract_citation_keys(text: str) -> list[str]:
     return list(dict.fromkeys(re.findall(r"\[(ctx-[a-zA-Z0-9_-]{1,70})\]", text)))
 
 
+class EmbeddingProviderRegistry:
+    def __init__(self, provider_id: str | None, model_id: str | None = None, *, model_revision: str = "1",
+                 timeout_seconds: float = 30.0, max_batch_size: int = MAX_EMBEDDING_BATCH,
+                 max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS, max_dimensions: int = MAX_EMBEDDING_DIMENSIONS,
+                 max_response_bytes: int = 2 * 1024 * 1024, max_retries: int = 0) -> None:
+        self.provider_id = provider_id
+        self.model_id = model_id
+        self.model_revision = model_revision or "1"
+        self.timeout_seconds = timeout_seconds
+        self.max_batch_size = max_batch_size
+        self.max_text_chars = max_text_chars
+        self.max_dimensions = max_dimensions
+        self.max_response_bytes = max_response_bytes
+        self.max_retries = max_retries
+
+    def configured_provider(self) -> EmbeddingProvider:
+        if self.provider_id is None and self.model_id is None:
+            raise EmbeddingError("embedding_provider_not_configured")
+        if self.provider_id != FAKE_PROVIDER_ID:
+            raise EmbeddingError("embedding_provider_not_configured")
+        if isinstance(self.max_batch_size, bool) or not isinstance(self.max_batch_size, int) or not 1 <= self.max_batch_size <= MAX_EMBEDDING_BATCH:
+            raise EmbeddingError("embedding_provider_invalid_config")
+        if isinstance(self.max_text_chars, bool) or not isinstance(self.max_text_chars, int) or not 1 <= self.max_text_chars <= MAX_EMBEDDING_TEXT_CHARS:
+            raise EmbeddingError("embedding_provider_invalid_config")
+        if isinstance(self.max_dimensions, bool) or not isinstance(self.max_dimensions, int) or not 1 <= self.max_dimensions <= MAX_EMBEDDING_DIMENSIONS:
+            raise EmbeddingError("embedding_provider_invalid_config")
+        if self.model_id not in (None, "", FAKE_EMBEDDING_MODEL_ID):
+            raise EmbeddingError("embedding_provider_invalid_config")
+        provider = FakeEmbeddingProvider(model_revision=self.model_revision,
+                                          max_batch_size=self.max_batch_size,
+                                          max_text_chars=self.max_text_chars)
+        if provider.dimensions > self.max_dimensions:
+            raise EmbeddingError("embedding_invalid_dimensions")
+        return provider
+
+    def capabilities(self) -> dict[str, object]:
+        try:
+            provider = self.configured_provider()
+        except EmbeddingError as error:
+            return {"status": "not_configured" if error.code == "embedding_provider_not_configured" else "invalid_config",
+                    "configured": False, "runtime_kind": "none", "verification_status": "not_applicable",
+                    "network_required": False, "provider_id": None, "model_id": None, "model_revision": None,
+                    "supports": {"embeddings": False, "batch": False}, "error_code": error.code}
+        payload = provider.capabilities()
+        payload["limits"] = {"max_batch_size": self.max_batch_size, "max_text_chars": self.max_text_chars,
+                              "max_dimensions": self.max_dimensions, "max_response_bytes": self.max_response_bytes}
+        return payload
+
+
 class ProviderRegistry:
     def __init__(self, provider_id: str | None, model_id: str | None = None, *, base_url: str | None = None,
                  api_key: str | None = None, timeout_seconds: float = 30.0, max_retries: int = 0) -> None:
@@ -326,10 +377,16 @@ class ProviderRegistry:
             raise ProviderError("provider_invalid_config")
         raise ProviderError(PROVIDER_NOT_CONFIGURED)
 
-    def embedding_provider(self) -> EmbeddingProvider:
-        if self.provider_id == FAKE_PROVIDER_ID:
-            return FakeEmbeddingProvider()
-        raise ProviderError("embedding_provider_not_configured")
+    def embedding_provider(self, *, model_revision: str = "1", timeout_seconds: float = 30.0,
+                           max_batch_size: int = MAX_EMBEDDING_BATCH, max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS,
+                           max_dimensions: int = MAX_EMBEDDING_DIMENSIONS, max_response_bytes: int = 2 * 1024 * 1024,
+                           max_retries: int = 0) -> EmbeddingProvider:
+        try:
+            return EmbeddingProviderRegistry(self.provider_id, self.model_id, model_revision=model_revision,
+                timeout_seconds=timeout_seconds, max_batch_size=max_batch_size, max_text_chars=max_text_chars,
+                max_dimensions=max_dimensions, max_response_bytes=max_response_bytes, max_retries=max_retries).configured_provider()
+        except EmbeddingError as error:
+            raise ProviderError(error.code) from None
 
     def capabilities(self) -> dict[str, object]:
         try:

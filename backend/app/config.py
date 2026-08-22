@@ -11,6 +11,15 @@ DEFAULT_AI_MAX_OUTPUT_TOKENS = 800
 DEFAULT_AI_MAX_PROMPT_CHARS = 30000
 DEFAULT_AI_MAX_ANSWER_CHARS = 12000
 DEFAULT_AI_MAX_RETRIES = 0
+DEFAULT_EMBEDDING_PROVIDER = None
+DEFAULT_EMBEDDING_MODEL = None
+DEFAULT_EMBEDDING_MODEL_REVISION = "1"
+DEFAULT_EMBEDDING_TIMEOUT_SECONDS = 30.0
+DEFAULT_EMBEDDING_MAX_BATCH_SIZE = 32
+DEFAULT_EMBEDDING_MAX_TEXT_CHARS = 12000
+DEFAULT_EMBEDDING_MAX_DIMENSIONS = 4096
+DEFAULT_EMBEDDING_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+DEFAULT_EMBEDDING_MAX_RETRIES = 0
 
 
 @dataclass(frozen=True)
@@ -27,6 +36,15 @@ class AppConfig:
     ai_max_prompt_chars: int = DEFAULT_AI_MAX_PROMPT_CHARS
     ai_max_answer_chars: int = DEFAULT_AI_MAX_ANSWER_CHARS
     ai_max_retries: int = DEFAULT_AI_MAX_RETRIES
+    embedding_provider_id: str | None = DEFAULT_EMBEDDING_PROVIDER
+    embedding_model_id: str | None = DEFAULT_EMBEDDING_MODEL
+    embedding_model_revision: str = DEFAULT_EMBEDDING_MODEL_REVISION
+    embedding_timeout_seconds: float = DEFAULT_EMBEDDING_TIMEOUT_SECONDS
+    embedding_max_batch_size: int = DEFAULT_EMBEDDING_MAX_BATCH_SIZE
+    embedding_max_text_chars: int = DEFAULT_EMBEDDING_MAX_TEXT_CHARS
+    embedding_max_dimensions: int = DEFAULT_EMBEDDING_MAX_DIMENSIONS
+    embedding_max_response_bytes: int = DEFAULT_EMBEDDING_MAX_RESPONSE_BYTES
+    embedding_max_retries: int = DEFAULT_EMBEDDING_MAX_RETRIES
 
     @property
     def originals_root(self) -> Path:
@@ -106,4 +124,13 @@ def config_from_environment() -> AppConfig:
         ai_max_prompt_chars=_env_int("STUDYBUDDY_AI_MAX_PROMPT_CHARS", DEFAULT_AI_MAX_PROMPT_CHARS, minimum=100, maximum=200000),
         ai_max_answer_chars=_env_int("STUDYBUDDY_AI_MAX_ANSWER_CHARS", DEFAULT_AI_MAX_ANSWER_CHARS, minimum=100, maximum=100000),
         ai_max_retries=_env_int("STUDYBUDDY_AI_MAX_RETRIES", DEFAULT_AI_MAX_RETRIES, minimum=0, maximum=2),
+        embedding_provider_id=os.environ.get("STUDYBUDDY_EMBEDDING_PROVIDER") or None,
+        embedding_model_id=os.environ.get("STUDYBUDDY_EMBEDDING_MODEL") or None,
+        embedding_model_revision=os.environ.get("STUDYBUDDY_EMBEDDING_MODEL_REVISION", DEFAULT_EMBEDDING_MODEL_REVISION),
+        embedding_timeout_seconds=_env_float("STUDYBUDDY_EMBEDDING_TIMEOUT_SECONDS", DEFAULT_EMBEDDING_TIMEOUT_SECONDS, minimum=0.1, maximum=120.0),
+        embedding_max_batch_size=_env_int("STUDYBUDDY_EMBEDDING_MAX_BATCH_SIZE", DEFAULT_EMBEDDING_MAX_BATCH_SIZE, minimum=1, maximum=32),
+        embedding_max_text_chars=_env_int("STUDYBUDDY_EMBEDDING_MAX_TEXT_CHARS", DEFAULT_EMBEDDING_MAX_TEXT_CHARS, minimum=1, maximum=12000),
+        embedding_max_dimensions=_env_int("STUDYBUDDY_EMBEDDING_MAX_DIMENSIONS", DEFAULT_EMBEDDING_MAX_DIMENSIONS, minimum=1, maximum=4096),
+        embedding_max_response_bytes=_env_int("STUDYBUDDY_EMBEDDING_MAX_RESPONSE_BYTES", DEFAULT_EMBEDDING_MAX_RESPONSE_BYTES, minimum=1, maximum=16 * 1024 * 1024),
+        embedding_max_retries=_env_int("STUDYBUDDY_EMBEDDING_MAX_RETRIES", DEFAULT_EMBEDDING_MAX_RETRIES, minimum=0, maximum=2),
     )
