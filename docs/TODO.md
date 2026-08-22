@@ -154,14 +154,14 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 冻结 lexical-only、vector-only、hybrid、fallback 与 empty 行为。
 - [x] 将正式记录写入 `docs/PHASE7_1_AUDIT_AND_CONTRACT.md`。
 
-**当前限制：** 7.1 仅完成审计和契约冻结；没有新增 migration，也没有实现 embedding provider、payload codec、indexing、vector 或 hybrid retrieval。现有 Q&A 仍使用 `lexical_fts_v1`。
+**当前限制：** 7.1 契约冻结已完成；7.2 已实现 deterministic fake provider、独立 registry、配置边界和安全 capabilities。真实网络 adapter、hybrid/fallback 和 Q&A 接入仍未完成。
 
 ### 后续实现
 
 - [x] v5 embedding schema migration、payload codec 基础和 status/identity semantics。
 - [x] deterministic fake embedding、显式 indexing 和 vector-only cosine 最小路径。
-- [ ] 真实 embedding provider protocol adapter、配置、capabilities 和稳定错误映射。
-- [ ] 完整 indexing/rebuild/verify、stale 判定、失败重试、生命周期和 embedding backup/restore 专项验收。
+- [x] EmbeddingProvider protocol、独立 registry、deterministic fake provider、环境配置、capability 安全扩展和基础稳定错误边界。
+- [ ] 真实 provider adapter、完整 indexing/rebuild/verify、stale 判定、失败重试、生命周期和 embedding backup/restore 专项验收。
 - [ ] hybrid RRF、fallback policy、完整 retrieval audit metadata 和 Q&A/citation 接入。
 - [ ] Study plan / items：draft → confirm → active，完成记录不可静默覆盖。
 - [ ] 明确并实现首批 S1–S7。
