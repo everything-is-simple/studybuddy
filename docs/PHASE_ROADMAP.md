@@ -143,7 +143,9 @@ migration / schema versioning
 
 ### Phase 6：AI MVP 产品化与整体验收
 
-**状态：未开始；依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
+**状态：P6-A Provider 运行契约和状态可见性已完成；其余整体验收工作未开始。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
+
+P6-A 已明确默认运行状态为 `not_configured`，显式 `fake` 为 deterministic/demo，generic OpenAI-compatible 配置为 `configured` + `unverified`；`GET /api/ai/capabilities` 和 UI 已统一安全状态语义。capabilities 不执行网络 health probe，真实 Provider verified 仍仅按精确 provider/model/gateway 的既有 evidence 判定。
 
 Phase 4 已负责 fake provider 下 Q&A 的完整可验收用户路径。Phase 6 不重复定义历史、材料范围、citation 定位或基础 loading/error 任务，而是在真实 Provider 接入后完成产品级整合：
 

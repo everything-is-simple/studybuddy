@@ -25,6 +25,7 @@
 | Q&A UI + history + citation navigation | Phase 4 complete / browser-tested | `backend/app/main.py`, `backend/tests/browser_qa.spec.js` |
 | Q&A citation lifecycle + backup/restore | implemented / backend-tested | `backend/tests/test_ai_citation_lifecycle.py`, `backend/tests/test_ai_backup_restore.py` |
 | Phase 5 OpenAI-compatible adapter | implemented / mock-tested / DeepSeek and Agnes `agnes-2.5-flash` API+UI smoke passed; redacted three-attempt API acceptance runner implemented; other-provider validation pending | `backend/app/providers.py`, `backend/scripts/agnes-*.ps1`, `backend/tests/test_agnes_launcher.py`, `backend/tests/test_phase5_provider.py`, `backend/tests/test_real_provider_smoke.py`, `backend/tests/browser_qa.spec.js`; one explicit Agnes profile/model is used per process; `agnes-2.5-pro` remains not_verified after `provider_unavailable` API evidence |
+| Phase 6 P6-A Provider runtime contract | implemented / backend-tested / Chromium-tested | `backend/app/providers.py`, `backend/app/main.py`, `backend/tests/test_ai_provider.py`, `backend/tests/browser_qa.spec.js`; default is `not_configured`, explicit fake is deterministic/demo, complete generic configuration is `configured` + `unverified`; capabilities does not perform a network probe |
 | Cards/exercises/study plans | not started | `TODO.md` |
 
 ## Current limits

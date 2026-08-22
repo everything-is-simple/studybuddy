@@ -89,6 +89,15 @@ revision → chunks → retrieval → citations → Q&A
 
 ## Phase 6：AI MVP 产品化与整体验收
 
+### P6-A：Provider 运行契约和状态可见性
+
+- [x] 明确默认运行状态为 `not_configured`；`fake` 仅在显式环境配置时启用，并在 UI 标记为 deterministic/demo。
+- [x] `GET /api/ai/capabilities` 区分 `not_configured`、`invalid_config`、`demo`、`configured`，并以 `verification_status` 区分 generic adapter 的 `unverified`。
+- [x] UI 展示 Provider/model、安全配置来源和 demo/unverified/not-configured 语义；不展示 key、Authorization、敏感 URL、raw response、路径或 traceback。
+- [x] P6-A 后端状态、错误边界、脱敏和 Chromium UI 测试通过；本任务未执行网络探测，不新增真实 Provider evidence。
+
+**P6-A 限制：** capabilities 是本进程配置快照，不是网络 health probe；generic adapter 的 `configured` 不等于 `available` 或 `verified`。DeepSeek `deepseek-chat`、Agnes `agnes-2.5-flash` 的真实证据仍只按 capability matrix 中的精确 provider/model/gateway 范围解释。
+
 - [ ] 真实 provider 下的端到端回归和 provider failure UX 验收。
 - [ ] 更完整的 Q&A thread 工作区、跨材料浏览和导出衔接。
 - [ ] 统一应用级组件、导航、通知、可访问性和响应式体验。
