@@ -110,5 +110,5 @@ Stop the local Uvicorn process after use. Use a temporary `STUDYBUDDY_DATA_ROOT`
 
 - Agnes is one explicitly selected process-local Provider.
 - No automatic fallback, provider routing, worker queue, multi-user mode or cloud sync is added.
-- Agnes real-pass remains pending until adapter, API and UI evidence exists.
+- `advanced` / `agnes-2.5-flash` has model-specific `real-pass` evidence for the official gateway; `pro` / `agnes-2.5-pro` and other profiles remain independently unverified.
 - This runbook does not establish support for ARK, SiliconFlow, Sub2API, other Agnes models or other Provider protocols.

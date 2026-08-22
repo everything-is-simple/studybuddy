@@ -39,6 +39,8 @@ def test_runner_uses_isolated_temp_roots_and_early_stop_threshold():
     assert "Remove-Item -LiteralPath $pytestBase -Recurse -Force" in script
     assert "threshold_reached" in script
     assert "threshold_unreachable" in script
+    assert "provider_connection_failed" in script
+    assert "catch {" in script
     assert "2_of_3_passed" in script
     assert "2_of_3_not_met" in script
 
