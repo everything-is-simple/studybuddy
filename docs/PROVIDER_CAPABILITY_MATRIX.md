@@ -21,7 +21,7 @@ The test must use a temporary `data_root`, synthetic material, and environment v
 | DeepSeek | `deepseek` | `STUDYBUDDY_AI_MODEL=deepseek-chat` | Provider base URL, adapter appends `/chat/completions` | passed | passed | passed | `real-pass` for `deepseek-chat` only | Other DeepSeek models/endpoints not covered |
 | ARK | `ark` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | target-gated generic adapter | pending | pending | `not_verified` | No matching ARK model ID and HTTPS base URL are configured for the StudyBuddy runtime; no ARK request was sent |
 | SiliconFlow | `siliconflow` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | target-gated generic adapter | pending | pending | `not_verified` | SiliconFlow runtime provider/explicit target/model/HTTPS base URL are not configured as a matching set; no SiliconFlow request was sent |
-| Agnes AI-Hub | `agnes-ai-hub` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | target-gated generic adapter | pending | pending | `not_verified` | Agnes runtime provider/explicit target/model/HTTPS base URL are not configured as a matching set; no Agnes request was sent |
+| Agnes AI-Hub | `agnes-ai-hub` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | target-gated generic adapter + local launcher | pending | pending | `not_verified` | Agnes runtime provider/explicit target/model/HTTPS base URL are not configured as a matching set; no Agnes request was sent |
 | Sub2API | `sub2api` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | implemented by generic adapter | pending | pending | `not_verified` | Provider endpoint/model/key unavailable in this environment |
 
 `implemented by generic adapter` means the code accepts the provider as an identifier and applies the common OpenAI-compatible contract. It is not provider-specific real evidence.
@@ -69,6 +69,7 @@ Never record API keys, Authorization headers, raw response bodies, full prompts,
 - ARK target-gated smoke was added on 2026-08-25, but was not executed because the required matching ARK model ID and HTTPS base URL are absent; this is not an ARK real-pass.
 - SiliconFlow target-gated validation was assessed on 2026-08-25, but was not executed because no matching SiliconFlow runtime provider, explicit target, model ID and HTTPS base URL are configured; this is not a SiliconFlow real-pass.
 - Agnes target-gated validation was assessed on 2026-08-25, but was not executed because no matching Agnes runtime provider, explicit target, model ID and HTTPS base URL are configured; this is not an Agnes real-pass.
+- Agnes local launcher/runbook was added on 2026-08-25. It provides child-process configuration isolation and does not change Agnes from `not_verified`.
 - No automatic fallback between providers is implemented.
 - HTTPS is required for non-loopback endpoints; loopback HTTP remains limited to local mock testing.
 - Provider-specific validation remains opt-in and is not part of default CI.

@@ -23,6 +23,10 @@ $env:STUDYBUDDY_AI_MAX_RETRIES = "0"
 
 Non-loopback provider endpoints must use HTTPS. The adapter appends `/chat/completions` to the configured base URL, sends a bearer token, and uses non-streaming OpenAI-compatible request and response fields. Do not mix a model ID, endpoint or API key from different providers.
 
+## Agnes Dedicated Local Route
+
+For a long-term Agnes candidate, use the dedicated [Agnes provider runbook](AGNES_PROVIDER_RUNBOOK.md). It reads `STUDYBUDDY_AGNES_*` variables and maps them into `STUDYBUDDY_AI_*` only inside a child process. It does not modify the parent shell, accept keys as command-line arguments, add fallback, or claim Agnes real-pass. Agnes still requires its own provider-issued model ID, HTTPS base URL and opt-in API/UI evidence.
+
 ## Verification
 
 DeepSeek `deepseek-chat` is the only provider/model with current StudyBuddy adapter, full API-path and Chromium UI opt-in smoke evidence. Run a provider's own smoke gate only with temporary local data and synthetic material:
