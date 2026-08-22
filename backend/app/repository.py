@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .adapters.file_parsers.models import ParseResult
 from .chunking import CHUNKING_STRATEGY, CHUNKING_VERSION, SourceSpan, chunk_text
+from .embedding import EMBEDDING_ENCODING, EmbeddingError, EmbeddingProvider, cosine_similarity, decode_vector, embedding_content_hash, encode_vector
 from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
@@ -19,6 +20,10 @@ MAX_CONTEXT_TOKENS = 2000
 CITATION_KEY_PREFIX = "ctx-"
 MAX_RETRIEVAL_QUERY_LENGTH = 1000
 MAX_RETRIEVAL_TOP_K = 50
+VECTOR_POLICY_VERSION = "vector_cosine_v1"
+HYBRID_POLICY_VERSION = "hybrid_rrf_v1"
+RRF_K = 60
+VECTOR_CANDIDATE_POOL = 50
 MAX_QA_QUESTION_LENGTH = 1000
 QA_PROMPT_VERSION = "qa_fake_v1"
 QA_OPERATION_LEASE_SECONDS = 300
@@ -587,6 +592,102 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
             )
         _sync_chunk_search_for_revision(connection, str(revision["id"]))
         return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
+
+
+def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id: str,
+                                  provider: EmbeddingProvider) -> dict[str, object]:
+    """Explicit, synchronous SQLite-first indexing; never called during startup."""
+    with connection:
+        rows = connection.execute(
+            "SELECT c.id, c.text, c.revision_id FROM chunks c JOIN materials m ON m.id=c.material_id "
+            "JOIN material_revisions r ON r.id=c.revision_id WHERE c.material_id=? AND m.deleted_at IS NULL "
+            "AND r.is_current=1 AND c.status='ready' ORDER BY c.chunk_index, c.id", (material_id,)
+        ).fetchall()
+        if not rows:
+            return {"status": "empty", "material_id": material_id, "embedded_count": 0, "skipped_count": 0}
+        embedded = skipped = 0
+        for start in range(0, len(rows), 32):
+            batch = rows[start:start + 32]
+            todo = []
+            for row in batch:
+                content_hash = embedding_content_hash(str(row["text"]))
+                existing = connection.execute(
+                    "SELECT id,status FROM embeddings WHERE chunk_id=? AND source_revision=? AND content_hash=? "
+                    "AND provider_id=? AND model_id=? AND model_revision=? AND dimensions=? AND vector_encoding=?",
+                    (row["id"], row["revision_id"], content_hash, provider.provider_id, provider.model_id,
+                     provider.model_revision, provider.dimensions, EMBEDDING_ENCODING),
+                ).fetchone()
+                if existing and existing["status"] == "ready":
+                    skipped += 1
+                else:
+                    todo.append((row, content_hash))
+            if not todo:
+                continue
+            try:
+                vectors = provider.embed([str(row["text"]) for row, _ in todo])
+                if len(vectors) != len(todo):
+                    raise EmbeddingError("embedding_invalid_response")
+                for (row, content_hash), vector in zip(todo, vectors):
+                    payload = encode_vector(vector)
+                    if len(vector) != provider.dimensions:
+                        raise EmbeddingError("embedding_dimension_mismatch")
+                    now = utc_now()
+                    connection.execute("""INSERT INTO embeddings
+                        (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
+                         content_hash,source_revision,status,error_code,created_at,updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'ready',NULL,?,?)
+                        ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
+                        DO UPDATE SET vector_payload=excluded.vector_payload,status='ready',error_code=NULL,updated_at=excluded.updated_at""",
+                        (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
+                         provider.model_revision, provider.dimensions, EMBEDDING_ENCODING, payload, content_hash,
+                         row["revision_id"], now, now))
+                    embedded += 1
+            except EmbeddingError as error:
+                for row, content_hash in todo:
+                    now = utc_now()
+                    connection.execute("""INSERT INTO embeddings
+                        (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
+                         content_hash,source_revision,status,error_code,created_at,updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)""",
+                        (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
+                         provider.model_revision, provider.dimensions, EMBEDDING_ENCODING, None, content_hash,
+                         row["revision_id"], error.code, now, now))
+                raise
+        return {"status": "ready", "material_id": material_id, "embedded_count": embedded, "skipped_count": skipped,
+                "provider_id": provider.provider_id, "model_id": provider.model_id, "dimensions": provider.dimensions}
+
+
+def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, query: str,
+                         provider: EmbeddingProvider, material_ids: list[str] | None = None,
+                         top_k: int = 5) -> dict[str, object]:
+    if not query.strip() or len(query.strip()) > MAX_RETRIEVAL_QUERY_LENGTH or not 1 <= top_k <= MAX_RETRIEVAL_TOP_K:
+        raise ValueError("retrieval_invalid_query" if not query.strip() else "retrieval_invalid_top_k")
+    vectors = provider.embed([query.strip()])
+    query_vector = vectors[0]
+    requested = material_ids or []
+    scope = ""; params: list[object] = [project_id, provider.provider_id, provider.model_id, provider.model_revision, provider.dimensions, EMBEDDING_ENCODING]
+    if requested:
+        scope = " AND c.material_id IN (" + ",".join("?" for _ in requested) + ")"; params.extend(requested)
+    rows = connection.execute("""SELECT e.*,c.material_id,c.revision_id,c.text,c.start_offset,c.end_offset FROM embeddings e
+        JOIN chunks c ON c.id=e.chunk_id JOIN materials m ON m.id=c.material_id JOIN material_revisions r ON r.id=c.revision_id
+        WHERE c.project_id=? AND e.provider_id=? AND e.model_id=? AND e.model_revision=? AND e.dimensions=? AND e.vector_encoding=?
+        AND e.status='ready' AND m.deleted_at IS NULL AND r.is_current=1 AND c.status='ready' AND r.material_id=c.material_id""" + scope, params).fetchall()
+    scored = []
+    for row in rows:
+        try: score = cosine_similarity(query_vector, decode_vector(row["vector_payload"], row["dimensions"]))
+        except EmbeddingError: continue
+        scored.append((score, row))
+    scored.sort(key=lambda item: (-round(item[0], 12), str(item[1]["id"])))
+    selected = scored[:top_k]
+    run_id = _create_retrieval_run(connection, query=query, normalized_query=query.strip(), project_id=project_id,
+                                    status="succeeded" if selected else "empty", error_code=None if selected else "retrieval_empty")
+    hits = []
+    with connection:
+        for rank, (score, row) in enumerate(selected, 1):
+            connection.execute("INSERT INTO retrieval_hits (run_id,chunk_id,rank,score,lexical_score,vector_score,rerank_score,selected,citation_label) VALUES (?,?,?,?,NULL,?,NULL,1,?)",
+                               (run_id,row["id"],rank,score,score,f"chunk-{rank}"))
+            hits.append({"chunk_id":row["id"],"material_id":row["material_id"],"revision_id":row["revision_id"],"rank":rank,"score":score,"vector_score":score,"citation_label":f"chunk-{rank}","text_preview":_retrieval_preview(str(row["text"]),[query])})
+    return {"run_id":run_id,"status":"succeeded" if selected else "empty","error_code":None if selected else "retrieval_empty","query":query.strip(),"policy_version":VECTOR_POLICY_VERSION,"hits":hits}
 
 
 def run_chunk_retrieval(connection: sqlite3.Connection, *, project_id: str, query: str,

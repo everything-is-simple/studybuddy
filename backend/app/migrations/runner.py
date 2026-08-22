@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 5
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -311,11 +311,47 @@ def _migration_v4(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v5(connection: sqlite3.Connection) -> None:
+    # Rebuild is intentional: SQLite cannot add a CHECK or make a nullable
+    # identity component non-null with ALTER TABLE. Unknown legacy rows remain
+    # diagnosable but are never silently promoted to ready.
+    connection.execute("ALTER TABLE embeddings RENAME TO embeddings_v4")
+    connection.executescript("""
+        CREATE TABLE embeddings (
+            id TEXT PRIMARY KEY,
+            chunk_id TEXT NOT NULL REFERENCES chunks(id) ON DELETE CASCADE,
+            provider_id TEXT NOT NULL, model_id TEXT NOT NULL,
+            model_revision TEXT NOT NULL, dimensions INTEGER NOT NULL,
+            vector_encoding TEXT NOT NULL, vector_payload BLOB,
+            external_vector_id TEXT, content_hash TEXT NOT NULL,
+            source_revision TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('running','ready','stale','failed')),
+            error_code TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+            UNIQUE(chunk_id, source_revision, content_hash, provider_id, model_id,
+                   model_revision, dimensions, vector_encoding)
+        );
+    """)
+    now = _now()
+    connection.execute("""INSERT INTO embeddings
+        (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,
+         vector_payload,external_vector_id,content_hash,source_revision,status,error_code,created_at,updated_at)
+        SELECT id,chunk_id,provider_id,model_id,COALESCE(model_revision,''),dimensions,vector_encoding,
+         vector_payload,external_vector_id,content_hash,source_revision,
+         CASE WHEN status IN ('running','ready','stale','failed') THEN
+              CASE WHEN status IN ('running','ready') THEN 'stale' ELSE status END
+              ELSE 'failed' END,
+         CASE WHEN status IN ('running','ready','stale','failed') THEN error_code ELSE 'embedding_legacy_status' END,
+         created_at, ? FROM embeddings_v4""", (now,))
+    connection.execute("DROP TABLE embeddings_v4")
+    connection.execute("CREATE INDEX embeddings_ready_lookup_idx ON embeddings(status, provider_id, model_id, model_revision, dimensions, vector_encoding)")
+
+
 _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] = (
     (1, "canonical_material_schema", _migration_v1),
     (2, "ai_phase0_schema", _migration_v2),
     (3, "phase5_provider_metadata", _migration_v3),
     (4, "qa_operation_idempotency", _migration_v4),
+    (5, "phase7_embedding_schema", _migration_v5),
 )
 
 

@@ -159,11 +159,11 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 ### Phase 7：Embedding 与 Hybrid Retrieval
 
-**状态：延后；按规模和质量证据决定。**
+**状态：7.1 已完成；7.2–7.4、7.5 vector-only 最小路径已部分实现；hybrid/fallback/Q&A 接入仍未完成。Phase 7 为 partial。**
 
-- embedding provider、content hash、embedding stale semantics。
-- SQLite embedding payload 或明确的外部索引 manifest/rebuild/verify 机制。
-- lexical + vector hybrid retrieval、rerank。
+- 已完成：审计 `embeddings`、retrieval run/hit、chunking、migration 和 backup/restore 边界；冻结 embedding identity、status/stale、lexical/vector/hybrid/fallback 语义，以及连续 v5 migration 要求。正式记录见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
+- 已实现：v5 embedding schema migration、非 NULL model revision、status CHECK/updated_at/完整 identity 唯一约束；离线 deterministic fake embedding、f32 little-endian codec、显式 fake indexing、vector cosine API 最小路径。
+- 未完成：真实 embedding provider 配置与错误映射、完整 stale verify/rebuild/retry、hybrid RRF、fallback policy、Q&A/UI 接入和专项 backup embedding evidence。
 - 规模充分前不引入外部 vector database。
 
 ### Phase 8：卡片与练习

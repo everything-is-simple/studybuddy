@@ -56,11 +56,12 @@ class LLMProvider(Protocol):
 class EmbeddingProvider(Protocol):
     provider_id: str
     model_id: str
+    model_revision: str
     dimensions: int
     def embed(self, texts: list[str]) -> list[list[float]]: ...
 ```
 
-注册表根据 `provider_id` 创建 adapter；配置只保存 provider/model/timeout/limits，不保存 key 到数据库、manifest 或日志。支持 capability、context window、structured output、streaming capability、rate-limit 和 deterministic fake provider。第一阶段只定义 Protocol、错误映射和 fake contract。真实 provider 后续通过环境变量配置，例如 `STUDYBUDDY_LLM_PROVIDER`、`STUDYBUDDY_LLM_MODEL`、`STUDYBUDDY_EMBEDDING_PROVIDER`、`STUDYBUDDY_EMBEDDING_MODEL`、`STUDYBUDDY_AI_TIMEOUT_SECONDS`、`STUDYBUDDY_AI_MAX_OUTPUT_TOKENS`。
+当前正式代码只实现并使用 `LLMProvider`；`EmbeddingProvider` 是 Phase 7 的冻结设计接口，不代表已有 production implementation。LLM registry 和 deterministic fake LLM provider 已实现；embedding registry、fake embedding provider、配置和错误映射属于 Phase 7.2。注册表根据 `provider_id` 创建 adapter；配置只保存 provider/model/timeout/limits，不保存 key 到数据库、manifest 或日志。支持 capability、context window、structured output、streaming capability、rate-limit 和 deterministic fake provider。真实 provider 后续通过环境变量配置，例如 `STUDYBUDDY_LLM_PROVIDER`、`STUDYBUDDY_LLM_MODEL`、`STUDYBUDDY_EMBEDDING_PROVIDER`、`STUDYBUDDY_EMBEDDING_MODEL`、`STUDYBUDDY_AI_TIMEOUT_SECONDS`、`STUDYBUDDY_AI_MAX_OUTPUT_TOKENS`。
 
 稳定错误：`provider_not_configured`、`provider_unavailable`、`provider_timeout`、`provider_rate_limited`、`provider_auth_failed`、`provider_quota_exceeded`、`provider_invalid_response`、`provider_refusal`。
 
@@ -102,6 +103,8 @@ chunk_spans(chunk_id TEXT, span_id TEXT, overlap_start INTEGER, overlap_end INTE
 空 extraction 允许零 chunk；超大 span 按安全字符/token 上限切分，尽量不跨 page/slide 边界。rename 不影响 chunk，delete 默认排除 retrieval，restore 可重新使用 ready chunk，purge 级联删除派生 chunk。用户编辑不修改 chunk，而应保存为 annotation 或新的用户 artifact。
 
 ## 6. Embedding 与 retrieval
+
+当前正式实现只有 SQLite FTS5 lexical retrieval；`embeddings` 表和 retrieval 的 vector 字段是 Phase 4 预留结构，不代表已有 embedding 生成或 vector retrieval。Phase 7.1 已冻结后续实现契约，具体审计和 identity/status/policy 语义见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
 
 明确决策：第一阶段不引入外部 vector DB。先使用 SQLite FTS5 的 chunk lexical index，原因是当前单进程/SQLite/backup 模型简单且可完全恢复。未来 embedding 可以先落 SQLite（压缩 binary payload 或独立 embedding blob 文件但必须纳入 manifest）；规模确实需要时再引入外部 ANN，并要求独立 index manifest/rebuild 命令，不能形成隐式状态。
 

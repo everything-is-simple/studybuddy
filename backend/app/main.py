@@ -26,6 +26,7 @@ from .observability import (correlation, emit_event, increment, metrics_snapshot
                             record_import, reset_correlation, route_class, set_correlation,
                             valid_request_id)
 from .providers import ProviderError, ProviderRequest, provider_registry
+from .embedding import EmbeddingError, FakeEmbeddingProvider
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_context, create_or_get_revision,
@@ -149,6 +150,7 @@ class RetrievalRequest(BaseModel):
     query: str
     material_ids: list[str] | None = None
     top_k: int = 5
+    mode: str = "lexical"
 
 
 class ContextRequest(BaseModel):
@@ -408,17 +410,23 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="retrieval_invalid_materials")
         try:
             with connect(app.state.config.database_path) as connection:
-                return run_chunk_retrieval(
-                    connection,
-                    project_id=app.state.config.project_id,
-                    query=request.query,
-                    material_ids=request.material_ids,
-                    top_k=request.top_k,
-                )
+                if request.mode not in {"lexical", "vector"}:
+                    raise HTTPException(status_code=400, detail="retrieval_invalid_mode")
+                if request.mode == "vector":
+                    provider = provider_registry(app.state.config.ai_provider_id, app.state.config.ai_model_id).embedding_provider()
+                    from .repository import run_vector_retrieval
+                    return run_vector_retrieval(connection, project_id=app.state.config.project_id, query=request.query,
+                                                 provider=provider, material_ids=request.material_ids, top_k=request.top_k)
+                return run_chunk_retrieval(connection, project_id=app.state.config.project_id, query=request.query,
+                                           material_ids=request.material_ids, top_k=request.top_k)
         except ValueError as exc:
             code = str(exc)
             status = 404 if code in {"material_not_found", "source_deleted"} else 400
             raise HTTPException(status_code=status, detail=code) from None
+        except ProviderError as exc:
+            raise HTTPException(status_code=_provider_http_status(exc.code), detail=exc.code) from None
+        except EmbeddingError as exc:
+            raise HTTPException(status_code=503, detail=exc.code) from None
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="retrieval_failed") from None
 
@@ -609,13 +617,18 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     raise HTTPException(status_code=404, detail="extraction_not_found")
                 revision = index_material_revision(connection, material_id, str(extraction["id"]))
                 result = get_material_index_status(connection, material_id)
+                if app.state.config.ai_provider_id == "fake":
+                    from .repository import index_embeddings_for_material
+                    result = {**result, "embedding": index_embeddings_for_material(
+                        connection, material_id=material_id,
+                        provider=FakeEmbeddingProvider())}
         except HTTPException:
             raise
         except ValueError as exc:
             code = str(exc)
             status = 404 if code in {"source_deleted", "material_extraction_mismatch"} else 400
             raise HTTPException(status_code=status, detail=code) from None
-        except sqlite3.Error:
+        except (sqlite3.Error, EmbeddingError, ProviderError):
             raise HTTPException(status_code=500, detail="ai_index_failed") from None
         if result is None:
             raise HTTPException(status_code=404, detail="material_not_found")

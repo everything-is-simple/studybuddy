@@ -48,9 +48,9 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
     backup_data(source, backup)
 
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 4
+    assert manifest["database"]["schema_version"] == 5
     with sqlite3.connect(backup / "database.sqlite3") as connection:
-        assert assert_schema_version(connection) == 4
+        assert assert_schema_version(connection) == 5
         assert connection.execute(
             "SELECT version, name FROM schema_migrations ORDER BY version"
         ).fetchall() == [
@@ -58,14 +58,15 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
             (2, "ai_phase0_schema"),
             (3, "phase5_provider_metadata"),
             (4, "qa_operation_idempotency"),
+            (5, "phase7_embedding_schema"),
         ]
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
 
     assert verify_backup(backup)["status"] == "valid"
     restored = tmp_path / "restored"
     assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
     with sqlite3.connect(restored / "studybuddy.sqlite3") as connection:
-        assert assert_schema_version(connection) == 4
+        assert assert_schema_version(connection) == 5
         assert connection.execute(
             "SELECT version, name FROM schema_migrations ORDER BY version"
         ).fetchall() == [
@@ -73,15 +74,16 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
             (2, "ai_phase0_schema"),
             (3, "phase5_provider_metadata"),
             (4, "qa_operation_idempotency"),
+            (5, "phase7_embedding_schema"),
         ]
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
 
     # Normal startup must not create another history row or downgrade the version.
     with TestClient(create_app(AppConfig(data_root=restored))):
         pass
     with sqlite3.connect(restored / "studybuddy.sqlite3") as connection:
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 4
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 5
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
 
 
 def test_restore_requires_confirm_and_nonempty_target_unchanged(tmp_path: Path):

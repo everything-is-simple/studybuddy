@@ -6,6 +6,8 @@ import ssl
 import time
 from dataclasses import dataclass
 from typing import Protocol
+
+from .embedding import EmbeddingError, EmbeddingProvider, FakeEmbeddingProvider
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPSHandler, Request, build_opener, install_opener, urlopen
 
@@ -323,6 +325,11 @@ class ProviderRegistry:
         if any(value for value in (self.provider_id, self.model_id, self.base_url, self._api_key)):
             raise ProviderError("provider_invalid_config")
         raise ProviderError(PROVIDER_NOT_CONFIGURED)
+
+    def embedding_provider(self) -> EmbeddingProvider:
+        if self.provider_id == FAKE_PROVIDER_ID:
+            return FakeEmbeddingProvider()
+        raise ProviderError("embedding_provider_not_configured")
 
     def capabilities(self) -> dict[str, object]:
         try:
