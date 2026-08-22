@@ -1,76 +1,94 @@
-# StudyBuddy Pi 模型配置记录
+# StudyBuddy 开发环境 AI 模型配置记录
 
 ## 配置时间
-2026-08-22
+2026-08-22（全量更新）
 
 ## 配置目标
-为 StudyBuddy 开发环境配置稳定、性价比高的 Pi / Pi Agent Desktop 模型路由。要求：
+为 StudyBuddy 开发环境配置稳定、性价比高的 Pi / Pi Agent Desktop / Warp 模型路由。要求：
 - 每个出现在 model list 的模型必须通过 3 次真实最小请求中的至少 2 次。
 - 同一模型尽量多 provider 备份。
 - 优选能力强、性价比高的模型。
+- 覆盖用户提供的全部 key 来源。
 
-## 已配置的 Provider（11 个，80 个通过模型）
+## 探测范围与结果
 
-| Provider | 用途 | 通过模型数 |
+对 26 个 provider 共 173 个候选模型发起 3 次最小请求探测。最终 16 个 provider、107 个模型通过（≥2/3）。
+
+### 通过的 Provider（16 个，107 个模型）
+
+| Provider | 用途分类 | 通过/探测 | 主要模型 |
+|---|---|---|---|
+| chicken-codex-pro | GPT 编程·主 | 5/5 | gpt-5.6-terra, codex-auto-review, gpt-5.5, gpt-5.5-openai-compact, gpt-5.6-sol |
+| sub2api-pro | GPT 编程·备1 | 7/8 | gpt-5.6-terra, codex-auto-review, gpt-5.4, gpt-5.5, gpt-5.6, gpt-5.6-luna, gpt-5.6-sol |
+| shark-pro-pure | GPT 编程·备2 | 9/9 | gpt-5.6-terra, codex-auto-review, gpt-5.3-codex-spark, gpt-5.4, gpt-5.4-mini, gpt-5.4-openai-compact, gpt-5.5, gpt-5.5-openai-compact, gpt-5.6-sol |
+| vokly-pro | GPT 编程·备3 | 4/4 | gpt-5.6-terra, gpt-5.6-sol, gpt-5.5, gpt-5.4 |
+| pixel-multi | GPT 编程·备4 | 4/5 | gpt-5.6-terra, codex-auto-review, gpt-5.5, gpt-5.4 |
+| deepseek-official | 国产按量·主 | 3/3 | deepseek-v4-flash, deepseek-v4-flash-vision-exp, deepseek-v4-pro |
+| pixel-opencode | 国产杂食·备1 | 10/10 | deepseek-v4-flash, deepseek-v4-pro, glm-5.1/5.2/5.3, hy3, mimo-v2.5/pro, minimax-m2.5/m2.7 |
+| ark-coding | 国产包月·备2 | 5/5 | doubao-seed-2-1-turbo-260628, deepseek-v4-flash/pro 系列 |
+| chicken-liang3 | 多模型杂食·主 | 15/15 | deepseek-r1, gemini-2.5-flash/lite, glm-4.7/5.2-fast/5v-turbo, grok-4.6, kimi-k2.7-code, hy3, mimo-v2.5 等 |
+| chicken-kiro | Claude·主 | 5/6 | claude-haiku-4-5, claude-opus-4-6/4-7/4-8, claude-opus-5 |
+| vokly-kiro | Claude·备1 | 5/5 | claude-sonnet-5, claude-opus-4-6/4-7/4-8, claude-opus-5 |
+| chicken-default | Claude 备援·备2 | 19/20 | 19 个 Claude Opus/Fable 系列（含 Kiro3 正价、Kiro 次等线路） |
+| agnes | 免费日常 | 2/4 | agnes-2.0-flash, agnes-2.5-flash |
+| nvidia | 免费推理·按量 | 3/8 | stepfun-ai/step-3.7-flash, minimaxai/minimax-m3, meta/llama-3.3-70b-instruct |
+| zhipu | 智谱官方·按量 | 7/11 | glm-4.6, glm-4.5, glm-4-plus/flash/flashx/air/long |
+| mistral | Mistral 官方·按量 | 4/4 | mistral-large-latest, mistral-medium-latest, codestral-latest, mistral-small-latest |
+
+### 未通过的 Provider（key 网络受限或失效）
+
+| Provider | 原因 |
+|---|---|
+| openai | 官方端点网络不可达（需代理） |
+| anthropic | 官方端点网络不可达 |
+| google | 官方端点网络不可达 |
+| xai | 官方端点网络不可达 |
+| openrouter | 官方端点网络不可达 |
+| minimax | 官方端点模型 ID 不可用 |
+| siliconflow | key 失效或余额不足 |
+| cherry | 端点不可用 |
+| ollama | 本地未运行 |
+| shark-kiro | kiro 线路 Claude 全 502 |
+
+## 同一模型多 Provider 备份（优选稳定性价比）
+
+| 模型 | 备份数 | Provider |
 |---|---|---|
-| agnes | 免费日常·第1 | 2 |
-| chicken-codex-pro | GPT 编程·第1 | 5 |
-| sub2api-pro | GPT 编程·第2 | 8 |
-| pixel-multi | GPT 编程·第3 | 2 |
-| chicken-kiro | Claude·第1 | 1 |
-| ark-coding | 国产包月·第1 | 5 |
-| deepseek-official | 国产按量·第2 | 3 |
-| chicken-liang3 | 多模型杂食·第1 | 15 |
-| pixel-opencode | 多模型杂食·第2 | 10 |
-| shark-pro-pure | 备援·第1 | 9 |
-| chicken-default | 备援·第2 | 20 |
+| gpt-5.6-terra | 5 | chicken-codex-pro, vokly-pro, pixel-multi, sub2api-pro, shark-pro-pure |
+| gpt-5.5 | 5 | chicken-codex-pro, vokly-pro, pixel-multi, sub2api-pro, shark-pro-pure |
+| codex-auto-review | 4 | chicken-codex-pro, pixel-multi, sub2api-pro, shark-pro-pure |
+| gpt-5.6-sol | 4 | chicken-codex-pro, vokly-pro, sub2api-pro, shark-pro-pure |
+| gpt-5.4 | 4 | vokly-pro, pixel-multi, sub2api-pro, shark-pro-pure |
+| claude-opus-5 | 2 | chicken-kiro, vokly-kiro |
+| claude-opus-4-6/4-7/4-8 | 2 | chicken-kiro, vokly-kiro |
+| deepseek-v4-flash | 2 | deepseek-official, pixel-opencode |
+| deepseek-v4-pro | 2 | deepseek-official, pixel-opencode |
+| hy3 | 2 | pixel-opencode, chicken-liang3 |
+| mimo-v2.5 | 2 | pixel-opencode, chicken-liang3 |
 
-## 已通过的关键模型（按能力分组）
+## Pi 配置（`C:\Users\Administrator\.pi\agent\`）
 
-### GPT-5.6 / Codex 编程模型
-- gpt-5.6-terra: chicken-codex-pro, sub2api-pro, pixel-multi, shark-pro-pure（4 家备份）
-- codex-auto-review: chicken-codex-pro, sub2api-pro, pixel-multi, shark-pro-pure（4 家备份）
-- gpt-5.6-sol: chicken-codex-pro, sub2api-pro, shark-pro-pure
-- gpt-5.5: chicken-codex-pro, sub2api-pro, shark-pro-pure
-- gpt-5.5-openai-compact: chicken-codex-pro, shark-pro-pure
-- gpt-5.4: sub2api-pro, shark-pro-pure
-- gpt-5.3-codex-spark: sub2api-pro, shark-pro-pure
+### models.json
+- 16 个 provider，107 个通过模型
+- 每个 provider 用 `apiKey: "$STUDYBUDDY_XXX_KEY"` 引用用户级环境变量
+- 所有 provider 用 `openai-completions` API + 兼容配置（不支持 developer role / reasoning_effort，max_tokens 字段）
 
-### DeepSeek 模型
-- deepseek-v4-flash: deepseek-official, pixel-opencode
-- deepseek-v4-pro: deepseek-official, pixel-opencode
-- deepseek-r1: chicken-liang3
-
-### 国产 / 多模型
-- doubao-seed-2-1-turbo-260628: ark-coding
-- deepseek-v4-flash-260425/ga-260731: ark-coding
-- deepseek-v4-pro-260425/ga-260813: ark-coding
-- kimi-k2.7-code: chicken-liang3
-- gemini-2.5-flash/lite: chicken-liang3
-- glm-4.7/5.2-fast/5v-turbo: chicken-liang3
-- glm-5.1/5.2/5.3: pixel-opencode
-- hy3: chicken-liang3, pixel-opencode
-- mimo-v2.5: chicken-liang3, pixel-opencode
-- minimax-m2.5/m2.7: pixel-opencode
-
-### Claude 模型
-- claude-haiku-4-5-20251001: chicken-kiro
-- chicken-default 含大量 Claude Opus 4.x/5 系列（20 个通过）
-
-### 免费日常
-- agnes-2.0-flash, agnes-2.5-flash: agnes
-
-## Pi 设置 (`~/.pi/agent/settings.json`)
-
+### settings.json
 - defaultProvider: `chicken-codex-pro`
 - defaultModel: `gpt-5.6-terra`
 - defaultThinkingLevel: `high`
 - tuiMode: `fullscreen`
-- scopedModels: 10 个常用模型快捷切换，覆盖多家 provider 备份
+- scopedModels: 17 个快捷切换模型（Ctrl+P），覆盖全部能力分类与多 provider 备份
+
+### 环境变量（setx 持久化到用户级）
+- STUDYBUDDY_AGNES_KEY, STUDYBUDDY_ARK_KEY, STUDYBUDDY_DEEPSEEK_KEY
+- STUDYBUDDY_SUB2API_KEY, STUDYBUDDY_PIXEL_KEY, STUDYBUDDY_PIXEL_OPENCODE_KEY
+- STUDYBUDDY_SHARK_PRO_KEY, STUDYBUDDY_VOKLY_PRO_KEY, STUDYBUDDY_VOKLY_KIRO_KEY
+- STUDYBUDDY_CHICKEN_CODEX_KEY, STUDYBUDDY_CHICKEN_KIRO_KEY, STUDYBUDDY_CHICKEN_LIANG3_KEY, STUDYBUDDY_CHICKEN_DEFAULT_KEY
+- STUDYBUDDY_NVIDIA_KEY, STUDYBUDDY_ZHIPU_KEY, STUDYBUDDY_MISTRAL_KEY
 
 ## StudyBuddy 项目 AI 路由环境变量
 
-已通过 `setx` 写入用户级环境变量：
 - STUDYBUDDY_AI_PROVIDER=deepseek-official
 - STUDYBUDDY_AI_MODEL=deepseek-v4-flash
 - STUDYBUDDY_AI_BASE_URL=https://api.deepseek.com/v1
@@ -79,26 +97,51 @@
 - STUDYBUDDY_AI_MAX_OUTPUT_TOKENS=800
 - STUDYBUDDY_AI_MAX_PROMPT_CHARS=30000
 - STUDYBUDDY_AI_MAX_ANSWER_CHARS=12000
+- STUDYBUDDY_AI_API_KEY=<DeepSeek 官方 key>
+
+## Warp 配置（`C:\Users\Administrator\AppData\Local\warp\Warp\config\settings.toml`）
+
+- 模型保持 `kimi-k27-code-fireworks`（用户当前性价比 token-plan，不变）
+- settings.toml 已备份为 settings.toml.bak-studybuddy-*
+- Warp AI API key 为加密二进制存储（dev.warp.Warp-AiApiKeys），需通过 Warp UI: Settings → AI → Add API Key 配置
+
+## 推荐使用路线
+
+| 场景 | 推荐模型 | 备选 provider |
+|---|---|---|
+| 默认编程 | chicken-codex-pro / gpt-5.6-terra | sub2api-pro, shark-pro-pure, vokly-pro, pixel-multi |
+| 国产按量 | deepseek-official / deepseek-v4-flash | pixel-opencode |
+| Claude 编程 | chicken-kiro / claude-opus-5 | vokly-kiro, chicken-default |
+| 多模型杂食 | chicken-liang3 / kimi-k2.7-code | gemini-2.5-flash, deepseek-r1 |
+| 免费推理 | nvidia / stepfun-ai/step-3.7-flash | agnes / agnes-2.5-flash |
+| 欧洲按量 | mistral / mistral-large-latest | zhipu / glm-4.6 |
 
 ## 验证结果
 
-- 完整 backend 测试套件：200 passed, 2 skipped, 1 warning（49.73s）
-- AI provider 测试：8 passed
-- 环境变量检查：所有 STUDYBUDDY_* key 均已设置
+- backend/tests/test_ai_provider.py: 8 passed
+- 完整 backend/tests/: 203 passed, 2 skipped, 1 warning（59.84s）
+- scopedModels: 17/17 有效
+- 环境变量: 全部持久化到 HKCU\Environment
 
 ## 文件位置
 
-- Pi 模型清单：`C:\Users\Administrator\.pi\agent\models.json`
-- Pi 设置：`C:\Users\Administrator\.pi\agent\settings.json`
-- 探测结果：`C:\Users\Administrator\.pi\agent\model_probe_results.json`
-- 应用脚本：`C:\Users\Administrator\.pi\agent\apply_model_config.py`
-- 探测脚本：`C:\Users\Administrator\.pi\agent\model_probe.py`
-- 本记录：`H:\studybuddy\docs\pi-model-config.md`
+| 文件 | 路径 |
+|---|---|
+| Pi 模型清单 | `C:\Users\Administrator\.pi\agent\models.json` |
+| Pi 设置 | `C:\Users\Administrator\.pi\agent\settings.json` |
+| 全量探测结果 | `C:\Users\Administrator\.pi\agent\model_probe_results_full.json` |
+| 全量探测脚本 | `C:\Users\Administrator\.pi\agent\model_probe_full.py` |
+| 续传探测脚本 | `C:\Users\Administrator\.pi\agent\probe_remaining.py` |
+| 补充探测脚本 | `C:\Users\Administrator\.pi\agent\probe_extra.py` |
+| 最终生成脚本 | `C:\Users\Administrator\.pi\agent\generate_final_config.py` |
+| Warp 设置 | `C:\Users\Administrator\AppData\Local\warp\Warp\config\settings.toml` |
+| 本记录 | `H:\studybuddy\docs\pi-model-config.md` |
 
 ## 使用建议
 
-1. Pi Agent Desktop 启动后会自动读取 `~/.pi/agent/models.json` 和 `settings.json`。
-2. 默认模型为 `chicken-codex-pro/gpt-5.6-terra`，适合编程任务。
-3. 需要国产/按量模型时切换为 `deepseek-official/deepseek-v4-flash`。
-4. 同一模型（如 gpt-5.6-terra）可在 chicken-codex-pro / sub2api-pro / pixel-multi / shark-pro-pure 之间切换，实现 provider 级备份。
-5. 后续新增 key 或模型时，先运行 `model_probe.py` 验证，再运行 `apply_model_config.py` 更新清单。
+1. Pi Agent Desktop 启动后自动读取 `~/.pi/agent/models.json` 和 `settings.json`，无需重启即可通过 `/model` 或 Ctrl+L 切换。
+2. 默认模型 `chicken-codex-pro/gpt-5.6-terra` 适合编程任务。
+3. Ctrl+P 在 17 个 scopedModels 间快速轮换，覆盖全部能力分类。
+4. 需要国产/按量时切到 `deepseek-official/deepseek-v4-flash`。
+5. 需要 Claude 时用 `chicken-kiro/claude-opus-5`，备援 `vokly-kiro`。
+6. 后续新增 key/模型时：编辑 `model_probe_full.py` 的 providers 字典 → 运行探测 → 运行 `generate_final_config.py` 生成新配置。
