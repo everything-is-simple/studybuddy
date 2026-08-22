@@ -5,8 +5,9 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'agnes-common.ps1')
 try { $AgnesConfig = Get-AgnesConfig $Profile } catch { Write-Error $_.Exception.Message; exit 2 }
 
-$node = if ($env:STUDYBUDDY_NODE) { $env:STUDYBUDDY_NODE } else { 'npx.cmd' }
-$info = New-AgnesProcessInfo $node @('playwright', 'test', 'H:/studybuddy/backend/tests/browser_qa.spec.js', '--workers=1', '--reporter=line') $AgnesConfig
+$node = if ($env:STUDYBUDDY_NODE) { $env:STUDYBUDDY_NODE } else { (Get-Command 'npx.cmd' -ErrorAction Stop).Source }
+$arguments = @('playwright', 'test', 'H:/studybuddy/backend/tests/browser_qa.spec.js', '--workers=1', '--reporter=line')
+$info = New-AgnesProcessInfo -FilePath $node -Arguments $arguments -Config $AgnesConfig
 $info.EnvironmentVariables['STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE'] = '0'
 $info.EnvironmentVariables.Remove('STUDYBUDDY_REAL_PROVIDER_TARGET')
 $info.EnvironmentVariables['STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE'] = '1'

@@ -2,7 +2,7 @@
 
 ## Status
 
-Agnes AI-Hub is a long-term low-cost candidate, not a current `real-pass`. The project has a generic OpenAI-compatible adapter and an Agnes-specific local launcher, but Agnes remains unverified until its adapter, API and UI gates pass with a matching provider-issued model, HTTPS base URL and key.
+Agnes AI-Hub `advanced` / `agnes-2.5-flash` has controlled adapter, API and Chromium UI smoke evidence for the official gateway. `pro` / `agnes-2.5-pro` remains `not_verified`: its API smoke returned `provider_unavailable` and its UI gate was not run. These model results are independent.
 
 The launcher does not add fallback or multi-provider routing. It starts one local StudyBuddy process configured for Agnes only.
 
@@ -29,6 +29,7 @@ The official Agnes public model catalog documents these text Chat Completions de
 | `budget` | `agnes-1.5-flash` | Low-latency Q&A and routine summaries |
 | `balanced` | `agnes-2.0-flash` | General study Q&A, reasoning and coding material |
 | `advanced` | `agnes-2.5-flash` | More demanding reasoning or coding material |
+| `pro` | `agnes-2.5-pro` | User-selected high-capability text Q&A profile; must be independently verified |
 
 Start one profile explicitly:
 
@@ -36,6 +37,7 @@ Start one profile explicitly:
 powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile budget
 powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile balanced
 powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile advanced
+powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile pro
 ```
 
 A local `STUDYBUDDY_AGNES_MODEL_<PROFILE>` value overrides the corresponding default only when Agnes documents a replacement model ID for that profile. For example:
@@ -72,7 +74,8 @@ The launcher maps the Agnes namespaced variables to `STUDYBUDDY_AI_PROVIDER`, `S
 API smoke uses temporary data and synthetic material:
 
 ```powershell
-powershell -NoProfile -File .\backend\scripts\test-agnes-provider.ps1 -Profile budget
+powershell -NoProfile -File .\backend\scripts\test-agnes-provider.ps1 -Profile advanced
+powershell -NoProfile -File .\backend\scripts\test-agnes-provider.ps1 -Profile pro
 ```
 
 The script sets `STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE=1` and `STUDYBUDDY_REAL_PROVIDER_TARGET=agnes-ai-hub` in the child process. It runs only the target-gated real provider test.
@@ -82,12 +85,13 @@ Browser smoke:
 ```powershell
 $env:STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE = "1"
 $env:STUDYBUDDY_REAL_PROVIDER_UI_TARGET = "agnes-ai-hub"
-powershell -NoProfile -File .\backend\scripts\test-agnes-ui.ps1 -Profile budget
+powershell -NoProfile -File .\backend\scripts\test-agnes-ui.ps1 -Profile advanced
+powershell -NoProfile -File .\backend\scripts\test-agnes-ui.ps1 -Profile pro
 ```
 
 The UI launcher sets the UI target in its child process and runs the existing browser suite. The suite includes the fake-provider regression tests; the targeted real case is enabled only by the child gate.
 
-A successful request is not sufficient to claim all Agnes models are supported. The built-in profiles cover only the listed text chat models; image and video models use different endpoints and are not valid for StudyBuddy Q&A. Record only the actual provider ID/model ID, gate result and stable error code in [PROVIDER_CAPABILITY_MATRIX.md](PROVIDER_CAPABILITY_MATRIX.md). Never record raw responses, prompts, source text, paths, headers or key material.
+A successful request is not sufficient to claim all Agnes models are supported. `advanced` and `pro` require separate adapter/API/UI evidence even when they use the same gateway and account. The built-in profiles cover only the listed text chat models; image and video models use different endpoints and are not valid for StudyBuddy Q&A. Record only the actual provider ID/model ID, gate result and stable error code in [PROVIDER_CAPABILITY_MATRIX.md](PROVIDER_CAPABILITY_MATRIX.md). Never record raw responses, prompts, source text, paths, headers or key material.
 
 ## Stop and Cleanup
 

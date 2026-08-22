@@ -151,7 +151,7 @@ Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前�
 - mock HTTP、secret redaction 和 Phase 4 回归测试已通过；
 - DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 和完整 API-level 真实网络 smoke；使用临时 data_root 与 synthetic context，验证了 Q&A 成功、citation 和 operation metadata。
 - DeepSeek UI smoke 已验证回答、citation 展示和原文定位；failure UX 已验证 timeout、rate-limit、unavailable、retry、重复点击和安全渲染。
-- ARK、硅基流动、Agnes AI-Hub、Sub2API 已建立独立 provider capability matrix 和脱敏 opt-in 验收命令；API/UI smoke 现在要求 explicit target 与 runtime provider 一致。ARK、硅基流动和 Agnes 均未发送真实请求并保持 `not_verified`；Agnes 已增加独立 child-process launcher/runbook，Sub2API 仍待独立验证。同步 Q&A 已实现显式 `Idempotency-Key` 成功 replay、running 冲突、失败重试和请求触发的 5 分钟 lease stale recovery；后台扫描、cancel、跨进程协调和真实断电恢复仍未实现。
+- ARK、硅基流动、Agnes AI-Hub、Sub2API 已建立独立 provider capability matrix 和脱敏 opt-in 验收命令；API/UI smoke 现在要求 explicit target 与 runtime provider 一致。Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI 真实 smoke；`pro`/`agnes-2.5-pro` API 返回 `provider_unavailable`、UI 未运行，仍为 `not_verified`。ARK、硅基流动和 Sub2API 仍待独立验证。同步 Q&A 已实现显式 `Idempotency-Key` 成功 replay、running 冲突、失败重试和请求触发的 5 分钟 lease stale recovery；后台扫描、cancel、跨进程协调和真实断电恢复仍未实现。
 
 ### 后续阶段：学习能力和生产化
 

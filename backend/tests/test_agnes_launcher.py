@@ -16,6 +16,7 @@ def test_agnes_launcher_uses_namespaced_config_and_fixed_target():
     assert "budget = 'agnes-1.5-flash'" in common
     assert "balanced = 'agnes-2.0-flash'" in common
     assert "advanced = 'agnes-2.5-flash'" in common
+    assert "pro = 'agnes-2.5-pro'" in common
     assert "'https://apihub.agnes-ai.com/v1'" in common
     assert "throw 'agnes_invalid_profile'" in common
     assert "$Profile -notmatch '^[a-z0-9][a-z0-9-]{0,31}$'" in common
@@ -40,6 +41,11 @@ def test_agnes_entrypoints_set_expected_gate():
     ui = read_script("test-agnes-ui.ps1")
     start = read_script("start-agnes.ps1")
     assert "test_real_provider_smoke.py" in provider
+    assert "D:/miniconda/py310/python.exe" in provider
+    assert "D:/miniconda/py310/python.exe" in start
+    assert "Invoke-AgnesProcess -FilePath $python -Arguments $arguments -Config $AgnesConfig" in provider
+    assert "New-AgnesProcessInfo -FilePath $node -Arguments $arguments -Config $AgnesConfig" in ui
+    assert "(Get-Command 'npx.cmd' -ErrorAction Stop).Source" in ui
     assert "STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE'] = '1'" in ui
     assert "STUDYBUDDY_REAL_PROVIDER_UI_TARGET'] = 'agnes-ai-hub'" in ui
     assert "Remove('STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE')" in start

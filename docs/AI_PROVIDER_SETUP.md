@@ -25,7 +25,7 @@ Non-loopback provider endpoints must use HTTPS. The adapter appends `/chat/compl
 
 ## Agnes Dedicated Local Route
 
-For a long-term Agnes candidate, use the dedicated [Agnes provider runbook](AGNES_PROVIDER_RUNBOOK.md). It reads `STUDYBUDDY_AGNES_*` variables and maps them into `STUDYBUDDY_AI_*` only inside a child process. It does not modify the parent shell, accept keys as command-line arguments, add fallback, or claim Agnes real-pass. Agnes still requires its own provider-issued model ID, HTTPS base URL and opt-in API/UI evidence.
+Use the dedicated [Agnes provider runbook](AGNES_PROVIDER_RUNBOOK.md) for Agnes local profiles. It maps `STUDYBUDDY_AGNES_*` into `STUDYBUDDY_AI_*` only inside a child process, does not modify the parent shell, accept keys as command-line arguments, or add fallback. `agnes-2.5-flash` has model-specific controlled API/UI evidence; `agnes-2.5-pro` remains not_verified after `provider_unavailable`, and all model evidence remains independent.
 
 ## Verification
 
