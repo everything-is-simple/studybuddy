@@ -137,7 +137,7 @@ migration / schema versioning
 - DeepSeek 官方 `deepseek-chat` 已完成三类受控真实 smoke：adapter-level、完整 API-level（synthetic material → indexing → retrieval → Q&A → citation validation → metadata persistence）和 Chromium UI/E2E（回答、citation 展示与原文定位）。
 - UI failure contract 已覆盖 timeout、rate-limit、unavailable、retry、重复点击和安全错误渲染。
 - 显式 `Idempotency-Key` 已实现同步 Q&A 成功重放、running 冲突、失败后重试和请求触发的 stale recovery：超过 5 分钟 lease 的 `running` operation 被保守标记 `stale/qa_operation_stale`，不删除审计消息，同 key 可重新执行；不将无 key 的相同问题视为重复请求。后台扫描、cancel、跨进程协调和真实断电恢复仍未实现。
-- ARK、硅基流动、Agnes AI-Hub、Sub2API 已建立独立脱敏 capability matrix 和 opt-in 验收命令；API/UI smoke 强制 explicit target 与 runtime provider 匹配，避免将默认 Provider 结果错误归因。ARK 当前缺少匹配的 model ID 和 HTTPS base URL，未发送真实请求，仍为 `not_verified`；其它 Provider 也仍待各自验证。
+- ARK、硅基流动、Agnes AI-Hub、Sub2API 已建立独立脱敏 capability matrix 和 opt-in 验收命令；API/UI smoke 强制 explicit target 与 runtime provider 匹配，避免将默认 Provider 结果错误归因。ARK 缺少匹配 model ID/HTTPS base URL，硅基流动缺少 matching runtime provider/explicit target/model/HTTPS base URL；两者均未发送真实请求并保持 `not_verified`，其它 Provider 也仍待各自验证。
 
 > 真实 provider 很重要，但 revision/chunk/retrieval/citation 才是可信 Q&A 的内部前置条件；不得让厂商 API 接入阻塞 Phase 4 架构验收。
 
