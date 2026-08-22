@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -299,10 +299,23 @@ def _migration_v3(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v4(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        ALTER TABLE ai_operations ADD COLUMN idempotency_key TEXT;
+        ALTER TABLE ai_operations ADD COLUMN retrieval_run_id TEXT;
+        CREATE UNIQUE INDEX IF NOT EXISTS ai_operations_idempotency_key_idx
+            ON ai_operations(project_id, idempotency_key)
+            WHERE idempotency_key IS NOT NULL;
+        """
+    )
+
+
 _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] = (
     (1, "canonical_material_schema", _migration_v1),
     (2, "ai_phase0_schema", _migration_v2),
     (3, "phase5_provider_metadata", _migration_v3),
+    (4, "qa_operation_idempotency", _migration_v4),
 )
 
 

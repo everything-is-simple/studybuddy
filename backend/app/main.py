@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel
 
@@ -30,7 +30,7 @@ from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
 from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_context, create_or_get_revision,
                          create_qa_request, fail_qa_operation, get_material, get_material_index_status,
-                         get_qa_citation_detail, get_qa_thread_history, get_spans, index_material_revision, list_qa_threads,
+                         get_idempotent_qa_response, get_qa_citation_detail, get_qa_thread_history, get_spans, index_material_revision, list_qa_threads,
                          list_deleted_materials, list_materials,
                          list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
                          purge_material, rename_material, restore_material, run_chunk_retrieval,
@@ -487,29 +487,44 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         return result
 
     @app.post("/api/qa/ask")
-    def ask_question(request: QaAskRequest) -> dict[str, object]:
+    def ask_question(request: QaAskRequest, idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")) -> dict[str, object]:
         if not request.material_ids or len(request.material_ids) > 200 or any(not item for item in request.material_ids):
             raise HTTPException(status_code=400, detail="qa_invalid_materials")
         request_id, _operation_correlation_id = correlation()
-        operation: dict[str, str] | None = None
+        operation: dict[str, object] | None = None
         try:
             with connect(app.state.config.database_path) as connection:
+                if idempotency_key:
+                    if len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key):
+                        raise HTTPException(status_code=400, detail="qa_invalid_idempotency_key")
+                    replay = get_idempotent_qa_response(
+                        connection, project_id=app.state.config.project_id, idempotency_key=idempotency_key,
+                    )
+                    if replay is not None:
+                        return replay
                 operation = create_qa_request(
                     connection, project_id=app.state.config.project_id, question=request.question,
                     material_ids=request.material_ids, thread_id=request.thread_id, request_id=request_id,
+                    idempotency_key=idempotency_key,
                 )
+                if operation.get("replay"):
+                    replay = get_idempotent_qa_response(
+                        connection, project_id=app.state.config.project_id, idempotency_key=idempotency_key,
+                    )
+                    if replay is not None:
+                        return replay
                 retrieval = run_chunk_retrieval(
                     connection, project_id=app.state.config.project_id, query=request.question,
                     material_ids=request.material_ids, top_k=request.top_k,
                 )
                 if retrieval["status"] != "succeeded":
-                    fail_qa_operation(connection, operation["operation_id"], str(retrieval["error_code"]))
+                    fail_qa_operation(connection, str(operation["operation_id"]), str(retrieval["error_code"]))
                     raise HTTPException(status_code=409, detail=str(retrieval["error_code"]))
                 context = assemble_context(
                     connection, project_id=app.state.config.project_id, hits=list(retrieval["hits"]),
                 )
                 if not context["context_blocks"]:
-                    fail_qa_operation(connection, operation["operation_id"], "retrieval_empty")
+                    fail_qa_operation(connection, str(operation["operation_id"]), "retrieval_empty")
                     raise HTTPException(status_code=409, detail="retrieval_empty")
                 try:
                     if app.state.config.ai_provider_id == "fake":
@@ -533,18 +548,19 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     ))
                     latency_ms = result.latency_ms if result.latency_ms is not None else round((time.perf_counter() - started) * 1000)
                 except ProviderError as error:
-                    fail_qa_operation(connection, operation["operation_id"], error.code)
+                    fail_qa_operation(connection, str(operation["operation_id"]), error.code)
                     raise HTTPException(status_code=_provider_http_status(error.code), detail=error.code) from None
                 try:
                     persisted = persist_qa_answer(
                         connection, project_id=app.state.config.project_id,
-                        operation_id=operation["operation_id"], thread_id=operation["thread_id"],
+                        operation_id=str(operation["operation_id"]), thread_id=str(operation["thread_id"]),
                         provider_id=result.provider_id, model_id=result.model_id,
                         answer_text=result.answer_text, citation_keys=result.citation_keys,
                         context_blocks=list(context["context_blocks"]), prompt_tokens=result.prompt_tokens,
                         completion_tokens=result.completion_tokens, latency_ms=latency_ms,
                         provider_request_id=result.provider_request_id,
                         total_tokens=result.total_tokens, finish_reason=result.finish_reason,
+                        retrieval_run_id=str(retrieval["run_id"]),
                     )
                 except ValueError as error:
                     fail_qa_operation(connection, operation["operation_id"], str(error))
@@ -555,14 +571,14 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             code = str(error)
             if operation is not None:
                 with connect(app.state.config.database_path) as connection:
-                    fail_qa_operation(connection, operation["operation_id"], code)
-            status = 404 if code in {"material_not_found", "source_deleted", "qa_thread_not_found"} else 400
+                    fail_qa_operation(connection, str(operation["operation_id"]), code)
+            status = 404 if code in {"material_not_found", "source_deleted", "qa_thread_not_found"} else 409 if code == "qa_operation_in_progress" else 400
             raise HTTPException(status_code=status, detail=code) from None
         except sqlite3.Error:
             if operation is not None:
                 try:
                     with connect(app.state.config.database_path) as connection:
-                        fail_qa_operation(connection, operation["operation_id"], "qa_persist_failed")
+                        fail_qa_operation(connection, str(operation["operation_id"]), "qa_persist_failed")
                 except sqlite3.Error:
                     pass
             raise HTTPException(status_code=500, detail="qa_generation_failed") from None

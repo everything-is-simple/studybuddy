@@ -81,7 +81,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 通用 OpenAI-compatible LLM adapter、环境配置、timeout/output limit；Embedding provider 属于后续 Phase 7。
 - [x] provider timeout/rate-limit/auth/quota/refusal/malformed response 稳定错误映射。
 - [x] capabilities endpoint、usage/latency/provider request metadata，禁止 secret 泄露。
-- [ ] 真正的 AI operation 幂等 fingerprint、重复请求去重和 stale 语义；当前仅持久化 input fingerprint、同步状态和失败 error_code，尚不宣称具备幂等或 stale 行为。
+- [x] 显式 `Idempotency-Key` 的同步 AI operation 幂等：成功请求 replay 原 answer/citations 且不重复调用 Provider、不新增 artifacts；running 返回 `qa_operation_in_progress`；failed key 可重试。当前仍不支持后台 stale transition，也不把无 key 的普通相同问题视为重复请求。
 - [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；其它 Provider 仍待验收。
 - [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收。
 

@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 from app.config import AppConfig
 from app.main import create_app
 from app.providers import ProviderResult
-from app.repository import connect
+from app.repository import connect, create_qa_request
 
 
 def make_client(root: Path, *, fake: bool = True) -> TestClient:
@@ -83,6 +83,70 @@ def test_qa_ask_reuses_thread_and_fake_answer_is_deterministic(tmp_path: Path):
         assert second["answer_text"] == first["answer_text"]
         with connect(tmp_path / "studybuddy.sqlite3") as db:
             assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE thread_id = ?", (first["thread_id"],)).fetchone()[0] == 4
+
+
+def test_qa_idempotency_key_replays_succeeded_answer_without_new_artifacts(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "idempotent.txt", "A stable source supports idempotent responses.")
+        index(client, material["material_id"])
+        headers = {"Idempotency-Key": "qa-replay-001"}
+        first_response = client.post("/api/qa/ask", json={
+            "question": "stable source", "material_ids": [material["material_id"]],
+        }, headers=headers)
+        assert first_response.status_code == 200
+        first = first_response.json()
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            before = tuple(db.execute(
+                "SELECT (SELECT COUNT(*) FROM ai_operations), (SELECT COUNT(*) FROM qa_messages), "
+                "(SELECT COUNT(*) FROM qa_answers), (SELECT COUNT(*) FROM retrieval_runs)"
+            ).fetchone())
+        replay_response = client.post("/api/qa/ask", json={
+            "question": "stable source", "material_ids": [material["material_id"]],
+        }, headers=headers)
+        assert replay_response.status_code == 200
+        replay = replay_response.json()
+        assert replay == first
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            after = tuple(db.execute(
+                "SELECT (SELECT COUNT(*) FROM ai_operations), (SELECT COUNT(*) FROM qa_messages), "
+                "(SELECT COUNT(*) FROM qa_answers), (SELECT COUNT(*) FROM retrieval_runs)"
+            ).fetchone())
+            assert after == before
+            operation = db.execute(
+                "SELECT idempotency_key, retrieval_run_id FROM ai_operations WHERE id = ?",
+                (first["operation_id"],),
+            ).fetchone()
+            assert tuple(operation) == ("qa-replay-001", first["retrieval_run_id"])
+
+
+def test_qa_idempotency_key_rejects_running_operation_and_failure_allows_retry(tmp_path: Path):
+    with make_client(tmp_path, fake=False) as client:
+        material = upload(client, "idempotency-retry.txt", "A source supports retry after failure.")
+        index(client, material["material_id"])
+        key = "qa-retry-001"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            create_qa_request(
+                db, project_id="default", question="source supports", material_ids=[material["material_id"]],
+                thread_id=None, request_id=None, idempotency_key=key,
+            )
+        in_progress = client.post("/api/qa/ask", json={
+            "question": "source supports", "material_ids": [material["material_id"]],
+        }, headers={"Idempotency-Key": key})
+        assert in_progress.status_code == 409
+        assert in_progress.json()["detail"] == "qa_operation_in_progress"
+        failed = client.post("/api/qa/ask", json={
+            "question": "source supports", "material_ids": [material["material_id"]],
+        }, headers={"Idempotency-Key": "qa-failed-retry-001"})
+        assert failed.status_code == 503
+    with make_client(tmp_path) as client:
+        retry = client.post("/api/qa/ask", json={
+            "question": "source supports", "material_ids": [material["material_id"]],
+        }, headers={"Idempotency-Key": "qa-failed-retry-001"})
+        assert retry.status_code == 200
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute(
+                "SELECT COUNT(*) FROM ai_operations WHERE idempotency_key = 'qa-failed-retry-001' AND status = 'succeeded'"
+            ).fetchone()[0] == 1
 
 
 def test_qa_history_lists_threads_and_returns_citations(tmp_path: Path):

@@ -691,9 +691,53 @@ def get_material_index_status(connection: sqlite3.Connection, material_id: str) 
             "is_current": bool(revision["is_current"]), "chunking_version": CHUNKING_VERSION}
 
 
+def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: str,
+                                idempotency_key: str) -> dict[str, object] | None:
+    operation = connection.execute(
+        "SELECT id, status, thread_id, retrieval_run_id, output_artifact_id, error_code "
+        "FROM ai_operations WHERE project_id = ? AND idempotency_key = ?",
+        (project_id, idempotency_key),
+    ).fetchone()
+    if operation is None:
+        return None
+    if operation["status"] == "running":
+        raise ValueError("qa_operation_in_progress")
+    if operation["status"] != "succeeded" or not operation["output_artifact_id"]:
+        return None
+    answer = connection.execute(
+        "SELECT a.answer_text, a.provider_id, a.model_id, m.id AS assistant_message_id "
+        "FROM qa_answers a JOIN qa_messages m ON m.id = a.message_id "
+        "WHERE a.id = ? AND a.ai_operation_id = ?",
+        (operation["output_artifact_id"], operation["id"]),
+    ).fetchone()
+    if answer is None:
+        return None
+    citations = []
+    for row in connection.execute(
+        "SELECT citation_key, material_id, revision_id, chunk_id, span_id, position, status "
+        "FROM qa_citations WHERE answer_id = ? ORDER BY position",
+        (operation["output_artifact_id"],),
+    ).fetchall():
+        citation = dict(row)
+        citation["span_ids"] = [citation.pop("span_id")] if citation.get("span_id") else []
+        citations.append(citation)
+    return {
+        "status": "succeeded", "thread_id": operation["thread_id"],
+        "user_message_id": connection.execute(
+            "SELECT id FROM qa_messages WHERE ai_operation_id = ? AND role = 'user'",
+            (operation["id"],),
+        ).fetchone()[0],
+        "assistant_message_id": answer["assistant_message_id"],
+        "answer_id": operation["output_artifact_id"], "operation_id": operation["id"],
+        "answer_text": answer["answer_text"], "provider_id": answer["provider_id"],
+        "model_id": answer["model_id"], "retrieval_run_id": operation["retrieval_run_id"],
+        "citations": citations,
+    }
+
+
 def create_qa_request(connection: sqlite3.Connection, *, project_id: str, question: str,
                       material_ids: list[str], thread_id: str | None,
-                      request_id: str | None) -> dict[str, str]:
+                      request_id: str | None, idempotency_key: str | None = None) -> dict[str, object]:
     normalized = question.strip()
     if not normalized or len(normalized) > MAX_QA_QUESTION_LENGTH:
         raise ValueError("qa_invalid_question")
@@ -704,6 +748,20 @@ def create_qa_request(connection: sqlite3.Connection, *, project_id: str, questi
         (normalized + "\x1f" + "\x1f".join(sorted(material_ids))).encode("utf-8")
     ).hexdigest()
     with connection:
+        if idempotency_key:
+            existing = connection.execute(
+                "SELECT status FROM ai_operations WHERE project_id = ? AND idempotency_key = ?",
+                (project_id, idempotency_key),
+            ).fetchone()
+            if existing is not None:
+                if existing["status"] == "running":
+                    raise ValueError("qa_operation_in_progress")
+                if existing["status"] == "succeeded":
+                    return {"replay": True, "idempotency_key": idempotency_key}
+                connection.execute(
+                    "UPDATE ai_operations SET idempotency_key = NULL WHERE project_id = ? AND idempotency_key = ?",
+                    (project_id, idempotency_key),
+                )
         if thread_id is None:
             thread_id = f"thread_{uuid.uuid4().hex}"
             title = normalized[:120]
@@ -727,11 +785,11 @@ def create_qa_request(connection: sqlite3.Connection, *, project_id: str, questi
             "INSERT INTO ai_operations (id, operation_type, status, project_id, material_id, thread_id, "
             "input_fingerprint, source_revision, retrieval_policy_version, prompt_version, provider_id, "
             "model_id, request_id, retry_count, error_code, output_artifact_id, prompt_tokens, "
-            "completion_tokens, latency_ms, created_at, started_at, finished_at) "
+            "completion_tokens, latency_ms, created_at, started_at, finished_at, idempotency_key) "
             "VALUES (?, 'qa_answer', 'running', ?, NULL, ?, ?, NULL, ?, ?, NULL, NULL, ?, 0, NULL, "
-            "NULL, NULL, NULL, NULL, ?, ?, NULL)",
+            "NULL, NULL, NULL, NULL, ?, ?, NULL, ?)",
             (operation_id, project_id, thread_id, fingerprint, RETRIEVAL_POLICY_VERSION,
-             QA_PROMPT_VERSION, request_id, created_at, created_at),
+             QA_PROMPT_VERSION, request_id, created_at, created_at, idempotency_key),
         )
         connection.execute(
             "INSERT INTO qa_messages (id, thread_id, role, content, created_at, ai_operation_id) "
@@ -739,7 +797,8 @@ def create_qa_request(connection: sqlite3.Connection, *, project_id: str, questi
             (user_message_id, thread_id, normalized, created_at, operation_id),
         )
         connection.execute("UPDATE qa_threads SET updated_at = ? WHERE id = ?", (created_at, thread_id))
-    return {"thread_id": thread_id, "operation_id": operation_id, "user_message_id": user_message_id}
+    return {"thread_id": thread_id, "operation_id": operation_id, "user_message_id": user_message_id,
+            "replay": False, "idempotency_key": idempotency_key}
 
 
 def fail_qa_operation(connection: sqlite3.Connection, operation_id: str, error_code: str) -> None:
@@ -756,7 +815,7 @@ def persist_qa_answer(connection: sqlite3.Connection, *, project_id: str, operat
                       citation_keys: list[str], context_blocks: list[dict[str, object]],
                       prompt_tokens: int | None, completion_tokens: int | None, latency_ms: int,
                       provider_request_id: str | None = None, total_tokens: int | None = None,
-                      finish_reason: str | None = None) -> dict[str, object]:
+                      finish_reason: str | None = None, retrieval_run_id: str | None = None) -> dict[str, object]:
     allowed = {str(block.get("citation_key")): block for block in context_blocks}
     verified: list[tuple[str, dict[str, object], dict[str, object]]] = []
     for key in citation_keys:
@@ -811,9 +870,9 @@ def persist_qa_answer(connection: sqlite3.Connection, *, project_id: str, operat
             "UPDATE ai_operations SET status = 'succeeded', provider_id = ?, model_id = ?, "
             "output_artifact_id = ?, prompt_tokens = ?, completion_tokens = ?, latency_ms = ?, "
             "provider_request_id = ?, total_tokens = ?, finish_reason = ?, "
-            "finished_at = ? WHERE id = ? AND project_id = ? AND status = 'running'",
+            "finished_at = ?, retrieval_run_id = ? WHERE id = ? AND project_id = ? AND status = 'running'",
             (provider_id, model_id, answer_id, prompt_tokens, completion_tokens, latency_ms,
-             provider_request_id, total_tokens, finish_reason, created_at, operation_id, project_id),
+             provider_request_id, total_tokens, finish_reason, created_at, retrieval_run_id, operation_id, project_id),
         )
         connection.execute("UPDATE qa_threads SET updated_at = ? WHERE id = ?", (created_at, thread_id))
     return {

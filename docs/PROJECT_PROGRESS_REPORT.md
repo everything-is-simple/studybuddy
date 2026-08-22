@@ -151,7 +151,7 @@ Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前�
 - mock HTTP、secret redaction 和 Phase 4 回归测试已通过；
 - DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 和完整 API-level 真实网络 smoke；使用临时 data_root 与 synthetic context，验证了 Q&A 成功、citation 和 operation metadata。
 - DeepSeek UI smoke 已验证回答、citation 展示和原文定位；failure UX 已验证 timeout、rate-limit、unavailable、retry、重复点击和安全渲染。
-- ARK、硅基流动、Agnes AI-Hub、Sub2API 尚未验收；真正的 operation 幂等、重复请求去重和 stale transition 也未实现。
+- ARK、硅基流动、Agnes AI-Hub、Sub2API 尚未验收；显式 `Idempotency-Key` 的同步成功 replay、running 冲突和失败重试已实现，但后台 stale transition、cancel 和 worker recovery 仍未实现。
 
 ### 后续阶段：学习能力和生产化
 
