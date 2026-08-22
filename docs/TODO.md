@@ -162,7 +162,8 @@ revision → chunks → retrieval → citations → Q&A
 - [x] deterministic fake embedding、显式 indexing 和 vector-only cosine 最小路径。
 - [x] EmbeddingProvider protocol、独立 registry、deterministic fake provider、环境配置、capability 安全扩展和基础稳定错误边界。
 - [x] 显式增量 indexing、material rebuild/retry、只读 verify、失败状态基础处理和 active/current/ready 生命周期过滤。
-- [ ] 真实 provider adapter、完整失败重试/lease、embedding 专项 backup/restore 验收、hybrid RRF、fallback policy、完整 retrieval audit metadata 和 Q&A/citation 接入。
+- [x] vector cosine、hybrid RRF、固定 candidate pool/RRF_K/tie-breaker、lexical fallback policy 和 lexical/vector/final score persistence 基础。
+- [ ] 真实 provider adapter、完整失败重试/lease、embedding/retrieval 专项 backup/restore 验收、Q&A/citation/API/UI 接入。
 - [ ] Study plan / items：draft → confirm → active，完成记录不可静默覆盖。
 - [ ] 明确并实现首批 S1–S7。
 
