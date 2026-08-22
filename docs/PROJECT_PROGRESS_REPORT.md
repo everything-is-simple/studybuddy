@@ -1,6 +1,6 @@
 # StudyBuddy 项目进度报告
 
-> 更新日期：2026-08-25（I4 时间盒收口、基建 v1 基本完工后）
+> 更新日期：2026-08-27（P6-E fake Provider 核心工作流验收收口后）
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
 
@@ -15,9 +15,9 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 | 本地单进程基础设施 | 90%–95% | 导入、SQLite、Storage、一致性、恢复、migration、backup/restore 和启动保护已具备；I4 已时间盒验收 |
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
-| 前端用户体验 | 45%–55% | 可用的内嵌单页路径，尚未产品化 |
-| AI/学习产品能力 | 25%–35% | 主要仍是架构设计，核心学习功能尚未实现 |
-| 全项目整体 | 约 45%–50%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
+| 前端用户体验 | 60%–70% | P6-A–P6-E fake/default/narrow/keyboard/accessibility contract 已通过；真实 Provider UI、系统级辅助技术和极端运行条件仍有限制 |
+| AI/学习产品能力 | 35%–45% | Q&A 与 Provider adapter 已实现并验收；cards、练习、计划、embedding 和后台任务仍未实现 |
+| 全项目整体 | 约 50%–55%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
 
 整体进度不应简单按“已通过测试数量”计算：当前可靠性投入较多，而 AI、学习工作流、多用户和运维能力尚未开始，因此产品整体完成度明显低于文件基础设施完成度。
 
@@ -96,7 +96,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - busy guard、stale response guard 和安全 DOM 文本渲染。
 - 多项真实 Chromium failure contract。
 
-尚未达到完整产品前端：统一应用级组件和导航、国际化、上传进度、loading skeleton、高延迟/离线体验以及真实 Provider 下的整体验收仍属于 Phase 6；当前内嵌 UI 已覆盖 Phase 4 Q&A 的状态、retry、toast、响应式、基础可访问性和 Chromium E2E。
+尚未达到完整产品前端：国际化、上传进度、loading skeleton、系统级 screen reader、真实 offline/极端长回答以及精确真实 Provider 下的 P6-E UI path 仍未全部验证；P6-D 已完成统一导航/通知/响应式/基础可访问性，P6-E 已完成 fake Provider 核心工作流和相关 failure/source lifecycle/竞态/导出 Chromium 验收。
 
 ## 三、尚未完成 Phase
 
@@ -113,15 +113,16 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 
-以下核心产品能力尚未形成可用用户路径：
+以下后续核心产品能力尚未形成可用用户路径：
 
-- 真实 provider / embedding、RAG 扩展（真实 provider 先属于 Phase 5，embedding/RAG 扩展按后续路线推进）。
+- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 本轮未运行，保持 `not_verified`。
+- embedding、RAG 扩展和其它 Provider 独立验证。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
 - OCR、ASR、旧格式转换。
 - 后台任务、进度、暂停/取消、retry 和导入历史。
 
-### Phase 6 及以后：产品化、生产化与扩展 — 未完成
+### Phase 6 及以后：产品化、生产化与扩展 — P6-A–P6-E 已完成对应验收，后续能力仍未完成
 
 - I1 migration framework 与 schema versioning 已完成；I2 backup/restore 运维闭环已完成。
 - I3 最小可观察性已实现；I4 已时间盒验收，本地单进程基础设施 v1 基本完工。
@@ -140,9 +141,9 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
    - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
    - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏已明确记录为 `not_verified`，并作为 v1 运行边界接受。
 
-### 当前阶段：Phase 5 真实 Provider 接入
+### 当前阶段：P6-E 后的精确 Provider evidence 与后续路线
 
-Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前已完成 adapter、配置/错误边界、真实失败 UX 和 DeepSeek 官方 `deepseek-chat` API/UI smoke，但尚未达到多 Provider 通用 real-pass：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已经完成；尚未达到多 Provider 通用 real-pass，且 P6-E 精确真实 UI evidence 仍需显式运行：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
@@ -153,9 +154,9 @@ Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前�
 - DeepSeek UI smoke 已验证回答、citation 展示和原文定位；failure UX 已验证 timeout、rate-limit、unavailable、retry、重复点击和安全渲染。
 - ARK、硅基流动、Agnes AI-Hub、Sub2API 已建立独立 provider capability matrix 和脱敏 opt-in 验收命令；API/UI smoke 现在要求 explicit target 与 runtime provider 一致。三次 API acceptance runner 已实现：每次独立 temporary data root、串行 early-stop、仅输出稳定错误码；其 `2/3` 结果不替代 UI evidence，且实现时未执行新的真实请求。Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI 真实 smoke；`pro`/`agnes-2.5-pro` API 返回 `provider_unavailable`、UI 未运行，仍为 `not_verified`。ARK、硅基流动和 Sub2API 仍待独立验证。同步 Q&A 已实现显式 `Idempotency-Key` 成功 replay、running 冲突、失败重试和请求触发的 5 分钟 lease stale recovery；后台扫描、cancel、跨进程协调和真实断电恢复仍未实现。
 
-### 后续阶段：学习能力和生产化
+### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 6–10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 仅在显式配置存在时运行；Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 7–10 顺序推进，不在当前阶段并行承诺。
 
 ### P1：在 AI 闭环后补齐运行保障
 
@@ -176,7 +177,7 @@ Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多�
 - 全局生产级 `real-pass`。
 - 多进程或多 Uvicorn worker 共享同一 data_root。
 - 真实断电、磁盘损坏、网络文件系统恢复。
-- 不宣称已具备真实 Provider、RAG、Cards、Exercises 或学习计划；Phase 4 的 deterministic fake provider Q&A 已实现并通过对应验收。
+- 不宣称所有真实 Provider、RAG、Cards、Exercises 或学习计划已具备；DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 只有各自精确 smoke evidence，P6-E 本轮真实 UI path 为 `not_verified`。Phase 4 fake Provider Q&A 和 P6-E fake 核心工作流已通过对应验收。
 - 已具备 OCR、ASR、ZIP import、文件夹 export 或后台任务队列。
 - 已完成多用户、认证授权、云同步和协作。
 
