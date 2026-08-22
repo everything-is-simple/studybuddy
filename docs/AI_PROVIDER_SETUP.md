@@ -43,6 +43,17 @@ D:/miniconda/py310/python.exe -m pytest backend/tests/test_real_provider_smoke.p
 
 A successful short request does not prove quota, billing, model quality, long-context behavior, uptime or a different model. Record only redacted results and stable error codes in the capability matrix.
 
+### Three-Attempt API Acceptance
+
+Use `backend/scripts/run-provider-api-acceptance.ps1` only with a securely configured runtime Provider/model and explicit opt-in. It runs the existing adapter/API synthetic smoke serially up to three times, creates a separate temporary data root and pytest directory for every attempt, and discards child test output. Two passes stop the remaining attempt as `threshold_reached`; two failures stop it as `threshold_unreachable`. Its final `2_of_3_passed` result is API acceptance evidence only, not `real-pass`: a separate target-gated Chromium UI smoke is still required for the exact Provider/model/gateway combination.
+
+```powershell
+$env:STUDYBUDDY_RUN_THREE_ATTEMPT_PROVIDER_ACCEPTANCE = "1"
+powershell -NoProfile -File .\backend\scripts\run-provider-api-acceptance.ps1 -ProviderId "<provider-id>" -ModelId "<model-id>" -BaseUrl "https://<provider-base-url>"
+```
+
+The runner accepts no key/token parameters. It reads `STUDYBUDDY_AI_API_KEY` only from its runtime environment, emits only provider/model, attempt status, allow-listed stable error codes, and the final threshold result, and never reads backup files or prints child output. No three-attempt acceptance run was performed when this runner was introduced.
+
 ## Safety and Limits
 
 - Rotate or revoke any key that may have appeared in an untrusted backup or history; Git ignore rules are not revocation.
