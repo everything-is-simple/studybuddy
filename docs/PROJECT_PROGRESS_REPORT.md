@@ -113,7 +113,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### Phase 7：Embedding 与 Hybrid Retrieval — partial
 
-7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider、批量/文本/维度边界、embedding 环境配置及 `/api/ai/capabilities` 安全扩展；fake provider 不联网、不使用随机数或 Python 内置 hash。仍未实现真实网络 provider、完整 malformed HTTP adapter/retry evidence、stale/rebuild/verify、hybrid RRF、fallback、Q&A 接入及 embedding 专项 backup/restore 证据。不可标记为 completed 或 real-pass。
+7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider、批量/文本/维度边界、embedding 环境配置及 `/api/ai/capabilities` 安全扩展；7.3 已补齐 canonical identity、f32le_v1 codec、payload malformed boundaries、stale/source-binding 判定和 ready-only vector guard。fake provider 不联网、不使用随机数或 Python 内置 hash。仍未实现真实网络 provider、完整 rebuild/verify、hybrid RRF、fallback、Q&A 接入及 embedding 专项 backup/restore 证据。不可标记为 completed 或 real-pass。
 
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 

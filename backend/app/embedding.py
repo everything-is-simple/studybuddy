@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 import struct
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Mapping, Protocol
 
 EMBEDDING_ENCODING = "f32le_v1"
 FAKE_EMBEDDING_PROVIDER_ID = "fake"
@@ -14,12 +15,39 @@ FAKE_EMBEDDING_ALGORITHM_VERSION = "sha256_bucket_v1"
 MAX_EMBEDDING_BATCH = 32
 MAX_EMBEDDING_TEXT_CHARS = 12000
 MAX_EMBEDDING_DIMENSIONS = 4096
+MAX_EMBEDDING_PAYLOAD_BYTES = MAX_EMBEDDING_DIMENSIONS * 4
+_ID_RE = re.compile(r"^[^\x00-\x1f\x7f]{1,255}$")
+_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class EmbeddingError(ValueError):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+@dataclass(frozen=True)
+class EmbeddingIdentity:
+    chunk_id: str
+    source_revision: str
+    content_hash: str
+    provider_id: str
+    model_id: str
+    model_revision: str
+    dimensions: int
+    vector_encoding: str = EMBEDDING_ENCODING
+
+    def validate(self) -> "EmbeddingIdentity":
+        for value in (self.chunk_id, self.source_revision, self.provider_id, self.model_id,
+                      self.model_revision, self.vector_encoding):
+            if not isinstance(value, str) or not _ID_RE.fullmatch(value):
+                raise EmbeddingError("embedding_invalid_identity")
+        if not isinstance(self.content_hash, str) or not _HASH_RE.fullmatch(self.content_hash):
+            raise EmbeddingError("embedding_invalid_identity")
+        validate_dimensions(self.dimensions)
+        if self.vector_encoding != EMBEDDING_ENCODING:
+            raise EmbeddingError("embedding_encoding_unsupported")
+        return self
 
 
 class EmbeddingProvider(Protocol):
@@ -44,14 +72,20 @@ def embedding_content_hash(text: str) -> str:
     return hashlib.sha256(normalize_embedding_text(text).encode("utf-8")).hexdigest()
 
 
+def validate_dimensions(dimensions: object) -> int:
+    if isinstance(dimensions, bool) or not isinstance(dimensions, int) or not 1 <= dimensions <= MAX_EMBEDDING_DIMENSIONS:
+        raise EmbeddingError("embedding_invalid_dimensions")
+    return dimensions
+
+
 def _validate_limits(batch: object, dimensions: object) -> None:
     if isinstance(batch, bool) or not isinstance(batch, int) or batch < 1 or batch > MAX_EMBEDDING_BATCH:
         raise EmbeddingError("embedding_batch_too_large")
-    if isinstance(dimensions, bool) or not isinstance(dimensions, int) or dimensions < 1 or dimensions > MAX_EMBEDDING_DIMENSIONS:
-        raise EmbeddingError("embedding_invalid_dimensions")
+    validate_dimensions(dimensions)
 
 
 def _validate_vectors(vectors: object, count: int, dimensions: int) -> list[list[float]]:
+    validate_dimensions(dimensions)
     if not isinstance(vectors, list) or len(vectors) != count:
         raise EmbeddingError("embedding_invalid_response")
     result: list[list[float]] = []
@@ -67,26 +101,69 @@ def _validate_vectors(vectors: object, count: int, dimensions: int) -> list[list
     return result
 
 
-def encode_vector(values: list[float] | tuple[float, ...]) -> bytes:
-    if not isinstance(values, (list, tuple)) or not values or len(values) > MAX_EMBEDDING_DIMENSIONS:
+def encode_vector(values: list[float] | tuple[float, ...], *, encoding: str = EMBEDDING_ENCODING) -> bytes:
+    if encoding != EMBEDDING_ENCODING:
+        raise EmbeddingError("embedding_encoding_unsupported")
+    if not isinstance(values, (list, tuple)) or not values:
         raise EmbeddingError("embedding_invalid_vector")
-    checked = _validate_vectors([list(values)], 1, len(values))[0]
+    dimensions = validate_dimensions(len(values))
+    checked = _validate_vectors([list(values)], 1, dimensions)[0]
     try:
-        return struct.pack("<" + "f" * len(checked), *checked)
+        payload = struct.pack("<" + "f" * dimensions, *checked)
     except (OverflowError, struct.error):
         raise EmbeddingError("embedding_invalid_vector") from None
+    if len(payload) > MAX_EMBEDDING_PAYLOAD_BYTES:
+        raise EmbeddingError("embedding_payload_too_large")
+    return payload
 
 
-def decode_vector(payload: bytes, dimensions: int) -> list[float]:
-    if isinstance(dimensions, bool) or not isinstance(dimensions, int) or dimensions <= 0 or dimensions > MAX_EMBEDDING_DIMENSIONS:
-        raise EmbeddingError("embedding_invalid_dimensions")
-    if not isinstance(payload, (bytes, bytearray)) or len(payload) != dimensions * 4:
+def decode_vector(payload: bytes, dimensions: int, *, encoding: str = EMBEDDING_ENCODING) -> list[float]:
+    if encoding != EMBEDDING_ENCODING:
+        raise EmbeddingError("embedding_encoding_unsupported")
+    dimensions = validate_dimensions(dimensions)
+    if not isinstance(payload, (bytes, bytearray)):
+        raise EmbeddingError("embedding_payload_invalid")
+    expected = dimensions * 4
+    if len(payload) > MAX_EMBEDDING_PAYLOAD_BYTES:
+        raise EmbeddingError("embedding_payload_too_large")
+    if len(payload) != expected:
         raise EmbeddingError("embedding_payload_length_mismatch")
     try:
         values = list(struct.unpack("<" + "f" * dimensions, bytes(payload)))
     except struct.error:
         raise EmbeddingError("embedding_payload_invalid") from None
     return _validate_vectors([values], 1, dimensions)[0]
+
+
+def embedding_staleness(row: Mapping[str, object], *, expected_identity: EmbeddingIdentity,
+                        payload_valid: bool | None = None, source_state: str = "ready") -> str | None:
+    """Return a stable reason when an embedding must not be used for retrieval."""
+    expected_identity.validate()
+    if source_state == "missing":
+        return "embedding_chunk_missing"
+    if source_state == "deleted":
+        return "embedding_source_deleted"
+    if source_state == "not_current":
+        return "embedding_source_not_current"
+    if source_state != "ready":
+        return "embedding_chunk_not_ready"
+    if row.get("status") != "ready":
+        return "embedding_status_unavailable"
+    fields = (
+        ("content_hash", "embedding_content_hash_stale"),
+        ("source_revision", "embedding_source_revision_stale"),
+        ("provider_id", "embedding_provider_stale"),
+        ("model_id", "embedding_model_stale"),
+        ("model_revision", "embedding_model_revision_stale"),
+        ("dimensions", "embedding_dimensions_stale"),
+        ("vector_encoding", "embedding_encoding_stale"),
+    )
+    for field, reason in fields:
+        if row.get(field) != getattr(expected_identity, field):
+            return reason
+    if payload_valid is False or row.get("vector_payload") is None:
+        return "embedding_payload_invalid" if payload_valid is False else "embedding_payload_missing"
+    return None
 
 
 @dataclass(frozen=True)

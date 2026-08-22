@@ -158,10 +158,10 @@ revision → chunks → retrieval → citations → Q&A
 
 ### 后续实现
 
-- [x] v5 embedding schema migration、payload codec 基础和 status/identity semantics。
+- [x] v5 embedding schema migration、canonical identity、f32le_v1 payload codec、status/updated_at 和 stale/source-binding semantics。
 - [x] deterministic fake embedding、显式 indexing 和 vector-only cosine 最小路径。
 - [x] EmbeddingProvider protocol、独立 registry、deterministic fake provider、环境配置、capability 安全扩展和基础稳定错误边界。
-- [ ] 真实 provider adapter、完整 indexing/rebuild/verify、stale 判定、失败重试、生命周期和 embedding backup/restore 专项验收。
+- [ ] 真实 provider adapter、完整 indexing/rebuild/verify、失败重试、生命周期和 embedding backup/restore 专项验收。
 - [ ] hybrid RRF、fallback policy、完整 retrieval audit metadata 和 Q&A/citation 接入。
 - [ ] Study plan / items：draft → confirm → active，完成记录不可静默覆盖。
 - [ ] 明确并实现首批 S1–S7。

@@ -9,7 +9,8 @@ from pathlib import Path
 
 from .adapters.file_parsers.models import ParseResult
 from .chunking import CHUNKING_STRATEGY, CHUNKING_VERSION, SourceSpan, chunk_text
-from .embedding import EMBEDDING_ENCODING, EmbeddingError, EmbeddingProvider, cosine_similarity, decode_vector, embedding_content_hash, encode_vector
+from .embedding import (EMBEDDING_ENCODING, EmbeddingError, EmbeddingIdentity, EmbeddingProvider,
+                         cosine_similarity, decode_vector, embedding_content_hash, embedding_staleness, encode_vector)
 from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
@@ -611,11 +612,18 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
             todo = []
             for row in batch:
                 content_hash = embedding_content_hash(str(row["text"]))
+                encoding = getattr(provider, "encoding", EMBEDDING_ENCODING)
+                identity = EmbeddingIdentity(
+                    chunk_id=str(row["id"]), source_revision=str(row["revision_id"]),
+                    content_hash=content_hash, provider_id=str(provider.provider_id),
+                    model_id=str(provider.model_id), model_revision=str(provider.model_revision),
+                    dimensions=provider.dimensions, vector_encoding=encoding,
+                ).validate()
                 existing = connection.execute(
                     "SELECT id,status FROM embeddings WHERE chunk_id=? AND source_revision=? AND content_hash=? "
                     "AND provider_id=? AND model_id=? AND model_revision=? AND dimensions=? AND vector_encoding=?",
                     (row["id"], row["revision_id"], content_hash, provider.provider_id, provider.model_id,
-                     provider.model_revision, provider.dimensions, EMBEDDING_ENCODING),
+                     provider.model_revision, provider.dimensions, encoding),
                 ).fetchone()
                 if existing and existing["status"] == "ready":
                     skipped += 1
@@ -628,7 +636,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                 if len(vectors) != len(todo):
                     raise EmbeddingError("embedding_invalid_response")
                 for (row, content_hash), vector in zip(todo, vectors):
-                    payload = encode_vector(vector)
+                    payload = encode_vector(vector, encoding=encoding)
                     if len(vector) != provider.dimensions:
                         raise EmbeddingError("embedding_dimension_mismatch")
                     now = utc_now()
@@ -639,7 +647,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                         ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
                         DO UPDATE SET vector_payload=excluded.vector_payload,status='ready',error_code=NULL,updated_at=excluded.updated_at""",
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
-                         provider.model_revision, provider.dimensions, EMBEDDING_ENCODING, payload, content_hash,
+                         provider.model_revision, provider.dimensions, encoding, payload, content_hash,
                          row["revision_id"], now, now))
                     embedded += 1
             except EmbeddingError as error:
@@ -648,9 +656,11 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                     connection.execute("""INSERT INTO embeddings
                         (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
                          content_hash,source_revision,status,error_code,created_at,updated_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)""",
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)
+                        ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
+                        DO UPDATE SET vector_payload=NULL,status='failed',error_code=excluded.error_code,updated_at=excluded.updated_at""",
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
-                         provider.model_revision, provider.dimensions, EMBEDDING_ENCODING, None, content_hash,
+                         provider.model_revision, provider.dimensions, encoding, None, content_hash,
                          row["revision_id"], error.code, now, now))
                 raise
         return {"status": "ready", "material_id": material_id, "embedded_count": embedded, "skipped_count": skipped,
@@ -674,7 +684,18 @@ def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, que
         AND e.status='ready' AND m.deleted_at IS NULL AND r.is_current=1 AND c.status='ready' AND r.material_id=c.material_id""" + scope, params).fetchall()
     scored = []
     for row in rows:
-        try: score = cosine_similarity(query_vector, decode_vector(row["vector_payload"], row["dimensions"]))
+        try:
+            identity = EmbeddingIdentity(
+                chunk_id=str(row["id"]), source_revision=str(row["revision_id"]),
+                content_hash=embedding_content_hash(str(row["text"])),
+                provider_id=provider.provider_id, model_id=provider.model_id,
+                model_revision=provider.model_revision, dimensions=provider.dimensions,
+                vector_encoding=EMBEDDING_ENCODING,
+            )
+            reason = embedding_staleness(row, expected_identity=identity, payload_valid=True)
+            if reason is not None:
+                continue
+            score = cosine_similarity(query_vector, decode_vector(row["vector_payload"], row["dimensions"], encoding=row["vector_encoding"]))
         except EmbeddingError: continue
         scored.append((score, row))
     scored.sort(key=lambda item: (-round(item[0], 12), str(item[1]["id"])))
