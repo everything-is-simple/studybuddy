@@ -35,7 +35,8 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          list_deleted_materials, list_materials,
                          list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
                          purge_material, reclaim_stale_qa_operations, rename_material, restore_material, run_chunk_retrieval,
-                         save_material_with_extraction, soft_delete_material, validate_citation_key)
+                         run_hybrid_retrieval, run_vector_retrieval, save_material_with_extraction, soft_delete_material,
+                         validate_citation_key)
 from .storage import sha256_file, store_original
 
 
@@ -168,6 +169,8 @@ class QaAskRequest(BaseModel):
     material_ids: list[str]
     thread_id: str | None = None
     top_k: int = 5
+    retrieval_mode: str = "lexical"
+    allow_retrieval_fallback: bool = True
 
 
 def _rename_name(raw_name: str) -> str | None:
@@ -542,6 +545,8 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     def ask_question(request: QaAskRequest, idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")) -> dict[str, object]:
         if not request.material_ids or len(request.material_ids) > 200 or any(not item for item in request.material_ids):
             raise HTTPException(status_code=400, detail="qa_invalid_materials")
+        if request.retrieval_mode not in {"lexical", "vector", "hybrid"}:
+            raise HTTPException(status_code=400, detail="retrieval_invalid_mode")
         request_id, _operation_correlation_id = correlation()
         operation: dict[str, object] | None = None
         try:
@@ -552,23 +557,63 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                         raise HTTPException(status_code=400, detail="qa_invalid_idempotency_key")
                     replay = get_idempotent_qa_response(
                         connection, project_id=app.state.config.project_id, idempotency_key=idempotency_key,
+                        retrieval_mode=request.retrieval_mode,
                     )
                     if replay is not None:
                         return replay
                 operation = create_qa_request(
                     connection, project_id=app.state.config.project_id, question=request.question,
                     material_ids=request.material_ids, thread_id=request.thread_id, request_id=request_id,
-                    idempotency_key=idempotency_key,
+                    idempotency_key=idempotency_key, retrieval_mode=request.retrieval_mode,
+                    allow_retrieval_fallback=request.allow_retrieval_fallback,
                 )
                 if operation.get("replay"):
                     replay = get_idempotent_qa_response(
                         connection, project_id=app.state.config.project_id, idempotency_key=idempotency_key,
+                        retrieval_mode=request.retrieval_mode,
                     )
                     if replay is not None:
                         return replay
-                retrieval = run_chunk_retrieval(
-                    connection, project_id=app.state.config.project_id, query=request.question,
-                    material_ids=request.material_ids, top_k=request.top_k,
+                if request.retrieval_mode == "lexical":
+                    retrieval = run_chunk_retrieval(
+                        connection, project_id=app.state.config.project_id, query=request.question,
+                        material_ids=request.material_ids, top_k=request.top_k,
+                    )
+                else:
+                    config = app.state.config
+                    embedding_provider_id = config.embedding_provider_id
+                    embedding_provider = None
+                    embedding_error_code = "embedding_provider_not_configured"
+                    try:
+                        embedding_provider = EmbeddingProviderRegistry(
+                            embedding_provider_id, config.embedding_model_id,
+                            model_revision=config.embedding_model_revision,
+                            timeout_seconds=config.embedding_timeout_seconds,
+                            max_batch_size=config.embedding_max_batch_size,
+                            max_text_chars=config.embedding_max_text_chars,
+                            max_dimensions=config.embedding_max_dimensions,
+                            max_response_bytes=config.embedding_max_response_bytes,
+                            max_retries=config.embedding_max_retries,
+                        ).configured_provider()
+                    except (ProviderError, EmbeddingError) as error:
+                        embedding_error_code = error.code
+                        if request.retrieval_mode == "vector" or not request.allow_retrieval_fallback:
+                            fail_qa_operation(connection, str(operation["operation_id"]), error.code)
+                            raise HTTPException(status_code=503, detail=error.code) from None
+                    if request.retrieval_mode == "vector":
+                        retrieval = run_vector_retrieval(
+                            connection, project_id=app.state.config.project_id, query=request.question,
+                            provider=embedding_provider, material_ids=request.material_ids, top_k=request.top_k,
+                        )
+                    else:
+                        retrieval = run_hybrid_retrieval(
+                            connection, project_id=app.state.config.project_id, query=request.question,
+                            provider=embedding_provider, material_ids=request.material_ids, top_k=request.top_k,
+                            allow_fallback=request.allow_retrieval_fallback, embedding_error_code=embedding_error_code,
+                        )
+                connection.execute(
+                    "UPDATE ai_operations SET retrieval_policy_version = ?, retrieval_run_id = ? WHERE id = ? AND status = 'running'",
+                    (retrieval["policy_version"], retrieval["run_id"], operation["operation_id"]),
                 )
                 if retrieval["status"] != "succeeded":
                     fail_qa_operation(connection, str(operation["operation_id"]), str(retrieval["error_code"]))
@@ -603,6 +648,9 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                 except ProviderError as error:
                     fail_qa_operation(connection, str(operation["operation_id"]), error.code)
                     raise HTTPException(status_code=_provider_http_status(error.code), detail=error.code) from None
+                except EmbeddingError as error:
+                    fail_qa_operation(connection, str(operation["operation_id"]), error.code)
+                    raise HTTPException(status_code=503, detail=error.code) from None
                 try:
                     persisted = persist_qa_answer(
                         connection, project_id=app.state.config.project_id,
@@ -641,7 +689,11 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             "assistant_message_id": persisted["assistant_message_id"], "answer_id": persisted["answer_id"],
             "operation_id": operation["operation_id"], "answer_text": result.answer_text,
             "provider_id": result.provider_id, "model_id": result.model_id,
-            "retrieval_run_id": retrieval["run_id"], "citations": persisted["citations"],
+            "retrieval_run_id": retrieval["run_id"], "retrieval": {
+                "mode": request.retrieval_mode, "policy_version": retrieval["policy_version"],
+                "fallback": bool(retrieval.get("fallback", False)),
+                "fallback_reason": retrieval.get("fallback_reason"), "run_id": retrieval["run_id"],
+            }, "citations": persisted["citations"],
         }
 
     @app.post("/api/materials/{material_id}/ai-index")

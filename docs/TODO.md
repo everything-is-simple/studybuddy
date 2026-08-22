@@ -154,7 +154,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 冻结 lexical-only、vector-only、hybrid、fallback 与 empty 行为。
 - [x] 将正式记录写入 `docs/PHASE7_1_AUDIT_AND_CONTRACT.md`。
 
-**当前限制：** 7.1 契约冻结已完成；7.2 已实现 deterministic fake provider、独立 registry、配置边界和安全 capabilities。真实网络 adapter、hybrid/fallback 和 Q&A 接入仍未完成。
+**当前限制：** 7.1 契约冻结已完成；7.2–7.6 已实现 deterministic fake provider、独立 registry、配置边界、安全 capabilities、vector/hybrid/fallback retrieval 和 Q&A mode/citation 接入。真实网络 embedding adapter、retrieval mode UI、专项 backup/restore evidence 和 7.7 最终验收仍未完成；本阶段不新增 migration。
 
 ### 后续实现
 

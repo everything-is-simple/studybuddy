@@ -853,13 +853,16 @@ def _persist_ranked_retrieval(connection: sqlite3.Connection, *, project_id: str
 
 
 def run_hybrid_retrieval(connection: sqlite3.Connection, *, project_id: str, query: str,
-                         provider: EmbeddingProvider, material_ids: list[str] | None = None,
-                         top_k: int = 5, allow_fallback: bool = True) -> dict[str, object]:
+                         provider: EmbeddingProvider | None, material_ids: list[str] | None = None,
+                         top_k: int = 5, allow_fallback: bool = True,
+                         embedding_error_code: str = "embedding_provider_not_configured") -> dict[str, object]:
     if not isinstance(top_k, int) or isinstance(top_k, bool) or not 1 <= top_k <= MAX_RETRIEVAL_TOP_K:
         raise ValueError("retrieval_invalid_top_k")
     try:
         lexical_status, lexical_rows = _lexical_candidates(connection, project_id=project_id, query=query,
                                                             material_ids=material_ids, limit=VECTOR_CANDIDATE_POOL)
+        if provider is None:
+            raise EmbeddingError(embedding_error_code)
         vector_status, vector_rows = _vector_candidates(connection, project_id=project_id, query=query,
                                                         provider=provider, material_ids=material_ids, limit=VECTOR_CANDIDATE_POOL)
     except EmbeddingError as error:
@@ -914,7 +917,7 @@ def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, que
     for row in rows:
         try:
             identity = EmbeddingIdentity(
-                chunk_id=str(row["id"]), source_revision=str(row["revision_id"]),
+                chunk_id=str(row["chunk_id"]), source_revision=str(row["revision_id"]),
                 content_hash=embedding_content_hash(str(row["text"])),
                 provider_id=provider.provider_id, model_id=provider.model_id,
                 model_revision=provider.model_revision, dimensions=provider.dimensions,
@@ -929,13 +932,16 @@ def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, que
     scored.sort(key=lambda item: (-round(item[0], 12), str(item[1]["id"])))
     selected = scored[:top_k]
     run_id = _create_retrieval_run(connection, query=query, normalized_query=query.strip(), project_id=project_id,
-                                    status="succeeded" if selected else "empty", error_code=None if selected else "retrieval_empty")
+                                    status="succeeded" if selected else "empty", error_code=None if selected else "retrieval_empty",
+                                    policy_version=VECTOR_POLICY_VERSION,
+                                    embedding_provider_id=provider.provider_id,
+                                    embedding_model_id=provider.model_id)
     hits = []
     with connection:
         for rank, (score, row) in enumerate(selected, 1):
             connection.execute("INSERT INTO retrieval_hits (run_id,chunk_id,rank,score,lexical_score,vector_score,rerank_score,selected,citation_label) VALUES (?,?,?,?,NULL,?,NULL,1,?)",
-                               (run_id,row["id"],rank,score,score,f"chunk-{rank}"))
-            hits.append({"chunk_id":row["id"],"material_id":row["material_id"],"revision_id":row["revision_id"],"rank":rank,"score":score,"vector_score":score,"citation_label":f"chunk-{rank}","text_preview":_retrieval_preview(str(row["text"]),[query])})
+                               (run_id,row["chunk_id"],rank,score,score,f"chunk-{rank}"))
+            hits.append({"chunk_id":row["chunk_id"],"material_id":row["material_id"],"revision_id":row["revision_id"],"rank":rank,"score":score,"vector_score":score,"citation_label":f"chunk-{rank}","text_preview":_retrieval_preview(str(row["text"]),[query])})
     return {"run_id":run_id,"status":"succeeded" if selected else "empty","error_code":None if selected else "retrieval_empty","query":query.strip(),"policy_version":VECTOR_POLICY_VERSION,"hits":hits}
 
 
@@ -1071,7 +1077,7 @@ def reclaim_stale_qa_operations(connection: sqlite3.Connection, *, project_id: s
 
 
 def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: str,
-                                idempotency_key: str) -> dict[str, object] | None:
+                                idempotency_key: str, retrieval_mode: str = "lexical") -> dict[str, object] | None:
     operation = connection.execute(
         "SELECT id, status, thread_id, retrieval_run_id, output_artifact_id, error_code "
         "FROM ai_operations WHERE project_id = ? AND idempotency_key = ?",
@@ -1081,6 +1087,15 @@ def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: st
         return None
     if operation["status"] == "running":
         raise ValueError("qa_operation_in_progress")
+    run = connection.execute(
+        "SELECT policy_version FROM retrieval_runs WHERE id = ?",
+        (operation["retrieval_run_id"],),
+    ).fetchone()
+    actual_mode = {"lexical_fts_v1": "lexical", "vector_cosine_v1": "vector",
+                   "hybrid_rrf_v1": "hybrid", "fallback_lexical_v1": "hybrid"}.get(
+                       str(run["policy_version"]) if run else "", "lexical")
+    if actual_mode != retrieval_mode:
+        raise ValueError("qa_idempotency_mode_mismatch")
     if operation["status"] != "succeeded" or not operation["output_artifact_id"]:
         return None
     answer = connection.execute(
@@ -1100,6 +1115,14 @@ def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: st
         citation = dict(row)
         citation["span_ids"] = [citation.pop("span_id")] if citation.get("span_id") else []
         citations.append(citation)
+    retrieval = connection.execute(
+        "SELECT policy_version, error_code FROM retrieval_runs WHERE id = ?",
+        (operation["retrieval_run_id"],),
+    ).fetchone()
+    retrieval_mode = {
+        "lexical_fts_v1": "lexical", "vector_cosine_v1": "vector", "hybrid_rrf_v1": "hybrid",
+        "fallback_lexical_v1": "hybrid",
+    }.get(str(retrieval["policy_version"]) if retrieval else "", "lexical")
     return {
         "status": "succeeded", "thread_id": operation["thread_id"],
         "user_message_id": connection.execute(
@@ -1110,21 +1133,34 @@ def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: st
         "answer_id": operation["output_artifact_id"], "operation_id": operation["id"],
         "answer_text": answer["answer_text"], "provider_id": answer["provider_id"],
         "model_id": answer["model_id"], "retrieval_run_id": operation["retrieval_run_id"],
+        "retrieval": {
+            "mode": retrieval_mode,
+            "policy_version": retrieval["policy_version"] if retrieval else RETRIEVAL_POLICY_VERSION,
+            "fallback": bool(retrieval and retrieval["policy_version"] == FALLBACK_LEXICAL_POLICY_VERSION),
+            "fallback_reason": retrieval["error_code"] if retrieval and retrieval["policy_version"] == FALLBACK_LEXICAL_POLICY_VERSION else None,
+            "run_id": operation["retrieval_run_id"],
+        },
         "citations": citations,
     }
 
 
 def create_qa_request(connection: sqlite3.Connection, *, project_id: str, question: str,
                       material_ids: list[str], thread_id: str | None,
-                      request_id: str | None, idempotency_key: str | None = None) -> dict[str, object]:
+                      request_id: str | None, idempotency_key: str | None = None,
+                      retrieval_mode: str = "lexical", allow_retrieval_fallback: bool = True) -> dict[str, object]:
     normalized = question.strip()
     if not normalized or len(normalized) > MAX_QA_QUESTION_LENGTH:
         raise ValueError("qa_invalid_question")
     if not material_ids or len(material_ids) != len(set(material_ids)):
         raise ValueError("qa_invalid_materials")
+    if retrieval_mode not in {"lexical", "vector", "hybrid"}:
+        raise ValueError("retrieval_invalid_mode")
+    if not isinstance(allow_retrieval_fallback, bool):
+        raise ValueError("retrieval_invalid_fallback")
     created_at = utc_now()
     fingerprint = hashlib.sha256(
-        (normalized + "\x1f" + "\x1f".join(sorted(material_ids))).encode("utf-8")
+        (normalized + "\x1f" + "\x1f".join(sorted(material_ids)) + "\x1f" + retrieval_mode
+         + "\x1f" + str(int(allow_retrieval_fallback))).encode("utf-8")
     ).hexdigest()
     with connection:
         if idempotency_key:
@@ -1167,7 +1203,9 @@ def create_qa_request(connection: sqlite3.Connection, *, project_id: str, questi
             "completion_tokens, latency_ms, created_at, started_at, finished_at, idempotency_key) "
             "VALUES (?, 'qa_answer', 'running', ?, NULL, ?, ?, NULL, ?, ?, NULL, NULL, ?, 0, NULL, "
             "NULL, NULL, NULL, NULL, ?, ?, NULL, ?)",
-            (operation_id, project_id, thread_id, fingerprint, RETRIEVAL_POLICY_VERSION,
+            (operation_id, project_id, thread_id, fingerprint,
+             {"lexical": RETRIEVAL_POLICY_VERSION, "vector": VECTOR_POLICY_VERSION,
+              "hybrid": HYBRID_POLICY_VERSION}[retrieval_mode],
              QA_PROMPT_VERSION, request_id, created_at, created_at, idempotency_key),
         )
         connection.execute(
