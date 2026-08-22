@@ -11,3 +11,8 @@ test-results/
 
 # pi API key material (personal, never commit)
 。backup/
+
+# local runtime secrets and environment files
+.env
+.env.*
+!.env.example

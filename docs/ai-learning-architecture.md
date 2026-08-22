@@ -232,7 +232,7 @@ Provider Protocol、revision/chunk schema、deterministic chunker、显式 index
 
 ### 项目 Phase 5：真实 Provider 接入
 
-通用 OpenAI-compatible provider adapter、环境配置、timeout/output limit、稳定错误映射、capability endpoint、provider request/usage/latency metadata 和 secret/error leakage tests 已实现并通过 mock HTTP 验证。v3 migration 增加 provider request ID、total tokens 和 finish reason；v4 增加显式 Idempotency-Key 与 retrieval run 关联，用于同步成功 replay。DeepSeek 官方 `deepseek-chat` 已通过 adapter-level、完整 API-level synthetic smoke 和 Chromium UI/E2E；ARK、硅基流动、Agnes AI-Hub、Sub2API 的独立 capability matrix 已建立，但真实 provider-specific 验证仍待逐个完成。
+通用 OpenAI-compatible provider adapter、环境配置、timeout/output limit、稳定错误映射、capability endpoint、provider request/usage/latency metadata 和 secret/error leakage tests 已实现并通过 mock HTTP 验证。v3 migration 增加 provider request ID、total tokens 和 finish reason；v4 增加显式 Idempotency-Key 与 retrieval run 关联，用于同步成功 replay。同步 Q&A 会在请求事务中将超过五分钟 lease 的 running operation 标记为 `stale/qa_operation_stale`，保留审计记录并允许同 key 重试；这不是后台扫描、跨进程协调或真实 crash recovery。DeepSeek 官方 `deepseek-chat` 已通过 adapter-level、完整 API-level synthetic smoke 和 Chromium UI/E2E；ARK、硅基流动、Agnes AI-Hub、Sub2API 的独立 capability matrix 已建立，但真实 provider-specific 验证仍待逐个完成。
 
 ### 项目 Phase 6 及以后：AI MVP 产品化与扩展
 

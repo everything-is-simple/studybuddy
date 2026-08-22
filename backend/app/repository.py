@@ -21,6 +21,7 @@ MAX_RETRIEVAL_QUERY_LENGTH = 1000
 MAX_RETRIEVAL_TOP_K = 50
 MAX_QA_QUESTION_LENGTH = 1000
 QA_PROMPT_VERSION = "qa_fake_v1"
+QA_OPERATION_LEASE_SECONDS = 300
 
 
 def _ensure_search_index(connection: sqlite3.Connection) -> None:
@@ -689,6 +690,32 @@ def get_material_index_status(connection: sqlite3.Connection, material_id: str) 
     return {"material_id": material_id, "status": "deleted" if material["deleted_at"] else status,
             "revision_id": revision["id"], "chunk_count": count,
             "is_current": bool(revision["is_current"]), "chunking_version": CHUNKING_VERSION}
+
+
+def reclaim_stale_qa_operations(connection: sqlite3.Connection, *, project_id: str,
+                                 lease_seconds: int = QA_OPERATION_LEASE_SECONDS) -> int:
+    cutoff = datetime.now(timezone.utc).timestamp() - lease_seconds
+    stale_ids: list[str] = []
+    for row in connection.execute(
+        "SELECT id, started_at FROM ai_operations "
+        "WHERE project_id = ? AND operation_type = 'qa_answer' AND status = 'running'",
+        (project_id,),
+    ).fetchall():
+        try:
+            started = datetime.fromisoformat(str(row["started_at"])).timestamp()
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if started <= cutoff:
+            stale_ids.append(str(row["id"]))
+    if not stale_ids:
+        return 0
+    with connection:
+        connection.executemany(
+            "UPDATE ai_operations SET status = 'stale', error_code = ?, finished_at = ? "
+            "WHERE id = ? AND status = 'running'",
+            [("qa_operation_stale", utc_now(), operation_id) for operation_id in stale_ids],
+        )
+    return len(stale_ids)
 
 
 def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: str,
