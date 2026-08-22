@@ -111,12 +111,16 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；其它 Provider 和后续学习能力仍待验收/实现；cards、练习和学习计划属于后续阶段。
 
+### Phase 7：Embedding 与 Hybrid Retrieval — partial
+
+已通过 v5 migration 将 embedding identity/status/updated_at/唯一约束落库；实现离线 deterministic fake embedding、f32le_v1 payload codec、显式 fake indexing 和 vector-only cosine API，并保留 lexical 回归。尚未实现真实 embedding provider、完整 stale/rebuild/verify、hybrid RRF、fallback、Q&A 接入及 embedding 专项 backup/restore 证据。不可标记为 completed 或 real-pass。
+
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 
 以下后续核心产品能力尚未形成可用用户路径：
 
 - P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material。
-- embedding、RAG 扩展和其它 Provider 独立验证。
+- hybrid/fallback RAG 扩展、真实 embedding provider 和其它 Provider 独立验证。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
 - OCR、ASR、旧格式转换。
