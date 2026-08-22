@@ -113,7 +113,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### Phase 7：Embedding 与 Hybrid Retrieval — partial
 
-7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider、批量/文本/维度边界、embedding 环境配置及 `/api/ai/capabilities` 安全扩展；7.3 已补齐 canonical identity、f32le_v1 codec、payload malformed boundaries、stale/source-binding 判定和 ready-only vector guard；7.4 已补齐显式增量 indexing、material rebuild/retry、只读 verify 报告和 active/current/ready 生命周期过滤；7.5 已补齐 vector cosine、固定 candidate pool、hybrid RRF、score persistence 和显式 lexical fallback；7.6 已将 lexical/vector/hybrid/fallback 接入 Q&A，保留 server-side context/citation verification、operation/retrieval linkage 和 replay metadata。fake provider 不联网、不使用随机数或 Python 内置 hash。仍未实现真实网络 embedding provider、retrieval mode UI、完整 lease/失败重试专项、embedding/retrieval 专项 backup/restore 证据及 Phase 7.7 最终验收。不可标记为 completed 或 real-pass。
+7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider、批量/文本/维度边界、embedding 环境配置及 `/api/ai/capabilities` 安全扩展；7.3 已补齐 canonical identity、f32le_v1 codec、payload malformed boundaries、stale/source-binding 判定和 ready-only vector guard；7.4 已补齐显式增量 indexing、material rebuild/retry、只读 verify 报告和 active/current/ready 生命周期过滤；7.5 已补齐 vector cosine、固定 candidate pool、hybrid RRF、score persistence 和显式 lexical fallback；7.6 已将 lexical/vector/hybrid/fallback 接入 Q&A，保留 server-side context/citation verification、operation/retrieval linkage 和 replay metadata；7.7 已完成 fake/backend 最终回归、embedding/retrieval/Q&A metadata backup/restore 专项、损坏生命周期测试和 102/1,002 chunks synthetic benchmark。fake provider 不联网、不使用随机数或 Python 内置 hash。真实网络 embedding provider、retrieval mode UI/Chromium final acceptance 和完整 lease/失败重试专项仍为 not_verified，因此 Phase 7 不标记 completed 或 real-pass。
 
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 

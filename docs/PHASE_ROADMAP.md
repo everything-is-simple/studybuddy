@@ -159,12 +159,13 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 ### Phase 7：Embedding 与 Hybrid Retrieval
 
-**状态：7.1–7.5 已完成；7.6 Q&A/citation 接入已实现并通过 backend tests；UI retrieval mode、专项 backup/recovery evidence 和 7.7 最终验收仍未完成。Phase 7 为 partial。**
+**状态：7.1–7.6 已完成；7.7 fake/backend 最终验收、专项 backup/restore 和 synthetic benchmark 已完成；真实 embedding provider 与 retrieval mode Chromium UI 未验证。Phase 7 为 partial。**
 
 - 已完成：审计 `embeddings`、retrieval run/hit、chunking、migration 和 backup/restore 边界；冻结 embedding identity、status/stale、lexical/vector/hybrid/fallback 语义，以及连续 v5 migration 要求。正式记录见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
 - 已实现：v5 embedding schema migration、非 NULL model revision、status CHECK/updated_at/完整 identity 唯一约束；版本化离线 deterministic fake embedding、独立 registry、embedding 环境配置、canonical identity/stale 判定、f32 little-endian codec、显式增量 indexing、显式 material rebuild/retry、只读 verify 报告、vector cosine API 最小路径和安全 capabilities 扩展。
 - 已实现：Q&A 显式 lexical/vector/hybrid mode、hybrid fallback、retrieval policy/operation/answer linkage、replay metadata 和 citation-safe context path；不新增 migration，复用 v5 embedding 与现有 Q&A/citation schema。
-- 未完成：真实 embedding provider 配置与错误映射、完整 lease/失败重试专项、retrieval mode UI、专项 backup embedding/retrieval evidence 和 7.7 最终验收。
+- 已完成：embedding/retrieval/Q&A metadata backup/restore 专项、损坏 payload/lifecycle 验收、102/1,002 chunks synthetic benchmark、完整 backend regression。
+- 未完成：真实 embedding provider 配置与错误映射、retrieval mode UI/Chromium final acceptance、完整 lease/失败重试专项；因此 Phase 7 仍为 partial，不标记 completed 或 real-pass。
 - 规模充分前不引入外部 vector database。
 
 ### Phase 8：卡片与练习
