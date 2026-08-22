@@ -5,6 +5,7 @@ $AgnesDefaultModels = @{
     budget = 'agnes-1.5-flash'
     balanced = 'agnes-2.0-flash'
     advanced = 'agnes-2.5-flash'
+    pro = 'agnes-2.5-pro'
 }
 
 function Get-AgnesConfig([string]$Profile) {
