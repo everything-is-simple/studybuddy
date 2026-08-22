@@ -1,9 +1,14 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Get-AgnesConfig {
+function Get-AgnesConfig([string]$Profile) {
     $provider = if ($env:STUDYBUDDY_AGNES_PROVIDER_ID) { $env:STUDYBUDDY_AGNES_PROVIDER_ID } else { 'agnes-ai-hub' }
     $model = $env:STUDYBUDDY_AGNES_MODEL
+    if ($Profile) {
+        if ($Profile -notmatch '^[a-z0-9][a-z0-9-]{0,31}$') { throw 'agnes_invalid_profile' }
+        $modelVariable = 'STUDYBUDDY_AGNES_MODEL_' + ($Profile.ToUpperInvariant() -replace '-', '_')
+        $model = [Environment]::GetEnvironmentVariable($modelVariable)
+    }
     $baseUrl = $env:STUDYBUDDY_AGNES_BASE_URL
     $key = $env:STUDYBUDDY_AGNES_KEY
     if ($provider -ne 'agnes-ai-hub') { throw 'agnes_invalid_provider_id' }
@@ -19,6 +24,7 @@ function Get-AgnesConfig {
         Model = $model
         BaseUrl = $baseUrl.TrimEnd('/')
         Key = $key
+        Profile = $Profile
     }
 }
 
@@ -52,11 +58,4 @@ function Invoke-AgnesProcess([string]$FilePath, [string[]]$Arguments, [object]$C
     $code = $process.ExitCode
     $process.Dispose()
     exit $code
-}
-
-try {
-    $script:AgnesConfig = Get-AgnesConfig
-} catch {
-    Write-Error $_.Exception.Message
-    exit 2
 }

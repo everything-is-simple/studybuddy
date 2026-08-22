@@ -20,6 +20,24 @@ $env:STUDYBUDDY_PYTHON = "D:\miniconda\py310\python.exe"
 
 Do not guess the model or endpoint. Obtain both from the Agnes account/provider contract. The base URL must be HTTPS and must not contain credentials, query or fragment values.
 
+## Model Profiles
+
+A StudyBuddy process uses exactly one Agnes model. To keep several low-cost candidates available without mixing model audit records, configure local named profiles. Profile names contain lowercase letters, digits and hyphens only; they are labels, not Agnes model IDs.
+
+```powershell
+$env:STUDYBUDDY_AGNES_MODEL_BUDGET = "<provider-issued-budget-model-id>"
+$env:STUDYBUDDY_AGNES_MODEL_QUALITY = "<provider-issued-quality-model-id>"
+```
+
+Start one profile explicitly:
+
+```powershell
+powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile budget
+powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile quality
+```
+
+Without `-Profile`, the scripts use `STUDYBUDDY_AGNES_MODEL`. Do not run profiles concurrently against the same `STUDYBUDDY_DATA_ROOT`; StudyBuddy supports one local process/instance and SQLite data root at a time. Stop one server before starting another profile. A response records the selected provider/model ID in its normal Q&A audit metadata.
+
 Optional non-secret settings are inherited only into the child process:
 
 ```powershell
@@ -46,7 +64,7 @@ The launcher maps the Agnes namespaced variables to `STUDYBUDDY_AI_PROVIDER`, `S
 API smoke uses temporary data and synthetic material:
 
 ```powershell
-powershell -NoProfile -File .\backend\scripts\test-agnes-provider.ps1
+powershell -NoProfile -File .\backend\scripts\test-agnes-provider.ps1 -Profile budget
 ```
 
 The script sets `STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE=1` and `STUDYBUDDY_REAL_PROVIDER_TARGET=agnes-ai-hub` in the child process. It runs only the target-gated real provider test.
@@ -56,7 +74,7 @@ Browser smoke:
 ```powershell
 $env:STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE = "1"
 $env:STUDYBUDDY_REAL_PROVIDER_UI_TARGET = "agnes-ai-hub"
-powershell -NoProfile -File .\backend\scripts\test-agnes-ui.ps1
+powershell -NoProfile -File .\backend\scripts\test-agnes-ui.ps1 -Profile budget
 ```
 
 The UI launcher sets the UI target in its child process and runs the existing browser suite. The suite includes the fake-provider regression tests; the targeted real case is enabled only by the child gate.
