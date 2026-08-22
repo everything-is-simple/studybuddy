@@ -29,7 +29,7 @@ Use the dedicated [Agnes provider runbook](AGNES_PROVIDER_RUNBOOK.md) for Agnes 
 
 ## Verification
 
-DeepSeek `deepseek-chat` is the only provider/model with current StudyBuddy adapter, full API-path and Chromium UI opt-in smoke evidence. Run a provider's own smoke gate only with temporary local data and synthetic material:
+DeepSeek `deepseek-chat` and Agnes `agnes-2.5-flash` are the only provider/model combinations with current StudyBuddy adapter, full API-path and Chromium UI opt-in smoke evidence. Each result is limited to its exact provider/model/gateway configuration. Run a provider's own smoke gate only with temporary local data and synthetic material:
 
 ```text
 set STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE=1

@@ -78,6 +78,8 @@ for ($attempt = 1; $attempt -le 3; $attempt++) {
 
     $dataRoot = Join-Path ([IO.Path]::GetTempPath()) ('studybuddy-provider-acceptance-' + [Guid]::NewGuid().ToString('N'))
     $pytestBase = Join-Path ([IO.Path]::GetTempPath()) ('studybuddy-provider-pytest-' + [Guid]::NewGuid().ToString('N'))
+    $process = $null
+    $attemptError = $null
     try {
         $info = [System.Diagnostics.ProcessStartInfo]::new()
         $info.FileName = $python
@@ -101,7 +103,6 @@ for ($attempt = 1; $attempt -le 3; $attempt++) {
         $output = $process.StandardOutput.ReadToEnd() + $process.StandardError.ReadToEnd()
         $process.WaitForExit()
         $exitCode = $process.ExitCode
-        $process.Dispose()
         $attemptsRun++
         if ($exitCode -eq 0) {
             $passed++
@@ -110,9 +111,15 @@ for ($attempt = 1; $attempt -le 3; $attempt++) {
             $failed++
             Write-Output "provider_acceptance_attempt=$attempt status=failed error=$(Get-StableError $output)"
         }
+    } catch {
+        $attemptsRun++
+        $failed++
+        $attemptError = 'provider_connection_failed'
+        Write-Output "provider_acceptance_attempt=$attempt status=failed error=$attemptError"
     } finally {
-        if (Test-Path $dataRoot) { Remove-Item -LiteralPath $dataRoot -Recurse -Force }
-        if (Test-Path $pytestBase) { Remove-Item -LiteralPath $pytestBase -Recurse -Force }
+        if ($null -ne $process) { $process.Dispose() }
+        if (Test-Path $dataRoot) { Remove-Item -LiteralPath $dataRoot -Recurse -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $pytestBase) { Remove-Item -LiteralPath $pytestBase -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }
 
