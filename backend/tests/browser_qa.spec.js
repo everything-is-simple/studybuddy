@@ -172,14 +172,16 @@ test('Q&A UI maps rate-limit and unavailable errors safely', async ({page}) => {
   } finally { stop(server); }
 });
 
-test('opt-in DeepSeek Provider browser path shows answer and locates citation', async ({page}) => {
-  test.skip(process.env.STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE !== '1', 'opt-in real provider browser smoke');
+test('opt-in targeted Provider browser path shows answer and locates citation', async ({page}) => {
+  const target = process.env.STUDYBUDDY_REAL_PROVIDER_UI_TARGET;
+  test.skip(process.env.STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE !== '1' || !target, 'opt-in targeted provider browser smoke');
+  test.skip(process.env.STUDYBUDDY_AI_PROVIDER !== target, 'real provider configuration does not match target');
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
-  let server = startServer('deepseek');
+  let server = startServer(target);
   try {
     await ready();
     await page.goto(BASE);
-    await upload(page, 'deepseek-ui-smoke.txt', 'Synthetic study note: the controlled experiment establishes a stable result.');
+    await upload(page, 'provider-ui-smoke.txt', 'Synthetic study note: the controlled experiment establishes a stable result.');
     await page.locator('#ai-index').click();
     await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
     await page.locator('#qa-question').fill('controlled experiment establishes');

@@ -19,7 +19,7 @@ The test must use a temporary `data_root`, synthetic material, and environment v
 | Provider | `STUDYBUDDY_AI_PROVIDER` | Expected model/config | Endpoint shape | Adapter | API smoke | UI smoke | Current status | Blocking evidence |
 |---|---|---|---|---|---|---|---|---|
 | DeepSeek | `deepseek` | `STUDYBUDDY_AI_MODEL=deepseek-chat` | Provider base URL, adapter appends `/chat/completions` | passed | passed | passed | `real-pass` for `deepseek-chat` only | Other DeepSeek models/endpoints not covered |
-| ARK | `ark` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | implemented by generic adapter | pending | pending | `not_verified` | Provider endpoint/model/key unavailable in this environment |
+| ARK | `ark` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | target-gated generic adapter | pending | pending | `not_verified` | No matching ARK model ID and HTTPS base URL are configured for the StudyBuddy runtime; no ARK request was sent |
 | SiliconFlow | `siliconflow` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | implemented by generic adapter | pending | pending | `not_verified` | Provider endpoint/model/key unavailable in this environment |
 | Agnes AI-Hub | `agnes-ai-hub` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | implemented by generic adapter | pending | pending | `not_verified` | Provider endpoint/model/key unavailable in this environment |
 | Sub2API | `sub2api` | Provider-issued model ID, no default assumed | OpenAI-compatible base URL; verify provider-specific path before run | implemented by generic adapter | pending | pending | `not_verified` | Provider endpoint/model/key unavailable in this environment |
@@ -32,6 +32,7 @@ Set these values only in the process environment. Do not write them to tracked f
 
 ```text
 set STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE=1
+set STUDYBUDDY_REAL_PROVIDER_TARGET=<provider-id>
 set STUDYBUDDY_AI_PROVIDER=<provider-id>
 set STUDYBUDDY_AI_MODEL=<provider-issued-model-id>
 set STUDYBUDDY_AI_BASE_URL=https://<provider-base-url>
@@ -43,10 +44,11 @@ For the browser gate:
 
 ```text
 set STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE=1
+set STUDYBUDDY_REAL_PROVIDER_UI_TARGET=<provider-id>
 npx playwright test H:/studybuddy/backend/tests/browser_qa.spec.js --workers=1 --reporter=line
 ```
 
-The browser test uses `STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE=1` and the same provider configuration. It starts a temporary local server and must be run only when the provider endpoint and model are known to satisfy the OpenAI-compatible `/chat/completions` contract.
+The API smoke requires `STUDYBUDDY_REAL_PROVIDER_TARGET` to match `STUDYBUDDY_AI_PROVIDER`; the browser smoke has the equivalent `STUDYBUDDY_REAL_PROVIDER_UI_TARGET` guard. The browser test starts a temporary local server and must be run only when the provider endpoint and model are known to satisfy the OpenAI-compatible `/chat/completions` contract.
 
 ## Result Recording
 
@@ -64,6 +66,7 @@ Never record API keys, Authorization headers, raw response bodies, full prompts,
 ## Current Limitations
 
 - The generic adapter does not prove provider-specific model availability, quota, regional routing, billing, safety policy or uptime.
+- ARK target-gated smoke was added on 2026-08-25, but was not executed because the required matching ARK model ID and HTTPS base URL are absent; this is not an ARK real-pass.
 - No automatic fallback between providers is implemented.
 - HTTPS is required for non-loopback endpoints; loopback HTTP remains limited to local mock testing.
 - Provider-specific validation remains opt-in and is not part of default CI.
