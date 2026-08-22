@@ -4,7 +4,7 @@
 
 ## Runtime target
 
-`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径默认使用 deterministic fake provider；Phase 5 已实现通用 OpenAI-compatible adapter、target-gated smoke 和脱敏三次 API acceptance runner。Phase 6 P6-E 已通过 fake Provider 核心工作流和相关 failure/source lifecycle/竞态验收。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过既有 adapter/API/UI synthetic smoke，但本轮 P6-E real UI path 仍按精确 gate 记录为 `not_verified`；其它 Provider/model 仍待独立验收。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
+`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径默认使用 deterministic fake provider；Phase 5 已实现通用 OpenAI-compatible adapter、target-gated smoke 和脱敏三次 API acceptance runner。Phase 6 P6-E 已通过 fake Provider 核心工作流和相关 failure/source lifecycle/竞态验收。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过既有 adapter/API/UI synthetic smoke，本轮 P6-E real UI path 也已在精确 gate 下通过；其它 Provider/model 仍待独立验收。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
 
 ## Evidence flow
 
@@ -32,7 +32,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 ## AI boundary
 
-AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 通用 OpenAI-compatible adapter、配置隔离、稳定错误映射、响应限制、mock 验证和脱敏三次 API acceptance runner 已实现；Phase 6 P6-A–P6-E 已完成对应 fake/default/UI 产品化验收，P6-E evidence 见 [`P6E_ACCEPTANCE_EVIDENCE.md`](P6E_ACCEPTANCE_EVIDENCE.md)。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的既有 adapter/API/UI synthetic smoke 已分别通过，但本轮 P6-E real UI path 和其它 Provider/model 仍按精确 gate 记录为 `not_verified`。依赖顺序固定为:
+AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 通用 OpenAI-compatible adapter、配置隔离、稳定错误映射、响应限制、mock 验证和脱敏三次 API acceptance runner 已实现；Phase 6 P6-A–P6-E 已完成对应 fake/default/UI 产品化验收，P6-E evidence 见 [`P6E_ACCEPTANCE_EVIDENCE.md`](P6E_ACCEPTANCE_EVIDENCE.md)。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的既有 adapter/API/UI synthetic smoke 以及本轮 P6-E real UI path 已分别通过精确 gate；其它 Provider/model 仍按精确 gate 记录为 `not_verified`。依赖顺序固定为:
 
 ```text
 material revision

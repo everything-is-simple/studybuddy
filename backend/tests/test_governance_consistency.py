@@ -21,7 +21,8 @@ def test_authoritative_status_documents_agree_on_p6e_boundary():
     assert "P6E_ACCEPTANCE_EVIDENCE.md" in roadmap
     assert "P6E_ACCEPTANCE_EVIDENCE.md" in status
     assert "Fake Provider complete workflow" in evidence
-    assert "not_verified" in evidence
+    assert "real network" in evidence
+    assert "not global availability" in evidence
 
 
 def test_governance_preserves_real_provider_and_runtime_boundaries():

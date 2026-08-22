@@ -115,7 +115,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 以下后续核心产品能力尚未形成可用用户路径：
 
-- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 本轮未运行，保持 `not_verified`。
+- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material。
 - embedding、RAG 扩展和其它 Provider 独立验证。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
@@ -156,7 +156,7 @@ Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错�
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 仅在显式配置存在时运行；Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 7–10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 7–10 顺序推进，不在当前阶段并行承诺。
 
 ### P1：在 AI 闭环后补齐运行保障
 
@@ -177,7 +177,7 @@ P6-E 的 DeepSeek/Agnes 精确真实 UI path 仅在显式配置存在时运行�
 - 全局生产级 `real-pass`。
 - 多进程或多 Uvicorn worker 共享同一 data_root。
 - 真实断电、磁盘损坏、网络文件系统恢复。
-- 不宣称所有真实 Provider、RAG、Cards、Exercises 或学习计划已具备；DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 只有各自精确 smoke evidence，P6-E 本轮真实 UI path 为 `not_verified`。Phase 4 fake Provider Q&A 和 P6-E fake 核心工作流已通过对应验收。
+- 不宣称所有真实 Provider、RAG、Cards、Exercises 或学习计划已具备；DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 已有各自精确 API/UI smoke evidence；其它 Provider/model 仍需独立验证。Phase 4 fake Provider Q&A 和 P6-E fake 核心工作流已通过对应验收。
 - 已具备 OCR、ASR、ZIP import、文件夹 export 或后台任务队列。
 - 已完成多用户、认证授权、云同步和协作。
 

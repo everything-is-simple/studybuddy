@@ -85,7 +85,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；其它 Provider 仍待验收。
 - [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 强制 target 与 runtime provider 一致；通用三次 API acceptance runner 已实现，每次使用独立临时 data root，`2/3` 仅为 API evidence；Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI smoke；`pro`/`agnes-2.5-pro` API smoke 返回 `provider_unavailable`，UI 未运行，仍待独立验证；其它 Agnes profiles 未验证）。
 
-**Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝、secret redaction、真实 Provider failure UX、retry、重复点击、安全渲染、显式 Idempotency-Key 幂等和请求触发的 stale recovery 已实现并验证。DeepSeek 官方 `deepseek-chat` 与 Agnes `advanced`/`agnes-2.5-flash` 的 adapter/API/UI smoke 均有精确 evidence；ARK、硅基流动、其它 Agnes profiles、Sub2API 仍待独立验证。P6-E 真实 UI path 仍需显式 gate，不得用已有短 smoke 替代。
+**Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝、secret redaction、真实 Provider failure UX、retry、重复点击、安全渲染、显式 Idempotency-Key 幂等和请求触发的 stale recovery 已实现并验证。DeepSeek 官方 `deepseek-chat` 与 Agnes `advanced`/`agnes-2.5-flash` 的 adapter/API/UI smoke 均有精确 evidence；ARK、硅基流动、其它 Agnes profiles、Sub2API 仍待独立验证。P6-E 真实 UI path 已在本轮以显式 gate 分别通过；不得将该精确 evidence 扩大解释为所有 Provider/model 的可用性。
 
 ## Phase 6：AI MVP 产品化与整体验收
 
@@ -100,7 +100,7 @@ revision → chunks → retrieval → citations → Q&A
 
 - [x] P6-E fake Provider 核心工作流整体验收：`backend/tests/browser_p6e.spec.js`，4 passed。
 - [x] P6-E empty retrieval、未配置 Provider、timeout/retry、duplicate click、stale thread、deleted source/export safety 和相关 failure contract。
-- [x] P6-E 默认 skip 的 DeepSeek/Agnes real UI gate：精确 target/model/provider 匹配和脱敏 evidence 结构已实现；本轮未提供 runtime gate，真实 UI 结果为 `not_verified`。
+- [x] P6-E 默认 skip 的 DeepSeek/Agnes real UI gate：精确 target/model/provider 匹配和脱敏 evidence 结构已实现；本轮 DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别真实网络通过。
 ### P6-B：Q&A Thread 工作区
 
 - [x] thread 列表、标题、更新时间、消息数和 active/empty/failed 状态展示。
@@ -131,7 +131,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] P6-D fake Provider Chromium 专项验收：`backend/tests/browser_p6d.spec.js`，2 passed；未引入 API 或 migration，未引入 axe。
 - [x] P6-E fake Provider 核心工作流、empty retrieval、source lifecycle、retry、duplicate click、stale response、refresh/history、导出失败和窄屏路径验收。
 - [x] P6-E Provider failure UX 回归：timeout、network failure、rate limit、unavailable、malformed/safe error contract；详见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
-- [ ] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；本轮因未显式提供完整 runtime gate 为 `not_verified`。
+- [x] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；已分别使用精确 runtime gate 和临时 synthetic data root 通过，结果见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
 - [ ] 系统级 screen reader、真实 offline/极端长回答和长时整批 Chromium 稳定性验收。
 
 ## 后续学习能力：Cards / Exercises（仅在 Phase 4 Q&A 完成后）
