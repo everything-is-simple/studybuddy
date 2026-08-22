@@ -12,31 +12,39 @@ Set these variables in the local PowerShell process or a secrets manager. Never 
 
 ```powershell
 $env:STUDYBUDDY_AGNES_PROVIDER_ID = "agnes-ai-hub"
-$env:STUDYBUDDY_AGNES_MODEL = "<provider-issued-model-id>"
-$env:STUDYBUDDY_AGNES_BASE_URL = "https://<provider-compatible-base-url>"
-$env:STUDYBUDDY_AGNES_KEY = "<local-secret>"
+$env:STUDYBUDDY_AGNES_KEY = "<rotated-local-secret>"
 $env:STUDYBUDDY_PYTHON = "D:\miniconda\py310\python.exe"
 ```
 
-Do not guess the model or endpoint. Obtain both from the Agnes account/provider contract. The base URL must be HTTPS and must not contain credentials, query or fragment values.
+The launcher defaults to the official Agnes gateway `https://apihub.agnes-ai.com/v1`. Set `STUDYBUDDY_AGNES_BASE_URL` only when Agnes explicitly supplies a different HTTPS-compatible gateway. The base URL must not contain credentials, query or fragment values.
 
 ## Model Profiles
 
 A StudyBuddy process uses exactly one Agnes model. To keep several low-cost candidates available without mixing model audit records, configure local named profiles. Profile names contain lowercase letters, digits and hyphens only; they are labels, not Agnes model IDs.
 
-```powershell
-$env:STUDYBUDDY_AGNES_MODEL_BUDGET = "<provider-issued-budget-model-id>"
-$env:STUDYBUDDY_AGNES_MODEL_QUALITY = "<provider-issued-quality-model-id>"
-```
+The official Agnes public model catalog documents these text Chat Completions defaults:
+
+| Profile | Default model | Use in StudyBuddy |
+|---|---|---|
+| `budget` | `agnes-1.5-flash` | Low-latency Q&A and routine summaries |
+| `balanced` | `agnes-2.0-flash` | General study Q&A, reasoning and coding material |
+| `advanced` | `agnes-2.5-flash` | More demanding reasoning or coding material |
 
 Start one profile explicitly:
 
 ```powershell
 powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile budget
-powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile quality
+powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile balanced
+powershell -NoProfile -File .\backend\scripts\start-agnes.ps1 -Profile advanced
 ```
 
-Without `-Profile`, the scripts use `STUDYBUDDY_AGNES_MODEL`. Do not run profiles concurrently against the same `STUDYBUDDY_DATA_ROOT`; StudyBuddy supports one local process/instance and SQLite data root at a time. Stop one server before starting another profile. A response records the selected provider/model ID in its normal Q&A audit metadata.
+A local `STUDYBUDDY_AGNES_MODEL_<PROFILE>` value overrides the corresponding default only when Agnes documents a replacement model ID for that profile. For example:
+
+```powershell
+$env:STUDYBUDDY_AGNES_MODEL_BUDGET = "<Agnes-confirmed-replacement-model-id>"
+```
+
+Without `-Profile`, the scripts require `STUDYBUDDY_AGNES_MODEL`. Do not run profiles concurrently against the same `STUDYBUDDY_DATA_ROOT`; StudyBuddy supports one local process/instance and SQLite data root at a time. Stop one server before starting another profile. A response records the selected provider/model ID in its normal Q&A audit metadata.
 
 Optional non-secret settings are inherited only into the child process:
 
@@ -79,7 +87,7 @@ powershell -NoProfile -File .\backend\scripts\test-agnes-ui.ps1 -Profile budget
 
 The UI launcher sets the UI target in its child process and runs the existing browser suite. The suite includes the fake-provider regression tests; the targeted real case is enabled only by the child gate.
 
-A successful request is not sufficient to claim all Agnes models are supported. Record only the actual provider ID/model ID, gate result and stable error code in [PROVIDER_CAPABILITY_MATRIX.md](PROVIDER_CAPABILITY_MATRIX.md). Never record raw responses, prompts, source text, paths, headers or key material.
+A successful request is not sufficient to claim all Agnes models are supported. The built-in profiles cover only the listed text chat models; image and video models use different endpoints and are not valid for StudyBuddy Q&A. Record only the actual provider ID/model ID, gate result and stable error code in [PROVIDER_CAPABILITY_MATRIX.md](PROVIDER_CAPABILITY_MATRIX.md). Never record raw responses, prompts, source text, paths, headers or key material.
 
 ## Stop and Cleanup
 

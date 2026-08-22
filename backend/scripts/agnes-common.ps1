@@ -1,6 +1,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$AgnesDefaultModels = @{
+    budget = 'agnes-1.5-flash'
+    balanced = 'agnes-2.0-flash'
+    advanced = 'agnes-2.5-flash'
+}
+
 function Get-AgnesConfig([string]$Profile) {
     $provider = if ($env:STUDYBUDDY_AGNES_PROVIDER_ID) { $env:STUDYBUDDY_AGNES_PROVIDER_ID } else { 'agnes-ai-hub' }
     $model = $env:STUDYBUDDY_AGNES_MODEL
@@ -8,8 +14,9 @@ function Get-AgnesConfig([string]$Profile) {
         if ($Profile -notmatch '^[a-z0-9][a-z0-9-]{0,31}$') { throw 'agnes_invalid_profile' }
         $modelVariable = 'STUDYBUDDY_AGNES_MODEL_' + ($Profile.ToUpperInvariant() -replace '-', '_')
         $model = [Environment]::GetEnvironmentVariable($modelVariable)
+        if ([string]::IsNullOrWhiteSpace($model) -and $AgnesDefaultModels.ContainsKey($Profile)) { $model = $AgnesDefaultModels[$Profile] }
     }
-    $baseUrl = $env:STUDYBUDDY_AGNES_BASE_URL
+    $baseUrl = if ($env:STUDYBUDDY_AGNES_BASE_URL) { $env:STUDYBUDDY_AGNES_BASE_URL } else { 'https://apihub.agnes-ai.com/v1' }
     $key = $env:STUDYBUDDY_AGNES_KEY
     if ($provider -ne 'agnes-ai-hub') { throw 'agnes_invalid_provider_id' }
     if ([string]::IsNullOrWhiteSpace($model) -or [string]::IsNullOrWhiteSpace($baseUrl) -or [string]::IsNullOrWhiteSpace($key)) {

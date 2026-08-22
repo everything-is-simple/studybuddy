@@ -13,6 +13,10 @@ def test_agnes_launcher_uses_namespaced_config_and_fixed_target():
     common = read_script("agnes-common.ps1")
     assert "STUDYBUDDY_AGNES_KEY" in common
     assert "STUDYBUDDY_AGNES_MODEL_" in common
+    assert "budget = 'agnes-1.5-flash'" in common
+    assert "balanced = 'agnes-2.0-flash'" in common
+    assert "advanced = 'agnes-2.5-flash'" in common
+    assert "'https://apihub.agnes-ai.com/v1'" in common
     assert "throw 'agnes_invalid_profile'" in common
     assert "$Profile -notmatch '^[a-z0-9][a-z0-9-]{0,31}$'" in common
     assert "STUDYBUDDY_AI_API_KEY'] = $Config.Key" in common
