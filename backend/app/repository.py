@@ -9,8 +9,9 @@ from pathlib import Path
 
 from .adapters.file_parsers.models import ParseResult
 from .chunking import CHUNKING_STRATEGY, CHUNKING_VERSION, SourceSpan, chunk_text
-from .embedding import (EMBEDDING_ENCODING, EmbeddingError, EmbeddingIdentity, EmbeddingProvider,
-                         cosine_similarity, decode_vector, embedding_content_hash, embedding_staleness, encode_vector)
+from .embedding import (EMBEDDING_ENCODING, MAX_EMBEDDING_PAYLOAD_BYTES, EmbeddingError,
+                         EmbeddingIdentity, EmbeddingProvider, cosine_similarity, decode_vector,
+                         embedding_content_hash, embedding_staleness, encode_vector)
 from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
@@ -596,7 +597,8 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
 
 
 def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id: str,
-                                  provider: EmbeddingProvider) -> dict[str, object]:
+                                  provider: EmbeddingProvider, rebuild: bool = False,
+                                  retry_failed: bool = False) -> dict[str, object]:
     """Explicit, synchronous SQLite-first indexing; never called during startup."""
     with connection:
         rows = connection.execute(
@@ -626,6 +628,8 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                      provider.model_revision, provider.dimensions, encoding),
                 ).fetchone()
                 if existing and existing["status"] == "ready":
+                    skipped += 1
+                elif existing and existing["status"] in {"stale", "failed", "running"} and not (rebuild or retry_failed):
                     skipped += 1
                 else:
                     todo.append((row, content_hash))
@@ -663,8 +667,92 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                          provider.model_revision, provider.dimensions, encoding, None, content_hash,
                          row["revision_id"], error.code, now, now))
                 raise
+            except Exception:
+                error = EmbeddingError("embedding_provider_failed")
+                for row, content_hash in todo:
+                    now = utc_now()
+                    connection.execute("""INSERT INTO embeddings
+                        (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
+                         content_hash,source_revision,status,error_code,created_at,updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)
+                        ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
+                        DO UPDATE SET vector_payload=NULL,status='failed',error_code=excluded.error_code,updated_at=excluded.updated_at""",
+                        (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
+                         provider.model_revision, provider.dimensions, encoding, None, content_hash,
+                         row["revision_id"], error.code, now, now))
+                raise error
         return {"status": "ready", "material_id": material_id, "embedded_count": embedded, "skipped_count": skipped,
-                "provider_id": provider.provider_id, "model_id": provider.model_id, "dimensions": provider.dimensions}
+                "provider_id": provider.provider_id, "model_id": provider.model_id, "dimensions": provider.dimensions,
+                "rebuild": rebuild, "retry_failed": retry_failed}
+
+
+def verify_embeddings(connection: sqlite3.Connection, *, project_id: str | None = None,
+                      material_id: str | None = None, revision_id: str | None = None) -> dict[str, object]:
+    """Read-only, deterministic embedding integrity report; never rebuilds or mutates rows."""
+    if sum(value is not None for value in (project_id, material_id, revision_id)) > 1:
+        raise ValueError("embedding_verify_ambiguous_scope")
+    where, params = [], []
+    if project_id is not None:
+        where.append("m.project_id=?"); params.append(project_id)
+    if material_id is not None:
+        where.append("m.id=?"); params.append(material_id)
+    if revision_id is not None:
+        where.append("r.id=?"); params.append(revision_id)
+    clause = (" WHERE " + " AND ".join(where)) if where else ""
+    rows = connection.execute(
+        "SELECT e.*, c.text, c.status AS chunk_status, c.revision_id AS chunk_revision_id, "
+        "m.deleted_at, r.is_current, r.material_id AS revision_material_id "
+        "FROM embeddings e LEFT JOIN chunks c ON c.id=e.chunk_id "
+        "LEFT JOIN materials m ON m.id=c.material_id LEFT JOIN material_revisions r ON r.id=e.source_revision" + clause,
+        params).fetchall()
+    counts = {"checked": 0, "ready_valid": 0, "ready_invalid": 0, "stale": 0,
+              "failed": 0, "running": 0, "orphan": 0}
+    issue_counts: dict[str, int] = {}
+    for row in rows:
+        counts["checked"] += 1
+        status = str(row["status"])
+        if status in {"stale", "failed", "running"}:
+            counts[status] += 1
+        if row["chunk_id"] is None or row["deleted_at"] is None and row["revision_material_id"] is None:
+            counts["orphan"] += 1
+            issue_counts["embedding_orphan"] = issue_counts.get("embedding_orphan", 0) + 1
+            if status == "ready": counts["ready_invalid"] += 1
+            continue
+        try:
+            expected = EmbeddingIdentity(str(row["chunk_id"]), str(row["source_revision"]),
+                embedding_content_hash(str(row["text"])), str(row["provider_id"]), str(row["model_id"]),
+                str(row["model_revision"]), int(row["dimensions"]), str(row["vector_encoding"]))
+            expected.validate()
+            reason = embedding_staleness(row, expected_identity=expected, payload_valid=True,
+                                     source_state=("deleted" if row["deleted_at"] is not None else
+                                                   "not_current" if row["is_current"] != 1 else
+                                                   "not_ready" if row["chunk_status"] != "ready" else "ready"))
+        except (EmbeddingError, TypeError, ValueError) as error:
+            reason = error.code if isinstance(error, EmbeddingError) else "embedding_identity_invalid"
+        if reason is None and status == "ready":
+            try:
+                decode_vector(row["vector_payload"], int(row["dimensions"]), encoding=str(row["vector_encoding"]))
+            except EmbeddingError as error:
+                reason = error.code
+        if reason is not None:
+            issue_counts[reason] = issue_counts.get(reason, 0) + 1
+            if status == "ready": counts["ready_invalid"] += 1
+        elif status == "ready":
+            counts["ready_valid"] += 1
+    invalid = counts["ready_invalid"] > 0 or counts["orphan"] > 0
+    return {"status": "invalid" if invalid else ("empty" if not rows else "valid"),
+            "scope": {"project_id": project_id, "material_id": material_id, "revision_id": revision_id},
+            "counts": counts, "issues": [{"code": code, "count": issue_counts[code]} for code in sorted(issue_counts)],
+            "policy_version": "embedding_verify_v1"}
+
+
+def rebuild_embeddings_for_material(connection: sqlite3.Connection, *, material_id: str,
+                                    provider: EmbeddingProvider, retry_failed: bool = True) -> dict[str, object]:
+    """Explicit synchronous rebuild; callers must provide a bounded material scope."""
+    if not isinstance(material_id, str) or not material_id:
+        raise ValueError("embedding_rebuild_scope_required")
+    return index_embeddings_for_material(connection, material_id=material_id, provider=provider,
+                                         rebuild=True, retry_failed=retry_failed)
 
 
 def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, query: str,

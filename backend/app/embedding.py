@@ -147,7 +147,12 @@ def embedding_staleness(row: Mapping[str, object], *, expected_identity: Embeddi
         return "embedding_source_not_current"
     if source_state != "ready":
         return "embedding_chunk_not_ready"
-    if row.get("status") != "ready":
+    def value(name: str) -> object:
+        try:
+            return row[name]
+        except (KeyError, IndexError):
+            return None
+    if value("status") != "ready":
         return "embedding_status_unavailable"
     fields = (
         ("content_hash", "embedding_content_hash_stale"),
@@ -159,9 +164,9 @@ def embedding_staleness(row: Mapping[str, object], *, expected_identity: Embeddi
         ("vector_encoding", "embedding_encoding_stale"),
     )
     for field, reason in fields:
-        if row.get(field) != getattr(expected_identity, field):
+        if value(field) != getattr(expected_identity, field):
             return reason
-    if payload_valid is False or row.get("vector_payload") is None:
+    if payload_valid is False or value("vector_payload") is None:
         return "embedding_payload_invalid" if payload_valid is False else "embedding_payload_missing"
     return None
 

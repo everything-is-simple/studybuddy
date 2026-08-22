@@ -13,7 +13,9 @@ sys.path.insert(0, str(ROOT))
 from app.chunking import SourceSpan, chunk_text
 from app.config import AppConfig
 from app.main import create_app
-from app.repository import connect, index_material_revision
+from app.embedding import FakeEmbeddingProvider, encode_vector
+from app.repository import (connect, index_embeddings_for_material, index_material_revision,
+                            rebuild_embeddings_for_material, verify_embeddings)
 
 
 def client(root: Path) -> TestClient:
@@ -101,6 +103,56 @@ def test_index_rejects_missing_and_does_not_expose_private_details(tmp_path: Pat
         assert response.json() == {"detail": "material_not_found"}
         assert "sqlite" not in str(response.json()).lower()
         assert "traceback" not in str(response.json()).lower()
+
+
+def test_embedding_index_is_idempotent_and_explicit_rebuild_retries(tmp_path: Path):
+    with client(tmp_path) as c:
+        created = upload(c)
+        material_id = created["material_id"]
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            index_material_revision(db, material_id, created["extraction_id"])
+            provider = FakeEmbeddingProvider()
+            first = index_embeddings_for_material(db, material_id=material_id, provider=provider)
+            second = index_embeddings_for_material(db, material_id=material_id, provider=provider)
+            assert first["embedded_count"] >= 1
+            assert second["embedded_count"] == 0
+            assert second["skipped_count"] == first["embedded_count"]
+            assert db.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0] == first["embedded_count"]
+            db.execute("UPDATE embeddings SET status='failed', error_code='test_failure'")
+            db.commit()
+            assert index_embeddings_for_material(db, material_id=material_id, provider=provider)["embedded_count"] == 0
+            rebuilt = rebuild_embeddings_for_material(db, material_id=material_id, provider=provider)
+            assert rebuilt["embedded_count"] == first["embedded_count"]
+            assert db.execute("SELECT COUNT(*) FROM embeddings WHERE status='ready'").fetchone()[0] == first["embedded_count"]
+
+
+def test_embedding_verify_is_read_only_and_reports_payload_issues(tmp_path: Path):
+    with client(tmp_path) as c:
+        created = upload(c)
+        material_id = created["material_id"]
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            revision = index_material_revision(db, material_id, created["extraction_id"])
+            provider = FakeEmbeddingProvider()
+            index_embeddings_for_material(db, material_id=material_id, provider=provider)
+            before = db.execute("SELECT status, vector_payload FROM embeddings ORDER BY id").fetchall()
+            report = verify_embeddings(db, material_id=material_id)
+            assert report["status"] == "valid"
+            assert report["counts"]["ready_valid"] == len(before)
+            db.execute("UPDATE embeddings SET vector_payload = substr(vector_payload, 1, 1)")
+            db.commit()
+            invalid = verify_embeddings(db, material_id=material_id)
+            assert invalid["status"] == "invalid"
+            assert any(item["code"] == "embedding_payload_length_mismatch" for item in invalid["issues"])
+            after = db.execute("SELECT status, vector_payload FROM embeddings ORDER BY id").fetchall()
+            assert [tuple(row) for row in after] != []
+            assert after[0][0] == "ready"
+            assert revision["id"]
+
+
+def test_embedding_verify_rejects_ambiguous_scope(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as db:
+        with pytest.raises(ValueError, match="embedding_verify_ambiguous_scope"):
+            verify_embeddings(db, project_id="p", material_id="m")
 
 
 def test_index_transaction_rolls_back_on_chunk_write_failure(tmp_path: Path, monkeypatch):
