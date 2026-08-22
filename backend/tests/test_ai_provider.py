@@ -20,6 +20,9 @@ def test_capabilities_default_provider_not_configured(tmp_path: Path):
         assert payload == {
             "status": "not_configured",
             "configured": False,
+            "verification_status": "not_applicable",
+            "runtime_kind": "none",
+            "config_source": "process_environment",
             "provider_id": None,
             "model_id": None,
             "supports": {"qa": False},
@@ -36,12 +39,38 @@ def test_capabilities_fake_provider_available(tmp_path: Path):
         response = client.get("/api/ai/capabilities")
         assert response.status_code == 200
         assert response.json() == {
-            "status": "available",
+            "status": "demo",
             "configured": True,
+            "verification_status": "not_applicable",
+            "runtime_kind": "deterministic_demo",
+            "config_source": "process_environment",
             "provider_id": "fake",
             "model_id": "fake-studybuddy-v1",
             "supports": {"qa": True},
         }
+
+
+def test_capabilities_complete_generic_provider_is_configured_but_unverified(tmp_path: Path):
+    config = AppConfig(data_root=tmp_path, ai_provider_id="deepseek", ai_model_id="deepseek-chat",
+                       ai_base_url="https://api.example.test", ai_api_key="super-secret-test-key")
+    with TestClient(create_app(config)) as client:
+        payload = client.get("/api/ai/capabilities").json()
+        assert payload["status"] == "configured"
+        assert payload["verification_status"] == "unverified"
+        assert payload["runtime_kind"] == "openai_compatible"
+        assert payload["provider_id"] == "deepseek"
+        assert payload["model_id"] == "deepseek-chat"
+        assert "super-secret-test-key" not in str(payload)
+        assert "api.example.test" not in str(payload)
+
+
+def test_capabilities_partial_provider_config_is_invalid(tmp_path: Path):
+    config = AppConfig(data_root=tmp_path, ai_provider_id="deepseek", ai_model_id="deepseek-chat")
+    with TestClient(create_app(config)) as client:
+        payload = client.get("/api/ai/capabilities").json()
+        assert payload["status"] == "invalid_config"
+        assert payload["error_code"] == "provider_invalid_config"
+        assert payload["supports"] == {"qa": False}
 
 
 def test_provider_environment_configuration(monkeypatch, tmp_path: Path):
@@ -53,15 +82,17 @@ def test_provider_environment_configuration(monkeypatch, tmp_path: Path):
     assert config.ai_model_id == "fake-studybuddy-v1"
 
 
-def test_unknown_provider_uses_stable_not_configured_code():
+def test_partial_unknown_provider_uses_stable_invalid_config_code():
     registry = provider_registry("unknown")
     try:
         registry.configured_provider()
     except ProviderError as error:
-        assert error.code == "provider_not_configured"
+        assert error.code == "provider_invalid_config"
     else:
-        raise AssertionError("unknown provider should not be configured")
-    assert registry.capabilities()["error_code"] == "provider_not_configured"
+        raise AssertionError("partial provider configuration should not be configured")
+    capabilities = registry.capabilities()
+    assert capabilities["status"] == "invalid_config"
+    assert capabilities["error_code"] == "provider_invalid_config"
 
 
 def test_fake_provider_is_deterministic_and_uses_context_citations():

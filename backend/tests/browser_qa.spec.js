@@ -38,6 +38,31 @@ async function upload(page, name, text) {
   await expect(page.locator('#status')).toContainText('导入完成', {timeout: 30000});
 }
 
+test('Provider status is explicit and safe in demo mode', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer();
+  try {
+    await ready();
+    await page.goto(BASE);
+    await expect(page.locator('#provider-status-title')).toContainText('演示模式');
+    await expect(page.locator('#provider-status-detail')).toContainText('deterministic/demo');
+    await expect(page.locator('#provider-status-detail')).not.toContainText('Authorization');
+    await expect(page.locator('body')).not.toContainText('api_key');
+    await expect(page.locator('body')).not.toContainText('traceback');
+  } finally { stop(server); }
+});
+
+test('Provider status reports unconfigured runtime safely', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer('');
+  try {
+    await ready();
+    await page.goto(BASE);
+    await expect(page.locator('#provider-status-title')).toContainText('尚未配置');
+    await expect(page.locator('#provider-status-detail')).toContainText('材料管理仍可使用');
+  } finally { stop(server); }
+});
+
 test('Q&A UI requires explicit indexing and locates citations', async ({page}) => {
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   const consoleErrors = [];

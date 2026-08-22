@@ -311,16 +311,17 @@ class ProviderRegistry:
         if self.provider_id == FAKE_PROVIDER_ID:
             provider = FakeLLMProvider()
             if self.model_id not in (None, "", provider.model_id):
-                raise ProviderError(PROVIDER_NOT_CONFIGURED)
+                raise ProviderError("provider_invalid_config")
             return provider
-        # 任何非 fake 且提供了 base_url + api_key + model_id 的，
-        # 都视为 OpenAI-compatible provider。provider_id 只是标签/标识，
-        # 不做白名单限制，方便用户配置任意第三方中转服务。
+        # Any complete non-fake configuration uses the generic OpenAI-compatible
+        # adapter. Configuration completeness is deliberately not real-provider verification.
         if self.provider_id and self.base_url and self._api_key and self.model_id:
             return OpenAICompatibleLLMProvider(
                 provider_id=self.provider_id, model_id=self.model_id, base_url=self.base_url,
                 api_key=self._api_key, timeout_seconds=self.timeout_seconds, max_retries=self.max_retries,
             )
+        if any(value for value in (self.provider_id, self.model_id, self.base_url, self._api_key)):
+            raise ProviderError("provider_invalid_config")
         raise ProviderError(PROVIDER_NOT_CONFIGURED)
 
     def capabilities(self) -> dict[str, object]:
@@ -328,12 +329,36 @@ class ProviderRegistry:
             provider = self.configured_provider()
         except ProviderError as error:
             return {
-                "status": "not_configured", "configured": False, "provider_id": None,
-                "model_id": None, "supports": {"qa": False}, "error_code": error.code,
+                "status": "not_configured" if error.code == PROVIDER_NOT_CONFIGURED else "invalid_config",
+                "configured": False,
+                "verification_status": "not_applicable",
+                "runtime_kind": "none",
+                "config_source": "process_environment",
+                "provider_id": None,
+                "model_id": None,
+                "supports": {"qa": False},
+                "error_code": error.code,
+            }
+        if provider.provider_id == FAKE_PROVIDER_ID:
+            return {
+                "status": "demo",
+                "configured": True,
+                "verification_status": "not_applicable",
+                "runtime_kind": "deterministic_demo",
+                "config_source": "process_environment",
+                "provider_id": provider.provider_id,
+                "model_id": provider.model_id,
+                "supports": {"qa": True},
             }
         return {
-            "status": "available", "configured": True, "provider_id": provider.provider_id,
-            "model_id": provider.model_id, "supports": {"qa": True},
+            "status": "configured",
+            "configured": True,
+            "verification_status": "unverified",
+            "runtime_kind": "openai_compatible",
+            "config_source": "process_environment",
+            "provider_id": provider.provider_id,
+            "model_id": provider.model_id,
+            "supports": {"qa": True},
         }
 
 

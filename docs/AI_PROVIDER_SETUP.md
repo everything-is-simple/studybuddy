@@ -2,7 +2,7 @@
 
 ## Scope and Boundaries
 
-StudyBuddy accepts one OpenAI-compatible Chat Completions provider per process through `STUDYBUDDY_AI_*` environment variables. Provider configuration belongs to the local runtime environment, not the repository: do not store API keys, provider auth files, databases, raw responses or generated run output in the source tree.
+StudyBuddy accepts one OpenAI-compatible Chat Completions provider per process through `STUDYBUDDY_AI_*` environment variables. The default runtime state is `not_configured`; no real Provider is selected unless all required values are explicitly supplied. `STUDYBUDDY_AI_PROVIDER=fake` explicitly enables the deterministic/demo provider and must not be interpreted as real AI. Provider configuration belongs to the local runtime environment, not the repository: do not store API keys, provider auth files, databases, raw responses or generated run output in the source tree.
 
 The generic adapter applies the common `/chat/completions` contract. It does not establish that a provider endpoint, model, account, quota, region or response behavior is supported. Provider-specific evidence is tracked in [PROVIDER_CAPABILITY_MATRIX.md](PROVIDER_CAPABILITY_MATRIX.md).
 
@@ -26,6 +26,12 @@ Non-loopback provider endpoints must use HTTPS. The adapter appends `/chat/compl
 ## Agnes Dedicated Local Route
 
 Use the dedicated [Agnes provider runbook](AGNES_PROVIDER_RUNBOOK.md) for Agnes local profiles. It maps `STUDYBUDDY_AGNES_*` into `STUDYBUDDY_AI_*` only inside a child process, does not modify the parent shell, accept keys as command-line arguments, or add fallback. `agnes-2.5-flash` has model-specific controlled API/UI evidence; `agnes-2.5-pro` remains not_verified after `provider_unavailable`, and all model evidence remains independent.
+
+## Runtime Status Contract
+
+`GET /api/ai/capabilities` reports the safe runtime contract used by the UI. `not_configured` means no Provider is configured; `invalid_config` means a partial or invalid configuration was supplied; `demo` means the explicit deterministic fake Provider is active; `configured` means a generic OpenAI-compatible adapter can be constructed, but its exact endpoint/model has not been real-verified. The separate `verification_status` is `unverified` for generic configurations and `not_applicable` for demo or unconfigured states. Provider ID and model ID may be shown; API keys, Authorization headers, sensitive URLs, raw responses, paths and tracebacks are never returned.
+
+A configured adapter is not evidence of availability, quota, billing, model support or uptime. The UI must not call it verified merely because the configuration is complete.
 
 ## Verification
 
