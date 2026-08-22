@@ -110,6 +110,17 @@ revision → chunks → retrieval → citations → Q&A
 
 **P6-B 限制：** Q&A 仍是同步请求；切换页面或 thread 只能忽略旧响应，不能真正取消已经发出的 Provider HTTP 请求。没有后台 worker、流式输出、跨进程协调或持久化 thread scope。
 
+### P6-C：跨材料浏览和引用/导出衔接
+
+- [x] 材料列表/详情进入 Q&A，保持单材料或多材料 scope 上下文。
+- [x] Q&A scope 显示材料名称、跨分页保留的非敏感材料 ID 和当前列表不可见状态。
+- [x] citation detail 返回安全的 material/revision/chunk/span 定位信息；有效 citation 可定位正文，deleted/purged/stale source 显示 unavailable。
+- [x] 从 citation/材料详情返回 Q&A，URL/history 保留 material、thread、scope、citation 标识；刷新只重新请求服务端状态。
+- [x] 从 citation 关联材料详情导出正文和原文件；复用现有安全下载、文件名和 deleted/missing 错误 contract。
+- [x] P6-C API、citation lifecycle、材料 export、Q&A Chromium、材料管理 Chromium 验收通过。
+
+**P6-C 限制：** 不持久化 thread scope；purge 后不能恢复已删除材料名称或正文；同步 Provider 请求仍不能真正取消；未新增批量文件夹导出、导出队列或后台任务。
+
 - [ ] 更完整的 Q&A thread 工作区、跨材料浏览和导出衔接。
 - [ ] 统一应用级组件、导航、通知、可访问性和响应式体验。
 - [ ] 导入 → 检索 → 问答 → 引用 → 导出核心工作流整体验收。
