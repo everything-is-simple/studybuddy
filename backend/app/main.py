@@ -38,6 +38,18 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
 from .storage import sha256_file, store_original
 
 
+def _provider_http_status(code: str) -> int:
+    if code in {"provider_timeout"}:
+        return 504
+    if code in {"provider_rate_limited", "provider_quota_exceeded"}:
+        return 429
+    if code in {"provider_not_configured", "provider_invalid_config"}:
+        return 503
+    if code in {"provider_connection_failed", "provider_unavailable"}:
+        return 503
+    return 502
+
+
 def _download_name(original_name: str, suffix: str = "") -> str:
     safe_name = Path(original_name).name.replace('"', "'")
     return f"{safe_name}{suffix}"
@@ -295,7 +307,13 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     @app.get("/api/ai/capabilities")
     def ai_capabilities() -> dict[str, object]:
         config = app.state.config
-        return provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
+        if config.ai_provider_id == "fake":
+            return provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
+        return provider_registry(
+            config.ai_provider_id, config.ai_model_id,
+            base_url=config.ai_base_url, api_key=config.ai_api_key,
+            timeout_seconds=config.ai_timeout_seconds, max_retries=config.ai_max_retries,
+        ).capabilities()
 
     def pagination_values(limit: str | None, offset: str | None) -> tuple[int, int, bool]:
         paged = limit is not None or offset is not None
@@ -494,17 +512,29 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     fail_qa_operation(connection, operation["operation_id"], "retrieval_empty")
                     raise HTTPException(status_code=409, detail="retrieval_empty")
                 try:
-                    provider = provider_registry(
-                        app.state.config.ai_provider_id, app.state.config.ai_model_id,
-                    ).configured_provider()
+                    if app.state.config.ai_provider_id == "fake":
+                        provider = provider_registry(
+                            app.state.config.ai_provider_id, app.state.config.ai_model_id,
+                        ).configured_provider()
+                    else:
+                        provider = provider_registry(
+                            app.state.config.ai_provider_id, app.state.config.ai_model_id,
+                            base_url=app.state.config.ai_base_url,
+                            api_key=app.state.config.ai_api_key,
+                            timeout_seconds=app.state.config.ai_timeout_seconds,
+                            max_retries=app.state.config.ai_max_retries,
+                        ).configured_provider()
                     started = time.perf_counter()
                     result = provider.generate_answer(ProviderRequest(
                         question=request.question, context_blocks=list(context["context_blocks"]),
+                        max_output_tokens=app.state.config.ai_max_output_tokens,
+                        max_prompt_chars=app.state.config.ai_max_prompt_chars,
+                        max_answer_chars=app.state.config.ai_max_answer_chars,
                     ))
-                    latency_ms = round((time.perf_counter() - started) * 1000)
+                    latency_ms = result.latency_ms if result.latency_ms is not None else round((time.perf_counter() - started) * 1000)
                 except ProviderError as error:
                     fail_qa_operation(connection, operation["operation_id"], error.code)
-                    raise HTTPException(status_code=503, detail=error.code) from None
+                    raise HTTPException(status_code=_provider_http_status(error.code), detail=error.code) from None
                 try:
                     persisted = persist_qa_answer(
                         connection, project_id=app.state.config.project_id,
@@ -513,6 +543,8 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                         answer_text=result.answer_text, citation_keys=result.citation_keys,
                         context_blocks=list(context["context_blocks"]), prompt_tokens=result.prompt_tokens,
                         completion_tokens=result.completion_tokens, latency_ms=latency_ms,
+                        provider_request_id=result.provider_request_id,
+                        total_tokens=result.total_tokens, finish_reason=result.finish_reason,
                     )
                 except ValueError as error:
                     fail_qa_operation(connection, operation["operation_id"], str(error))

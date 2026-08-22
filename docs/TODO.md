@@ -41,7 +41,7 @@
 
 ## Phase 4：AI 最小闭环（已完成）
 
-目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。下一执行阶段为 Phase 5 真实 Provider 接入。
+目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter 已实现，下一执行项为真实 Provider smoke 验收。
 
 ### 顺序与任务
 
@@ -62,7 +62,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 实现最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示与当前材料正文定位。
 - [x] 实现 purge 后历史 citation `source_unavailable` 生命周期、Q&A browser E2E 与 AI 表 backup/restore 专项验收。
 
-**当前进度：** revision/chunk 显式 indexing、chunk lexical retrieval、context assembler、citation contract、deterministic fake provider、Q&A API/persistence、Q&A history、多材料 scope、citation 详情/跨材料导航、统一状态、toast/retry、响应式/基础可访问性和完整 Chromium E2E 均已实现并验证。Phase 4 已完成，下一阶段为 Phase 5 真实 Provider。
+**当前进度：** revision/chunk 显式 indexing、chunk lexical retrieval、context assembler、citation contract、deterministic fake provider、Q&A API/persistence、Q&A history、多材料 scope、citation 详情/跨材料导航、统一状态、toast/retry、响应式/基础可访问性和完整 Chromium E2E 均已实现并验证。Phase 4 已完成，Phase 5 adapter 已实现，下一阶段性验收为真实 Provider smoke。
 
 **Phase 4 完成标准：** fake provider 下完成导入 → indexing → 检索 → 问答 → citation → 原文定位；展示 citation 可追溯到 material/revision/chunk/span；deleted/stale 被排除；purge 后历史 citation 正确显示 unavailable；未配置 provider 时应用照常启动并安全失败；失败、重复点击和过期响应不破坏 UI；backend tests、Chromium E2E、文档和验收证据全部同步。
 
@@ -78,10 +78,14 @@ revision → chunks → retrieval → citations → Q&A
 
 ## Phase 5：真实 Provider 接入
 
-- [ ] 真实 LLM provider adapter、环境配置、timeout/output limit；Embedding provider 属于后续 Phase 7。
-- [ ] provider timeout/rate-limit/auth/quota/refusal/malformed response 稳定错误映射。
-- [ ] capabilities endpoint、usage/latency/request metadata，禁止 secret 泄露。
-- [ ] AI operation 同步状态、幂等 fingerprint、stale 语义。
+- [x] 通用 OpenAI-compatible LLM adapter、环境配置、timeout/output limit；Embedding provider 属于后续 Phase 7。
+- [x] provider timeout/rate-limit/auth/quota/refusal/malformed response 稳定错误映射。
+- [x] capabilities endpoint、usage/latency/provider request metadata，禁止 secret 泄露。
+- [ ] 真正的 AI operation 幂等 fingerprint、重复请求去重和 stale 语义；当前仅持久化 input fingerprint、同步状态和失败 error_code，尚不宣称具备幂等或 stale 行为。
+- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level 与完整 API-level synthetic Q&A 均已通过；浏览器 UI/E2E 和其它 Provider 仍待验收。
+- [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收。
+
+**Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝和 secret redaction 已实现并验证。DeepSeek 官方 `deepseek-chat` 的 adapter-level 与完整 API-level synthetic smoke 已通过；Phase 5 的通用 real-pass、浏览器 UI/E2E 和其它 Provider 验收仍未完成。真正的 operation 幂等和 stale 语义仍未实现。
 
 ## Phase 6：AI MVP 产品化与整体验收
 

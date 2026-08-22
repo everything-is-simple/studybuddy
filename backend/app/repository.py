@@ -754,7 +754,9 @@ def fail_qa_operation(connection: sqlite3.Connection, operation_id: str, error_c
 def persist_qa_answer(connection: sqlite3.Connection, *, project_id: str, operation_id: str,
                       thread_id: str, provider_id: str, model_id: str, answer_text: str,
                       citation_keys: list[str], context_blocks: list[dict[str, object]],
-                      prompt_tokens: int, completion_tokens: int, latency_ms: int) -> dict[str, object]:
+                      prompt_tokens: int | None, completion_tokens: int | None, latency_ms: int,
+                      provider_request_id: str | None = None, total_tokens: int | None = None,
+                      finish_reason: str | None = None) -> dict[str, object]:
     allowed = {str(block.get("citation_key")): block for block in context_blocks}
     verified: list[tuple[str, dict[str, object], dict[str, object]]] = []
     for key in citation_keys:
@@ -808,9 +810,10 @@ def persist_qa_answer(connection: sqlite3.Connection, *, project_id: str, operat
         connection.execute(
             "UPDATE ai_operations SET status = 'succeeded', provider_id = ?, model_id = ?, "
             "output_artifact_id = ?, prompt_tokens = ?, completion_tokens = ?, latency_ms = ?, "
+            "provider_request_id = ?, total_tokens = ?, finish_reason = ?, "
             "finished_at = ? WHERE id = ? AND project_id = ? AND status = 'running'",
             (provider_id, model_id, answer_id, prompt_tokens, completion_tokens, latency_ms,
-             created_at, operation_id, project_id),
+             provider_request_id, total_tokens, finish_reason, created_at, operation_id, project_id),
         )
         connection.execute("UPDATE qa_threads SET updated_at = ? WHERE id = ?", (created_at, thread_id))
     return {

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -289,9 +289,20 @@ def _migration_v2(connection: sqlite3.Connection) -> None:
     _create_ai_schema(connection)
 
 
+def _migration_v3(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        ALTER TABLE ai_operations ADD COLUMN provider_request_id TEXT;
+        ALTER TABLE ai_operations ADD COLUMN total_tokens INTEGER;
+        ALTER TABLE ai_operations ADD COLUMN finish_reason TEXT;
+        """
+    )
+
+
 _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] = (
     (1, "canonical_material_schema", _migration_v1),
     (2, "ai_phase0_schema", _migration_v2),
+    (3, "phase5_provider_metadata", _migration_v3),
 )
 
 
@@ -346,7 +357,7 @@ def migrate(connection: sqlite3.Connection) -> MigrationResult:
                 "INSERT INTO schema_migrations(version, name, applied_at) VALUES (?, ?, ?)",
                 (migration[0], migration[1], _now()),
             )
-            current = CURRENT_SCHEMA_VERSION
+            current = migration[0]
             adopted = True
         elif current == 0 and _objects(connection) - {HISTORY_TABLE}:
             # Existing pre-runner databases may have the core tables but lack

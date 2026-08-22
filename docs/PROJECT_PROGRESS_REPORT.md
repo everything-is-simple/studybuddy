@@ -109,7 +109,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
 - 当前材料最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示和 chunk offset 定位；purge 后历史 citation 标记 `source_unavailable`，并有 browser 与 backup/restore 验收。
 
-Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。真实 provider 属于下一阶段 Phase 5；cards、练习和学习计划属于后续阶段。
+Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level 与完整 API-level synthetic smoke 已通过；provider-specific UI/E2E、其它 Provider 和后续学习能力仍待验收/实现；cards、练习和学习计划属于后续阶段。
 
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 
@@ -140,15 +140,17 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
    - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
    - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏已明确记录为 `not_verified`，并作为 v1 运行边界接受。
 
-### 当前下一步：Phase 5 真实 Provider 接入
+### 当前阶段：Phase 5 真实 Provider 接入
 
-Phase 4 的 deterministic fake provider Q&A 闭环已经完成。下一阶段只推进真实 Provider 边界，不回退或重复 Phase 4 的历史、多材料、citation 和基础 UI 任务：
+Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前已完成 adapter、配置/错误边界和 DeepSeek 官方 `deepseek-chat` API-level synthetic smoke，但尚未达到通用 real-pass：
 
-- 正式 LLMProvider / EmbeddingProvider adapter 与 registry；
-- 环境变量配置、timeout、output limits；
-- provider timeout、rate-limit、auth、quota、unavailable、malformed response、refusal 的稳定错误映射；
-- provider/model/request ID、usage、latency metadata；
-- provider secret、原始异常和原始 provider response 的隔离。
+- 通用 OpenAI-compatible LLMProvider adapter 与 registry；
+- 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
+- provider timeout、rate-limit、auth、forbidden、unavailable、malformed response、schema mismatch、refusal、output limit 的稳定错误映射；
+- provider/model/request ID、usage、latency、finish reason metadata，并通过 v3 migration 持久化；
+- mock HTTP、secret redaction 和 Phase 4 回归测试已通过；
+- DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 和完整 API-level 真实网络 smoke；使用临时 data_root 与 synthetic context，验证了 Q&A 成功、citation 和 operation metadata。
+- provider-specific UI/E2E、真实失败 UX 和 ARK、硅基流动、Agnes AI-Hub、Sub2API 尚未验收。
 
 ### 后续阶段：学习能力和生产化
 

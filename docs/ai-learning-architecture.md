@@ -232,7 +232,7 @@ Provider Protocol、revision/chunk schema、deterministic chunker、显式 index
 
 ### 项目 Phase 5：真实 Provider 接入
 
-真实 provider adapter、timeout/retry/rate-limit、structured output、capability endpoint、secret/error leakage tests。
+通用 OpenAI-compatible provider adapter、环境配置、timeout/output limit、稳定错误映射、capability endpoint、provider request/usage/latency metadata 和 secret/error leakage tests 已实现并通过 mock HTTP 验证。v3 migration 增加 provider request ID、total tokens 和 finish reason。DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 与完整 API-level synthetic smoke；浏览器 Provider E2E、真实失败 UX 以及 ARK、硅基流动、Agnes AI-Hub、Sub2API 仍待逐个验证。
 
 ### 项目 Phase 6 及以后：AI MVP 产品化与扩展
 

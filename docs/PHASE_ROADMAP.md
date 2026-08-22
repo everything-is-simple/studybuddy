@@ -126,14 +126,16 @@ migration / schema versioning
 
 ### Phase 5：真实 Provider 接入
 
-**状态：未开始；在 Phase 4 的内部可信链路通过后执行。**
+**状态：DeepSeek 官方 API-level opt-in smoke 已通过；provider-specific UI/E2E 与其它 Provider 验证仍待完成。**
 
-- 正式 `LLMProvider` / `EmbeddingProvider` adapter 与 registry。
-- 环境变量配置、timeout、output limits。
-- `GET /api/ai/capabilities`，不泄露 secret。
-- timeout、rate limit、auth、quota、unavailable、malformed response、refusal 的稳定错误映射。
-- provider/model/request ID/usage/latency metadata。
-- provider secret 和原始异常不进入日志、数据库、manifest 或前端。
+- 通用 OpenAI-compatible `LLMProvider` adapter 与 registry 已实现，保留 deterministic fake provider。
+- 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output 硬上限和默认不 retry 已实现。
+- `GET /api/ai/capabilities` 已接入真实配置，不能返回 secret。
+- timeout、rate limit、auth、forbidden、unavailable、malformed response、schema mismatch、refusal、output limit 有稳定错误映射。
+- provider/model/provider request ID/usage/latency/finish reason 已接入 v3 migration 和 `ai_operations`。
+- mock HTTP、配置脱敏、响应体上限、retry、citation 缺失/伪造和错误边界测试已通过。
+- DeepSeek 官方 `deepseek-chat` 已完成两次受控真实网络 smoke：adapter-level 和完整 API-level（synthetic material → indexing → retrieval → Q&A → citation validation → metadata persistence）。
+- 当前证据不包含浏览器 UI/E2E，也不代表 ARK、硅基流动、Agnes AI-Hub、Sub2API 已验收；这些 Provider 尚未逐个验证。
 
 > 真实 provider 很重要，但 revision/chunk/retrieval/citation 才是可信 Q&A 的内部前置条件；不得让厂商 API 接入阻塞 Phase 4 架构验收。
 

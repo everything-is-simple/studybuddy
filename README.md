@@ -8,7 +8,7 @@
 
 Operator backup / restore 已提供 CLI，详见 [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity/schema-version metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录；`verify-restored-data` 提供 offline/online restore 后验收。备份保留、轮换和 restore drill 见 `docs/BACKUP_OPERATIONS.md` 与 `docs/RESTORE_DRILL.md`。应用启动不会自动 backup、restore 或 repair。数据库 migration/schema versioning 已实现，升级和不可自动回滚流程见 [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
 
-AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai-learning-architecture.md`](docs/ai-learning-architecture.md)；项目阶段性总进度见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)。materials/extractions/text_spans 保持 source of truth；当前 AI Phase 4 已完成 SQLite FTS5 lexical retrieval、可追溯 chunk/citation、deterministic fake provider、同步 `POST /api/qa/ask` 持久化、Q&A history、多材料范围、citation 详情/跨材料导航、统一 UI 状态、响应式/基础可访问性和完整浏览器 E2E。下一阶段为 Phase 5 真实 Provider 接入。暂不引入外部 vector DB、不自动生成 embedding、不引入后台队列、不自动 repair；卡片、练习和学习计划仍未实现。
+AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai-learning-architecture.md`](docs/ai-learning-architecture.md)；项目阶段性总进度见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)。materials/extractions/text_spans 保持 source of truth；当前 AI Phase 4 已完成 SQLite FTS5 lexical retrieval、可追溯 chunk/citation、deterministic fake provider、同步 `POST /api/qa/ask` 持久化、Q&A history、多材料范围、citation 详情/跨材料导航、统一 UI 状态、响应式/基础可访问性和完整浏览器 E2E。Phase 5 已实现通用 OpenAI-compatible provider adapter、配置隔离、稳定错误映射和 mock 测试；DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 与完整 API-level synthetic smoke，浏览器 Provider E2E、真实失败 UX 和其它 Provider 验收仍待完成。暂不引入外部 vector DB、不自动生成 embedding、不引入后台队列、不自动 repair；卡片、练习和学习计划仍未实现。
 
 个人学习系统主目录。
 

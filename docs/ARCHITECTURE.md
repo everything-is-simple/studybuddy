@@ -4,7 +4,7 @@
 
 ## Runtime target
 
-`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径使用 deterministic fake provider；真实 provider 属于 Phase 5，尚未接入。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
+`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径默认使用 deterministic fake provider；Phase 5 已实现通用 OpenAI-compatible adapter，DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 与完整 API-level synthetic smoke，但浏览器 Provider E2E、真实失败 UX 和其它 Provider 验收仍待完成。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
 
 ## Evidence flow
 
@@ -32,7 +32,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 ## AI boundary
 
-AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 真实 provider 及后续学习能力仍未实现。依赖顺序固定为：
+AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 通用 OpenAI-compatible adapter、配置隔离、稳定错误映射、响应限制和 mock 验证已实现，DeepSeek 官方 `deepseek-chat` 的 adapter/API-level synthetic smoke 已通过，但 provider UI/E2E、真实失败 UX、其它 Provider 和后续学习能力仍待验收/实现。依赖顺序固定为：
 
 ```text
 material revision

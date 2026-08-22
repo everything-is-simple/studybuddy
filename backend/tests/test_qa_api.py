@@ -52,7 +52,12 @@ def test_qa_ask_success_persists_traceable_answer(tmp_path: Path):
         for forbidden in ("stored_path", "sqlite", "traceback", "select ", "h:/", "g:/"):
             assert forbidden not in response.text.lower()
         with connect(tmp_path / "studybuddy.sqlite3") as db:
-            assert db.execute("SELECT status FROM ai_operations WHERE id = ?", (payload["operation_id"],)).fetchone()[0] == "succeeded"
+            operation = db.execute(
+                "SELECT status, provider_id, model_id, total_tokens, finish_reason, latency_ms "
+                "FROM ai_operations WHERE id = ?", (payload["operation_id"],)
+            ).fetchone()
+            assert tuple(operation[:3]) == ("succeeded", "fake", "fake-studybuddy-v1")
+            assert operation[3] is not None and operation[4] == "stop" and operation[5] is not None
             assert db.execute("SELECT role FROM qa_messages WHERE id = ?", (payload["user_message_id"],)).fetchone()[0] == "user"
             assert db.execute("SELECT role FROM qa_messages WHERE id = ?", (payload["assistant_message_id"],)).fetchone()[0] == "assistant"
             answer = db.execute("SELECT status, source_coverage FROM qa_answers WHERE id = ?", (payload["answer_id"],)).fetchone()
@@ -174,6 +179,34 @@ def test_qa_rejects_provider_forged_citation(monkeypatch, tmp_path: Path):
             assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "citation_verification_failed"
             assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
+
+
+def test_qa_rejects_provider_without_citation(monkeypatch, tmp_path: Path):
+    from app import main
+
+    class NoCitationProvider:
+        provider_id = "mock"
+        model_id = "mock-v1"
+
+        def generate_answer(self, request):
+            return ProviderResult("An uncited answer", [], self.provider_id, self.model_id, 2, 3)
+
+    class NoCitationRegistry:
+        def configured_provider(self):
+            return NoCitationProvider()
+
+    monkeypatch.setattr(main, "provider_registry", lambda *_args, **_kwargs: NoCitationRegistry())
+    with make_client(tmp_path) as client:
+        material = upload(client, "uncited.txt", "A source requiring a citation.")
+        index(client, material["material_id"])
+        response = ask(client, "requiring citation", material["material_id"])
+        assert response.status_code == 500
+        assert response.json()["detail"] == "qa_generation_failed"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "citation_verification_failed"
+            assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
+            assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE role = 'assistant'").fetchone()[0] == 0
 
 
 def test_qa_answer_persistence_rolls_back_on_citation_failure(tmp_path: Path):
