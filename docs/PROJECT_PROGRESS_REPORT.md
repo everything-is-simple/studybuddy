@@ -109,7 +109,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
 - 当前材料最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示和 chunk offset 定位；purge 后历史 citation 标记 `source_unavailable`，并有 browser 与 backup/restore 验收。
 
-Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level 与完整 API-level synthetic smoke 已通过；provider-specific UI/E2E、其它 Provider 和后续学习能力仍待验收/实现；cards、练习和学习计划属于后续阶段。
+Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；其它 Provider 和后续学习能力仍待验收/实现；cards、练习和学习计划属于后续阶段。
 
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 
@@ -142,7 +142,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### 当前阶段：Phase 5 真实 Provider 接入
 
-Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前已完成 adapter、配置/错误边界和 DeepSeek 官方 `deepseek-chat` API-level synthetic smoke，但尚未达到通用 real-pass：
+Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前已完成 adapter、配置/错误边界、真实失败 UX 和 DeepSeek 官方 `deepseek-chat` API/UI smoke，但尚未达到多 Provider 通用 real-pass：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
@@ -150,7 +150,8 @@ Phase 4 的 deterministic fake provider Q&A 闭环已经完成。Phase 5 当前�
 - provider/model/request ID、usage、latency、finish reason metadata，并通过 v3 migration 持久化；
 - mock HTTP、secret redaction 和 Phase 4 回归测试已通过；
 - DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 和完整 API-level 真实网络 smoke；使用临时 data_root 与 synthetic context，验证了 Q&A 成功、citation 和 operation metadata。
-- provider-specific UI/E2E、真实失败 UX 和 ARK、硅基流动、Agnes AI-Hub、Sub2API 尚未验收。
+- DeepSeek UI smoke 已验证回答、citation 展示和原文定位；failure UX 已验证 timeout、rate-limit、unavailable、retry、重复点击和安全渲染。
+- ARK、硅基流动、Agnes AI-Hub、Sub2API 尚未验收；真正的 operation 幂等、重复请求去重和 stale transition 也未实现。
 
 ### 后续阶段：学习能力和生产化
 

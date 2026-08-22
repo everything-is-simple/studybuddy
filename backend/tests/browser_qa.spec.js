@@ -8,8 +8,19 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 function startServer(provider = 'fake') {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
-  if (provider) env.STUDYBUDDY_AI_PROVIDER = provider;
-  else delete env.STUDYBUDDY_AI_PROVIDER;
+  if (provider === 'fake') {
+    env.STUDYBUDDY_AI_PROVIDER = 'fake';
+    delete env.STUDYBUDDY_AI_MODEL;
+    delete env.STUDYBUDDY_AI_BASE_URL;
+    delete env.STUDYBUDDY_AI_API_KEY;
+  } else if (provider) {
+    env.STUDYBUDDY_AI_PROVIDER = provider;
+  } else {
+    delete env.STUDYBUDDY_AI_PROVIDER;
+    delete env.STUDYBUDDY_AI_MODEL;
+    delete env.STUDYBUDDY_AI_BASE_URL;
+    delete env.STUDYBUDDY_AI_API_KEY;
+  }
   return spawn('D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function ready() {
@@ -85,6 +96,103 @@ test('Q&A UI supports multi-material scope, history, citation detail and narrow 
     await page.setViewportSize({width: 390, height: 844});
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     expect(overflow).toBe(false);
+  } finally { stop(server); }
+});
+
+test('Q&A UI safely handles provider failure, retry and duplicate clicks', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer();
+  try {
+    await ready();
+    await page.goto(BASE);
+    await upload(page, 'provider-failure.txt', 'Trusted citation evidence establishes the answer.');
+    await page.locator('#ai-index').click();
+    await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
+    await page.locator('#qa-question').fill('Trusted citation');
+    let calls = 0;
+    let fail = true;
+    await page.route('**/api/qa/ask', async route => {
+      calls++;
+      if (fail) {
+        await route.fulfill({status: 504, contentType: 'application/json', body: JSON.stringify({detail: 'provider_timeout', path: 'C:/secret', traceback: 'private'})});
+      } else {
+        await route.continue();
+      }
+    });
+    await page.locator('#qa-ask').click();
+    await expect(page.locator('#qa-status')).toContainText('响应超时');
+    await expect(page.locator('#qa-retry')).toBeVisible();
+    await expect(page.locator('#qa-question')).toHaveValue('Trusted citation');
+    await expect(page.locator('#qa-status')).not.toContainText('provider_timeout');
+    await expect(page.locator('body')).not.toContainText('C:/secret');
+    await expect(page.locator('body')).not.toContainText('traceback');
+    fail = false;
+    await page.locator('#qa-retry').click();
+    await expect(page.locator('#qa-status')).toContainText('回答已生成');
+    expect(calls).toBe(2);
+    await page.unroute('**/api/qa/ask');
+
+    let duplicateCalls = 0;
+    await page.route('**/api/qa/ask', async route => {
+      duplicateCalls++;
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await route.continue();
+    });
+    await page.locator('#qa-question').fill('Trusted citation');
+    await page.locator('#qa-ask').click();
+    await expect(page.locator('#qa-ask')).toBeDisabled();
+    await page.locator('#qa-ask').click({force: true});
+    await expect(page.locator('#qa-status')).toContainText('回答已生成');
+    expect(duplicateCalls).toBe(1);
+  } finally { stop(server); }
+});
+
+test('Q&A UI maps rate-limit and unavailable errors safely', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer();
+  try {
+    await ready();
+    await page.goto(BASE);
+    await upload(page, 'provider-errors.txt', 'Trusted citation evidence establishes the answer.');
+    await page.locator('#ai-index').click();
+    await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
+    await page.locator('#qa-question').fill('Trusted citation');
+    const errors = [
+      [429, 'provider_rate_limited', '请求过于频繁'],
+      [503, 'provider_unavailable', '暂时不可用'],
+    ];
+    for (const [status, code, message] of errors) {
+      await page.route('**/api/qa/ask', route => route.fulfill({status, contentType: 'application/json', body: JSON.stringify({detail: code, raw_provider_error: 'private'})}));
+      await page.locator('#qa-ask').click();
+      await expect(page.locator('#qa-status')).toContainText(message);
+      await expect(page.locator('#qa-status')).not.toContainText(code);
+      await expect(page.locator('body')).not.toContainText('private');
+      await page.unroute('**/api/qa/ask');
+    }
+  } finally { stop(server); }
+});
+
+test('opt-in DeepSeek Provider browser path shows answer and locates citation', async ({page}) => {
+  test.skip(process.env.STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE !== '1', 'opt-in real provider browser smoke');
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer('deepseek');
+  try {
+    await ready();
+    await page.goto(BASE);
+    await upload(page, 'deepseek-ui-smoke.txt', 'Synthetic study note: the controlled experiment establishes a stable result.');
+    await page.locator('#ai-index').click();
+    await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
+    await page.locator('#qa-question').fill('controlled experiment establishes');
+    await page.locator('#qa-ask').click();
+    await expect(page.locator('#qa-status')).toContainText('回答已生成', {timeout: 30000});
+    await expect(page.locator('#qa-answer')).not.toBeEmpty();
+    await expect(page.locator('#qa-citations button')).toHaveCount(1);
+    await page.locator('#qa-citations button').click();
+    await expect(page.locator('#qa-status')).toContainText('已定位引用来源');
+    await expect(page.locator('#content mark.citation-highlight')).toContainText('controlled experiment establishes');
+    const body = await page.locator('body').innerText();
+    expect(body).not.toContain('sk-');
+    expect(body.toLowerCase()).not.toContain('traceback');
   } finally { stop(server); }
 });
 

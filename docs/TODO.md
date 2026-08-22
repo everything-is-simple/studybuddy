@@ -82,10 +82,10 @@ revision → chunks → retrieval → citations → Q&A
 - [x] provider timeout/rate-limit/auth/quota/refusal/malformed response 稳定错误映射。
 - [x] capabilities endpoint、usage/latency/provider request metadata，禁止 secret 泄露。
 - [ ] 真正的 AI operation 幂等 fingerprint、重复请求去重和 stale 语义；当前仅持久化 input fingerprint、同步状态和失败 error_code，尚不宣称具备幂等或 stale 行为。
-- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level 与完整 API-level synthetic Q&A 均已通过；浏览器 UI/E2E 和其它 Provider 仍待验收。
+- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；其它 Provider 仍待验收。
 - [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收。
 
-**Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝和 secret redaction 已实现并验证。DeepSeek 官方 `deepseek-chat` 的 adapter-level 与完整 API-level synthetic smoke 已通过；Phase 5 的通用 real-pass、浏览器 UI/E2E 和其它 Provider 验收仍未完成。真正的 operation 幂等和 stale 语义仍未实现。
+**Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝、secret redaction、真实 Provider failure UX、retry、重复点击和安全渲染已实现并验证。DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 均已通过；其它 Provider 验收仍未完成。真正的 operation 幂等、重复请求去重和 stale 语义仍未实现。
 
 ## Phase 6：AI MVP 产品化与整体验收
 

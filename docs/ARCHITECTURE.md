@@ -4,7 +4,7 @@
 
 ## Runtime target
 
-`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径默认使用 deterministic fake provider；Phase 5 已实现通用 OpenAI-compatible adapter，DeepSeek 官方 `deepseek-chat` 已通过 adapter-level 与完整 API-level synthetic smoke，但浏览器 Provider E2E、真实失败 UX 和其它 Provider 验收仍待完成。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
+`127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径默认使用 deterministic fake provider；Phase 5 已实现通用 OpenAI-compatible adapter，DeepSeek 官方 `deepseek-chat` 已通过 adapter-level、完整 API-level synthetic smoke 和 Chromium UI/E2E，真实失败 UX 也已通过；其它 Provider 验收仍待完成。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。
 
 ## Evidence flow
 
