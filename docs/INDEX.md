@@ -13,6 +13,7 @@
 - `ARCHITECTURE.md`：系统架构边界。
 - `DECISIONS.md`：架构和产品决策记录。
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构；仅设计，非已实现功能。
+- [`PROVIDER_CAPABILITY_MATRIX.md`](PROVIDER_CAPABILITY_MATRIX.md)：Phase 5 各 OpenAI-compatible Provider 的独立证据矩阵和 opt-in 验收命令。
 
 ## 数据库与运维
 
