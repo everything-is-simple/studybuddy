@@ -89,6 +89,58 @@ test('Q&A thread workspace creates and switches conversations', async ({page}) =
   } finally { stop(server); }
 });
 
+test('P6-C keeps material, Q&A citation and export context connected', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer();
+  try {
+    await ready();
+    await page.goto(BASE);
+    await page.locator('#file').setInputFiles([
+      {name: 'context-alpha.txt', mimeType: 'text/plain', buffer: Buffer.from('Context alpha contains the citation export evidence.')},
+      {name: 'context-beta.txt', mimeType: 'text/plain', buffer: Buffer.from('Context beta is a second selectable material.')},
+    ]);
+    await page.locator('#file-import').click();
+    await expect(page.locator('#status')).toContainText('批量导入完成', {timeout: 30000});
+    await expect(page.locator('.material-select')).toHaveCount(2);
+    await page.locator('.material-select').nth(0).check();
+    await page.locator('.material-select').nth(1).check();
+    await page.locator('#open-qa').click();
+    await expect(page.locator('#qa-scope-summary')).toContainText('已选择 2 个材料');
+    await expect(page).toHaveURL(/scope=/);
+    await page.locator('#qa-index').click();
+    await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
+    await page.locator('#qa-question').fill('citation export evidence');
+    await page.locator('#qa-ask').click();
+    await expect(page.locator('#qa-status')).toContainText('回答已生成');
+    await expect(page.locator('#qa-citations button')).toHaveCount(1);
+    await page.locator('#qa-citations button').click();
+    await expect(page.locator('#qa-status')).toContainText('已定位引用来源');
+    await expect(page.locator('#content mark.citation-highlight')).toContainText('Context alpha');
+    await expect(page).toHaveURL(/material=/);
+    await page.locator('[role="dialog"] button').click();
+    const originalDownload = page.waitForEvent('download');
+    await page.locator('#download-original').click();
+    expect((await originalDownload).suggestedFilename()).toBe('context-alpha.txt');
+    const textDownload = page.waitForEvent('download');
+    await page.locator('#export-text').click();
+    expect((await textDownload).suggestedFilename()).toBe('context-alpha.txt.extracted.txt');
+    await page.locator('#qa-back-material').click();
+    await expect(page.locator('#content')).toContainText('Context alpha');
+    await page.locator('#open-qa').click();
+    await expect(page).toHaveURL(/thread=/);
+    await expect(page.locator('#qa-timeline')).toContainText('Fake answer');
+    await page.locator('#qa-citations button').click();
+    await page.locator('[role="dialog"] button').click();
+    await page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', {name: '删除', exact: true}).click();
+    await page.getByRole('button', {name: '回收站'}).click();
+    await expect(page.locator('#materials .deleted-item')).toHaveCount(1);
+    await page.locator('#materials .deleted-item').click();
+    await expect(page.locator('#download-original')).toBeDisabled();
+    await expect(page.locator('#export-text')).toBeDisabled();
+  } finally { stop(server); }
+});
+
 test('Q&A UI requires explicit indexing and locates citations', async ({page}) => {
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   const consoleErrors = [];

@@ -34,6 +34,7 @@ def test_citation_detail_deleted_then_purged_unavailable(tmp_path: Path):
         payload = valid.json()
         assert payload["status"] == "valid"
         assert payload["material_id"] == material["material_id"]
+        assert payload["material_name"] == "citation.txt"
         assert len(payload["excerpt"]) <= 240
         assert "stored_path" not in payload
         assert client.delete(f"/api/materials/{material['material_id']}").status_code == 204
@@ -41,6 +42,7 @@ def test_citation_detail_deleted_then_purged_unavailable(tmp_path: Path):
         assert client.post(f"/api/materials/{material['material_id']}/purge").status_code == 200
         unavailable = client.get(f"/api/qa/citations/{key}").json()
         assert unavailable["status"] == "source_unavailable"
+        assert unavailable["material_name"] is None
         assert "excerpt" not in unavailable
         with connect(tmp_path / "studybuddy.sqlite3") as db:
             assert db.execute("SELECT status FROM qa_citations WHERE citation_key = ?", (key,)).fetchone()[0] == "source_unavailable"

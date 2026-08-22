@@ -143,11 +143,13 @@ migration / schema versioning
 
 ### Phase 6：AI MVP 产品化与整体验收
 
-**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区已完成；其余整体验收工作未开始。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
+**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接已完成；其余整体验收工作未开始。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
 
 P6-A 已明确默认运行状态为 `not_configured`，显式 `fake` 为 deterministic/demo，generic OpenAI-compatible 配置为 `configured` + `unverified`；`GET /api/ai/capabilities` 和 UI 已统一安全状态语义。capabilities 不执行网络 health probe，真实 Provider verified 仍仅按精确 provider/model/gateway 的既有 evidence 判定。
 
 P6-B 已完成 thread 列表/状态、创建/切换/继续提问、用户和回答时间线、citation/source unavailable 展示、scope/request stale-response 防护、显式 Idempotency-Key 传递和非敏感 thread ID 刷新恢复。thread scope 尚未持久化；同步 Provider HTTP 请求不能被真正取消，切换 thread 只忽略旧响应。
+
+P6-C 已完成材料列表/详情进入 Q&A、单材料和多材料 scope 上下文、URL/history 中的非敏感 material/thread/scope/citation 标识、citation 到 revision/chunk/span/正文定位、返回 Q&A、正文/原文件导出连续流程，以及 deleted/purged/stale citation 的 unavailable contract。citation detail 仅返回安全材料名称和定位标识；purge 后材料名称不可恢复并返回 null，不伪造来源。未新增 migration。
 
 Phase 4 已负责 fake provider 下 Q&A 的完整可验收用户路径。Phase 6 不重复定义历史、材料范围、citation 定位或基础 loading/error 任务，而是在真实 Provider 接入后完成产品级整合：
 

@@ -372,22 +372,22 @@ def get_qa_citation_detail(connection: sqlite3.Connection, citation_key: str) ->
     ).fetchone()
     if citation is None:
         return None
+    material_name_row = connection.execute(
+        "SELECT original_name, deleted_at FROM materials WHERE id = ?", (citation["material_id"],)
+    ).fetchone()
+    material_name = material_name_row["original_name"] if material_name_row else None
+    base = {"citation_key": citation_key, "material_id": citation["material_id"],
+            "material_name": material_name, "revision_id": citation["revision_id"],
+            "chunk_id": citation["chunk_id"],
+            "span_ids": [citation["span_id"]] if citation["span_id"] else []}
     status = str(citation["status"])
     if status == "source_unavailable":
-        return {"citation_key": citation_key, "status": "source_unavailable",
-                "material_id": citation["material_id"], "revision_id": citation["revision_id"],
-                "chunk_id": citation["chunk_id"], "span_ids": [citation["span_id"]] if citation["span_id"] else []}
-    material = connection.execute(
-        "SELECT deleted_at FROM materials WHERE id = ?", (citation["material_id"],)
-    ).fetchone()
+        return {**base, "status": "source_unavailable"}
+    material = material_name_row
     if material is None:
-        return {"citation_key": citation_key, "status": "source_unavailable",
-                "material_id": citation["material_id"], "revision_id": citation["revision_id"],
-                "chunk_id": citation["chunk_id"], "span_ids": [citation["span_id"]] if citation["span_id"] else []}
+        return {**base, "status": "source_unavailable"}
     if material["deleted_at"] is not None:
-        return {"citation_key": citation_key, "status": "source_deleted",
-                "material_id": citation["material_id"], "revision_id": citation["revision_id"],
-                "chunk_id": citation["chunk_id"], "span_ids": [citation["span_id"]] if citation["span_id"] else []}
+        return {**base, "status": "source_deleted"}
     chunk = connection.execute(
         "SELECT c.id, c.material_id, c.revision_id, c.start_offset, c.end_offset, c.text, "
         "r.extraction_id FROM chunks c JOIN material_revisions r ON r.id = c.revision_id "
@@ -395,15 +395,13 @@ def get_qa_citation_detail(connection: sqlite3.Connection, citation_key: str) ->
         (citation["chunk_id"], citation["material_id"]),
     ).fetchone()
     if chunk is None:
-        return {"citation_key": citation_key, "status": "source_unavailable",
-                "material_id": citation["material_id"], "revision_id": citation["revision_id"],
-                "chunk_id": citation["chunk_id"], "span_ids": [citation["span_id"]] if citation["span_id"] else []}
+        return {**base, "status": "source_unavailable"}
     excerpt = " ".join(str(chunk["text"]).split())[:240]
     span_ids = [str(row[0]) for row in connection.execute(
         "SELECT span_id FROM chunk_spans WHERE chunk_id = ? ORDER BY span_id", (chunk["id"],)
     ).fetchall()]
-    return {"citation_key": citation_key, "status": "valid", "material_id": chunk["material_id"],
-            "revision_id": chunk["revision_id"], "chunk_id": chunk["id"],
+    return {**base, "status": "valid", "material_id": chunk["material_id"],
+            "material_name": material_name, "revision_id": chunk["revision_id"], "chunk_id": chunk["id"],
             "extraction_id": chunk["extraction_id"], "start_offset": chunk["start_offset"],
             "end_offset": chunk["end_offset"], "span_ids": span_ids, "excerpt": excerpt}
 
