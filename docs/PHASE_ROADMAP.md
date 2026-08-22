@@ -153,9 +153,9 @@ P6-C 已完成材料列表/详情进入 Q&A、单材料和多材料 scope 上下
 
 P6-D 已完成统一 header/nav、当前材料/thread/scope/view 状态、页面级 status/alert 与补充 toast、Provider/导入/导出/问答失败状态表达、按钮禁用和 retry 反馈、窄屏布局稳定性、可见焦点、键盘视图切换、citation dialog Escape/focus return、landmark/heading/label/button/list/status/alert/dialog 语义。未新增 API 或 migration；使用 Playwright/DOM contract 断言，没有引入 axe。fake Provider 下 P6-D 专项 Chromium 2 passed，完整 backend 200 passed/2 skipped；真实 Provider、系统级 screen reader、长时整批 Chromium 的单次稳定性仍不宣称 real-pass。
 
-P6-E 已完成 fake Provider 的导入 → ready → 显式 indexing → retrieval → thread → Q&A → citation → 正文定位 → 返回材料详情/Q&A → 导出 → refresh/history 连续路径，以及 retrieval empty、未配置 Provider、timeout/retry、duplicate click、in-flight thread stale response、deleted source/export disabled、network/rate-limit/unavailable 和相关安全错误回归。新增 `backend/tests/browser_p6e.spec.js` 与默认 skip 的 `browser_p6e_real_provider.spec.js`；focused P6-E 4 passed，相关 Chromium 19 passed/3 skipped，focused backend 47 passed/2 skipped，完整 backend 200 passed/2 skipped。DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub`/`agnes-2.5-flash` 的本轮 P6-E real UI path 因未提供显式运行 gate 为 not_verified；详见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。未新增 API 或 migration。
+P6-E 已完成 fake Provider 的导入 → ready → 显式 indexing → retrieval → thread → Q&A → citation → 正文定位 → 返回材料详情/Q&A → 导出 → refresh/history 连续路径，以及 retrieval empty、未配置 Provider、timeout/retry、duplicate click、in-flight thread stale response、deleted source/export disabled、network/rate-limit/unavailable 和相关安全错误回归。新增 `backend/tests/browser_p6e.spec.js` 与默认 skip 的 `browser_p6e_real_provider.spec.js`；focused P6-E 4 passed，相关 Chromium 19 passed/3 skipped，focused backend 47 passed/2 skipped，完整 backend 200 passed/2 skipped。DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub`/`agnes-2.5-flash` 的本轮 P6-E real UI path 已在各自显式运行 gate 下通过；详见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。未新增 API 或 migration。
 
-Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–P6-E 已完成产品化验收，其中 P6-E 以 fake Provider 为默认可重复路径，并以显式 target/provider/model/gateway gate 管理真实 Provider evidence。未运行的真实 Provider、系统级 screen reader、真实 offline、极端长回答和长时稳定性继续标记为 `not_verified`，不阻塞 fake MVP 工作流收口，但不能被宣称为 real-pass。
+Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–P6-E 已完成产品化验收，其中 P6-E 以 fake Provider 为默认可重复路径，并以显式 target/provider/model/gateway gate 管理真实 Provider evidence。DeepSeek 和 Agnes 的精确真实 Provider UI gate 已通过；系统级 screen reader、真实 offline、极端长回答和长时稳定性继续标记为 `not_verified`，不能被宣称为全局 real-pass。
 
 ### Phase 7：Embedding 与 Hybrid Retrieval
 
@@ -218,6 +218,6 @@ I4：真实环境与容量基线（时间盒） ✅ 已验收
 ## 不应作出的当前声明
 
 - 不宣称全局生产级 `real-pass`。
-- 不宣称所有真实 Provider、Embedding、Cards、Exercises、学习计划或 S1–S7 已实现；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 只有各自精确 smoke evidence，P6-E 本轮 real UI path 仍为 `not_verified`。Phase 4 fake Provider Q&A 与 P6-E fake 核心工作流已通过对应验收。
+- 不宣称所有真实 Provider、Embedding、Cards、Exercises、学习计划或 S1–S7 已实现；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已有各自精确 API/UI smoke evidence；其它 Provider/model 仍需独立验证。Phase 4 fake Provider Q&A 与 P6-E fake 核心工作流已通过对应验收。
 - 不宣称支持多进程、多实例共享 `data_root`。
 - 不宣称覆盖真实断电、磁盘损坏、网络盘、真实磁盘满或容量压力。

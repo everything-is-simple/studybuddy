@@ -32,8 +32,8 @@ P6-E fake Provider 主路径覆盖：
 | Malformed input/provider safety | pass | frontend failure contract and backend provider tests |
 | Desktop/narrow workflow | pass | P6-D and P6-E; `390x844` overflow assertion |
 | Keyboard/focus/accessibility contract | pass | P6-D and existing Q&A browser tests |
-| DeepSeek `deepseek-chat` exact P6-E path | not_verified this run | explicit real UI gate variables were not supplied |
-| Agnes `agnes-ai-hub` / `agnes-2.5-flash` exact P6-E path | not_verified this run | explicit real UI gate variables were not supplied |
+| DeepSeek `deepseek-chat` exact P6-E path | pass (real network, rerun) | exact target/gateway; backend API 2 passed and browser target passed |
+| Agnes `agnes-ai-hub` / `agnes-2.5-flash` exact P6-E path | pass (real network, rerun) | exact advanced gateway; backend API 2 passed and browser target passed |
 
 ## Commands and results
 
@@ -65,7 +65,7 @@ The full backend run emitted one existing httpx deprecation warning. No schema o
 
 ## Real Provider policy
 
-The real-provider browser tests are default-skipped and require all of the following to match:
+The real-provider browser tests are default-skipped and require all of the following to match. This rerun executed each target in a separate process/configuration:
 
 - `STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE=1`;
 - `STUDYBUDDY_REAL_PROVIDER_UI_TARGET`;
@@ -76,9 +76,25 @@ The real-provider browser tests are default-skipped and require all of the follo
 
 DeepSeek requires the exact `deepseek` / `deepseek-chat` target. Agnes requires the exact `agnes-ai-hub` / `agnes-2.5-flash` target and the existing advanced profile/gateway configuration. A successful short controlled request would only prove that exact provider/model/gateway run; it would not establish global Provider availability, quota, quality, uptime, or production readiness.
 
+## Rerun results
+
+The exact real-network gates were rerun separately with temporary data roots and synthetic material:
+
+```text
+DeepSeek: deepseek / deepseek-chat / https://api.deepseek.com/v1
+  backend/tests/test_real_provider_smoke.py: 2 passed
+  browser_p6e_real_provider.spec.js: DeepSeek target passed; Agnes target skipped by target gate
+
+Agnes: agnes-ai-hub / agnes-2.5-flash / https://apihub.agnes-ai.com/v1
+  backend/tests/test_real_provider_smoke.py: 2 passed
+  browser_p6e_real_provider.spec.js: Agnes target passed; DeepSeek target skipped by target gate
+```
+
+The browser test's one non-target skip per run is intentional: one configuration can only select one Provider/model at a time. These results establish exact synthetic API/UI evidence, not global availability, quota, quality, uptime or production readiness.
+
 ## Remaining limitations
 
-- This run did not execute real network calls for DeepSeek or Agnes.
+- The rerun executed real network calls for both exact target configurations; the evidence remains synthetic and bounded.
 - Provider failure injection in browser tests covers the user-facing contract; it is not evidence that every external Provider emits each failure in production.
 - System-level screen reader testing is not performed; accessibility evidence is Playwright/DOM contract based.
 - Long-answer and narrow-layout coverage is controlled synthetic coverage, not a capacity or production-scale claim.
