@@ -15,14 +15,23 @@ from app.main import create_app
 from app.providers import ProviderRequest, provider_registry
 
 
-@pytest.mark.skipif(
-    os.environ.get("STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE") != "1",
-    reason="opt-in real provider smoke",
-)
-def test_opt_in_real_provider_smoke_uses_synthetic_context():
+def _targeted_real_provider_config():
+    if os.environ.get("STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE") != "1":
+        pytest.skip("opt-in real provider smoke")
+    target = os.environ.get("STUDYBUDDY_REAL_PROVIDER_TARGET")
+    if not target:
+        pytest.skip("real provider target is not set")
     config = config_from_environment()
-    if not config.ai_provider_id or config.ai_provider_id == "fake" or not config.ai_model_id or not config.ai_base_url or not config.ai_api_key:
-        pytest.skip("Real provider configuration is incomplete")
+    if (not config.ai_provider_id or config.ai_provider_id == "fake" or not config.ai_model_id
+            or not config.ai_base_url or not config.ai_api_key):
+        pytest.skip("real provider configuration is incomplete")
+    if config.ai_provider_id != target:
+        pytest.skip("real provider configuration does not match target")
+    return config
+
+
+def test_opt_in_real_provider_smoke_uses_synthetic_context():
+    config = _targeted_real_provider_config()
     provider = provider_registry(
         config.ai_provider_id, config.ai_model_id,
         base_url=config.ai_base_url, api_key=config.ai_api_key,
@@ -46,14 +55,8 @@ def test_opt_in_real_provider_smoke_uses_synthetic_context():
     assert result.completion_tokens is not None
 
 
-@pytest.mark.skipif(
-    os.environ.get("STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE") != "1",
-    reason="opt-in real provider smoke",
-)
 def test_opt_in_real_provider_smoke_completes_qa_api_path(tmp_path: Path):
-    config = config_from_environment()
-    if not config.ai_provider_id or config.ai_provider_id == "fake" or not config.ai_model_id or not config.ai_base_url or not config.ai_api_key:
-        pytest.skip("Real provider configuration is incomplete")
+    config = _targeted_real_provider_config()
     app_config = replace(
         config,
         data_root=tmp_path,

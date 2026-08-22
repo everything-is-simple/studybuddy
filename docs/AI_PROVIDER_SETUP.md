@@ -29,6 +29,7 @@ DeepSeek `deepseek-chat` is the only provider/model with current StudyBuddy adap
 
 ```text
 set STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE=1
+set STUDYBUDDY_REAL_PROVIDER_TARGET=<provider-id>
 set STUDYBUDDY_AI_PROVIDER=<provider-id>
 set STUDYBUDDY_AI_MODEL=<provider-issued-model-id>
 set STUDYBUDDY_AI_BASE_URL=https://<provider-base-url>
