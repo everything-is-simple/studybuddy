@@ -1,6 +1,9 @@
+[CmdletBinding()]
+param([string]$Profile)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'agnes-common.ps1')
+try { $AgnesConfig = Get-AgnesConfig $Profile } catch { Write-Error $_.Exception.Message; exit 2 }
 
 $python = if ($env:STUDYBUDDY_PYTHON) { $env:STUDYBUDDY_PYTHON } else { 'python' }
 $arguments = @('-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8795')

@@ -12,6 +12,9 @@ def read_script(name: str) -> str:
 def test_agnes_launcher_uses_namespaced_config_and_fixed_target():
     common = read_script("agnes-common.ps1")
     assert "STUDYBUDDY_AGNES_KEY" in common
+    assert "STUDYBUDDY_AGNES_MODEL_" in common
+    assert "throw 'agnes_invalid_profile'" in common
+    assert "$Profile -notmatch '^[a-z0-9][a-z0-9-]{0,31}$'" in common
     assert "STUDYBUDDY_AI_API_KEY'] = $Config.Key" in common
     assert "STUDYBUDDY_REAL_PROVIDER_TARGET'] = 'agnes-ai-hub'" in common
     assert "-ne 'agnes-ai-hub'" in common
@@ -36,3 +39,6 @@ def test_agnes_entrypoints_set_expected_gate():
     assert "STUDYBUDDY_RUN_REAL_PROVIDER_UI_SMOKE'] = '1'" in ui
     assert "STUDYBUDDY_REAL_PROVIDER_UI_TARGET'] = 'agnes-ai-hub'" in ui
     assert "Remove('STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE')" in start
+    for script in (provider, ui, start):
+        assert "param([string]$Profile)" in script
+        assert "Get-AgnesConfig $Profile" in script

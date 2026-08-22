@@ -1,6 +1,9 @@
+[CmdletBinding()]
+param([string]$Profile)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'agnes-common.ps1')
+try { $AgnesConfig = Get-AgnesConfig $Profile } catch { Write-Error $_.Exception.Message; exit 2 }
 
 $node = if ($env:STUDYBUDDY_NODE) { $env:STUDYBUDDY_NODE } else { 'npx.cmd' }
 $info = New-AgnesProcessInfo $node @('playwright', 'test', 'H:/studybuddy/backend/tests/browser_qa.spec.js', '--workers=1', '--reporter=line') $AgnesConfig
