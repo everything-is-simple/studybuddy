@@ -83,7 +83,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] capabilities endpoint、usage/latency/provider request metadata，禁止 secret 泄露。
 - [x] 同步 Q&A stale transition：每个 Q&A 请求会事务性回收同 project 中超过 5 分钟 lease 的 `running` operation，标记 `stale/qa_operation_stale` 并保留审计消息；同一 Idempotency-Key 可随后创建新 operation。未实现后台扫描、cancel、跨进程协调或真实断电恢复。
 - [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；其它 Provider 仍待验收。
-- [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 现强制 target 与 runtime provider 一致；ARK 缺少匹配 model/base URL，尚未发送真实请求，provider-specific real evidence 仍 pending）。
+- [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 现强制 target 与 runtime provider 一致；ARK 缺少匹配 model/base URL，硅基流动缺少 matching runtime provider/target/model/base URL，均未发送真实请求，provider-specific real evidence 仍 pending）。
 
 **Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝、secret redaction、真实 Provider failure UX、retry、重复点击、安全渲染、显式 Idempotency-Key 幂等和请求触发的 stale recovery 已实现并验证。DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 均已通过；ARK、硅基流动、Agnes AI-Hub、Sub2API 的独立验收矩阵已建立，但真实 evidence 仍未完成。
 
