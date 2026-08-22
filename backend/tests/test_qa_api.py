@@ -9,14 +9,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.config import AppConfig
+from app.embedding import FakeEmbeddingProvider
 from app.main import create_app
 from app.providers import ProviderResult
-from app.repository import connect, create_qa_request
+from app.repository import connect, create_qa_request, index_embeddings_for_material, index_material_revision
 
 
-def make_client(root: Path, *, fake: bool = True) -> TestClient:
+def make_client(root: Path, *, fake: bool = True, embedding: bool = False) -> TestClient:
     return TestClient(create_app(AppConfig(
         data_root=root, max_upload_bytes=4096, ai_provider_id="fake" if fake else None,
+        embedding_provider_id="fake" if embedding else None,
+        embedding_model_id="fake-embedding-v1" if embedding else None,
     )))
 
 
@@ -69,6 +72,64 @@ def test_qa_ask_success_persists_traceable_answer(tmp_path: Path):
             assert len(rows) == len(payload["citations"])
             assert all(row[1] == material["material_id"] and row[4] == "valid" for row in rows)
             assert db.execute("SELECT COUNT(*) FROM retrieval_hits WHERE run_id = ?", (payload["retrieval_run_id"],)).fetchone()[0] > 0
+
+
+def test_qa_hybrid_uses_rrf_and_verified_citations(tmp_path: Path):
+    with make_client(tmp_path, embedding=True) as client:
+        material = upload(client, "hybrid-qa.txt", "Hybrid retrieval grounds this answer in a stable source.")
+        index(client, material["material_id"])
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            extraction = db.execute(
+                "SELECT id FROM extractions WHERE material_id = ? ORDER BY created_at DESC LIMIT 1",
+                (material["material_id"],),
+            ).fetchone()
+            index_material_revision(db, material["material_id"], str(extraction["id"]))
+            index_embeddings_for_material(db, material_id=material["material_id"], provider=FakeEmbeddingProvider())
+        response = ask(client, "stable source", material["material_id"], retrieval_mode="hybrid",
+                       allow_retrieval_fallback=False)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["retrieval"]["mode"] == "hybrid"
+        assert payload["retrieval"]["policy_version"] == "hybrid_rrf_v1"
+        assert payload["retrieval"]["fallback"] is False
+        assert payload["citations"]
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            operation = db.execute(
+                "SELECT retrieval_policy_version, retrieval_run_id FROM ai_operations WHERE id = ?",
+                (payload["operation_id"],),
+            ).fetchone()
+            assert tuple(operation) == ("hybrid_rrf_v1", payload["retrieval_run_id"])
+            assert db.execute(
+                "SELECT policy_version, embedding_provider_id, embedding_model_id FROM retrieval_runs WHERE id = ?",
+                (payload["retrieval_run_id"],),
+            ).fetchone()[:3] == ("hybrid_rrf_v1", "fake", "fake-embedding-v1")
+
+
+def test_qa_hybrid_fallback_is_recorded_and_vector_does_not_fallback(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "hybrid-fallback.txt", "Fallback retrieval still uses this lexical source.")
+        index(client, material["material_id"])
+        fallback = ask(client, "lexical source", material["material_id"], retrieval_mode="hybrid")
+        assert fallback.status_code == 200
+        payload = fallback.json()
+        assert payload["retrieval"]["policy_version"] == "fallback_lexical_v1"
+        assert payload["retrieval"]["fallback"] is True
+        assert payload["retrieval"]["fallback_reason"] == "embedding_provider_not_configured"
+        vector = ask(client, "lexical source", material["material_id"], retrieval_mode="vector")
+        assert vector.status_code == 503
+        assert vector.json()["detail"] == "embedding_provider_not_configured"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            assert db.execute(
+                "SELECT error_code FROM ai_operations WHERE id = ?", (vector.json().get("operation_id", ""),)
+            ).fetchone() is None
+
+
+def test_qa_rejects_unknown_retrieval_mode(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "invalid-mode.txt", "Mode boundary source.")
+        response = ask(client, "mode", material["material_id"], retrieval_mode="custom")
+        assert response.status_code == 400
+        assert response.json()["detail"] == "retrieval_invalid_mode"
 
 
 def test_qa_ask_reuses_thread_and_fake_answer_is_deterministic(tmp_path: Path):
