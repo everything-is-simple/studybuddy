@@ -12,7 +12,7 @@ A provider row may be marked `real-pass` only after both opt-in tests pass with 
 2. API-level synthetic material path: upload, explicit indexing, retrieval, Q&A, citation validation, and `ai_operations` metadata persistence;
 3. Chromium UI smoke when browser acceptance is available: answer, citation display/location, failure UX, retry, duplicate click and redaction.
 
-The test must use a temporary `data_root`, synthetic material, and environment variables supplied outside the repository. API keys, raw provider responses, source text, private paths and request transcripts must not be committed.
+The test must use a temporary `data_root`, synthetic material, and environment variables supplied outside the repository. API keys, raw provider responses, source text, private paths and request transcripts must not be committed. The three-attempt API acceptance runner is implemented but no new acceptance run was performed when it was added; `2_of_3_passed` is API evidence only and never replaces a separate UI gate.
 
 ## Matrix
 

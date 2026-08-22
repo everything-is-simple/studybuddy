@@ -80,6 +80,15 @@ powershell -NoProfile -File .\backend\scripts\test-agnes-provider.ps1 -Profile p
 
 The script sets `STUDYBUDDY_RUN_REAL_PROVIDER_SMOKE=1` and `STUDYBUDDY_REAL_PROVIDER_TARGET=agnes-ai-hub` in the child process. It runs only the target-gated real provider test.
 
+For redacted API acceptance across up to three isolated attempts, use the Agnes wrapper only with a newly issued, unexposed local key:
+
+```powershell
+$env:STUDYBUDDY_RUN_THREE_ATTEMPT_PROVIDER_ACCEPTANCE = "1"
+powershell -NoProfile -File .\backend\scripts\run-agnes-api-acceptance.ps1 -Profile advanced
+```
+
+The wrapper resolves the profile and maps its key only inside a child process. It never places the key in command-line arguments. `2_of_3_passed` is API-only evidence; run one separate UI smoke before recording `real-pass`. The wrapper was implemented without a new real acceptance run.
+
 Browser smoke:
 
 ```powershell
