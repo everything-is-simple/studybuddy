@@ -98,7 +98,9 @@ revision → chunks → retrieval → citations → Q&A
 
 **P6-A 限制：** capabilities 是本进程配置快照，不是网络 health probe；generic adapter 的 `configured` 不等于 `available` 或 `verified`。DeepSeek `deepseek-chat`、Agnes `agnes-2.5-flash` 的真实证据仍只按 capability matrix 中的精确 provider/model/gateway 范围解释。
 
-- [ ] 真实 provider 下的端到端回归和 provider failure UX 验收。
+- [x] P6-E fake Provider 核心工作流整体验收：`backend/tests/browser_p6e.spec.js`，4 passed。
+- [x] P6-E empty retrieval、未配置 Provider、timeout/retry、duplicate click、stale thread、deleted source/export safety 和相关 failure contract。
+- [x] P6-E 默认 skip 的 DeepSeek/Agnes real UI gate：精确 target/model/provider 匹配和脱敏 evidence 结构已实现；本轮未提供 runtime gate，真实 UI 结果为 `not_verified`。
 ### P6-B：Q&A Thread 工作区
 
 - [x] thread 列表、标题、更新时间、消息数和 active/empty/failed 状态展示。
@@ -123,12 +125,14 @@ revision → chunks → retrieval → citations → Q&A
 
 **P6-D 限制：** 使用 Playwright/DOM contract 断言而非 axe；系统级 screen reader、真实 Provider 下完整体验、真实离线/极端长回答和长时整批 Chromium 单次稳定性仍为 `not_verified`。页面 toast 只是补充，主要错误已同步到页面 status/alert；同步 Provider 请求不能真正取消，只能丢弃 stale response。
 
-- [ ] 更完整的 Q&A thread 工作区、跨材料浏览和导出衔接。
+- [x] P6-E 导入 → ready → indexing → retrieval → thread → Q&A → citation → 定位 → 返回 → 导出 → refresh/history 核心工作流整体验收；证据：`docs/P6E_ACCEPTANCE_EVIDENCE.md`。
 - [x] P6-D 统一应用级导航、当前 material/thread/scope 状态、页面 status/alert 和补充 toast。
 - [x] P6-D 桌面/390x844 窄屏布局、键盘视图切换、可见焦点、dialog Escape/focus return 和关键 ARIA/current/status/alert 语义。
 - [x] P6-D fake Provider Chromium 专项验收：`backend/tests/browser_p6d.spec.js`，2 passed；未引入 API 或 migration，未引入 axe。
-- [ ] 导入 → 检索 → 问答 → 引用 → 导出核心工作流整体验收。
-- [ ] 高延迟、离线、长回答和真实 provider 限制下的前端体验收口。
+- [x] P6-E fake Provider 核心工作流、empty retrieval、source lifecycle、retry、duplicate click、stale response、refresh/history、导出失败和窄屏路径验收。
+- [x] P6-E Provider failure UX 回归：timeout、network failure、rate limit、unavailable、malformed/safe error contract；详见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
+- [ ] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；本轮因未显式提供完整 runtime gate 为 `not_verified`。
+- [ ] 系统级 screen reader、真实 offline/极端长回答和长时整批 Chromium 稳定性验收。
 
 ## 后续学习能力：Cards / Exercises（仅在 Phase 4 Q&A 完成后）
 

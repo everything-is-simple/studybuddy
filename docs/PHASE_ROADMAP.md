@@ -143,7 +143,7 @@ migration / schema versioning
 
 ### Phase 6：AI MVP 产品化与整体验收
 
-**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接、P6-D 统一导航/通知/响应式/可访问性已完成；真实 Provider 整合和其余整体验收仍待完成。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
+**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接、P6-D 统一导航/通知/响应式/可访问性已完成；P6-E fake Provider 核心工作流整体验收和失败矩阵已完成，DeepSeek/Agnes 本轮真实 UI 路径未执行。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
 
 P6-A 已明确默认运行状态为 `not_configured`，显式 `fake` 为 deterministic/demo，generic OpenAI-compatible 配置为 `configured` + `unverified`；`GET /api/ai/capabilities` 和 UI 已统一安全状态语义。capabilities 不执行网络 health probe，真实 Provider verified 仍仅按精确 provider/model/gateway 的既有 evidence 判定。
 
@@ -152,6 +152,8 @@ P6-B 已完成 thread 列表/状态、创建/切换/继续提问、用户和回�
 P6-C 已完成材料列表/详情进入 Q&A、单材料和多材料 scope 上下文、URL/history 中的非敏感 material/thread/scope/citation 标识、citation 到 revision/chunk/span/正文定位、返回 Q&A、正文/原文件导出连续流程，以及 deleted/purged/stale citation 的 unavailable contract。citation detail 仅返回安全材料名称和定位标识；purge 后材料名称不可恢复并返回 null，不伪造来源。未新增 migration。
 
 P6-D 已完成统一 header/nav、当前材料/thread/scope/view 状态、页面级 status/alert 与补充 toast、Provider/导入/导出/问答失败状态表达、按钮禁用和 retry 反馈、窄屏布局稳定性、可见焦点、键盘视图切换、citation dialog Escape/focus return、landmark/heading/label/button/list/status/alert/dialog 语义。未新增 API 或 migration；使用 Playwright/DOM contract 断言，没有引入 axe。fake Provider 下 P6-D 专项 Chromium 2 passed，完整 backend 200 passed/2 skipped；真实 Provider、系统级 screen reader、长时整批 Chromium 的单次稳定性仍不宣称 real-pass。
+
+P6-E 已完成 fake Provider 的导入 → ready → 显式 indexing → retrieval → thread → Q&A → citation → 正文定位 → 返回材料详情/Q&A → 导出 → refresh/history 连续路径，以及 retrieval empty、未配置 Provider、timeout/retry、duplicate click、in-flight thread stale response、deleted source/export disabled、network/rate-limit/unavailable 和相关安全错误回归。新增 `backend/tests/browser_p6e.spec.js` 与默认 skip 的 `browser_p6e_real_provider.spec.js`；focused P6-E 4 passed，相关 Chromium 19 passed/3 skipped，focused backend 47 passed/2 skipped，完整 backend 200 passed/2 skipped。DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub`/`agnes-2.5-flash` 的本轮 P6-E real UI path 因未提供显式运行 gate 为 not_verified；详见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。未新增 API 或 migration。
 
 Phase 4 已负责 fake provider 下 Q&A 的完整可验收用户路径。Phase 6 不重复定义历史、材料范围、citation 定位或基础 loading/error 任务，而是在真实 Provider 接入后完成产品级整合：
 
