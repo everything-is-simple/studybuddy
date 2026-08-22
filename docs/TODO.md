@@ -144,11 +144,27 @@ revision → chunks → retrieval → citations → Q&A
 - [ ] 选择题/判断题 deterministic grading；简答 AI grading 标记待复核。
 - [ ] answer key 不进入普通列表响应。
 
-## 后续扩展：学习计划、Embedding 与后台任务
+## Phase 7：Embedding 与 Hybrid Retrieval
 
+### 7.1 现状审计与契约冻结：已完成
+
+- [x] 审计 embeddings、retrieval_runs、retrieval_hits、chunking、repository、migration 和 backup/restore 边界。
+- [x] 列出已有/未使用字段、兼容性风险和 v5 migration 要求。
+- [x] 冻结 embedding identity、status/stale、provider/model/dimension 和 retrieval policy 语义。
+- [x] 冻结 lexical-only、vector-only、hybrid、fallback 与 empty 行为。
+- [x] 将正式记录写入 `docs/PHASE7_1_AUDIT_AND_CONTRACT.md`。
+
+**当前限制：** 7.1 仅完成审计和契约冻结；没有新增 migration，也没有实现 embedding provider、payload codec、indexing、vector 或 hybrid retrieval。现有 Q&A 仍使用 `lexical_fts_v1`。
+
+### 后续实现
+
+- [ ] v5 embedding schema migration、payload codec 和 stale semantics。
+- [ ] embedding provider protocol、deterministic fake provider、配置和错误映射。
+- [ ] 显式 indexing/rebuild/verify、生命周期和 backup/restore 验收。
+- [ ] vector cosine、hybrid RRF、确定性排序、fallback 和 retrieval audit metadata。
 - [ ] Study plan / items：draft → confirm → active，完成记录不可静默覆盖。
 - [ ] 明确并实现首批 S1–S7。
-- [ ] embedding payload、hybrid retrieval、rerank、rebuild/verify；规模证据充分前不引入外部 vector DB。
+
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
 - [ ] structured tracing、扩展 metrics、degraded readiness。
 

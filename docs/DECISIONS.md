@@ -60,7 +60,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- 当前 migration v2 已包含 revision/chunk/retrieval/Q&A 所需 schema；对应 Phase 4 AI 业务逻辑已实现。Cards、Exercises、Plans 等后续业务逻辑仍未实现。
+- 当前 migration v4 已包含 revision/chunk/retrieval/Q&A 所需 schema；v3/v4 分别补充 Provider metadata 与 Q&A idempotency。Phase 7.1 审计确认 embeddings 与 retrieval 的 vector 字段仍是预留，Cards、Exercises、Plans 等后续业务逻辑仍未实现。
 
 ## 2026-08-19: four-directory boundary
 
