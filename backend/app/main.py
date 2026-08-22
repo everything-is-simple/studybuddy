@@ -151,6 +151,7 @@ class RetrievalRequest(BaseModel):
     material_ids: list[str] | None = None
     top_k: int = 5
     mode: str = "lexical"
+    allow_fallback: bool = True
 
 
 class ContextRequest(BaseModel):
@@ -427,7 +428,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="retrieval_invalid_materials")
         try:
             with connect(app.state.config.database_path) as connection:
-                if request.mode not in {"lexical", "vector"}:
+                if request.mode not in {"lexical", "vector", "hybrid"}:
                     raise HTTPException(status_code=400, detail="retrieval_invalid_mode")
                 if request.mode == "vector":
                     config = app.state.config
@@ -444,6 +445,22 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     from .repository import run_vector_retrieval
                     return run_vector_retrieval(connection, project_id=app.state.config.project_id, query=request.query,
                                                  provider=provider, material_ids=request.material_ids, top_k=request.top_k)
+                if request.mode == "hybrid":
+                    config = app.state.config
+                    embedding_provider_id = config.embedding_provider_id or "fake"
+                    provider = provider_registry(embedding_provider_id, config.embedding_model_id).embedding_provider(
+                        model_revision=config.embedding_model_revision,
+                        timeout_seconds=config.embedding_timeout_seconds,
+                        max_batch_size=config.embedding_max_batch_size,
+                        max_text_chars=config.embedding_max_text_chars,
+                        max_dimensions=config.embedding_max_dimensions,
+                        max_response_bytes=config.embedding_max_response_bytes,
+                        max_retries=config.embedding_max_retries,
+                    )
+                    from .repository import run_hybrid_retrieval
+                    return run_hybrid_retrieval(connection, project_id=app.state.config.project_id, query=request.query,
+                                                provider=provider, material_ids=request.material_ids, top_k=request.top_k,
+                                                allow_fallback=request.allow_fallback)
                 return run_chunk_retrieval(connection, project_id=app.state.config.project_id, query=request.query,
                                            material_ids=request.material_ids, top_k=request.top_k)
         except ValueError as exc:

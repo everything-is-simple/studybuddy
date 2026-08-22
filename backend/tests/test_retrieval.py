@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT))
 
 from app.config import AppConfig
 from app.main import create_app
-from app.repository import connect
+from app.embedding import FakeEmbeddingProvider
+from app.repository import connect, index_embeddings_for_material, run_hybrid_retrieval
 
 
 def make_client(root: Path) -> TestClient:
@@ -140,6 +141,45 @@ def test_retrieval_fts_rows_and_purge_cleanup(tmp_path: Path):
             assert db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0] == 0
         # With no indexed material remaining, retrieval records a stable not-ready run.
         assert client.post("/api/retrieval", json={"query": "cleanup"}).json()["error_code"] == "retrieval_not_ready"
+
+
+def test_hybrid_rrf_persists_scores_and_policy(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "hybrid.txt", "alpha semantic retrieval common")
+        index(client, material["material_id"])
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            from app.repository import index_material_revision
+            index_material_revision(db, material["material_id"], material["extraction_id"])
+            index_embeddings_for_material(db, material_id=material["material_id"], provider=FakeEmbeddingProvider())
+            result = run_hybrid_retrieval(db, project_id="default", query="alpha retrieval",
+                                          provider=FakeEmbeddingProvider(), top_k=5)
+            assert result["policy_version"] == "hybrid_rrf_v1"
+            assert result["status"] in {"succeeded", "empty"}
+            if result["hits"]:
+                assert result["hits"][0]["score"] > 0
+                row = db.execute("SELECT policy_version, lexical_score, vector_score, score FROM retrieval_runs rr JOIN retrieval_hits rh ON rh.run_id=rr.id WHERE rr.id=?", (result["run_id"],)).fetchone()
+                assert row[0] == "hybrid_rrf_v1"
+                assert row[3] == result["hits"][0]["score"]
+
+
+def test_hybrid_fallback_is_explicit_and_vector_only_does_not_fallback(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "fallback.txt", "fallback lexical content")
+        index(client, material["material_id"])
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            class BrokenProvider(FakeEmbeddingProvider):
+                def embed(self, texts):
+                    from app.embedding import EmbeddingError
+                    raise EmbeddingError("embedding_provider_unavailable")
+            provider = BrokenProvider()
+            result = run_hybrid_retrieval(db, project_id="default", query="fallback",
+                                          provider=provider, allow_fallback=True)
+            assert result["fallback"] is True
+            assert result["policy_version"] == "fallback_lexical_v1"
+            assert result["fallback_reason"] == "embedding_provider_unavailable"
+            with pytest.raises(Exception):
+                from app.repository import run_vector_retrieval
+                run_vector_retrieval(db, project_id="default", query="fallback", provider=provider)
 
 
 def test_retrieval_failure_rolls_back_run_and_hits(tmp_path: Path, monkeypatch):
