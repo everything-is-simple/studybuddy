@@ -149,6 +149,47 @@ def test_qa_idempotency_key_rejects_running_operation_and_failure_allows_retry(t
             ).fetchone()[0] == 1
 
 
+def test_qa_stale_operation_is_reclaimed_and_idempotency_key_can_retry(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "stale-operation.txt", "A stable source supports recovery after an expired lease.")
+        index(client, material["material_id"])
+        key = "qa-stale-retry-001"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            stale = create_qa_request(
+                db, project_id="default", question="stable source", material_ids=[material["material_id"]],
+                thread_id=None, request_id=None, idempotency_key=key,
+            )
+            db.execute(
+                "UPDATE ai_operations SET started_at = ? WHERE id = ?",
+                ("2000-01-01T00:00:00+00:00", stale["operation_id"]),
+            )
+            db.commit()
+        response = client.post("/api/qa/ask", json={
+            "question": "stable source", "material_ids": [material["material_id"]],
+        }, headers={"Idempotency-Key": key})
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["operation_id"] != stale["operation_id"]
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            stale_operation = db.execute(
+                "SELECT status, error_code, output_artifact_id FROM ai_operations WHERE id = ?",
+                (stale["operation_id"],),
+            ).fetchone()
+            assert tuple(stale_operation) == ("stale", "qa_operation_stale", None)
+            assert db.execute(
+                "SELECT COUNT(*) FROM qa_messages WHERE ai_operation_id = ? AND role = 'user'",
+                (stale["operation_id"],),
+            ).fetchone()[0] == 1
+            assert db.execute(
+                "SELECT COUNT(*) FROM qa_messages WHERE ai_operation_id = ? AND role = 'assistant'",
+                (stale["operation_id"],),
+            ).fetchone()[0] == 0
+            assert db.execute(
+                "SELECT COUNT(*) FROM ai_operations WHERE idempotency_key = ? AND status = 'succeeded'",
+                (key,),
+            ).fetchone()[0] == 1
+
+
 def test_qa_history_lists_threads_and_returns_citations(tmp_path: Path):
     with make_client(tmp_path) as client:
         first = upload(client, "history-a.txt", "Alpha history source is here.")

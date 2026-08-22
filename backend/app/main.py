@@ -33,7 +33,7 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          get_idempotent_qa_response, get_qa_citation_detail, get_qa_thread_history, get_spans, index_material_revision, list_qa_threads,
                          list_deleted_materials, list_materials,
                          list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
-                         purge_material, rename_material, restore_material, run_chunk_retrieval,
+                         purge_material, reclaim_stale_qa_operations, rename_material, restore_material, run_chunk_retrieval,
                          save_material_with_extraction, soft_delete_material, validate_citation_key)
 from .storage import sha256_file, store_original
 
@@ -494,6 +494,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         operation: dict[str, object] | None = None
         try:
             with connect(app.state.config.database_path) as connection:
+                reclaim_stale_qa_operations(connection, project_id=app.state.config.project_id)
                 if idempotency_key:
                     if len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key):
                         raise HTTPException(status_code=400, detail="qa_invalid_idempotency_key")
