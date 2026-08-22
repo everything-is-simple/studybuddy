@@ -121,8 +121,12 @@ revision → chunks → retrieval → citations → Q&A
 
 **P6-C 限制：** 不持久化 thread scope；purge 后不能恢复已删除材料名称或正文；同步 Provider 请求仍不能真正取消；未新增批量文件夹导出、导出队列或后台任务。
 
+**P6-D 限制：** 使用 Playwright/DOM contract 断言而非 axe；系统级 screen reader、真实 Provider 下完整体验、真实离线/极端长回答和长时整批 Chromium 单次稳定性仍为 `not_verified`。页面 toast 只是补充，主要错误已同步到页面 status/alert；同步 Provider 请求不能真正取消，只能丢弃 stale response。
+
 - [ ] 更完整的 Q&A thread 工作区、跨材料浏览和导出衔接。
-- [ ] 统一应用级组件、导航、通知、可访问性和响应式体验。
+- [x] P6-D 统一应用级导航、当前 material/thread/scope 状态、页面 status/alert 和补充 toast。
+- [x] P6-D 桌面/390x844 窄屏布局、键盘视图切换、可见焦点、dialog Escape/focus return 和关键 ARIA/current/status/alert 语义。
+- [x] P6-D fake Provider Chromium 专项验收：`backend/tests/browser_p6d.spec.js`，2 passed；未引入 API 或 migration，未引入 axe。
 - [ ] 导入 → 检索 → 问答 → 引用 → 导出核心工作流整体验收。
 - [ ] 高延迟、离线、长回答和真实 provider 限制下的前端体验收口。
 
