@@ -63,6 +63,32 @@ test('Provider status reports unconfigured runtime safely', async ({page}) => {
   } finally { stop(server); }
 });
 
+test('Q&A thread workspace creates and switches conversations', async ({page}) => {
+  fs.rmSync(RUN_ROOT, {recursive: true, force: true});
+  let server = startServer();
+  try {
+    await ready();
+    await page.goto(BASE);
+    await upload(page, 'thread-workspace.txt', 'Thread workspace source establishes a stable answer.');
+    await page.locator('#ai-index').click();
+    await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
+    await page.locator('#qa-question').fill('stable answer');
+    await page.locator('#qa-ask').click();
+    await expect(page.locator('#qa-status')).toContainText('回答已生成');
+    await expect(page.locator('#qa-thread-title')).not.toHaveText('新对话');
+    await expect(page.locator('#qa-timeline')).toContainText('你的问题');
+    await expect(page.locator('#qa-timeline')).toContainText('AI 回答');
+    await expect(page.locator('#qa-history-list button')).toHaveCount(1);
+    await page.locator('#qa-new-thread').click();
+    await expect(page.locator('#qa-thread-title')).toHaveText('新对话');
+    await expect(page.locator('#qa-timeline')).toContainText('新对话尚未有消息');
+    await expect(page.locator('#qa-question')).toBeFocused();
+    await page.locator('#qa-history-list button').click();
+    await expect(page.locator('#qa-timeline')).toContainText('Thread workspace source');
+    await expect(page.locator('#qa-thread-status')).toContainText('2 条消息');
+  } finally { stop(server); }
+});
+
 test('Q&A UI requires explicit indexing and locates citations', async ({page}) => {
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   const consoleErrors = [];

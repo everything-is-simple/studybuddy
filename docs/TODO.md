@@ -99,6 +99,17 @@ revision → chunks → retrieval → citations → Q&A
 **P6-A 限制：** capabilities 是本进程配置快照，不是网络 health probe；generic adapter 的 `configured` 不等于 `available` 或 `verified`。DeepSeek `deepseek-chat`、Agnes `agnes-2.5-flash` 的真实证据仍只按 capability matrix 中的精确 provider/model/gateway 范围解释。
 
 - [ ] 真实 provider 下的端到端回归和 provider failure UX 验收。
+### P6-B：Q&A Thread 工作区
+
+- [x] thread 列表、标题、更新时间、消息数和 active/empty/failed 状态展示。
+- [x] 新建对话、切换 thread、继续提问、用户/assistant/citation 时间线和 source unavailable 展示。
+- [x] 当前材料与跨材料 scope 选择保持可见；thread scope 仍是请求级/客户端级状态，不作为持久化 thread scope 声明。
+- [x] 请求绑定 thread/scope/UI context；切换 thread、scope 或新建对话后忽略过期响应；显式 Idempotency-Key 保留现有同步 replay/conflict 语义。
+- [x] 刷新后通过非敏感 thread ID 尝试恢复服务端 history；恢复失败回到明确状态，不从本地恢复回答或正文。
+- [x] Q&A thread 工作区、长回答时间线、键盘焦点、状态语义和窄屏 Chromium 验收通过。
+
+**P6-B 限制：** Q&A 仍是同步请求；切换页面或 thread 只能忽略旧响应，不能真正取消已经发出的 Provider HTTP 请求。没有后台 worker、流式输出、跨进程协调或持久化 thread scope。
+
 - [ ] 更完整的 Q&A thread 工作区、跨材料浏览和导出衔接。
 - [ ] 统一应用级组件、导航、通知、可访问性和响应式体验。
 - [ ] 导入 → 检索 → 问答 → 引用 → 导出核心工作流整体验收。

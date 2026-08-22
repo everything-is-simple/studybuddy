@@ -202,6 +202,8 @@ def test_qa_history_lists_threads_and_returns_citations(tmp_path: Path):
         threads = client.get("/api/qa/threads")
         assert threads.status_code == 200
         assert threads.json()["items"][0]["id"] == answer["thread_id"]
+        assert threads.json()["items"][0]["status"] == "active"
+        assert threads.json()["items"][0]["message_count"] == 4
         history = client.get(f"/api/qa/threads/{answer['thread_id']}")
         assert history.status_code == 200
         messages = history.json()["messages"]

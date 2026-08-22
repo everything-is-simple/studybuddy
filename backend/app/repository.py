@@ -411,7 +411,11 @@ def get_qa_citation_detail(connection: sqlite3.Connection, citation_key: str) ->
 def list_qa_threads(connection: sqlite3.Connection, *, project_id: str, limit: int = 50) -> list[dict[str, object]]:
     rows = connection.execute(
         "SELECT t.id, t.title, t.created_at, t.updated_at, "
-        "(SELECT COUNT(*) FROM qa_messages m WHERE m.thread_id = t.id) AS message_count "
+        "(SELECT COUNT(*) FROM qa_messages m WHERE m.thread_id = t.id) AS message_count, "
+        "CASE WHEN (SELECT COUNT(*) FROM qa_messages m WHERE m.thread_id = t.id) = 0 THEN 'empty' "
+        "WHEN EXISTS (SELECT 1 FROM ai_operations o WHERE o.thread_id = t.id AND o.status = 'failed' "
+        "AND o.created_at = (SELECT MAX(o2.created_at) FROM ai_operations o2 WHERE o2.thread_id = t.id)) THEN 'failed' "
+        "ELSE 'active' END AS status "
         "FROM qa_threads t WHERE t.project_id = ? AND t.archived_at IS NULL "
         "ORDER BY t.updated_at DESC, t.id DESC LIMIT ?",
         (project_id, limit),
