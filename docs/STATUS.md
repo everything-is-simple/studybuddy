@@ -24,7 +24,7 @@
 | Q&A API + persistence | implemented / backend-tested | `backend/app/repository.py`, `backend/app/main.py`, `backend/tests/test_qa_api.py`; history API covered in same suite |
 | Q&A UI + history + citation navigation | Phase 4 complete / browser-tested | `backend/app/main.py`, `backend/tests/browser_qa.spec.js` |
 | Q&A citation lifecycle + backup/restore | implemented / backend-tested | `backend/tests/test_ai_citation_lifecycle.py`, `backend/tests/test_ai_backup_restore.py` |
-| Phase 5 OpenAI-compatible adapter | implemented / mock-tested / DeepSeek API+UI smoke passed; target-gated other-provider validation pending | `backend/app/providers.py`, `backend/tests/test_phase5_provider.py`, `backend/tests/test_real_provider_smoke.py`, `backend/tests/browser_qa.spec.js`; DeepSeek `deepseek-chat` API and Chromium UI paths passed; ARK, SiliconFlow and Agnes lack matching runtime configuration evidence |
+| Phase 5 OpenAI-compatible adapter | implemented / mock-tested / DeepSeek API+UI smoke passed; target-gated other-provider validation pending; Agnes local launcher added | `backend/app/providers.py`, `backend/scripts/agnes-*.ps1`, `backend/tests/test_agnes_launcher.py`, `backend/tests/test_phase5_provider.py`, `backend/tests/test_real_provider_smoke.py`, `backend/tests/browser_qa.spec.js`; Agnes remains not_verified without matching runtime evidence |
 | Cards/exercises/study plans | not started | `TODO.md` |
 
 ## Current limits
