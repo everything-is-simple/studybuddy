@@ -27,7 +27,7 @@
 
 ### I1（完成）：Migration / schema versioning
 
-- 当前 `schema version = 2`，迁移链为 `v1 canonical_material_schema` → `v2 ai_phase0_schema`。
+- 当前 `schema version = 4`，迁移链为 `v1 canonical_material_schema` → `v2 ai_phase0_schema` → `v3 phase5_provider_metadata` → `v4 qa_operation_idempotency`。
 - `schema_migrations`、`PRAGMA user_version`、连续历史校验和 `BEGIN IMMEDIATE` 原子迁移已实现。
 - 覆盖新库、legacy/v1 升级、幂等、future version、失败 rollback、backup/restore 版本一致性测试。
 - operator 升级与失败恢复流程见 [`OPERATOR_UPGRADE.md`](OPERATOR_UPGRADE.md)。

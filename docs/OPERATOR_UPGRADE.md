@@ -1,6 +1,6 @@
 # Operator upgrade runbook
 
-本 runbook 用于 StudyBuddy 数据库 schema 升级，当前目标版本为 **schema version 2**。
+本 runbook 用于 StudyBuddy 数据库 schema 升级，当前目标版本为 **schema version 4**。
 升级会由 application startup 触发 migration runner；operator 不应手工修改
 `schema_migrations` 或 `PRAGMA user_version`。
 
@@ -10,7 +10,9 @@
 
 ```text
 1 | canonical_material_schema
-2 | ai_schema_v2 (revision/chunk/retrieval/Q&A tables)
+2 | ai_phase0_schema (revision/chunk/retrieval/Q&A tables)
+3 | phase5_provider_metadata
+4 | qa_operation_idempotency
 ```
 
 v2 增加当前项目 Phase 4 使用的 revision/chunk/retrieval/Q&A 持久化表；应用不会在导入或启动时自动创建 AI 索引，不调用真实 provider，也不启动后台任务。Cards、Exercises、Plans 的表不属于本次升级范围。
@@ -173,9 +175,9 @@ schema、完整性、材料和原文件验收。
 升级只有在以下条件全部满足时才算完成：
 
 ```text
-schema version = 2
-history = [(1, canonical_material_schema), (2, ai_phase0_schema)]
-PRAGMA user_version = 2
+schema version = 4
+history = [(1, canonical_material_schema), (2, ai_phase0_schema), (3, phase5_provider_metadata), (4, qa_operation_idempotency)]
+PRAGMA user_version = 4
 /api/health = 200 / ok
 backup/restore version consistency 已通过
 现有材料读写、搜索、导出 smoke check 已通过
