@@ -182,7 +182,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9A：学习领域基础与计划核心
 
-> 充分上下文、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`PHASE9A_EXECUTION_PROMPTS.md`](PHASE9A_EXECUTION_PROMPTS.md)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
+> 充分上下文、总规划 prompt、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`phase9a/`](phase9a/)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
 
 - [ ] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结。
 - [ ] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机。
