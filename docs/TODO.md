@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-25  
-> 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **45%–50%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
+> 更新：2026-08-27
+> 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **50%–55%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 

@@ -1,6 +1,6 @@
 # StudyBuddy Status
 
-> 当前整体阶段性估算为 **45%–50%**：文件材料管理局部 `real-pass`，完整 StudyBuddy 尚未达到全局 `real-pass`。
+> 更新：2026-08-27。当前整体阶段性估算为 **50%–55%**：文件材料管理局部 `real-pass`，完整 StudyBuddy 尚未达到全局 `real-pass`。
 
 | Area | Status | Evidence |
 |---|---|---|

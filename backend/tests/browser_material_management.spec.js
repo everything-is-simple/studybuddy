@@ -83,7 +83,7 @@ test('formal material management browser acceptance', async ({page}) => {
 
     const renamedDetail = await (await page.request.get(`${BASE}/api/materials/${originalMaterial.id}`)).json();
     expect(renamedDetail.source_sha256).toBe(beforeDetail.source_sha256);
-    expect(renamedDetail.stored_path).toBe(beforeDetail.stored_path);
+    expect(renamedDetail.stored_path).toBeUndefined();
     expect(originalCount()).toBe(originalCountBefore);
 
     await page.reload();
@@ -115,7 +115,7 @@ test('formal material management browser acceptance', async ({page}) => {
     const survivorDetail = await (await page.request.get(`${BASE}/api/materials/${survivorMaterial.id}`)).json();
     expect(survivorDetail.text).toContain('StudyBuddy synthetic TXT fixture.');
     expect(survivorDetail.source_sha256).toBe(survivorMaterial.source_sha256);
-    expect(survivorDetail.stored_path).toBe(survivorBeforeDetail.stored_path);
+    expect(survivorDetail.stored_path).toBeUndefined();
     expect(originalCount()).toBe(originalCountBefore);
 
     await page.reload();
@@ -133,9 +133,9 @@ test('formal material management browser acceptance', async ({page}) => {
       component: 'formal-material-management', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass',
       python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
       startup_command: 'D:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8789', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_management.spec.js --workers=1 --reporter=line',
-      rename: {old_name: 'sample.txt', new_name: renameDialogValue, status: 'success', source_sha256_unchanged: true, stored_path_unchanged: true, original_count_unchanged: true, refresh_readback: true, restart_readback: true},
+      rename: {old_name: 'sample.txt', new_name: renameDialogValue, status: 'success', source_sha256_unchanged: true, internal_path_not_exposed: true, original_count_unchanged: true, refresh_readback: true, restart_readback: true},
       delete: {http_status: 204, status: 'deleted', deleted_at_present: true, hidden_from_list: true, detail_returns_404: true, refresh_readback: true, restart_readback: true, physical_deletion_attempted: false, extraction_preserved: true, text_spans_preserved: true, original_preserved: true},
-      same_hash: {material_count: 2, original_file_count_before: sameHashOriginalCountBefore, original_file_count_after: originalCountForHash(survivorDetail.source_sha256), remaining_material_readable: true, stored_path_same: true, source_sha256_same: true},
+      same_hash: {material_count: 2, original_file_count_before: sameHashOriginalCountBefore, original_file_count_after: originalCountForHash(survivorDetail.source_sha256), remaining_material_readable: true, internal_path_not_exposed: true, source_sha256_same: true},
       database: {material_count_before: 0, material_count_after: snapshot.materials, active_material_count_after: snapshot.active_materials, deleted_material_count_after: snapshot.deleted_materials, extraction_count_after: snapshot.extractions, text_span_count_after: snapshot.text_spans, deleted_at_present: snapshot.deleted_at_present},
       temporary_file_count_after: fs.existsSync(RUN_ROOT) ? fs.readdirSync(RUN_ROOT).filter(name => name.startsWith('.incoming-')).length : 0,
       browser_console_error_count: consoleErrors.length, network: {required: false, called: externalRequests.length > 0, external_requests: externalRequests}, real_provider_called: false, original_files_saved_by_parser: false,

@@ -180,6 +180,22 @@ def test_qa_idempotency_key_replays_succeeded_answer_without_new_artifacts(tmp_p
             assert tuple(operation) == ("qa-replay-001", first["retrieval_run_id"])
 
 
+def test_qa_idempotency_key_rejects_different_request_fingerprint(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "idempotent-mismatch.txt", "A stable source supports idempotent responses.")
+        index(client, material["material_id"])
+        headers = {"Idempotency-Key": "qa-mismatch-001"}
+        first = client.post("/api/qa/ask", json={
+            "question": "stable source", "material_ids": [material["material_id"]],
+        }, headers=headers)
+        assert first.status_code == 200
+        mismatch = client.post("/api/qa/ask", json={
+            "question": "different question", "material_ids": [material["material_id"]],
+        }, headers=headers)
+        assert mismatch.status_code == 409
+        assert mismatch.json()["detail"] == "qa_idempotency_key_mismatch"
+
+
 def test_qa_idempotency_key_rejects_running_operation_and_failure_allows_retry(tmp_path: Path):
     with make_client(tmp_path, fake=False) as client:
         material = upload(client, "idempotency-retry.txt", "A source supports retry after failure.")

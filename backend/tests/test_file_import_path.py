@@ -220,7 +220,7 @@ def test_rename_preserves_content_identity_and_survives_restart(tmp_path: Path):
         payload = renamed.json()
         assert payload["original_name"] == "renamed.txt"
         assert payload["source_sha256"] == before["source_sha256"]
-        assert payload["stored_path"] == before["stored_path"]
+        assert "stored_path" not in payload
         assert len(list((tmp_path / "originals").rglob("original"))) == 1
         assert list(tmp_path.glob(".incoming-*")) == []
         assert "text" not in payload
@@ -252,7 +252,7 @@ def test_logical_delete_preserves_data_hash_reuse_and_restart(tmp_path: Path):
         first = upload_text(client, "one.txt", body)
         second = upload_text(client, "two.txt", body)
         first_detail = client.get(f"/api/materials/{first['material_id']}").json()
-        original_path = Path(first_detail["stored_path"])
+        original_path = next((tmp_path / "originals").rglob("original"))
         assert original_path.exists()
         assert client.delete(f"/api/materials/{first['material_id']}").status_code == 204
         assert client.delete(f"/api/materials/{first['material_id']}").status_code == 404
@@ -325,7 +325,7 @@ def test_recycle_bin_list_restore_and_invariants(tmp_path: Path):
         restored_payload = restored.json()
         assert restored_payload["deleted_at"] is None
         assert restored_payload["source_sha256"] == before["source_sha256"]
-        assert restored_payload["stored_path"] == before["stored_path"]
+        assert "stored_path" not in restored_payload
         assert "text" not in restored_payload
         assert client.get("/api/materials/deleted").json() == []
         assert client.get(f"/api/materials/{first['material_id']}").json()["text"]
@@ -462,7 +462,7 @@ def test_purge_removes_deleted_rows_and_unshared_original(tmp_path: Path):
     with make_client(tmp_path) as client:
         created = upload_text(client, "purge.txt")
         material_id = created["material_id"]
-        stored_path = Path(client.get(f"/api/materials/{material_id}").json()["stored_path"])
+        stored_path = next((tmp_path / "originals").rglob("original"))
         assert client.delete(f"/api/materials/{material_id}").status_code == 204
         response = client.post(f"/api/materials/{material_id}/purge")
         assert response.status_code == 200 and response.json() == {"status": "purged", "material_id": material_id}
@@ -481,8 +481,8 @@ def test_purge_shared_hash_preserves_then_removes_original(tmp_path: Path):
         first_detail = client.get(f"/api/materials/{first['material_id']}").json()
         second_detail = client.get(f"/api/materials/{second['material_id']}").json()
         assert first_detail["source_sha256"] == second_detail["source_sha256"]
-        original = Path(first_detail["stored_path"])
-        assert original == Path(second_detail["stored_path"]) and original.exists()
+        original = next((tmp_path / "originals").rglob("original"))
+        assert original.exists()
         assert client.delete(f"/api/materials/{first['material_id']}").status_code == 204
         assert client.post(f"/api/materials/{first['material_id']}/purge").status_code == 200
         assert original.exists() and client.get(f"/api/materials/{second['material_id']}").status_code == 200

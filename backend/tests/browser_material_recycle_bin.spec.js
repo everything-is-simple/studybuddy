@@ -38,7 +38,7 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
     const activeBefore = await (await page.request.get(`${BASE}/api/materials`)).json();
     const oneItem = activeBefore.find(item => item.original_name === 'same-one.txt'); const twoItem = activeBefore.find(item => item.original_name === 'same-two.txt');
     const oneDetail = await (await page.request.get(`${BASE}/api/materials/${oneItem.id}`)).json(); const twoDetail = await (await page.request.get(`${BASE}/api/materials/${twoItem.id}`)).json();
-    expect(oneDetail.source_sha256).toBe(twoDetail.source_sha256); expect(oneDetail.stored_path).toBe(twoDetail.stored_path);
+    expect(oneDetail.source_sha256).toBe(twoDetail.source_sha256); expect(oneDetail.stored_path).toBeUndefined(); expect(twoDetail.stored_path).toBeUndefined();
     const hash = oneDetail.source_sha256; expect(originalCountForHash(hash)).toBe(1);
 
     await page.getByRole('button', {name: /same-one\.txt/}).last().click(); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
@@ -54,7 +54,7 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
     await page.locator('#restore').click(); await expect(page.locator('#status')).toContainText('材料已恢复');
     await expect(page.locator('#materials .item')).toHaveCount(3); await expect(page.getByRole('button', {name: /same-one\.txt/}).last()).toHaveCount(1);
     await page.getByRole('button', {name: /same-one\.txt/}).last().click(); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
-    const restored = await (await page.request.get(`${BASE}/api/materials/${oneItem.id}`)).json(); expect(restored.source_sha256).toBe(oneDetail.source_sha256); expect(restored.stored_path).toBe(oneDetail.stored_path); expect(originalCountForHash(hash)).toBe(1);
+    const restored = await (await page.request.get(`${BASE}/api/materials/${oneItem.id}`)).json(); expect(restored.source_sha256).toBe(oneDetail.source_sha256); expect(restored.stored_path).toBeUndefined(); expect(originalCountForHash(hash)).toBe(1);
 
     await page.reload(); await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(1);
     stopServer(server); server = null; await new Promise(resolve => setTimeout(resolve, 500)); server = startServer(); await waitReady(); await page.goto(BASE);
@@ -68,8 +68,8 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
       component: 'formal-material-recycle-bin', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass', python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
       startup_command: 'D:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8790', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_recycle_bin.spec.js --workers=1 --reporter=line',
       delete_to_recycle_bin: {status: 'success', deleted_at_present: true, hidden_from_active_list: true, visible_in_recycle_bin: true, detail_returns_404_while_deleted: true},
-      restore: {status: 'success', deleted_at_null: true, removed_from_recycle_bin: true, visible_in_active_list: true, detail_readable: true, source_sha256_unchanged: true, stored_path_unchanged: true, refresh_readback: true, restart_readback: true},
-      same_hash: {material_count: 2, original_file_count_before_delete: 1, original_file_count_after_delete: 1, original_file_count_after_restore: 1, active_survivor_readable: true, restored_material_readable: true, source_sha256_same: true, stored_path_same: true},
+      restore: {status: 'success', deleted_at_null: true, removed_from_recycle_bin: true, visible_in_active_list: true, detail_readable: true, source_sha256_unchanged: true, internal_path_not_exposed: true, refresh_readback: true, restart_readback: true},
+      same_hash: {material_count: 2, original_file_count_before_delete: 1, original_file_count_after_delete: 1, original_file_count_after_restore: 1, active_survivor_readable: true, restored_material_readable: true, source_sha256_same: true, internal_path_not_exposed: true},
       database: {material_count_before: 0, material_count_after: finalSnapshot.materials, active_material_count_after: finalSnapshot.active, deleted_material_count_after: finalSnapshot.deleted, extraction_count_before_restore: 3, extraction_count_after_restore: finalSnapshot.extractions, text_span_count_before_restore: 3, text_span_count_after_restore: finalSnapshot.spans},
       temporary_file_count_after: fs.readdirSync(RUN_ROOT).filter(name => name.startsWith('.incoming-')).length, browser_console_error_count: consoleErrors.length, network: {required: false, called: externalRequests.length > 0, external_requests: externalRequests}, real_provider_called: false, original_files_saved_by_parser: false,
       limitations: ['no include_deleted, restore all, recycle-bin purge, physical GC, bulk management, folder upload, AI, provider, OCR, ASR, S1-S7 or background queue'],
