@@ -389,7 +389,7 @@ def _migration_v7(connection: sqlite3.Connection) -> None:
         );
         CREATE TABLE card_citations (
             id TEXT PRIMARY KEY, card_id TEXT NOT NULL REFERENCES study_cards(id) ON DELETE CASCADE,
-            citation_key TEXT NOT NULL, material_id TEXT NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
+            citation_key TEXT NOT NULL, material_id TEXT REFERENCES materials(id) ON DELETE SET NULL,
             revision_id TEXT REFERENCES material_revisions(id) ON DELETE SET NULL,
             extraction_id TEXT REFERENCES extractions(id) ON DELETE SET NULL,
             chunk_id TEXT REFERENCES chunks(id) ON DELETE SET NULL, span_id TEXT,
@@ -421,7 +421,7 @@ def _migration_v7(connection: sqlite3.Connection) -> None:
         );
         CREATE TABLE exercise_citations (
             id TEXT PRIMARY KEY, exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
-            citation_key TEXT NOT NULL, material_id TEXT NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
+            citation_key TEXT NOT NULL, material_id TEXT REFERENCES materials(id) ON DELETE SET NULL,
             revision_id TEXT REFERENCES material_revisions(id) ON DELETE SET NULL,
             extraction_id TEXT REFERENCES extractions(id) ON DELETE SET NULL,
             chunk_id TEXT REFERENCES chunks(id) ON DELETE SET NULL, span_id TEXT,

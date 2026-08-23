@@ -379,6 +379,152 @@ def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite
     ).fetchone()
 
 
+MAX_CARD_TEXT_LENGTH = 4000
+MAX_CARD_TAGS = 20
+MAX_CARD_CITATIONS = 20
+MAX_DECK_TITLE_LENGTH = 200
+MAX_EXERCISE_PROMPT_LENGTH = 4000
+MAX_EXERCISE_OPTIONS = 10
+
+
+def _validate_text(value: object, *, code: str, maximum: int) -> str:
+    if not isinstance(value, str) or not value.strip() or len(value) > maximum:
+        raise ValueError(code)
+    return value.strip()
+
+
+def _validate_card_payload(payload: dict[str, object]) -> tuple[str, str, str, list[str]]:
+    front = _validate_text(payload.get("front"), code="invalid_card_payload", maximum=MAX_CARD_TEXT_LENGTH)
+    back = _validate_text(payload.get("back"), code="invalid_card_payload", maximum=MAX_CARD_TEXT_LENGTH)
+    explanation = payload.get("explanation", "")
+    if not isinstance(explanation, str) or len(explanation) > MAX_CARD_TEXT_LENGTH:
+        raise ValueError("invalid_card_payload")
+    tags = payload.get("tags", [])
+    if not isinstance(tags, list) or len(tags) > MAX_CARD_TAGS or any(not isinstance(tag, str) or not tag.strip() or len(tag) > 50 for tag in tags):
+        raise ValueError("invalid_card_payload")
+    return front, back, explanation, [tag.strip() for tag in tags]
+
+
+def _citation_rows(connection: sqlite3.Connection, citations: object, *, code: str,
+                   artifact_id: str, table: str) -> list[tuple[object, ...]]:
+    if not isinstance(citations, list) or len(citations) > MAX_CARD_CITATIONS:
+        raise ValueError(code)
+    result: list[tuple[object, ...]] = []
+    seen: set[str] = set()
+    for position, item in enumerate(citations):
+        if not isinstance(item, dict):
+            raise ValueError("citation_invalid")
+        key = item.get("citation_key")
+        if not isinstance(key, str) or not key or len(key) > 100 or key in seen:
+            raise ValueError("citation_invalid")
+        seen.add(key)
+        chunk_id = item.get("chunk_id")
+        if not isinstance(chunk_id, str) or not chunk_id:
+            raise ValueError("citation_invalid")
+        chunk = connection.execute(
+            "SELECT c.material_id, c.revision_id, c.extraction_id, c.text, c.status, r.is_current, m.deleted_at "
+            "FROM chunks c JOIN material_revisions r ON r.id=c.revision_id JOIN materials m ON m.id=c.material_id "
+            "WHERE c.id=?", (chunk_id,)
+        ).fetchone()
+        quote = item.get("quote", "")
+        if chunk is None or not isinstance(quote, str) or not quote.strip() or len(quote) > 500:
+            raise ValueError("citation_invalid")
+        if chunk["status"] != "ready" or not chunk["is_current"] or chunk["deleted_at"] is not None or quote.strip() not in str(chunk["text"]):
+            raise ValueError("citation_invalid")
+        span_id = item.get("span_id")
+        if span_id is not None and (not isinstance(span_id, str) or connection.execute(
+                "SELECT 1 FROM chunk_spans WHERE chunk_id=? AND span_id=?", (chunk_id, span_id)).fetchone() is None):
+            raise ValueError("citation_invalid")
+        result.append((f"{table}_citation_{uuid.uuid4().hex}", artifact_id, key,
+                       chunk["material_id"], chunk["revision_id"], chunk["extraction_id"], chunk_id,
+                       span_id, quote.strip(), position, "valid"))
+    return result
+
+
+def create_deck(connection: sqlite3.Connection, *, project_id: str, title: str,
+                description: str = "") -> dict[str, object]:
+    title = _validate_text(title, code="invalid_deck_payload", maximum=MAX_DECK_TITLE_LENGTH)
+    if not isinstance(description, str) or len(description) > 1000:
+        raise ValueError("invalid_deck_payload")
+    deck_id = f"deck_{uuid.uuid4().hex}"
+    now = utc_now()
+    with connection:
+        connection.execute("INSERT OR IGNORE INTO projects (id, name, created_at) VALUES (?, ?, ?)",
+                           (project_id, "Default project", now))
+        connection.execute("INSERT INTO study_decks VALUES (?,?,?,?,?,?,?,?)",
+                           (deck_id, project_id, title, description, "active", now, now, None))
+    return get_deck(connection, project_id=project_id, deck_id=deck_id) or {}
+
+
+def get_deck(connection: sqlite3.Connection, *, project_id: str, deck_id: str) -> dict[str, object] | None:
+    row = connection.execute("SELECT id,project_id,title,description,status,created_at,updated_at,archived_at FROM study_decks WHERE id=? AND project_id=?", (deck_id, project_id)).fetchone()
+    if row is None:
+        return None
+    result = dict(row)
+    result["cards"] = list_cards(connection, project_id=project_id, deck_id=deck_id)
+    return result
+
+
+def list_decks(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
+    return [dict(row) for row in connection.execute("SELECT id,project_id,title,description,status,created_at,updated_at,archived_at FROM study_decks WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()]
+
+
+def list_cards(connection: sqlite3.Connection, *, project_id: str, deck_id: str | None = None) -> list[dict[str, object]]:
+    params: list[object] = [project_id]
+    where = "c.project_id=?"
+    if deck_id is not None:
+        where += " AND c.deck_id=?"; params.append(deck_id)
+    rows = connection.execute("SELECT c.id,c.deck_id,c.card_type,c.status,c.front,c.back,c.explanation,c.tags_json,c.source_revision,c.edited_by_user,c.created_at,c.updated_at,c.confirmed_at,c.archived_at FROM study_cards c WHERE " + where + " ORDER BY c.updated_at DESC,c.id DESC", params).fetchall()
+    return [{**dict(row), "tags": json.loads(row["tags_json"]), "citations": list_card_citations(connection, str(row["id"]))} for row in rows]
+
+
+def list_card_citations(connection: sqlite3.Connection, card_id: str) -> list[dict[str, object]]:
+    return [dict(row) for row in connection.execute("SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,quote,position,status FROM card_citations WHERE card_id=? ORDER BY position,id", (card_id,)).fetchall()]
+
+
+def create_card(connection: sqlite3.Connection, *, project_id: str, deck_id: str, payload: dict[str, object], card_type: str = "user_created", source_revision: str | None = None) -> dict[str, object]:
+    if card_type not in {"user_created", "ai_generated"}:
+        raise ValueError("invalid_card_payload")
+    if connection.execute("SELECT 1 FROM study_decks WHERE id=? AND project_id=? AND status='active'", (deck_id, project_id)).fetchone() is None:
+        raise ValueError("deck_not_found")
+    front, back, explanation, tags = _validate_card_payload(payload)
+    card_id = f"card_{uuid.uuid4().hex}"
+    now = utc_now()
+    citations = _citation_rows(connection, payload.get("citations", []), code="invalid_card_payload", artifact_id=card_id, table="card")
+    with connection:
+        connection.execute("INSERT INTO study_cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (card_id, deck_id, project_id, card_type, "draft", front, back, explanation, json.dumps(tags, ensure_ascii=False), source_revision, 0, None, now, now, None, None))
+        connection.executemany("INSERT INTO card_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citations)
+    return next(item for item in list_cards(connection, project_id=project_id, deck_id=deck_id) if item["id"] == card_id)
+
+
+def update_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, payload: dict[str, object]) -> dict[str, object]:
+    row = connection.execute("SELECT * FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
+    if row is None: raise ValueError("card_not_found")
+    if row["status"] in {"ready", "archived"}: raise ValueError("card_edit_not_allowed")
+    front, back, explanation, tags = _validate_card_payload(payload)
+    with connection:
+        connection.execute("UPDATE study_cards SET front=?,back=?,explanation=?,tags_json=?,edited_by_user=1,updated_at=? WHERE id=? AND status='draft'", (front, back, explanation, json.dumps(tags, ensure_ascii=False), utc_now(), card_id))
+    return next(item for item in list_cards(connection, project_id=project_id, deck_id=row["deck_id"]) if item["id"] == card_id)
+
+
+def confirm_card(connection: sqlite3.Connection, *, project_id: str, card_id: str) -> dict[str, object]:
+    row = connection.execute("SELECT deck_id,status FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
+    if row is None: raise ValueError("card_not_found")
+    if row["status"] != "draft": raise ValueError("card_invalid_state")
+    if connection.execute("SELECT 1 FROM card_citations WHERE card_id=? AND status='valid'", (card_id,)).fetchone() is None:
+        if connection.execute("SELECT card_type FROM study_cards WHERE id=?", (card_id,)).fetchone()[0] == "ai_generated": raise ValueError("citation_invalid")
+    with connection: connection.execute("UPDATE study_cards SET status='ready',confirmed_at=?,updated_at=? WHERE id=?", (utc_now(), utc_now(), card_id))
+    return next(item for item in list_cards(connection, project_id=project_id, deck_id=row["deck_id"]) if item["id"] == card_id)
+
+
+def review_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, result: str) -> dict[str, object]:
+    if result not in {"again", "hard", "good", "easy"}: raise ValueError("invalid_card_review")
+    if connection.execute("SELECT 1 FROM study_cards WHERE id=? AND project_id=? AND status='ready'", (card_id, project_id)).fetchone() is None: raise ValueError("card_not_ready")
+    review_id = f"review_{uuid.uuid4().hex}"
+    with connection: connection.execute("INSERT INTO card_reviews VALUES (?,?,?,?,?)", (review_id, card_id, result, utc_now(), "{}"))
+    return {"id": review_id, "card_id": card_id, "result": result}
+
+
 def material_state(connection: sqlite3.Connection, material_id: str) -> str:
     row = connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (material_id,)).fetchone()
     if row is None:
