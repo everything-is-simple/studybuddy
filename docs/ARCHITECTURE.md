@@ -2,6 +2,14 @@
 
 > 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过；当前重点是 Phase 7 的剩余 embedding/retrieval 验收和后续学习能力边界。多进程、多用户和云同步仍不在支持范围。
 
+## Evolution boundary
+
+StudyBuddy is the formal successor system, but not yet a feature-complete successor product. Compared with KaoBuddy and the prior `ai-studybuddy`/`pi-studybuddy` generations, it has evolved in governance and trust boundaries: formal source-of-truth ownership, Composer/Integration/Test separation, migration-controlled schema changes, local storage safety, backup/restore verification, revision-to-citation traceability, explicit provider evidence, and layered acceptance states. The prior generations still cover more learning-product breadth, including cards, exercises, plans, S1–S7 workflows and some OCR/ASR/report concepts.
+
+Historical capability is reference input, not completion evidence. A prior implementation, component smoke, fake provider, or architecture document cannot mark the formal system implemented or real-pass. Learning work must be reimplemented in `H:/studybuddy`, tested under its own contracts, and accepted through the applicable formal/system-test path.
+
+Phase 9 is therefore a gated learning-program family (9A–9D), not one delivery phase. Each sub-phase owns its own domain contract, migration, API/UI path, failure and source-lifecycle behavior, evidence, and documentation update.
+
 ## Runtime target
 
 `127.0.0.1` 本机 Web 应用：FastAPI 后端提供内嵌浏览器 UI，使用 SQLite 和本地文件。当前 AI 用户路径默认使用 deterministic fake provider；Phase 5 已实现通用 OpenAI-compatible adapter、target-gated smoke 和脱敏三次 API acceptance runner。Phase 6 P6-E 已通过 fake Provider 核心工作流和相关 failure/source lifecycle/竞态验收。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过既有 adapter/API/UI synthetic smoke，本轮 P6-E real UI path 也已在精确 gate 下通过；其它 Provider/model 仍待独立验收。不引入 React/Vite、pi、Electron、自动 fallback 或多进程 AgentSession。

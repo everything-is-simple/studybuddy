@@ -1,5 +1,13 @@
 # StudyBuddy Decisions
 
+## 2026-08-28: formal successor versus feature breadth
+
+- StudyBuddy is the formal successor system for governance and verified local operation, not yet a feature-complete replacement for KaoBuddy or the prior `ai-studybuddy`/`pi-studybuddy` generations.
+- The accepted evolution claim is limited to formal source ownership, Composer → Integration → formal reimplementation → system-test evidence flow, migration-controlled persistence, storage and backup safety, revision/chunk/retrieval/citation traceability, provider evidence discipline, and layered acceptance states.
+- Historical cards, exercises, study plans, S1–S7 workflows, OCR/ASR, reports or worker concepts remain reference scope unless independently reimplemented and accepted in the formal system. Historical code, component smoke, fake-provider evidence and design documents do not establish formal completion.
+- Phase 9 is split into 9A learning domain/plan foundation, 9B S1/S2 material learning, 9C S3/S4/S5 exercise and feedback workflows, and conditional 9D S6/S7 extension services. No single Phase 9 completion claim may cover all of these without independent gates.
+- Phase 8 must close Cards/Exercises before Phase 9C can begin. Phase 7 must close its remaining real embedding, retrieval-mode Chromium and indexing lease/retry evidence before Phase 8 begins, according to the current roadmap gate.
+
 ## 2026-08-27: P6-E evidence and governance boundary
 
 - P6-A through P6-D remain implemented; P6-E fake Provider core workflow acceptance is complete and recorded in [`P6E_ACCEPTANCE_EVIDENCE.md`](P6E_ACCEPTANCE_EVIDENCE.md).

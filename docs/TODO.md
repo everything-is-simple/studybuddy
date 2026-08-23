@@ -134,7 +134,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；已分别使用精确 runtime gate 和临时 synthetic data root 通过，结果见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
 - [ ] 系统级 screen reader、真实 offline/极端长回答和长时整批 Chromium 稳定性验收。
 
-## 后续学习能力：Cards / Exercises（仅在 Phase 4 Q&A 完成后）
+## Phase 8：Cards / Exercises（仅在 Phase 7 收口后）
 
 - [ ] 新 migration（不得运行时建表）增加 `study_decks`、`study_cards`、`card_citations`、`card_reviews`。
 - [ ] 新 migration 增加 `exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。
@@ -169,6 +169,42 @@ revision → chunks → retrieval → citations → Q&A
 
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
 - [ ] structured tracing、扩展 metrics、degraded readiness。
+
+## Phase 9：学习产品构建计划
+
+> Phase 9 不能承载一次性完成的全部学习业务。以下 9A–9D 是独立验收阶段，必须按顺序推进；未开始项目不得用设计文档或历史版本证据标记完成。
+
+### Phase 9A：学习领域基础与计划核心
+
+- [ ] 冻结 learning goal、knowledge module、study plan/item、dependency、progress event 的正式领域契约。
+- [ ] 通过 migration 增加计划、目标、进度事件和 source revision/citation 关联；禁止运行时建表。
+- [ ] 实现 draft → confirm → active 生命周期、用户编辑保护、source unavailable 和删除/恢复边界。
+- [ ] 实现最小计划创建、确认、查看、完成记录和重算失败路径。
+- [ ] 完成 repository/API/失败边界/Chromium/backup-restore 验收后，才能宣称 9A completed。
+
+### Phase 9B：资料学习工作流（S1/S2）
+
+- [ ] 明确学习节奏和资料笔记的最小用户目标，不直接复制前代 `KnowledgeModule` 实现。
+- [ ] 基于正式 revision/chunk/retrieval/citation 重新实现资料笔记/知识模块。
+- [ ] 计划 item 与材料 revision、citation、source unavailable 生命周期联动。
+- [ ] 分别完成 S1、S2 的 API、状态、浏览器路径和恢复/导出验收。
+
+### Phase 9C：练习与反馈工作流（S3/S4/S5）
+
+- [ ] 将 Phase 8 exercise/card 产物接入限时练习、错题和冲刺目标。
+- [ ] 实现 attempt、deterministic grading、人工复核、错题状态和历史不可覆盖。
+- [ ] 分别完成 S3、S4、S5 的用户路径、失败边界、citation/source lifecycle 和浏览器验收。
+
+### Phase 9D：扩展学习服务（S6/S7，条件性）
+
+- [ ] 在需求、隐私、数据保留、真实组件证据和运维成本评审通过前，不立项家长报告或课堂采集。
+- [ ] 若立项，先在 Composer/Integration 验证 OCR/ASR/report/delivery 组件，再由正式系统重新实现。
+- [ ] 分别完成 S6、S7 的数据授权、脱敏、失败恢复和真实用户路径验收。
+
+### Phase 9 总门槛
+
+- [ ] 只有 9A–9D 中明确立项的子阶段全部完成，才可称为 Phase 9 completed；未立项的 9D 能力不计入“已实现”。
+- [ ] Phase 9 完成不等于全局生产级 `real-pass`，也不代表多用户、云同步、OCR/ASR 或后台任务自动完成。
 
 ## P2：生产化与扩展
 

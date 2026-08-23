@@ -160,7 +160,15 @@ Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错�
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 7–10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；当前 Phase 7 仍需完成真实 embedding provider、retrieval-mode Chromium 和 indexing lease/失败重试证据。之后按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 8、9A–9D、10 顺序推进，不在当前阶段并行承诺。
+
+### 与祖宗/前两代版本的治理结论
+
+StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-audit`、`ai-studybuddy`、`AIStudyBuddy` 和 `pi-studybuddy`，它在正式 source of truth、Composer/Integration/Test 分层、migration 控制、原文件与 SQLite 安全、backup/restore、revision → chunk → retrieval → citation 可追溯链、Provider evidence 边界和分层验收状态上更成熟。
+
+但它还不是功能宽度上的全面替代品。前代版本仍覆盖更多学习业务，例如 cards、exercises、study plans、S1–S7、OCR/ASR、报告或桌面工作流。历史代码、设计、组件 smoke、fake Provider 或前代用户路径只能作为需求和契约参考，不能作为正式系统完成证据。当前完成度约 50%–55% 的主要含义正是：可靠基础和可信 Q&A 已形成，但学习产品上层尚未完成。
+
+Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
 ### P1：在 AI 闭环后补齐运行保障
 
