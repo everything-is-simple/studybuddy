@@ -8,6 +8,14 @@
 - Phase 9 is split into 9A learning domain/plan foundation, 9B S1/S2 material learning, 9C S3/S4/S5 exercise and feedback workflows, and conditional 9D S6/S7 extension services. No single Phase 9 completion claim may cover all of these without independent gates.
 - Phase 8 must close Cards/Exercises before Phase 9C can begin. Phase 7 must close its remaining real embedding, retrieval-mode Chromium and indexing lease/retry evidence before Phase 8 begins, according to the current roadmap gate.
 
+## 2026-08-28: Phase 7 acceptance closure boundary
+
+- Phase 7 retrieval-mode UI/Chromium acceptance is closed: lexical, vector, hybrid, hybrid lexical fallback and explicit vector non-fallback failure are covered by `backend/tests/browser_phase7.spec.js`.
+- Phase 7 indexing lease/retry/recovery acceptance is closed for the supported synchronous single-process boundary: `embedding_index` operations persist running/succeeded/failed/stale state, stale leases are reclaimed, failure codes remain auditable, and explicit retry increments `retry_count`. This does not add a worker, cancel flow, cross-process coordination or real power-loss recovery.
+- A separate OpenAI-compatible embedding adapter now supports `/embeddings` with independent base URL/API key configuration, bounded response reads, stable HTTP/timeout/schema/vector errors and loopback protocol evidence. Loopback evidence is not external real-provider evidence.
+- External embedding acceptance is closed for the exact Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` configuration, with direct vector, isolated indexing, vector retrieval and audit metadata evidence. Fake embedding and loopback HTTP tests remain separate evidence and are not used to establish this real-pass.
+- Phase 7 is completed for that exact configuration. Agnes, ARK, MiniMax and NVIDIA candidates did not pass an equivalent embedding gate and remain independently unverified; this does not block Phase 8 for the selected local configuration.
+
 ## 2026-08-27: P6-E evidence and governance boundary
 
 - P6-A through P6-D remain implemented; P6-E fake Provider core workflow acceptance is complete and recorded in [`P6E_ACCEPTANCE_EVIDENCE.md`](P6E_ACCEPTANCE_EVIDENCE.md).

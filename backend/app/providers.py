@@ -9,7 +9,8 @@ from typing import Protocol
 
 from .embedding import (EmbeddingError, EmbeddingProvider, FakeEmbeddingProvider,
                          EMBEDDING_ENCODING, FAKE_EMBEDDING_MODEL_ID, FAKE_EMBEDDING_MODEL_REVISION,
-                         MAX_EMBEDDING_BATCH, MAX_EMBEDDING_TEXT_CHARS, MAX_EMBEDDING_DIMENSIONS)
+                         MAX_EMBEDDING_BATCH, MAX_EMBEDDING_TEXT_CHARS, MAX_EMBEDDING_DIMENSIONS,
+                         validate_dimensions, _validate_vectors)
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPSHandler, Request, build_opener, install_opener, urlopen
 
@@ -301,11 +302,98 @@ def _extract_citation_keys(text: str) -> list[str]:
     return list(dict.fromkeys(re.findall(r"\[(ctx-[a-zA-Z0-9_-]{1,70})\]", text)))
 
 
+class OpenAICompatibleEmbeddingProvider:
+    def __init__(self, *, provider_id: str, model_id: str, model_revision: str, base_url: str,
+                 api_key: str, timeout_seconds: float = 30.0, max_batch_size: int = MAX_EMBEDDING_BATCH,
+                 max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS, max_dimensions: int = MAX_EMBEDDING_DIMENSIONS,
+                 max_response_bytes: int = 2 * 1024 * 1024, max_retries: int = 0) -> None:
+        if not provider_id or not model_id or not base_url or not api_key:
+            raise ProviderError("embedding_provider_not_configured")
+        self.provider_id, self.model_id, self.model_revision = provider_id, model_id, model_revision or "1"
+        self.base_url, self._api_key = base_url.rstrip("/"), api_key
+        self.timeout_seconds, self.max_batch_size = timeout_seconds, max_batch_size
+        self.max_text_chars, self.max_dimensions = max_text_chars, max_dimensions
+        self.max_response_bytes, self.max_retries = max_response_bytes, max_retries
+        self.encoding = EMBEDDING_ENCODING
+        self.dimensions = 0
+
+    def capabilities(self) -> dict[str, object]:
+        return {"status": "configured", "configured": True, "runtime_kind": "openai_compatible",
+                "verification_status": "unverified", "network_required": True,
+                "provider_id": self.provider_id, "model_id": self.model_id,
+                "model_revision": self.model_revision, "encoding": self.encoding,
+                "supports": {"embeddings": True, "batch": True}}
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        if not isinstance(texts, list) or not texts or len(texts) > self.max_batch_size:
+            raise EmbeddingError("embedding_batch_too_large")
+        if any(not isinstance(text, str) or not text.strip() for text in texts):
+            raise EmbeddingError("embedding_invalid_request")
+        if any(len(text.strip()) > self.max_text_chars for text in texts):
+            raise EmbeddingError("embedding_text_too_long")
+        payload = json.dumps({"model": self.model_id, "input": [text.strip() for text in texts]}).encode("utf-8")
+        headers = {"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"}
+        last: ProviderError | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = _request_json_with_limit(f"{self.base_url}/embeddings", payload, headers,
+                                                    self.timeout_seconds, self.max_response_bytes)
+                data = response.get("data")
+                if not isinstance(data, list) or len(data) != len(texts):
+                    raise EmbeddingError("embedding_schema_mismatch")
+                ordered = sorted(data, key=lambda item: item.get("index", -1) if isinstance(item, dict) else -1)
+                vectors = [item.get("embedding") for item in ordered if isinstance(item, dict)]
+                if len(vectors) != len(texts):
+                    raise EmbeddingError("embedding_schema_mismatch")
+                if not self.dimensions:
+                    self.dimensions = len(vectors[0]) if isinstance(vectors[0], list) else 0
+                validate_dimensions(self.dimensions)
+                if self.dimensions > self.max_dimensions:
+                    raise EmbeddingError("embedding_invalid_dimensions")
+                return _validate_vectors(vectors, len(texts), self.dimensions)
+            except ProviderError as error:
+                last = error
+                if error.code not in {"embedding_provider_connection_failed", "embedding_provider_unavailable", "embedding_provider_timeout", "embedding_provider_rate_limited"} or attempt >= self.max_retries:
+                    raise EmbeddingError(error.code) from None
+        raise EmbeddingError(last.code if last else "embedding_provider_failed")
+
+
+def _request_json_with_limit(endpoint: str, payload: bytes, headers: dict[str, str], timeout: float, limit: int) -> dict[str, object]:
+    try:
+        request = Request(endpoint, data=payload, headers=headers, method="POST")
+        with urlopen(request, timeout=timeout) as response:
+            raw = response.read(limit + 1)
+            if len(raw) > limit:
+                raise ProviderError("embedding_provider_response_too_large")
+    except ProviderError:
+        raise
+    except HTTPError as error:
+        code = {401: "embedding_provider_auth_failed", 403: "embedding_provider_forbidden", 429: "embedding_provider_rate_limited"}.get(error.code, "embedding_provider_unavailable" if error.code >= 500 else "embedding_provider_protocol_error")
+        raise ProviderError(code) from None
+    except TimeoutError:
+        raise ProviderError("embedding_provider_timeout") from None
+    except URLError as error:
+        raise ProviderError("embedding_provider_timeout" if getattr(error, "reason", None).__class__.__name__ == "timeout" else "embedding_provider_connection_failed") from None
+    except UnicodeEncodeError:
+        raise ProviderError("embedding_provider_invalid_config") from None
+    except OSError:
+        raise ProviderError("embedding_provider_connection_failed") from None
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ProviderError("embedding_provider_malformed_response") from None
+    if not isinstance(value, dict):
+        raise ProviderError("embedding_provider_schema_mismatch")
+    return value
+
+
 class EmbeddingProviderRegistry:
     def __init__(self, provider_id: str | None, model_id: str | None = None, *, model_revision: str = "1",
+                 base_url: str | None = None, api_key: str | None = None,
                  timeout_seconds: float = 30.0, max_batch_size: int = MAX_EMBEDDING_BATCH,
                  max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS, max_dimensions: int = MAX_EMBEDDING_DIMENSIONS,
                  max_response_bytes: int = 2 * 1024 * 1024, max_retries: int = 0) -> None:
+        self.base_url, self.api_key = base_url, api_key
         self.provider_id = provider_id
         self.model_id = model_id
         self.model_revision = model_revision or "1"
@@ -320,6 +408,13 @@ class EmbeddingProviderRegistry:
         if self.provider_id is None and self.model_id is None:
             raise EmbeddingError("embedding_provider_not_configured")
         if self.provider_id != FAKE_PROVIDER_ID:
+            if self.provider_id and self.model_id and self.base_url and self.api_key:
+                return OpenAICompatibleEmbeddingProvider(
+                    provider_id=self.provider_id, model_id=self.model_id, model_revision=self.model_revision,
+                    base_url=self.base_url, api_key=self.api_key, timeout_seconds=self.timeout_seconds,
+                    max_batch_size=self.max_batch_size, max_text_chars=self.max_text_chars,
+                    max_dimensions=self.max_dimensions, max_response_bytes=self.max_response_bytes,
+                    max_retries=self.max_retries)
             raise EmbeddingError("embedding_provider_not_configured")
         if isinstance(self.max_batch_size, bool) or not isinstance(self.max_batch_size, int) or not 1 <= self.max_batch_size <= MAX_EMBEDDING_BATCH:
             raise EmbeddingError("embedding_provider_invalid_config")
@@ -377,13 +472,14 @@ class ProviderRegistry:
             raise ProviderError("provider_invalid_config")
         raise ProviderError(PROVIDER_NOT_CONFIGURED)
 
-    def embedding_provider(self, *, model_revision: str = "1", timeout_seconds: float = 30.0,
+    def embedding_provider(self, *, model_revision: str = "1", base_url: str | None = None, api_key: str | None = None,
+                           timeout_seconds: float = 30.0,
                            max_batch_size: int = MAX_EMBEDDING_BATCH, max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS,
                            max_dimensions: int = MAX_EMBEDDING_DIMENSIONS, max_response_bytes: int = 2 * 1024 * 1024,
                            max_retries: int = 0) -> EmbeddingProvider:
         try:
             return EmbeddingProviderRegistry(self.provider_id, self.model_id, model_revision=model_revision,
-                timeout_seconds=timeout_seconds, max_batch_size=max_batch_size, max_text_chars=max_text_chars,
+                base_url=base_url, api_key=api_key, timeout_seconds=timeout_seconds, max_batch_size=max_batch_size, max_text_chars=max_text_chars,
                 max_dimensions=max_dimensions, max_response_bytes=max_response_bytes, max_retries=max_retries).configured_provider()
         except EmbeddingError as error:
             raise ProviderError(error.code) from None

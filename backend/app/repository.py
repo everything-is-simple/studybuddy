@@ -668,10 +668,65 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
         return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
 
 
+def reclaim_stale_embedding_operations(connection: sqlite3.Connection, *, project_id: str,
+                                       lease_seconds: int = QA_OPERATION_LEASE_SECONDS) -> int:
+    cutoff = datetime.now(timezone.utc).timestamp() - lease_seconds
+    stale_ids = []
+    for row in connection.execute(
+        "SELECT id, started_at FROM ai_operations WHERE project_id=? AND operation_type='embedding_index' AND status='running'",
+        (project_id,),
+    ).fetchall():
+        try:
+            started = datetime.fromisoformat(str(row["started_at"])).timestamp()
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if started <= cutoff:
+            stale_ids.append(str(row["id"]))
+    if stale_ids:
+        with connection:
+            connection.executemany(
+                "UPDATE ai_operations SET status='stale', error_code='embedding_index_lease_expired', finished_at=? WHERE id=? AND status='running'",
+                [(utc_now(), operation_id) for operation_id in stale_ids],
+            )
+    return len(stale_ids)
+
+
+def create_embedding_index_operation(connection: sqlite3.Connection, *, project_id: str,
+                                     material_id: str, source_revision: str,
+                                     retry_count: int = 0) -> str:
+    operation_id = f"embedding_index_{uuid.uuid4().hex}"
+    now = utc_now()
+    fingerprint = hashlib.sha256(f"{material_id}:{source_revision}".encode("utf-8")).hexdigest()
+    connection.execute(
+        "INSERT INTO ai_operations (id,operation_type,status,project_id,material_id,input_fingerprint,source_revision,retry_count,created_at,started_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (operation_id, "embedding_index", "running", project_id, material_id, fingerprint, source_revision, retry_count, now, now),
+    )
+    return operation_id
+
+
+def finish_embedding_index_operation(connection: sqlite3.Connection, operation_id: str, *, status: str,
+                                      error_code: str | None = None) -> None:
+    if status not in {"succeeded", "failed", "stale"}:
+        raise ValueError("embedding_operation_invalid_status")
+    with connection:
+        connection.execute(
+            "UPDATE ai_operations SET status=?, error_code=?, finished_at=? WHERE id=? AND status='running'",
+            (status, error_code, utc_now(), operation_id),
+        )
+
+
 def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id: str,
                                   provider: EmbeddingProvider, rebuild: bool = False,
-                                  retry_failed: bool = False) -> dict[str, object]:
+                                  retry_failed: bool = False, operation_id: str | None = None) -> dict[str, object]:
     """Explicit, synchronous SQLite-first indexing; never called during startup."""
+    if getattr(provider, "dimensions", 0) == 0:
+        probe = connection.execute(
+            "SELECT text FROM chunks WHERE material_id=? AND status='ready' ORDER BY chunk_index, id LIMIT 1",
+            (material_id,),
+        ).fetchone()
+        if probe is not None:
+            provider.embed([str(probe["text"])])
     with connection:
         rows = connection.execute(
             "SELECT c.id, c.text, c.revision_id FROM chunks c JOIN materials m ON m.id=c.material_id "
@@ -867,9 +922,24 @@ def _lexical_candidates(connection: sqlite3.Connection, *, project_id: str, quer
     return ("succeeded" if rows else "empty"), list(rows)
 
 
+def _hydrate_provider_dimensions(connection: sqlite3.Connection, *, project_id: str,
+                                  provider: EmbeddingProvider) -> None:
+    if getattr(provider, "dimensions", 0):
+        return
+    row = connection.execute(
+        "SELECT dimensions FROM embeddings e JOIN chunks c ON c.id=e.chunk_id "
+        "JOIN materials m ON m.id=c.material_id WHERE c.project_id=? AND e.provider_id=? "
+        "AND e.model_id=? AND e.model_revision=? AND e.status='ready' ORDER BY e.updated_at DESC LIMIT 1",
+        (project_id, provider.provider_id, provider.model_id, provider.model_revision),
+    ).fetchone()
+    if row is not None:
+        setattr(provider, "dimensions", int(row["dimensions"]))
+
+
 def _vector_candidates(connection: sqlite3.Connection, *, project_id: str, query: str,
                        provider: EmbeddingProvider, material_ids: list[str] | None,
                        limit: int) -> tuple[str, list[dict[str, object]]]:
+    _hydrate_provider_dimensions(connection, project_id=project_id, provider=provider)
     query_vector = provider.embed([query.strip()])[0]
     requested = material_ids or []
     scope = ""
@@ -970,6 +1040,7 @@ def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, que
                          top_k: int = 5) -> dict[str, object]:
     if not query.strip() or len(query.strip()) > MAX_RETRIEVAL_QUERY_LENGTH or not 1 <= top_k <= MAX_RETRIEVAL_TOP_K:
         raise ValueError("retrieval_invalid_query" if not query.strip() else "retrieval_invalid_top_k")
+    _hydrate_provider_dimensions(connection, project_id=project_id, provider=provider)
     vectors = provider.embed([query.strip()])
     query_vector = vectors[0]
     requested = material_ids or []
