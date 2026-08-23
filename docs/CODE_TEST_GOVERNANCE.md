@@ -56,6 +56,14 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/ -q
 powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_qa.spec.js
 ```
 
+Phase 8 Cards/Exercises 改动的最小浏览器门禁为：
+
+```powershell
+powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.spec.js
+```
+
+`test-browser.ps1` 每次只接受一个 spec；需要多个 browser spec 时必须分别串行执行。
+
 真实 Provider 仍只能通过目标专用 gate 或 `run-provider-api-acceptance.ps1` 启用，不属于默认门禁。当前收集基线由治理测试维护；测试数量变化应以实际输出为准，不把历史文档中的 passed 数字当作当前事实。
 
 ### 3.2 测试层级

@@ -370,6 +370,7 @@ def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite
         if cursor.rowcount != 1:
             return None
         _refresh_exercise_citations_for_material(connection, material_id)
+        _refresh_card_citations_for_material(connection, material_id)
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, "
@@ -475,12 +476,42 @@ def list_cards(connection: sqlite3.Connection, *, project_id: str, deck_id: str 
     where = "c.project_id=?"
     if deck_id is not None:
         where += " AND c.deck_id=?"; params.append(deck_id)
-    rows = connection.execute("SELECT c.id,c.deck_id,c.card_type,c.status,c.front,c.back,c.explanation,c.tags_json,c.source_revision,c.edited_by_user,c.created_at,c.updated_at,c.confirmed_at,c.archived_at FROM study_cards c WHERE " + where + " ORDER BY c.updated_at DESC,c.id DESC", params).fetchall()
+    with connection:
+        rows = connection.execute("SELECT c.id,c.deck_id,c.card_type,c.status,c.front,c.back,c.explanation,c.tags_json,c.source_revision,c.edited_by_user,c.created_at,c.updated_at,c.confirmed_at,c.archived_at FROM study_cards c WHERE " + where + " ORDER BY c.updated_at DESC,c.id DESC", params).fetchall()
+        for row in rows:
+            _refresh_card_citations(connection, str(row["id"]))
     return [{**dict(row), "tags": json.loads(row["tags_json"]), "citations": list_card_citations(connection, str(row["id"]))} for row in rows]
 
 
 def list_card_citations(connection: sqlite3.Connection, card_id: str) -> list[dict[str, object]]:
     return [dict(row) for row in connection.execute("SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,quote,position,status FROM card_citations WHERE card_id=? ORDER BY position,id", (card_id,)).fetchall()]
+
+
+def _refresh_card_citations(connection: sqlite3.Connection, card_id: str) -> list[str]:
+    statuses: list[str] = []
+    for citation in connection.execute("SELECT * FROM card_citations WHERE card_id=?", (card_id,)).fetchall():
+        status = "source_unavailable"
+        if citation["material_id"] is not None:
+            material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (citation["material_id"],)).fetchone()
+            if material is not None and material["deleted_at"] is not None:
+                status = "source_deleted"
+            elif material is not None and citation["chunk_id"] is not None:
+                chunk = connection.execute(
+                    "SELECT c.status,c.revision_id,c.extraction_id,r.is_current FROM chunks c JOIN material_revisions r ON r.id=c.revision_id WHERE c.id=? AND c.material_id=?",
+                    (citation["chunk_id"], citation["material_id"]),
+                ).fetchone()
+                if chunk is not None and chunk["status"] == "ready" and chunk["is_current"]:
+                    status = "valid" if chunk["revision_id"] == citation["revision_id"] and chunk["extraction_id"] == citation["extraction_id"] else "stale"
+                elif chunk is not None:
+                    status = "stale"
+        connection.execute("UPDATE card_citations SET status=? WHERE id=?", (status, citation["id"]))
+        statuses.append(status)
+    return statuses
+
+
+def _refresh_card_citations_for_material(connection: sqlite3.Connection, material_id: str) -> None:
+    for row in connection.execute("SELECT DISTINCT card_id FROM card_citations WHERE material_id=?", (material_id,)).fetchall():
+        _refresh_card_citations(connection, str(row["card_id"]))
 
 
 def create_card(connection: sqlite3.Connection, *, project_id: str, deck_id: str, payload: dict[str, object], card_type: str = "user_created", source_revision: str | None = None) -> dict[str, object]:
@@ -512,10 +543,26 @@ def confirm_card(connection: sqlite3.Connection, *, project_id: str, card_id: st
     row = connection.execute("SELECT deck_id,status FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
     if row is None: raise ValueError("card_not_found")
     if row["status"] != "draft": raise ValueError("card_invalid_state")
+    with connection:
+        _refresh_card_citations(connection, card_id)
     if connection.execute("SELECT 1 FROM card_citations WHERE card_id=? AND status='valid'", (card_id,)).fetchone() is None:
         if connection.execute("SELECT card_type FROM study_cards WHERE id=?", (card_id,)).fetchone()[0] == "ai_generated": raise ValueError("citation_invalid")
     with connection: connection.execute("UPDATE study_cards SET status='ready',confirmed_at=?,updated_at=? WHERE id=?", (utc_now(), utc_now(), card_id))
     return next(item for item in list_cards(connection, project_id=project_id, deck_id=row["deck_id"]) if item["id"] == card_id)
+
+
+def transition_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, target: str) -> dict[str, object]:
+    row = connection.execute("SELECT deck_id,status FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
+    if row is None:
+        raise ValueError("card_not_found")
+    allowed = {"rejected": {"draft"}, "archived": {"draft", "ready", "rejected", "stale"}}
+    if target not in allowed or row["status"] not in allowed[target]:
+        raise ValueError("card_invalid_state")
+    now = utc_now()
+    with connection:
+        connection.execute("UPDATE study_cards SET status=?,updated_at=?,archived_at=? WHERE id=?", (target, now, now if target == "archived" else None, card_id))
+    result = connection.execute("SELECT * FROM study_cards WHERE id=?", (card_id,)).fetchone()
+    return _card_public(connection, result)
 
 
 def review_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, result: str) -> dict[str, object]:
@@ -861,8 +908,15 @@ def update_exercise(connection: sqlite3.Connection, *, project_id: str, exercise
         raise ValueError("exercise_not_found")
     if row["status"] != "draft":
         raise ValueError("exercise_edit_not_allowed")
+    if payload.get("answer_key") is None:
+        payload = {**payload, "answer_key": json.loads(row["answer_key_json"])}
     prompt, options, answer_key, explanation = _exercise_payload(payload, str(row["exercise_type"]))
-    citations = _exercise_citations(connection, payload.get("citations", []), exercise_id)
+    citation_input = payload.get("citations", [])
+    if not citation_input and row["exercise_kind"] == "ai_generated":
+        citation_input = [dict(item) for item in connection.execute(
+            "SELECT citation_key,chunk_id,quote FROM exercise_citations WHERE exercise_id=? ORDER BY position,id", (exercise_id,)
+        ).fetchall()]
+    citations = _exercise_citations(connection, citation_input, exercise_id)
     _validate_exercise_source_revision(connection, row["source_revision"], citations, str(row["exercise_kind"]))
     with connection:
         connection.execute("DELETE FROM exercise_citations WHERE exercise_id=?", (exercise_id,))
@@ -997,6 +1051,10 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
             "UPDATE exercise_citations SET status = 'source_unavailable' WHERE material_id = ?",
             (material_id,),
         )
+        connection.execute(
+            "UPDATE card_citations SET status = 'source_unavailable' WHERE material_id = ?",
+            (material_id,),
+        )
         connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
         chunk_ids = [str(value[0]) for value in connection.execute(
             "SELECT id FROM chunks WHERE material_id = ?", (material_id,)
@@ -1125,6 +1183,7 @@ def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bo
         )
         if cursor.rowcount == 1:
             _refresh_exercise_citations_for_material(connection, material_id)
+            _refresh_card_citations_for_material(connection, material_id)
     return cursor.rowcount == 1
 
 
@@ -1197,6 +1256,7 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
     with connection:
         revision = create_or_get_revision(connection, material_id, extraction_id)
         _refresh_exercise_citations_for_material(connection, material_id)
+        _refresh_card_citations_for_material(connection, material_id)
         existing = connection.execute(
             "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
         ).fetchone()[0]
