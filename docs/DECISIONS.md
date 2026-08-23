@@ -8,6 +8,12 @@
 - Phase 9 is split into 9A learning domain/plan foundation, 9B S1/S2 material learning, 9C S3/S4/S5 exercise and feedback workflows, and conditional 9D S6/S7 extension services. No single Phase 9 completion claim may cover all of these without independent gates.
 - Phase 8 must close Cards/Exercises before Phase 9C can begin. Its Phase 7 prerequisite is closed for the documented Mistral exact configuration; this does not establish generic multi-provider or global production readiness.
 
+## 2026-08-28: Phase 8.5 Cards / Exercises workspace boundary
+
+- The embedded single-page UI now exposes deck/set selection, fake-provider draft generation, draft edit, confirm/reject/archive, card review and exercise attempt flows. It does not expose answer keys or submitted-answer JSON in normal DOM/API responses.
+- Citation controls only permit a valid source location; deleted/purged/stale citations render unavailable without fabricating source body or name. Card citation lifecycle now follows material delete/restore/purge/re-index as Exercises already did.
+- Chromium evidence is limited to the fake-provider controlled path, including refresh, provider failure retry, narrow viewport and keyboard navigation. It is not real Provider generation, system screen-reader, offline or extreme-content evidence.
+
 ## 2026-08-28: Phase 8.4 citation-safe draft generation boundary
 
 - Generation accepts only an explicit indexed single-material scope, topic, retrieval policy, artifact type and bounded count. It never auto-indexes or repairs source data.
@@ -90,7 +96,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance。Phase 7 已按 Mistral 精确配置完成；Phase 8 Cards/Exercises backend MVP 与 fake-provider citation-safe draft generation 已实现。Cards/Exercises UI、真实 Provider generation evidence、Plans 等后续业务逻辑仍未实现。
+- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance。Phase 7 已按 Mistral 精确配置完成；Phase 8 Cards/Exercises backend MVP、fake-provider citation-safe draft generation 和 fake-provider Chromium workspace 已实现。真实 Provider generation evidence、Plans 等后续业务逻辑仍未实现。
 
 ## 2026-08-19: four-directory boundary
 

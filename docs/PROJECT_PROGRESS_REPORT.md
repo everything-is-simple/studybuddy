@@ -16,7 +16,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
 | 前端用户体验 | 60%–70% | P6-A–P6-E fake/default/narrow/keyboard/accessibility contract 已通过；真实 Provider UI、系统级辅助技术和极端运行条件仍有限制 |
-| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter、Phase 7 retrieval，以及 Phase 8 Cards/Exercises backend MVP 与 fake-provider draft generation 已实现并验收；真实 Provider generation、Cards/Exercises UI、计划和后台任务仍未完成 |
+| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter、Phase 7 retrieval，以及 Phase 8 Cards/Exercises backend MVP、fake-provider draft generation/workspace 已实现并验收；真实 Provider generation、计划和后台任务仍未完成 |
 | 全项目整体 | 约 50%–55%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
 
 整体进度不应简单按“已通过测试数量”计算：当前可靠性投入较多，而 AI、学习工作流、多用户和运维能力尚未开始，因此产品整体完成度明显低于文件基础设施完成度。
@@ -109,7 +109,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
 - 当前材料最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示和 chunk offset 定位；purge 后历史 citation 标记 `source_unavailable`，并有 browser 与 backup/restore 验收。
 
-Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；Phase 8 Cards/Exercises backend MVP 已进入实现状态，但 AI generation、UI 和学习计划仍待后续验收/实现。
+Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；Phase 8.1–8.5 已完成 schema、Cards/Exercises backend、fake-provider citation-safe generation 和 Chromium workspace 验收，真实 Provider generation、人工简答复核与完整 closeout 仍待后续完成。
 
 ### Phase 7：Embedding 与 Hybrid Retrieval — completed（Mistral 精确配置范围）
 
@@ -117,7 +117,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### Phase 8：Cards / Exercises — backend MVP in progress
 
-Phase 8.1 migration、8.2 Cards backend、8.3 Exercises backend MVP 与 8.4 fake-provider citation-safe draft generation 已实现。Exercises 支持 set、三种已冻结题型、draft → ready/rejected/archived、draft-only edit、current revision/chunk/span citation revalidation、delete/restore/purge/re-index source lifecycle、append-only attempt history、multiple-choice/true-false deterministic grading 和 short-answer `pending_review`。8.4 要求显式已索引的单材料 scope，经 lexical/vector/hybrid retrieval、context、provider 的结构化内存校验及 server-side citation/source revalidation 后，才原子保存 AI draft 与 operation metadata；支持 idempotency、failed retry、malformed/forged citation、rollback 和 stale boundary。普通列表/history 不返回 answer key 或 answer body，raw prompt/provider response 不持久化；migration v8 与 backup/restore/restart 测试已通过。尚未实现真实 Provider generation evidence、Cards/Exercises UI/Chromium、简答人工 review 与 Phase 8 完整收口，因此不能宣称 Phase 8 completed 或有 Cards/Exercises 用户路径 `real-pass`。
+Phase 8.1 migration、8.2 Cards backend、8.3 Exercises backend MVP、8.4 fake-provider citation-safe draft generation 与 8.5 fake-provider Cards/Exercises Chromium workspace 已实现。Exercises 支持 set、三种已冻结题型、draft → ready/rejected/archived、draft-only edit、current revision/chunk/span citation revalidation、delete/restore/purge/re-index source lifecycle、append-only attempt history、multiple-choice/true-false deterministic grading 和 short-answer `pending_review`。8.4 要求显式已索引的单材料 scope，经 lexical/vector/hybrid retrieval、context、provider 的结构化内存校验及 server-side citation/source revalidation 后，才原子保存 AI draft 与 operation metadata；支持 idempotency、failed retry、malformed/forged citation、rollback 和 stale boundary。8.5 已覆盖统一 nav、deck/set、draft generation/detail/edit/confirm/reject/archive、citation location/unavailable、review/attempt、刷新恢复、provider failure retry、answer-key privacy、窄屏和键盘路径。普通列表/history 不返回 answer key 或 answer body，raw prompt/provider response 不持久化；migration v8 与 backup/restore/restart 测试已通过。尚未实现真实 Provider generation evidence、系统级 screen reader/极端内容、简答人工 review 与 Phase 8 完整收口，因此不能宣称 Phase 8 completed 或有全局 Cards/Exercises `real-pass`。
 
 ### Phase 5 之后：AI 与学习工作流 — 后续工作
 
@@ -125,7 +125,7 @@ Phase 8.1 migration、8.2 Cards backend、8.3 Exercises backend MVP 与 8.4 fake
 
 - P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material，不能扩展为所有 Provider/model 的通用 real-pass。
 - hybrid/fallback RAG 扩展、真实 embedding provider 和其它 Provider 独立验证。
-- AI 生成知识卡片、Quiz/练习以及 Cards/Exercises UI。
+- 真实 Provider 的 Cards/Exercises generation evidence、人工简答复核，以及 Phase 8 closeout。
 - 学习计划及 S1–S7。
 - OCR、ASR、旧格式转换。
 - 后台任务、进度、暂停/取消、retry 和导入历史。
@@ -151,7 +151,7 @@ Phase 8.1 migration、8.2 Cards backend、8.3 Exercises backend MVP 与 8.4 fake
 
 ### 当前阶段：Phase 8 后续实现与精确 Provider evidence
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线是 Phase 8.5 Cards/Exercises UI 与 Chromium acceptance：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线是 Phase 8.6 closeout：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
@@ -164,7 +164,7 @@ Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错�
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。当前继续按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 完成 Phase 8.4–8.6，再按 9A–9D、10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。当前继续按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 完成 Phase 8.6，再按 9A–9D、10 顺序推进，不在当前阶段并行承诺。
 
 ### 与祖宗/前两代版本的治理结论
 

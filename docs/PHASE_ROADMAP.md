@@ -175,13 +175,13 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 ### Phase 8：卡片与练习
 
-**状态：进行中。** Phase 8.1 schema、8.2 Cards backend MVP、8.3 Exercises backend MVP 与 8.4 fake-provider citation-safe AI draft generation 已完成 backend 验收；Cards/Exercises UI/Chromium 和 Phase 8 总收口仍未完成。
+**状态：进行中。** Phase 8.1 schema、8.2 Cards backend MVP、8.3 Exercises backend MVP、8.4 fake-provider citation-safe AI draft generation 与 8.5 fake-provider Cards/Exercises Chromium workspace 已完成对应验收；Phase 8 总收口仍未完成。
 
 - v7 已通过 migration 增加 Card/Exercise 业务表；v8 记录 exercise provenance，保持 migration history 与 `user_version` 一致。
 - Exercises 支持 `multiple_choice`、`true_false`、`short_answer`，draft → ready/rejected/archived、draft-only edit、append-only attempts、MC/TF deterministic grading 和 short-answer `pending_review`。
 - AI exercise 必须从 draft 开始，必须绑定 current active revision 和 valid citation；confirm 会重新验证 citation，delete/restore/purge/re-index 会更新 citation lifecycle。
 - 普通 exercise 和 attempt history 响应不返回 answer key 或用户提交原文。
-- 8.4 已实现显式 indexed single-material scope 的 lexical/vector/hybrid retrieval → context → provider → server-side citation revalidation → atomic draft/operation persistence；结构化 provider output 只在内存校验，raw prompt/response 不持久化，失败只保留安全 operation。真实 Provider generation、UI/Chromium、人工简答复核和完整 Phase 8 closeout 尚未实现；不允许重新生成静默覆盖用户已编辑或已确认状态。
+- 8.4 已实现显式 indexed single-material scope 的 lexical/vector/hybrid retrieval → context → provider → server-side citation revalidation → atomic draft/operation persistence；结构化 provider output 只在内存校验，raw prompt/response 不持久化，失败只保留安全 operation。8.5 已实现 fake-provider workspace 与 Chromium 路径：draft generation/list/detail/edit/confirm/reject/archive、citation location/unavailable、review/attempt、refresh、failure retry、privacy、窄屏和键盘基础 contract。真实 Provider generation、系统级 screen reader/极端内容、人工简答复核和完整 Phase 8 closeout 尚未实现；不允许重新生成静默覆盖用户已编辑或已确认状态。
 
 ### Phase 9：学习产品构建计划（拆分为 9A–9D）
 

@@ -12,7 +12,7 @@
 
 - `ARCHITECTURE.md`：系统架构边界。
 - `DECISIONS.md`：架构和产品决策记录。
-- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构与已实现的 Phase 4–7、Phase 8 backend MVP 边界；不是完整学习产品完成声明。
+- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构与已实现的 Phase 4–7、Phase 8.1–8.5 backend/Chromium 边界；不是完整学习产品完成声明。
 - [`PROVIDER_CAPABILITY_MATRIX.md`](PROVIDER_CAPABILITY_MATRIX.md)：Phase 5 各 OpenAI-compatible Provider 的独立证据矩阵和 opt-in 验收命令。
 - [`AI_PROVIDER_SETUP.md`](AI_PROVIDER_SETUP.md)：StudyBuddy Provider 配置边界、密钥安全规则和三次 API acceptance runner。
 - [`AGNES_PROVIDER_RUNBOOK.md`](AGNES_PROVIDER_RUNBOOK.md)：Agnes AI-Hub 独立本地 launcher、smoke gate 和运维边界。
@@ -31,7 +31,7 @@
 - [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)：I1/I2/I3 完成，I4 时间盒验收，基础设施 v1 基本完工。
 - [`LOCAL_ENVIRONMENT_MAP.md`](LOCAL_ENVIRONMENT_MAP.md)：全部本地目录、远端、Git 状态和治理关系。
 - [`HISTORICAL_SCENARIO_REVIEW.md`](HISTORICAL_SCENARIO_REVIEW.md)：祖宗版本与两个前辈版本的核心场景设计回顾。
-- [`STATUS.md`](STATUS.md)：能力状态表和测试证据索引，是实现状态的唯一事实源。
+- [`STATUS.md`](STATUS.md)：能力状态表和测试证据索引，是实现状态的唯一事实源；Phase 8.5 fake-provider Chromium evidence 在此记录。
 
 ## 文档维护规则
 

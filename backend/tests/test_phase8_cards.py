@@ -63,3 +63,27 @@ def test_card_invalid_payload_and_review_state_are_safe(tmp_path: Path):
         assert api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "good"}).status_code == 404
         assert api.post(f"/api/study/cards/{card['id']}/confirm").status_code == 200
         assert api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "bad"}).status_code == 400
+
+
+def test_card_reject_archive_and_source_lifecycle(tmp_path: Path):
+    with client(tmp_path) as api:
+        deck_id = api.post("/api/study/decks", json={"title": "Lifecycle"}).json()["id"]
+        draft = api.post(f"/api/study/decks/{deck_id}/cards", json={"front": "draft", "back": "answer"}).json()
+        assert api.post(f"/api/study/cards/{draft['id']}/reject").status_code == 200
+        assert api.post(f"/api/study/cards/{draft['id']}/archive").status_code == 200
+
+        material = api.post("/api/materials", files={"file": ("source.txt", b"trusted card source", "text/plain")}).json()
+        material_id = material["material_id"]
+        revision_id = api.post(f"/api/materials/{material_id}/ai-index").json()["revision_id"]
+        from app.repository import connect
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            chunk = db.execute("SELECT id,text FROM chunks WHERE material_id=?", (material_id,)).fetchone()
+        card = api.post(f"/api/study/decks/{deck_id}/cards", json={
+            "front": "Q", "back": "A", "card_type": "ai_generated", "source_revision": revision_id,
+            "citations": [{"citation_key": "card-source", "chunk_id": chunk["id"], "quote": chunk["text"]}],
+        }).json()
+        assert api.delete(f"/api/materials/{material_id}").status_code == 204
+        listed = api.get(f"/api/study/decks/{deck_id}").json()["cards"]
+        assert next(item for item in listed if item["id"] == card["id"])["citations"][0]["status"] == "source_deleted"
+        assert api.post(f"/api/materials/{material_id}/restore").status_code == 200
+        assert api.post(f"/api/study/cards/{card['id']}/confirm").status_code == 200
