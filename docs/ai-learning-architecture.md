@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-状态：architecture plus Phase 4 implementation；material revision、deterministic chunks、chunk lexical retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。真实 provider 与后续学习能力仍按主路线图推进。
+状态：architecture plus Phase 4–7 implementation 和 Phase 8 backend MVP；material revision、deterministic chunks、lexical/vector/hybrid retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。Phase 8.1 schema、8.2 Cards backend MVP 与 8.3 Exercises backend MVP 已实现并有 backend tests；AI draft generation、Cards/Exercises UI、人工简答复核和学习计划仍按主路线图推进。
 
 ## 1. 范围与原则
 
@@ -61,7 +61,7 @@ class EmbeddingProvider(Protocol):
     def embed(self, texts: list[str]) -> list[list[float]]: ...
 ```
 
-当前正式代码只实现并使用 `LLMProvider`；`EmbeddingProvider` 是 Phase 7 的冻结设计接口，不代表已有 production implementation。LLM registry 和 deterministic fake LLM provider 已实现；embedding registry、fake embedding provider、配置和错误映射属于 Phase 7.2。注册表根据 `provider_id` 创建 adapter；配置只保存 provider/model/timeout/limits，不保存 key 到数据库、manifest 或日志。支持 capability、context window、structured output、streaming capability、rate-limit 和 deterministic fake provider。真实 provider 后续通过环境变量配置，例如 `STUDYBUDDY_LLM_PROVIDER`、`STUDYBUDDY_LLM_MODEL`、`STUDYBUDDY_EMBEDDING_PROVIDER`、`STUDYBUDDY_EMBEDDING_MODEL`、`STUDYBUDDY_AI_TIMEOUT_SECONDS`、`STUDYBUDDY_AI_MAX_OUTPUT_TOKENS`。
+正式代码已实现并使用 `LLMProvider`，并已实现 `EmbeddingProvider` registry、deterministic fake embedding 和 OpenAI-compatible embedding adapter；Mistral `mistral-embed` 的外部 acceptance 仅适用于已记录的精确 gateway/model。注册表根据 `provider_id` 创建 adapter；配置只保存 provider/model/timeout/limits，不保存 key 到数据库、manifest 或日志。支持 capability、context window、structured output、streaming capability、rate-limit 和 deterministic fake provider。真实 provider 通过环境变量配置，例如 `STUDYBUDDY_LLM_PROVIDER`、`STUDYBUDDY_LLM_MODEL`、`STUDYBUDDY_EMBEDDING_PROVIDER`、`STUDYBUDDY_EMBEDDING_MODEL`、`STUDYBUDDY_AI_TIMEOUT_SECONDS`、`STUDYBUDDY_AI_MAX_OUTPUT_TOKENS`。
 
 稳定错误：`provider_not_configured`、`provider_unavailable`、`provider_timeout`、`provider_rate_limited`、`provider_auth_failed`、`provider_quota_exceeded`、`provider_invalid_response`、`provider_refusal`。
 
@@ -104,7 +104,7 @@ chunk_spans(chunk_id TEXT, span_id TEXT, overlap_start INTEGER, overlap_end INTE
 
 ## 6. Embedding 与 retrieval
 
-当前正式实现只有 SQLite FTS5 lexical retrieval；`embeddings` 表和 retrieval 的 vector 字段是 Phase 4 预留结构，不代表已有 embedding 生成或 vector retrieval。Phase 7.1 已冻结后续实现契约，具体审计和 identity/status/policy 语义见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
+正式实现已支持 SQLite FTS5 lexical retrieval、显式 embedding indexing、vector cosine retrieval、deterministic hybrid RRF 和明确 fallback policy。embedding identity、f32 payload codec、ready/stale lifecycle、indexing lease 与 retry 的正式契约见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)；外部 real-pass 仅限 [`PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md) 所记录的 Mistral 精确配置。
 
 明确决策：第一阶段不引入外部 vector DB。先使用 SQLite FTS5 的 chunk lexical index，原因是当前单进程/SQLite/backup 模型简单且可完全恢复。未来 embedding 可以先落 SQLite（压缩 binary payload 或独立 embedding blob 文件但必须纳入 manifest）；规模确实需要时再引入外部 ANN，并要求独立 index manifest/rebuild 命令，不能形成隐式状态。
 
@@ -185,11 +185,11 @@ assistant answer 必须关联 operation、retrieval_run 和独立 citations。pr
 
 ## 10. Cards
 
-第二阶段：`study_decks`、`study_cards`、`card_citations`、`card_reviews`。card 状态 `draft/ready/rejected/stale/archived`，AI 产物永远先 draft，用户确认后 ready。用户修改产生 version/history 或 `edited_by=user`，重新生成不能覆盖 user-edited 内容。无 source 的卡片只能明确标记 user-created，AI 生成默认必须有 citation。复习状态独立于内容。
+Phase 8.2 已实现 backend MVP：`study_decks`、`study_cards`、`card_citations`、`card_reviews`。card 状态为 `draft/ready/rejected/stale/archived`；现有 API 支持 deck/card create/list、draft edit、confirm 和 append-only review。AI card 永远先 draft，确认时需要有效 citation；用户编辑会标记 `edited_by_user`，已 ready/archived card 不可通过该 API 编辑。完整 source lifecycle、AI generation 和 UI 仍未完成。
 
 ## 11. Exercises
 
-第二阶段：`exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。类型至少 multiple_choice、short_answer、true_false、cloze、ordering。题目 schema 和 options/answer key 使用 JSON，但写入前严格校验。选择题/判断题优先 deterministic grading；short answer 的 AI grading 是明确不确定的 draft/待复核流程。answer key 不进入普通列表 response。每题应有 citation 或标记 user-created/no-source。
+Phase 8.3 已实现 backend MVP：`exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。首批且仅支持 `multiple_choice`、`true_false`、`short_answer`；不实现 cloze/ordering。题干、options、answer key、explanation 和引用均有严格大小/类型校验；普通 exercise/attempt-history response 不返回 `answer_key_json` 或 `answer_json`。exercise 有 `user_created`/`ai_generated` provenance，状态为 `draft/ready/rejected/stale/archived`，并支持 draft-only edit、confirm/reject/archive。AI exercise 必须绑定 active current source revision 和 valid revision/chunk/span citation，confirm 会重新验证；delete/restore/purge/re-index 会反映 citation lifecycle。MC/TF 使用 deterministic grading 并 append-only 保存 attempts；short answer 只返回 `pending_review`，人工复核 API、AI generation 和 UI 仍未实现。
 
 ## 12. Study plans
 
@@ -239,7 +239,7 @@ Provider Protocol、revision/chunk schema、deterministic chunker、显式 index
 
 ### 项目 Phase 6 及以后：AI MVP 产品化与扩展
 
-embedding provider、SQLite embedding payload、hybrid retrieval、rebuild/verify 和 stale semantics；cards/exercises 的 draft、citation、user edit、schema validation、deterministic grading；plans 的 draft/confirm/active、dependency、progress；以及在需求明确后引入 worker、cancel、concurrency、observability 和 provider 长任务恢复。
+embedding provider、SQLite embedding payload、hybrid retrieval、rebuild/verify 和 stale semantics；Cards/Exercises backend MVP 的 draft、citation、user edit、schema validation、deterministic grading；plans 的 draft/confirm/active、dependency、progress；以及在需求明确后引入 worker、cancel、concurrency、observability 和 provider 长任务恢复。
 
 ## 17. 测试矩阵
 
@@ -247,4 +247,4 @@ Fake provider 覆盖未配置、timeout、rate-limit、auth/quota、malformed JS
 
 ## 18. 当前不实现
 
-后续设计仍不接真实 provider、不自动索引历史材料、不引入 vector DB、worker、cards/exercises/plans 完整功能。当前 Phase 4 的 AI 表、API、Q&A UI 和 browser 验收已经实现；后续变更仍必须遵循项目主 Phase 路线和 migration 治理。
+后续设计不自动索引历史材料、不引入外部 vector DB 或 worker；Phase 8 的 AI generation、Cards/Exercises UI、人工简答复核和 plans 完整功能仍未实现。当前 Phase 4 的 AI 表、API、Q&A UI 和 browser 验收、Phase 7 retrieval/indexing 范围，以及 Phase 8 Cards/Exercises backend MVP 已实现；后续变更仍必须遵循项目主 Phase 路线和 migration 治理。

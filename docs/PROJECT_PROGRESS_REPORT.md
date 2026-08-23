@@ -109,7 +109,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 - 同步 `POST /api/qa/ask`：显式材料范围检索、server-side citation verification、thread/message/answer/citation/operation persistence 与 final-write rollback。
 - 当前材料最小 Q&A UI：显式 indexing、loading/error/retry、citation 展示和 chunk offset 定位；purge 后历史 citation 标记 `source_unavailable`，并有 browser 与 backup/restore 验收。
 
-Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；其它 Provider 和后续学习能力仍待验收/实现；cards、练习和学习计划属于后续阶段。
+Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；Phase 8 Cards/Exercises backend MVP 已进入实现状态，但 AI generation、UI 和学习计划仍待后续验收/实现。
 
 ### Phase 7：Embedding 与 Hybrid Retrieval — completed（Mistral 精确配置范围）
 
@@ -149,9 +149,9 @@ Phase 8.1 migration、8.2 Cards backend 与 8.3 Exercises backend MVP 已实现�
    - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
    - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏已明确记录为 `not_verified`，并作为 v1 运行边界接受。
 
-### 当前阶段：P6-E 后的精确 Provider evidence 与后续路线
+### 当前阶段：Phase 8 后续实现与精确 Provider evidence
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已经完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线转为 Phase 7 收口：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线是 Phase 8.4 AI draft generation：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
@@ -164,7 +164,7 @@ Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错�
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；当前 Phase 7 仍需完成真实 embedding provider、retrieval-mode Chromium 和 indexing lease/失败重试证据。之后按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 8、9A–9D、10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。当前继续按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 完成 Phase 8.4–8.6，再按 9A–9D、10 顺序推进，不在当前阶段并行承诺。
 
 ### 与祖宗/前两代版本的治理结论
 

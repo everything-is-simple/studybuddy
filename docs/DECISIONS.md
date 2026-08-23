@@ -6,7 +6,7 @@
 - The accepted evolution claim is limited to formal source ownership, Composer → Integration → formal reimplementation → system-test evidence flow, migration-controlled persistence, storage and backup safety, revision/chunk/retrieval/citation traceability, provider evidence discipline, and layered acceptance states.
 - Historical cards, exercises, study plans, S1–S7 workflows, OCR/ASR, reports or worker concepts remain reference scope unless independently reimplemented and accepted in the formal system. Historical code, component smoke, fake-provider evidence and design documents do not establish formal completion.
 - Phase 9 is split into 9A learning domain/plan foundation, 9B S1/S2 material learning, 9C S3/S4/S5 exercise and feedback workflows, and conditional 9D S6/S7 extension services. No single Phase 9 completion claim may cover all of these without independent gates.
-- Phase 8 must close Cards/Exercises before Phase 9C can begin. Phase 7 must close its remaining real embedding, retrieval-mode Chromium and indexing lease/retry evidence before Phase 8 begins, according to the current roadmap gate.
+- Phase 8 must close Cards/Exercises before Phase 9C can begin. Its Phase 7 prerequisite is closed for the documented Mistral exact configuration; this does not establish generic multi-provider or global production readiness.
 
 ## 2026-08-28: Phase 8.3 Exercise MVP boundary
 
@@ -30,7 +30,7 @@
 - DeepSeek `deepseek-chat` and Agnes `agnes-ai-hub` / `agnes-2.5-flash` real Provider evidence remains scoped to exact provider/model/gateway configurations. A real Provider UI path is `not_verified` unless its explicit target, model, gateway and secret-backed runtime gate actually ran; fake/mock results never become real-pass.
 - No P6-E API, business table or migration is required. Existing generation/context checks are the cancellation boundary: synchronous Provider requests are not cancelled, stale responses are ignored.
 - Governance source of truth is split deliberately: `PHASE_ROADMAP.md` defines sequence and completion criteria, `STATUS.md` records evidence state, `TODO.md` is the executable checklist, and `P6E_ACCEPTANCE_EVIDENCE.md` records redacted P6-E gates. Contradictory claims in other documents must be corrected to these sources.
-- P6-E exact real Provider UI evidence for DeepSeek `deepseek-chat` and Agnes `agnes-2.5-flash` has passed under explicit target/model/gateway gates. The current product priority is to close the remaining Phase 7 evidence: a real embedding provider, retrieval-mode Chromium acceptance, and lease/failure-retry coverage. Cards, exercises, plans, workers, multi-user and cloud capabilities remain unimplemented.
+- P6-E exact real Provider UI evidence for DeepSeek `deepseek-chat` and Agnes `agnes-2.5-flash` has passed under explicit target/model/gateway gates. Phase 7 subsequently closed for the documented Mistral configuration; Phase 8 Cards/Exercises backend MVP is now implemented. AI generation, Cards/Exercises UI, plans, workers, multi-user and cloud capabilities remain later work.
 
 ## 2026-08-25: project progress and priority boundary
 
@@ -83,7 +83,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- 当前 migration v5 已包含 revision/chunk/retrieval/Q&A 与 embedding 所需 schema；v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract。Phase 7.1–7.7 的 fake/backend 主体已实现，但真实 embedding provider、retrieval-mode Chromium acceptance 和完整 lease/失败重试专项仍未完成；Cards、Exercises、Plans 等后续业务逻辑仍未实现。
+- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance。Phase 7 已按 Mistral 精确配置完成；Phase 8 Cards/Exercises backend MVP 已实现。AI generation、Cards/Exercises UI、Plans 等后续业务逻辑仍未实现。
 
 ## 2026-08-19: four-directory boundary
 
@@ -108,7 +108,7 @@
 - I1 migration/schema versioning、I2 backup/restore operator 闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成。
 - I4 中 Windows ACL/只读目录、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏等项保持 `not_verified`，并已明确作为 v1 运行边界接受；这些项目不阻塞基础设施 v1 收口，也不得标记为已通过。
 - 自此可以正式宣告 StudyBuddy **本地单进程文件材料基础设施 v1 基本完工**，并作为 AI MVP 的数据基础。
-- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。下一优先级是 Phase 7 的真实 embedding provider、retrieval-mode Chromium acceptance 和 lease/失败重试专项；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
+- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前优先级是 Phase 8.4 AI draft generation，随后才是 Cards/Exercises UI 与完整 closeout；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
 
 ## 2026-08-25: local environment governance map
 
