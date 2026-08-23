@@ -180,6 +180,22 @@ def test_qa_idempotency_key_replays_succeeded_answer_without_new_artifacts(tmp_p
             assert tuple(operation) == ("qa-replay-001", first["retrieval_run_id"])
 
 
+def test_qa_idempotency_key_rejects_different_request_fingerprint(tmp_path: Path):
+    with make_client(tmp_path) as client:
+        material = upload(client, "idempotent-mismatch.txt", "A stable source supports idempotent responses.")
+        index(client, material["material_id"])
+        headers = {"Idempotency-Key": "qa-mismatch-001"}
+        first = client.post("/api/qa/ask", json={
+            "question": "stable source", "material_ids": [material["material_id"]],
+        }, headers=headers)
+        assert first.status_code == 200
+        mismatch = client.post("/api/qa/ask", json={
+            "question": "different question", "material_ids": [material["material_id"]],
+        }, headers=headers)
+        assert mismatch.status_code == 409
+        assert mismatch.json()["detail"] == "qa_idempotency_key_mismatch"
+
+
 def test_qa_idempotency_key_rejects_running_operation_and_failure_allows_retry(tmp_path: Path):
     with make_client(tmp_path, fake=False) as client:
         material = upload(client, "idempotency-retry.txt", "A source supports retry after failure.")
@@ -300,7 +316,7 @@ def test_qa_not_configured_persists_failed_operation_without_answer(tmp_path: Pa
         assert response.status_code == 503
         assert response.json()["detail"] == "provider_not_configured"
         with connect(tmp_path / "studybuddy.sqlite3") as db:
-            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "provider_not_configured"
+            assert db.execute("SELECT error_code FROM ai_operations WHERE operation_type = 'qa_answer'").fetchone()[0] == "provider_not_configured"
             assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE role = 'assistant'").fetchone()[0] == 0
@@ -344,7 +360,7 @@ def test_qa_rejects_provider_forged_citation(monkeypatch, tmp_path: Path):
         assert response.status_code == 500
         assert response.json()["detail"] == "qa_generation_failed"
         with connect(tmp_path / "studybuddy.sqlite3") as db:
-            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "citation_verification_failed"
+            assert db.execute("SELECT error_code FROM ai_operations WHERE operation_type = 'qa_answer'").fetchone()[0] == "citation_verification_failed"
             assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
 
@@ -371,7 +387,7 @@ def test_qa_rejects_provider_without_citation(monkeypatch, tmp_path: Path):
         assert response.status_code == 500
         assert response.json()["detail"] == "qa_generation_failed"
         with connect(tmp_path / "studybuddy.sqlite3") as db:
-            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "citation_verification_failed"
+            assert db.execute("SELECT error_code FROM ai_operations WHERE operation_type = 'qa_answer'").fetchone()[0] == "citation_verification_failed"
             assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE role = 'assistant'").fetchone()[0] == 0
@@ -394,7 +410,7 @@ def test_qa_answer_persistence_rolls_back_on_citation_failure(tmp_path: Path):
             assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_citations").fetchone()[0] == 0
             assert db.execute("SELECT COUNT(*) FROM qa_messages WHERE role = 'assistant'").fetchone()[0] == 0
-            assert db.execute("SELECT error_code FROM ai_operations").fetchone()[0] == "qa_persist_failed"
+            assert db.execute("SELECT error_code FROM ai_operations WHERE operation_type = 'qa_answer'").fetchone()[0] == "qa_persist_failed"
 
 
 def test_qa_input_and_deleted_source_boundaries(tmp_path: Path):

@@ -63,13 +63,14 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 ## 四、当前正式系统状态
 
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
-- 文件材料管理 v1 核心路径局部 `real-pass`。
-- 当前项目 Phase 4 可信 Q&A 最小闭环已完成。
-- 下一步最高优先级：Phase 5 真实 Provider 接入。
+- 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
+- Phase 7 仍为 partial：真实 embedding provider、retrieval mode Chromium final acceptance、完整 lease/失败重试证据未完成。
+- 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
+- Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
 ## 五、下一步准备
 
-在进入 Phase 5 真实 Provider 阶段之前，在 `studybuddy-composer` 保持以下组件 smoke 证据可复核：
+Phase 7 收口前，不启动 Phase 8/9 的正式业务实现。Phase 7 收口后，先建立 Phase 8 Cards/Exercises，再按 9A–9D 顺序推进学习领域基础、资料学习、练习反馈和条件性扩展服务。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序

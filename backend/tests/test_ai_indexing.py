@@ -149,6 +149,23 @@ def test_embedding_verify_is_read_only_and_reports_payload_issues(tmp_path: Path
             assert revision["id"]
 
 
+def test_embedding_index_lease_failure_and_retry_are_auditable(tmp_path: Path):
+    with client(tmp_path) as c:
+        created = upload(c, b"Lease retry source text.")
+        material_id = created["material_id"]
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            index_material_revision(db, material_id, created["extraction_id"])
+            from app.repository import create_embedding_index_operation, finish_embedding_index_operation, reclaim_stale_embedding_operations
+            created_id = create_embedding_index_operation(db, project_id="default", material_id=material_id, source_revision="revision-test")
+            db.execute("UPDATE ai_operations SET started_at=? WHERE id=?", ("2000-01-01T00:00:00+00:00", created_id))
+            db.commit()
+            assert reclaim_stale_embedding_operations(db, project_id="default", lease_seconds=1) == 1
+            assert tuple(db.execute("SELECT status,error_code FROM ai_operations WHERE id=?", (created_id,)).fetchone()) == ("stale", "embedding_index_lease_expired")
+            retry_id = create_embedding_index_operation(db, project_id="default", material_id=material_id, source_revision="revision-test", retry_count=1)
+            finish_embedding_index_operation(db, retry_id, status="failed", error_code="embedding_provider_timeout")
+            assert tuple(db.execute("SELECT retry_count,status,error_code FROM ai_operations WHERE id=?", (retry_id,)).fetchone()) == (1, "failed", "embedding_provider_timeout")
+
+
 def test_embedding_verify_rejects_ambiguous_scope(tmp_path: Path):
     with connect(tmp_path / "studybuddy.sqlite3") as db:
         with pytest.raises(ValueError, match="embedding_verify_ambiguous_scope"):
