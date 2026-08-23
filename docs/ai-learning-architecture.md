@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-状态：architecture plus Phase 4–7 implementation 和 Phase 8 backend MVP；material revision、deterministic chunks、lexical/vector/hybrid retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。Phase 8.1 schema、8.2 Cards backend MVP 与 8.3 Exercises backend MVP 已实现并有 backend tests；AI draft generation、Cards/Exercises UI、人工简答复核和学习计划仍按主路线图推进。
+状态：architecture plus Phase 4–7 implementation 和 Phase 8.1–8.4 backend；material revision、deterministic chunks、lexical/vector/hybrid retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。Phase 8.1 schema、8.2 Cards backend MVP、8.3 Exercises backend MVP 与 8.4 fake-provider citation-safe draft generation 已实现并有 backend tests；Cards/Exercises UI、人工简答复核和学习计划仍按主路线图推进。
 
 ## 1. 范围与原则
 
@@ -185,11 +185,11 @@ assistant answer 必须关联 operation、retrieval_run 和独立 citations。pr
 
 ## 10. Cards
 
-Phase 8.2 已实现 backend MVP：`study_decks`、`study_cards`、`card_citations`、`card_reviews`。card 状态为 `draft/ready/rejected/stale/archived`；现有 API 支持 deck/card create/list、draft edit、confirm 和 append-only review。AI card 永远先 draft，确认时需要有效 citation；用户编辑会标记 `edited_by_user`，已 ready/archived card 不可通过该 API 编辑。完整 source lifecycle、AI generation 和 UI 仍未完成。
+Phase 8.2 已实现 backend MVP：`study_decks`、`study_cards`、`card_citations`、`card_reviews`。card 状态为 `draft/ready/rejected/stale/archived`；现有 API 支持 deck/card create/list、draft edit、confirm 和 append-only review。8.4 可从显式已索引 single-material scope 通过 lexical/vector/hybrid retrieval 生成 cited AI card draft；operation/retrieval/provider metadata 与 draft/citation 原子保存，重复请求可 replay，失败或 source stale 不留 draft。AI card 永远先 draft，确认时需要有效 citation；用户编辑会标记 `edited_by_user`，已 ready/archived card 不可通过该 API 编辑。完整 source lifecycle、UI 和真实 Provider generation evidence 仍未完成。
 
 ## 11. Exercises
 
-Phase 8.3 已实现 backend MVP：`exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。首批且仅支持 `multiple_choice`、`true_false`、`short_answer`；不实现 cloze/ordering。题干、options、answer key、explanation 和引用均有严格大小/类型校验；普通 exercise/attempt-history response 不返回 `answer_key_json` 或 `answer_json`。exercise 有 `user_created`/`ai_generated` provenance，状态为 `draft/ready/rejected/stale/archived`，并支持 draft-only edit、confirm/reject/archive。AI exercise 必须绑定 active current source revision 和 valid revision/chunk/span citation，confirm 会重新验证；delete/restore/purge/re-index 会反映 citation lifecycle。MC/TF 使用 deterministic grading 并 append-only 保存 attempts；short answer 只返回 `pending_review`，人工复核 API、AI generation 和 UI 仍未实现。
+Phase 8.3 已实现 backend MVP：`exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。首批且仅支持 `multiple_choice`、`true_false`、`short_answer`；不实现 cloze/ordering。题干、options、answer key、explanation 和引用均有严格大小/类型校验；普通 exercise/attempt-history response 不返回 `answer_key_json` 或 `answer_json`。exercise 有 `user_created`/`ai_generated` provenance，状态为 `draft/ready/rejected/stale/archived`，并支持 draft-only edit、confirm/reject/archive。8.4 可生成 cited AI exercise draft，但 provider output 必须是精确 JSON schema、每题只能引用本次 context 的 current revision citation，服务端重验后才落库；raw prompt/provider response 不保存。AI exercise 必须绑定 active current source revision 和 valid revision/chunk/span citation，confirm 会重新验证；delete/restore/purge/re-index 会反映 citation lifecycle。MC/TF 使用 deterministic grading 并 append-only 保存 attempts；short answer 只返回 `pending_review`，人工复核 API、UI 和真实 Provider generation evidence 仍未实现。
 
 ## 12. Study plans
 
@@ -247,4 +247,4 @@ Fake provider 覆盖未配置、timeout、rate-limit、auth/quota、malformed JS
 
 ## 18. 当前不实现
 
-后续设计不自动索引历史材料、不引入外部 vector DB 或 worker；Phase 8 的 AI generation、Cards/Exercises UI、人工简答复核和 plans 完整功能仍未实现。当前 Phase 4 的 AI 表、API、Q&A UI 和 browser 验收、Phase 7 retrieval/indexing 范围，以及 Phase 8 Cards/Exercises backend MVP 已实现；后续变更仍必须遵循项目主 Phase 路线和 migration 治理。
+后续设计不自动索引历史材料、不引入外部 vector DB 或 worker；Phase 8 的 Cards/Exercises UI、人工简答复核和 plans 完整功能仍未实现。当前 Phase 4 的 AI 表、API、Q&A UI 和 browser 验收、Phase 7 retrieval/indexing 范围，以及 Phase 8 Cards/Exercises backend MVP 和 fake-provider citation-safe draft generation 已实现；后续变更仍必须遵循项目主 Phase 路线和 migration 治理。

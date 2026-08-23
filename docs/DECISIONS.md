@@ -8,6 +8,13 @@
 - Phase 9 is split into 9A learning domain/plan foundation, 9B S1/S2 material learning, 9C S3/S4/S5 exercise and feedback workflows, and conditional 9D S6/S7 extension services. No single Phase 9 completion claim may cover all of these without independent gates.
 - Phase 8 must close Cards/Exercises before Phase 9C can begin. Its Phase 7 prerequisite is closed for the documented Mistral exact configuration; this does not establish generic multi-provider or global production readiness.
 
+## 2026-08-28: Phase 8.4 citation-safe draft generation boundary
+
+- Generation accepts only an explicit indexed single-material scope, topic, retrieval policy, artifact type and bounded count. It never auto-indexes or repairs source data.
+- Provider output is bounded and parsed as exact in-memory JSON; raw prompts and raw provider responses are not persisted. Each generated item must cite only current context keys, which are revalidated server-side against the active current revision/chunk/span before any draft is saved.
+- The operation, generated drafts and citations commit atomically. Provider/schema/citation/source/SQLite failures retain only a safe failed `ai_operations` audit row; no half-draft or ready artifact remains. Generated artifacts are always `draft` and cannot overwrite edited/confirmed artifacts.
+- Idempotency-Key replays only a succeeded identical request, conflicts while running or on fingerprint mismatch, and permits failed-key retry. This scope is fake-provider/backend evidence only; real Provider generation and UI acceptance remain future gates.
+
 ## 2026-08-28: Phase 8.3 Exercise MVP boundary
 
 - Exercise persistence stays migration-controlled: v7 creates the Card/Exercise tables and v8 adds explicit `exercise_kind` provenance; runtime code does not create business tables.
@@ -83,7 +90,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance。Phase 7 已按 Mistral 精确配置完成；Phase 8 Cards/Exercises backend MVP 已实现。AI generation、Cards/Exercises UI、Plans 等后续业务逻辑仍未实现。
+- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance。Phase 7 已按 Mistral 精确配置完成；Phase 8 Cards/Exercises backend MVP 与 fake-provider citation-safe draft generation 已实现。Cards/Exercises UI、真实 Provider generation evidence、Plans 等后续业务逻辑仍未实现。
 
 ## 2026-08-19: four-directory boundary
 
@@ -108,7 +115,7 @@
 - I1 migration/schema versioning、I2 backup/restore operator 闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成。
 - I4 中 Windows ACL/只读目录、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏等项保持 `not_verified`，并已明确作为 v1 运行边界接受；这些项目不阻塞基础设施 v1 收口，也不得标记为已通过。
 - 自此可以正式宣告 StudyBuddy **本地单进程文件材料基础设施 v1 基本完工**，并作为 AI MVP 的数据基础。
-- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前优先级是 Phase 8.4 AI draft generation，随后才是 Cards/Exercises UI 与完整 closeout；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
+- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前优先级是 Phase 8.5 Cards/Exercises UI 与 Chromium acceptance，随后才是完整 closeout；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
 
 ## 2026-08-25: local environment governance map
 

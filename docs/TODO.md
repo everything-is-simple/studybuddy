@@ -141,7 +141,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 8.3 Exercises backend MVP：set、`multiple_choice`/`true_false`/`short_answer`、draft → ready/rejected/archived、draft-only edit、attempt history、deterministic grading 与 short-answer `pending_review`。
 - [x] AI exercise 必须有 current active source revision 与 valid revision/chunk/span citation；confirm 时重新验证，source delete/restore/purge 与 revision re-index 更新 citation lifecycle。
 - [x] answer key 和 submitted answer 不进入普通 exercise/attempt 列表响应；backup/restore 和 restart 保留 exercise/attempt history。
-- [ ] 8.4 AI draft generation：接入 retrieval/provider/`ai_operations`；AI 生成 card/exercise 默认 `draft`，不得静默覆盖 user-edited 或 confirmed artifact。
+- [x] 8.4 AI draft generation：card/exercise generation 接入显式 indexed single-material lexical/vector/hybrid retrieval、context/citation verification、provider 和 `ai_operations`；结构化输出仅在内存校验，不持久化 raw prompt/response，成功只原子保存 cited draft，失败只保留安全 failed operation。支持 1–10 draft、Idempotency-Key replay/running conflict/failed retry、source-stale、malformed/forged citation、provider failure、rollback 边界；fake provider backend 验收完成，真实 Provider 不在本子任务扩大范围。
 - [ ] 8.5 Cards/Exercises UI、Chromium 用户路径和可访问性验收。
 - [ ] 8.6 Phase 8 完整 citation source lifecycle、backup/restore、全量回归、正式证据/文档收口；完成后删除 `docs/phase8/` 临时执行资料。
 

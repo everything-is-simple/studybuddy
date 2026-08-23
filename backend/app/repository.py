@@ -528,6 +528,9 @@ def review_card(connection: sqlite3.Connection, *, project_id: str, card_id: str
 
 MAX_EXERCISE_EXPLANATION_LENGTH = 4000
 MAX_EXERCISE_ANSWER_LENGTH = 1000
+MAX_GENERATION_TOPIC_LENGTH = 500
+MAX_GENERATION_COUNT = 10
+GENERATION_PROMPT_VERSION = "phase8_draft_generation_v1"
 
 
 def _exercise_payload(payload: dict[str, object], exercise_type: str) -> tuple[str, list[str], object, str]:
@@ -643,6 +646,176 @@ def create_exercise_set(connection: sqlite3.Connection, *, project_id: str, titl
         connection.execute("INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)", (project_id, "Default project", now))
         connection.execute("INSERT INTO exercise_sets VALUES (?,?,?,?,?,?,?,?)", (set_id, project_id, title, description, "active", now, now, None))
     return get_exercise_set(connection, project_id=project_id, set_id=set_id) or {}
+
+
+def _generation_fingerprint(*, artifact_kind: str, container_id: str, topic: str, material_ids: list[str],
+                            retrieval_mode: str, allow_fallback: bool, count: int,
+                            exercise_type: str | None, source_revision: str | None) -> str:
+    payload = "\x1f".join((artifact_kind, container_id, topic.strip(), "\x1e".join(sorted(material_ids)),
+                            retrieval_mode, str(int(allow_fallback)), str(count), exercise_type or "", source_revision or ""))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _generation_public(connection: sqlite3.Connection, operation: sqlite3.Row) -> dict[str, object] | None:
+    if operation["status"] != "succeeded" or not operation["output_artifact_id"]:
+        return None
+    artifact_kind = str(operation["operation_type"]).removeprefix("generate_")
+    if artifact_kind == "card":
+        rows = connection.execute("SELECT * FROM study_cards WHERE generation_operation_id=? ORDER BY created_at,id", (operation["id"],)).fetchall()
+        artifacts = [_card_public(connection, row) for row in rows]
+    else:
+        rows = connection.execute("SELECT * FROM exercises WHERE generation_operation_id=? ORDER BY created_at,id", (operation["id"],)).fetchall()
+        artifacts = [_exercise_public(connection, row) for row in rows]
+    if not artifacts:
+        return None
+    return {"status": "succeeded", "operation_id": operation["id"], "retrieval_run_id": operation["retrieval_run_id"],
+            "artifacts": artifacts}
+
+
+def _card_public(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
+    return {**dict(row), "tags": json.loads(row["tags_json"]),
+            "citations": list_card_citations(connection, str(row["id"]))}
+
+
+def create_generation_operation(connection: sqlite3.Connection, *, project_id: str, artifact_kind: str,
+                                container_id: str, topic: str, material_ids: list[str], retrieval_mode: str,
+                                allow_fallback: bool, count: int, exercise_type: str | None,
+                                source_revision: str | None, request_id: str | None,
+                                idempotency_key: str | None) -> dict[str, object]:
+    if artifact_kind not in {"card", "exercise"} or not isinstance(topic, str) or not topic.strip() or len(topic.strip()) > MAX_GENERATION_TOPIC_LENGTH:
+        raise ValueError("generation_invalid_request")
+    if (not material_ids or len(material_ids) != len(set(material_ids)) or len(material_ids) > 200 or
+            retrieval_mode not in {"lexical", "vector", "hybrid"} or not isinstance(allow_fallback, bool) or
+            not isinstance(count, int) or isinstance(count, bool) or not 1 <= count <= MAX_GENERATION_COUNT):
+        raise ValueError("generation_invalid_request")
+    if artifact_kind == "card":
+        if exercise_type is not None or connection.execute("SELECT 1 FROM study_decks WHERE id=? AND project_id=? AND status='active'", (container_id, project_id)).fetchone() is None:
+            raise ValueError("deck_not_found" if exercise_type is None else "generation_invalid_request")
+    elif exercise_type not in {"multiple_choice", "true_false", "short_answer"} or connection.execute("SELECT 1 FROM exercise_sets WHERE id=? AND project_id=? AND status='active'", (container_id, project_id)).fetchone() is None:
+        raise ValueError("exercise_set_not_found" if exercise_type in {"multiple_choice", "true_false", "short_answer"} else "generation_invalid_request")
+    rows = connection.execute(
+        "SELECT m.id, r.id AS revision_id FROM materials m LEFT JOIN material_revisions r ON r.material_id=m.id AND r.is_current=1 "
+        "WHERE m.project_id=? AND m.id IN ({})".format(",".join("?" for _ in material_ids)),
+        [project_id, *material_ids],
+    ).fetchall()
+    if len(rows) != len(material_ids):
+        raise ValueError("material_not_found")
+    if len(material_ids) != 1:
+        raise ValueError("generation_invalid_request")
+    material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (material_ids[0],)).fetchone()
+    if material is None:
+        raise ValueError("material_not_found")
+    if material["deleted_at"] is not None:
+        raise ValueError("source_deleted")
+    current_revision = str(rows[0]["revision_id"]) if len(rows) == 1 and rows[0]["revision_id"] is not None else None
+    if source_revision is not None and source_revision != current_revision:
+        raise ValueError("generation_stale_source")
+    if any(row["revision_id"] is None for row in rows) or connection.execute(
+            "SELECT COUNT(*) FROM chunks c JOIN material_revisions r ON r.id=c.revision_id JOIN materials m ON m.id=c.material_id "
+            "WHERE m.project_id=? AND m.deleted_at IS NULL AND r.is_current=1 AND c.status='ready' "
+            "AND c.material_id IN ({})".format(",".join("?" for _ in material_ids)), [project_id, *material_ids]).fetchone()[0] == 0:
+        raise ValueError("retrieval_not_ready")
+    fingerprint = _generation_fingerprint(artifact_kind=artifact_kind, container_id=container_id, topic=topic,
+                                          material_ids=material_ids, retrieval_mode=retrieval_mode,
+                                          allow_fallback=allow_fallback, count=count, exercise_type=exercise_type,
+                                          source_revision=current_revision)
+    with connection:
+        if idempotency_key:
+            existing = connection.execute("SELECT * FROM ai_operations WHERE project_id=? AND idempotency_key=?", (project_id, idempotency_key)).fetchone()
+            if existing is not None:
+                if existing["input_fingerprint"] != fingerprint:
+                    raise ValueError("generation_idempotency_key_mismatch")
+                if existing["status"] == "running":
+                    raise ValueError("generation_in_progress")
+                replay = _generation_public(connection, existing)
+                if replay is not None:
+                    return {**replay, "replay": True}
+                connection.execute("UPDATE ai_operations SET idempotency_key=NULL WHERE id=?", (existing["id"],))
+        operation_id, now = f"operation_{uuid.uuid4().hex}", utc_now()
+        connection.execute(
+            "INSERT INTO ai_operations (id,operation_type,status,project_id,material_id,input_fingerprint,source_revision,"
+            "retrieval_policy_version,prompt_version,request_id,retry_count,created_at,started_at,idempotency_key) "
+            "VALUES (?,?,'running',?,?,?, ?,?,?,?,0,?,?,?)",
+            (operation_id, f"generate_{artifact_kind}", project_id, material_ids[0] if len(material_ids) == 1 else None,
+             fingerprint, current_revision, {"lexical": RETRIEVAL_POLICY_VERSION, "vector": VECTOR_POLICY_VERSION, "hybrid": HYBRID_POLICY_VERSION}[retrieval_mode],
+             GENERATION_PROMPT_VERSION, request_id, now, now, idempotency_key),
+        )
+    return {"operation_id": operation_id, "replay": False, "source_revision": current_revision}
+
+
+def fail_generation_operation(connection: sqlite3.Connection, operation_id: str, error_code: str) -> None:
+    with connection:
+        connection.execute("UPDATE ai_operations SET status='failed',error_code=?,finished_at=? WHERE id=? AND status='running'", (error_code, utc_now(), operation_id))
+
+
+def persist_generated_draft(connection: sqlite3.Connection, *, project_id: str, operation_id: str,
+                            artifact_kind: str, container_id: str, source_revision: str,
+                            items: list[dict[str, object]], citation_groups: list[list[str]],
+                            context_blocks: list[dict[str, object]], provider_id: str, model_id: str,
+                            prompt_tokens: int | None, completion_tokens: int | None, latency_ms: int,
+                            provider_request_id: str | None, total_tokens: int | None,
+                            finish_reason: str | None) -> list[dict[str, object]]:
+    if not items or len(items) != len(citation_groups) or any(not isinstance(item, dict) for item in items):
+        raise ValueError("generation_schema_invalid")
+    with connection:
+        operation = connection.execute("SELECT status,source_revision FROM ai_operations WHERE id=? AND project_id=?", (operation_id, project_id)).fetchone()
+    if operation is None or operation["status"] != "running" or operation["source_revision"] != source_revision:
+        raise ValueError("generation_stale_source")
+    allowed = {str(block.get("citation_key")): block for block in context_blocks}
+    prepared: list[tuple[dict[str, object], list[dict[str, object]]]] = []
+    for item, citation_keys in zip(items, citation_groups):
+        if not isinstance(citation_keys, list) or not citation_keys:
+            raise ValueError("generation_schema_invalid")
+        citations_payload: list[dict[str, object]] = []
+        for key in citation_keys:
+            block = allowed.get(key)
+            source = block.get("source_info") if isinstance(block, dict) else None
+            if not isinstance(source, dict) or source.get("revision_id") != source_revision:
+                raise ValueError("citation_verification_failed")
+            validation = validate_citation_key(connection, key)
+            if validation.get("status") != "valid" or validation.get("revision_id") != source_revision:
+                raise ValueError("citation_verification_failed")
+            citations_payload.append({"citation_key": key, "chunk_id": validation["chunk_id"], "quote": str(block["text"])[:500]})
+        if len({entry["citation_key"] for entry in citations_payload}) != len(citations_payload):
+            raise ValueError("citation_verification_failed")
+        prepared.append((item, citations_payload))
+    artifact_ids: list[str] = []
+    with connection:
+        operation = connection.execute("SELECT status,source_revision FROM ai_operations WHERE id=? AND project_id=?", (operation_id, project_id)).fetchone()
+        if operation is None or operation["status"] != "running" or operation["source_revision"] != source_revision:
+            raise ValueError("generation_stale_source")
+        for item, citations_payload in prepared:
+            if artifact_kind == "card":
+                front, back, explanation, tags = _validate_card_payload(item)
+                artifact_id = f"card_{uuid.uuid4().hex}"
+                citation_rows = _citation_rows(connection, citations_payload, code="generation_schema_invalid", artifact_id=artifact_id, table="card")
+                connection.execute("INSERT INTO study_cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (artifact_id, container_id, project_id, "ai_generated", "draft", front, back, explanation, json.dumps(tags, ensure_ascii=False), source_revision, 0, operation_id, utc_now(), utc_now(), None, None))
+                connection.executemany("INSERT INTO card_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citation_rows)
+            else:
+                exercise_type = item.get("exercise_type")
+                if not isinstance(exercise_type, str):
+                    raise ValueError("generation_schema_invalid")
+                prompt, options, answer_key, explanation = _exercise_payload(item, exercise_type)
+                artifact_id = f"exercise_{uuid.uuid4().hex}"
+                citation_rows = _exercise_citations(connection, citations_payload, artifact_id)
+                _validate_exercise_source_revision(connection, source_revision, citation_rows, "ai_generated")
+                connection.execute(
+                    "INSERT INTO exercises (id,set_id,project_id,exercise_type,exercise_kind,status,prompt,options_json,answer_key_json,"
+                    "explanation,source_revision,edited_by_user,generation_operation_id,created_at,updated_at,confirmed_at,archived_at) "
+                    "VALUES (?,?,?,?,?,'draft',?,?,?,?,?,0,?,?,?,NULL,NULL)",
+                    (artifact_id, container_id, project_id, exercise_type, "ai_generated", prompt, json.dumps(options, ensure_ascii=False),
+                     json.dumps(answer_key, ensure_ascii=False), explanation, source_revision, operation_id, utc_now(), utc_now()),
+                )
+                connection.executemany("INSERT INTO exercise_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citation_rows)
+            artifact_ids.append(artifact_id)
+        connection.execute(
+            "UPDATE ai_operations SET status='succeeded',output_artifact_id=?,provider_id=?,model_id=?,provider_request_id=?,"
+            "prompt_tokens=?,completion_tokens=?,total_tokens=?,latency_ms=?,finish_reason=?,finished_at=? WHERE id=? AND status='running'",
+            (artifact_ids[0], provider_id, model_id, provider_request_id, prompt_tokens, completion_tokens, total_tokens,
+             latency_ms, finish_reason, utc_now(), operation_id),
+        )
+    rows = [connection.execute("SELECT * FROM study_cards WHERE id=?" if artifact_kind == "card" else "SELECT * FROM exercises WHERE id=?", (artifact_id,)).fetchone() for artifact_id in artifact_ids]
+    return [_card_public(connection, row) if artifact_kind == "card" else _exercise_public(connection, row) for row in rows]
 
 
 def list_exercises(connection: sqlite3.Connection, *, project_id: str, set_id: str | None = None) -> list[dict[str, object]]:
