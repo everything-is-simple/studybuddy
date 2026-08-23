@@ -86,4 +86,4 @@ I1 是当前 AI Phase 4（AI 最小闭环）的硬前置，现已完成；Phase 
 
 > StudyBuddy 的**本地单进程基础设施 v1 已基本完工**：支持单实例、本地磁盘、SQLite、versioned migration 和手工 backup/restore；文件材料管理核心路径局部 real-pass，基础安全、一致性、恢复和运维边界已实现并有明确运行限制。
 
-仍不得宣称支持多进程共享 data root、云同步、多用户、分布式生产部署、真实断电/磁盘损坏/网络盘恢复或全局生产级 real-pass。当前项目 Phase 4 Q&A、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；下一优先级是显式 gate 下的精确 P6-E real Provider UI evidence，随后按路线图进入 Phase 7。
+仍不得宣称支持多进程共享 data root、云同步、多用户、分布式生产部署、真实断电/磁盘损坏/网络盘恢复或全局生产级 real-pass。当前项目 Phase 4 Q&A、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口，DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的精确 P6-E real Provider UI path 也已通过；当前优先级是按路线图完成 Phase 7 的剩余 embedding/retrieval 验收。

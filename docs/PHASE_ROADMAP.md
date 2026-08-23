@@ -143,7 +143,7 @@ migration / schema versioning
 
 ### Phase 6：AI MVP 产品化与整体验收
 
-**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接、P6-D 统一导航/通知/响应式/可访问性已完成；P6-E fake Provider 核心工作流整体验收和失败矩阵已完成，DeepSeek/Agnes 本轮真实 UI 路径未执行。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
+**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接、P6-D 统一导航/通知/响应式/可访问性已完成；P6-E fake Provider 核心工作流、失败矩阵以及 DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 的精确真实 UI 路径均已通过。其它 Provider/model 和系统级辅助技术仍未完成独立验收。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
 
 P6-A 已明确默认运行状态为 `not_configured`，显式 `fake` 为 deterministic/demo，generic OpenAI-compatible 配置为 `configured` + `unverified`；`GET /api/ai/capabilities` 和 UI 已统一安全状态语义。capabilities 不执行网络 health probe，真实 Provider verified 仍仅按精确 provider/model/gateway 的既有 evidence 判定。
 

@@ -41,7 +41,7 @@
 
 ## Phase 4：AI 最小闭环（已完成）
 
-目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter、精确 Provider smoke 和 Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；下一执行项为显式 gate 下的 P6-E 精确真实 Provider UI evidence，随后进入 Phase 7。
+目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter、精确 Provider smoke 和 Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前执行重点是 Phase 7 partial 的真实 embedding provider、retrieval mode 浏览器验收和 lease/失败重试专项。
 
 ### 顺序与任务
 
@@ -82,8 +82,8 @@ revision → chunks → retrieval → citations → Q&A
 - [x] provider timeout/rate-limit/auth/quota/refusal/malformed response 稳定错误映射。
 - [x] capabilities endpoint、usage/latency/provider request metadata，禁止 secret 泄露。
 - [x] 同步 Q&A stale transition：每个 Q&A 请求会事务性回收同 project 中超过 5 分钟 lease 的 `running` operation，标记 `stale/qa_operation_stale` 并保留审计消息；同一 Idempotency-Key 可随后创建新 operation。未实现后台扫描、cancel、跨进程协调或真实断电恢复。
-- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；其它 Provider 仍待验收。
-- [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 强制 target 与 runtime provider 一致；通用三次 API acceptance runner 已实现，每次使用独立临时 data root，`2/3` 仅为 API evidence；Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI smoke；`pro`/`agnes-2.5-pro` API smoke 返回 `provider_unavailable`，UI 未运行，仍待独立验证；其它 Agnes profiles 未验证）。
+- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；Agnes `agnes-2.5-flash` 也已通过精确 adapter/API/UI smoke；其它 Provider/model 仍待独立验收。
+- [ ] ARK、硅基流动、Sub2API 及其它 Agnes profiles 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 强制 target 与 runtime provider 一致；通用三次 API acceptance runner 已实现，每次使用独立临时 data root，`2/3` 仅为 API evidence；Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI smoke；`pro`/`agnes-2.5-pro` API smoke 返回 `provider_unavailable`，UI 未运行，仍待独立验证）。
 
 **Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝、secret redaction、真实 Provider failure UX、retry、重复点击、安全渲染、显式 Idempotency-Key 幂等和请求触发的 stale recovery 已实现并验证。DeepSeek 官方 `deepseek-chat` 与 Agnes `advanced`/`agnes-2.5-flash` 的 adapter/API/UI smoke 均有精确 evidence；ARK、硅基流动、其它 Agnes profiles、Sub2API 仍待独立验证。P6-E 真实 UI path 已在本轮以显式 gate 分别通过；不得将该精确 evidence 扩大解释为所有 Provider/model 的可用性。
 
@@ -163,9 +163,9 @@ revision → chunks → retrieval → citations → Q&A
 - [x] EmbeddingProvider protocol、独立 registry、deterministic fake provider、环境配置、capability 安全扩展和基础稳定错误边界。
 - [x] 显式增量 indexing、material rebuild/retry、只读 verify、失败状态基础处理和 active/current/ready 生命周期过滤。
 - [x] vector cosine、hybrid RRF、固定 candidate pool/RRF_K/tie-breaker、lexical fallback policy 和 lexical/vector/final score persistence 基础。
-- [ ] 真实 provider adapter、完整失败重试/lease、embedding/retrieval 专项 backup/restore 验收、Q&A/citation/API/UI 接入。
-- [ ] Study plan / items：draft → confirm → active，完成记录不可静默覆盖。
-- [ ] 明确并实现首批 S1–S7。
+- [ ] 真实 embedding provider adapter 与完整错误映射。
+- [x] embedding/retrieval/Q&A metadata backup/restore 专项验收、损坏生命周期测试和 synthetic benchmark。
+- [ ] retrieval mode UI/Chromium final acceptance，以及完整 indexing lease/失败重试专项。
 
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
 - [ ] structured tracing、扩展 metrics、degraded readiness。
@@ -179,7 +179,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ## 明确暂不做
 
-在 Phase 5 真实 Provider 和后续产品路线明确前，不并行推进：OCR、ASR、ZIP import、文件夹 export、外部 vector database、复杂后台队列、多用户/协作、云同步、订阅/账户系统。
+在 Phase 7 收口和后续产品路线明确前，不并行推进：OCR、ASR、ZIP import、文件夹 export、外部 vector database、复杂后台队列、多用户/协作、云同步、订阅/账户系统。
 
 ## 每个 TODO 的交付模板
 
