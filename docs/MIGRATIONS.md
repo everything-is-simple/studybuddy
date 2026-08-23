@@ -1,6 +1,6 @@
 # Database migrations
 
-Current schema version: **6**.
+Current schema version: **7**.
 
 The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The migration runner is `backend/app/migrations/runner.py`.
 
@@ -11,6 +11,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 4 | qa_operation_idempotency
 5 | phase7_embedding_schema
 6 | search_index_schema_contract
+7 | phase8_cards_exercises_schema
 ```
 
 ## Rules
