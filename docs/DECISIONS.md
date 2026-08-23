@@ -8,6 +8,13 @@
 - Phase 9 is split into 9A learning domain/plan foundation, 9B S1/S2 material learning, 9C S3/S4/S5 exercise and feedback workflows, and conditional 9D S6/S7 extension services. No single Phase 9 completion claim may cover all of these without independent gates.
 - Phase 8 must close Cards/Exercises before Phase 9C can begin. Phase 7 must close its remaining real embedding, retrieval-mode Chromium and indexing lease/retry evidence before Phase 8 begins, according to the current roadmap gate.
 
+## 2026-08-28: Phase 8.3 Exercise MVP boundary
+
+- Exercise persistence stays migration-controlled: v7 creates the Card/Exercise tables and v8 adds explicit `exercise_kind` provenance; runtime code does not create business tables.
+- Exercise MVP scope is only `multiple_choice`, `true_false` and `short_answer`; MC/TF grading is deterministic, while short answers are persisted as `pending_review` and never presented as deterministically correct.
+- AI exercises require an active current `source_revision` and valid revision/chunk/span citations; both creation and draft confirmation revalidate source binding. User-created source-free exercises remain permitted.
+- Exercise attempts are append-only. Normal exercise and attempt-history responses exclude answer keys and submitted-answer JSON. AI generation, UI/Chromium acceptance and human short-answer review remain later Phase 8 work.
+
 ## 2026-08-28: Phase 7 acceptance closure boundary
 
 - Phase 7 retrieval-mode UI/Chromium acceptance is closed: lexical, vector, hybrid, hybrid lexical fallback and explicit vector non-fallback failure are covered by `backend/tests/browser_phase7.spec.js`.

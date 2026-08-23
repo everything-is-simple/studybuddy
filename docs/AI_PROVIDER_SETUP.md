@@ -44,7 +44,7 @@ set STUDYBUDDY_AI_PROVIDER=<provider-id>
 set STUDYBUDDY_AI_MODEL=<provider-issued-model-id>
 set STUDYBUDDY_AI_BASE_URL=https://<provider-base-url>
 set STUDYBUDDY_AI_API_KEY=<local-secret>
-D:/miniconda/py310/python.exe -m pytest backend/tests/test_real_provider_smoke.py -q
+C:/miniconda/py310/python.exe -m pytest backend/tests/test_real_provider_smoke.py -q
 ```
 
 A successful short request does not prove quota, billing, model quality, long-context behavior, uptime or a different model. Record only redacted results and stable error codes in the capability matrix.

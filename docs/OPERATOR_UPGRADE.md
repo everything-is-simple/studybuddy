@@ -29,7 +29,7 @@ StudyBuddy 进程或其他 SQLite writer 使用同一个数据库。
 
 ```bat
 cd /d H:\studybuddy\backend
-D:\miniconda\py310\python.exe -m app.cli schema-version ^
+C:\miniconda\py310\python.exe -m app.cli schema-version ^
   --database <live-data-root>\studybuddy.sqlite3
 ```
 
@@ -39,7 +39,7 @@ history。
 4. 创建 live data root 的备份：
 
 ```bat
-D:\miniconda\py310\python.exe -m app.cli backup ^
+C:\miniconda\py310\python.exe -m app.cli backup ^
   --data-root <live-data-root> ^
   --output <backup-root>
 ```
@@ -47,7 +47,7 @@ D:\miniconda\py310\python.exe -m app.cli backup ^
 5. 验证备份：
 
 ```bat
-D:\miniconda\py310\python.exe -m app.cli verify-backup ^
+C:\miniconda\py310\python.exe -m app.cli verify-backup ^
   --backup <backup-root>
 ```
 
@@ -97,7 +97,7 @@ GET /api/health
 再次检查 schema version：
 
 ```bat
-D:\miniconda\py310\python.exe -m app.cli schema-version ^
+C:\miniconda\py310\python.exe -m app.cli schema-version ^
   --database <live-data-root>\studybuddy.sqlite3
 ```
 
@@ -110,7 +110,7 @@ D:\miniconda\py310\python.exe -m app.cli schema-version ^
 必要时直接核对 migration history：
 
 ```bat
-D:\miniconda\py310\python.exe -c "import sqlite3; c=sqlite3.connect(r'<live-data-root>\studybuddy.sqlite3'); print(c.execute('SELECT version,name FROM schema_migrations ORDER BY version').fetchall()); print(c.execute('PRAGMA user_version').fetchone()[0]); c.close()"
+C:\miniconda\py310\python.exe -c "import sqlite3; c=sqlite3.connect(r'<live-data-root>\studybuddy.sqlite3'); print(c.execute('SELECT version,name FROM schema_migrations ORDER BY version').fetchall()); print(c.execute('PRAGMA user_version').fetchone()[0]); c.close()"
 ```
 
 期望结果：
@@ -158,7 +158,7 @@ database_migration_failed
 4. 优先使用原升级前已验证的 backup，恢复到一个**新的空目录**：
 
 ```bat
-D:\miniconda\py310\python.exe -m app.cli restore ^
+C:\miniconda\py310\python.exe -m app.cli restore ^
   --data-root <new-empty-target> ^
   --backup <verified-backup-root> ^
   --confirm

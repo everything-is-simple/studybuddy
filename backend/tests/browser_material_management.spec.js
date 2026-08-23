@@ -12,7 +12,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 function startServer() {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
-  return spawn('D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
+  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function waitReady() {
   for (let i = 0; i < 100; i++) {
@@ -34,7 +34,7 @@ function originalCountForHash(sourceHash) {
 function sqliteSnapshot() {
   const db = path.join(RUN_ROOT, 'studybuddy.sqlite3');
   const code = `import json, sqlite3; c=sqlite3.connect(r'${db}'); print(json.dumps({'materials':c.execute('SELECT COUNT(*) FROM materials').fetchone()[0], 'active_materials':c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NULL').fetchone()[0], 'deleted_materials':c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL').fetchone()[0], 'extractions':c.execute('SELECT COUNT(*) FROM extractions').fetchone()[0], 'text_spans':c.execute('SELECT COUNT(*) FROM text_spans').fetchone()[0], 'deleted_at_present':c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL').fetchone()[0]})); c.close()`;
-  return JSON.parse(spawnSync('D:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
+  return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
 }
 
 test('formal material management browser acceptance', async ({page}) => {
@@ -132,7 +132,7 @@ test('formal material management browser acceptance', async ({page}) => {
     const payload = {
       component: 'formal-material-management', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass',
       python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
-      startup_command: 'D:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8789', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_management.spec.js --workers=1 --reporter=line',
+      startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8789', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_management.spec.js --workers=1 --reporter=line',
       rename: {old_name: 'sample.txt', new_name: renameDialogValue, status: 'success', source_sha256_unchanged: true, internal_path_not_exposed: true, original_count_unchanged: true, refresh_readback: true, restart_readback: true},
       delete: {http_status: 204, status: 'deleted', deleted_at_present: true, hidden_from_list: true, detail_returns_404: true, refresh_readback: true, restart_readback: true, physical_deletion_attempted: false, extraction_preserved: true, text_spans_preserved: true, original_preserved: true},
       same_hash: {material_count: 2, original_file_count_before: sameHashOriginalCountBefore, original_file_count_after: originalCountForHash(survivorDetail.source_sha256), remaining_material_readable: true, internal_path_not_exposed: true, source_sha256_same: true},

@@ -369,6 +369,7 @@ def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite
         )
         if cursor.rowcount != 1:
             return None
+        _refresh_exercise_citations_for_material(connection, material_id)
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, "
@@ -525,6 +526,245 @@ def review_card(connection: sqlite3.Connection, *, project_id: str, card_id: str
     return {"id": review_id, "card_id": card_id, "result": result}
 
 
+MAX_EXERCISE_EXPLANATION_LENGTH = 4000
+MAX_EXERCISE_ANSWER_LENGTH = 1000
+
+
+def _exercise_payload(payload: dict[str, object], exercise_type: str) -> tuple[str, list[str], object, str]:
+    if exercise_type not in {"multiple_choice", "true_false", "short_answer"}:
+        raise ValueError("invalid_exercise_schema")
+    prompt = _validate_text(payload.get("prompt"), code="invalid_exercise_schema", maximum=MAX_EXERCISE_PROMPT_LENGTH)
+    explanation = payload.get("explanation", "")
+    if not isinstance(explanation, str) or len(explanation) > MAX_EXERCISE_EXPLANATION_LENGTH:
+        raise ValueError("invalid_exercise_schema")
+    options = payload.get("options", [])
+    if (not isinstance(options, list) or len(options) > MAX_EXERCISE_OPTIONS or
+            any(not isinstance(item, str) or not item.strip() or len(item) > 500 for item in options)):
+        raise ValueError("invalid_exercise_schema")
+    options = [item.strip() for item in options]
+    if len({item.casefold() for item in options}) != len(options):
+        raise ValueError("invalid_exercise_schema")
+    answer_key = payload.get("answer_key")
+    if exercise_type == "multiple_choice":
+        if len(options) < 2 or not isinstance(answer_key, int) or isinstance(answer_key, bool) or not 0 <= answer_key < len(options):
+            raise ValueError("invalid_exercise_schema")
+    elif exercise_type == "true_false":
+        if (options and options != ["True", "False"]) or not isinstance(answer_key, bool):
+            raise ValueError("invalid_exercise_schema")
+        options = ["True", "False"]
+    else:
+        if options or not isinstance(answer_key, str) or not answer_key.strip() or len(answer_key) > MAX_EXERCISE_ANSWER_LENGTH:
+            raise ValueError("invalid_exercise_schema")
+        answer_key = answer_key.strip()
+    return prompt, options, answer_key, explanation
+
+
+def _exercise_citations(connection: sqlite3.Connection, citations: object, exercise_id: str) -> list[tuple[object, ...]]:
+    return _citation_rows(connection, citations, code="invalid_exercise_schema", artifact_id=exercise_id, table="exercise")
+
+
+def _refresh_exercise_citations(connection: sqlite3.Connection, exercise_id: str) -> list[str]:
+    """Persist the current source lifecycle without trusting saved citation state."""
+    statuses: list[str] = []
+    for citation in connection.execute("SELECT * FROM exercise_citations WHERE exercise_id=?", (exercise_id,)).fetchall():
+        status = "source_unavailable"
+        if citation["material_id"] is not None:
+            material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (citation["material_id"],)).fetchone()
+            if material is not None and material["deleted_at"] is not None:
+                status = "source_deleted"
+            elif material is not None and citation["chunk_id"] is not None:
+                chunk = connection.execute(
+                    "SELECT c.status, c.revision_id, c.extraction_id, r.is_current FROM chunks c "
+                    "JOIN material_revisions r ON r.id=c.revision_id WHERE c.id=? AND c.material_id=?",
+                    (citation["chunk_id"], citation["material_id"]),
+                ).fetchone()
+                if chunk is not None and chunk["status"] == "ready" and chunk["is_current"]:
+                    status = "valid" if (chunk["revision_id"] == citation["revision_id"] and
+                                            chunk["extraction_id"] == citation["extraction_id"]) else "stale"
+                elif chunk is not None:
+                    status = "stale"
+        connection.execute("UPDATE exercise_citations SET status=? WHERE id=?", (status, citation["id"]))
+        statuses.append(status)
+    return statuses
+
+
+def _refresh_exercise_citations_for_material(connection: sqlite3.Connection, material_id: str) -> None:
+    for row in connection.execute(
+            "SELECT DISTINCT exercise_id FROM exercise_citations WHERE material_id=?", (material_id,)).fetchall():
+        _refresh_exercise_citations(connection, str(row["exercise_id"]))
+
+
+def _validate_exercise_source_revision(connection: sqlite3.Connection, source_revision: str | None,
+                                        citations: list[tuple[object, ...]], exercise_kind: str) -> None:
+    if source_revision is not None:
+        source = connection.execute(
+            "SELECT r.id FROM material_revisions r JOIN materials m ON m.id=r.material_id "
+            "WHERE r.id=? AND r.is_current=1 AND m.deleted_at IS NULL", (source_revision,)
+        ).fetchone()
+        if source is None:
+            raise ValueError("citation_invalid")
+    if citations and (source_revision is None or any(row[4] != source_revision for row in citations)):
+        raise ValueError("citation_invalid")
+    if exercise_kind == "ai_generated" and (not citations or source_revision is None):
+        raise ValueError("citation_invalid")
+
+
+def _exercise_public(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
+    result = {"id": row["id"], "set_id": row["set_id"], "exercise_type": row["exercise_type"],
+              "exercise_kind": row["exercise_kind"], "status": row["status"], "prompt": row["prompt"],
+              "options": json.loads(row["options_json"]), "explanation": row["explanation"],
+              "source_revision": row["source_revision"], "edited_by_user": bool(row["edited_by_user"]),
+              "created_at": row["created_at"], "updated_at": row["updated_at"],
+              "confirmed_at": row["confirmed_at"], "archived_at": row["archived_at"]}
+    result["citations"] = [dict(item) for item in connection.execute(
+        "SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,quote,position,status "
+        "FROM exercise_citations WHERE exercise_id=? ORDER BY position,id", (row["id"],)).fetchall()]
+    return result
+
+
+def list_exercise_sets(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
+    rows = connection.execute("SELECT id,project_id,title,description,status,created_at,updated_at,archived_at FROM exercise_sets WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()
+    return [{**dict(row), "exercise_count": connection.execute("SELECT COUNT(*) FROM exercises WHERE set_id=?", (row["id"],)).fetchone()[0]} for row in rows]
+
+
+def get_exercise_set(connection: sqlite3.Connection, *, project_id: str, set_id: str) -> dict[str, object] | None:
+    row = connection.execute("SELECT id,project_id,title,description,status,created_at,updated_at,archived_at FROM exercise_sets WHERE id=? AND project_id=?", (set_id, project_id)).fetchone()
+    if row is None:
+        return None
+    return {**dict(row), "exercises": list_exercises(connection, project_id=project_id, set_id=set_id)}
+
+
+def create_exercise_set(connection: sqlite3.Connection, *, project_id: str, title: str, description: str = "") -> dict[str, object]:
+    title = _validate_text(title, code="invalid_exercise_set_payload", maximum=MAX_DECK_TITLE_LENGTH)
+    if not isinstance(description, str) or len(description) > 1000:
+        raise ValueError("invalid_exercise_set_payload")
+    now, set_id = utc_now(), f"exercise_set_{uuid.uuid4().hex}"
+    with connection:
+        connection.execute("INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)", (project_id, "Default project", now))
+        connection.execute("INSERT INTO exercise_sets VALUES (?,?,?,?,?,?,?,?)", (set_id, project_id, title, description, "active", now, now, None))
+    return get_exercise_set(connection, project_id=project_id, set_id=set_id) or {}
+
+
+def list_exercises(connection: sqlite3.Connection, *, project_id: str, set_id: str | None = None) -> list[dict[str, object]]:
+    params: list[object] = [project_id]
+    where = "project_id=?"
+    if set_id is not None:
+        where += " AND set_id=?"
+        params.append(set_id)
+    with connection:
+        rows = connection.execute("SELECT * FROM exercises WHERE " + where + " ORDER BY updated_at DESC,id DESC", params).fetchall()
+        for row in rows:
+            _refresh_exercise_citations(connection, str(row["id"]))
+    return [_exercise_public(connection, row) for row in rows]
+
+
+def create_exercise(connection: sqlite3.Connection, *, project_id: str, set_id: str, exercise_type: str,
+                    payload: dict[str, object], source_revision: str | None = None,
+                    exercise_kind: str = "user_created") -> dict[str, object]:
+    if exercise_kind not in {"user_created", "ai_generated"}:
+        raise ValueError("invalid_exercise_schema")
+    if connection.execute("SELECT 1 FROM exercise_sets WHERE id=? AND project_id=? AND status='active'", (set_id, project_id)).fetchone() is None:
+        raise ValueError("exercise_set_not_found")
+    prompt, options, answer_key, explanation = _exercise_payload(payload, exercise_type)
+    exercise_id, now = f"exercise_{uuid.uuid4().hex}", utc_now()
+    citations = _exercise_citations(connection, payload.get("citations", []), exercise_id)
+    _validate_exercise_source_revision(connection, source_revision, citations, exercise_kind)
+    with connection:
+        connection.execute(
+            "INSERT INTO exercises (id,set_id,project_id,exercise_type,exercise_kind,status,prompt,options_json,answer_key_json,"
+            "explanation,source_revision,edited_by_user,generation_operation_id,created_at,updated_at,confirmed_at,archived_at) "
+            "VALUES (?,?,?,?,?,'draft',?,?,?,?,?,0,NULL,?,?,NULL,NULL)",
+            (exercise_id, set_id, project_id, exercise_type, exercise_kind, prompt, json.dumps(options, ensure_ascii=False),
+             json.dumps(answer_key, ensure_ascii=False), explanation, source_revision, now, now),
+        )
+        connection.executemany("INSERT INTO exercise_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citations)
+    return next(item for item in list_exercises(connection, project_id=project_id, set_id=set_id) if item["id"] == exercise_id)
+
+
+def update_exercise(connection: sqlite3.Connection, *, project_id: str, exercise_id: str,
+                    payload: dict[str, object]) -> dict[str, object]:
+    row = connection.execute("SELECT * FROM exercises WHERE id=? AND project_id=?", (exercise_id, project_id)).fetchone()
+    if row is None:
+        raise ValueError("exercise_not_found")
+    if row["status"] != "draft":
+        raise ValueError("exercise_edit_not_allowed")
+    prompt, options, answer_key, explanation = _exercise_payload(payload, str(row["exercise_type"]))
+    citations = _exercise_citations(connection, payload.get("citations", []), exercise_id)
+    _validate_exercise_source_revision(connection, row["source_revision"], citations, str(row["exercise_kind"]))
+    with connection:
+        connection.execute("DELETE FROM exercise_citations WHERE exercise_id=?", (exercise_id,))
+        connection.execute("UPDATE exercises SET prompt=?,options_json=?,answer_key_json=?,explanation=?,edited_by_user=1,updated_at=? WHERE id=?", (prompt, json.dumps(options, ensure_ascii=False), json.dumps(answer_key, ensure_ascii=False), explanation, utc_now(), exercise_id))
+        connection.executemany("INSERT INTO exercise_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citations)
+    return next(item for item in list_exercises(connection, project_id=project_id, set_id=str(row["set_id"])) if item["id"] == exercise_id)
+
+
+def confirm_exercise(connection: sqlite3.Connection, *, project_id: str, exercise_id: str) -> dict[str, object]:
+    row = connection.execute("SELECT set_id,status,exercise_kind,source_revision FROM exercises WHERE id=? AND project_id=?", (exercise_id, project_id)).fetchone()
+    if row is None:
+        raise ValueError("exercise_not_found")
+    if row["status"] != "draft":
+        raise ValueError("exercise_invalid_state")
+    with connection:
+        statuses = _refresh_exercise_citations(connection, exercise_id)
+        if any(status != "valid" for status in statuses):
+            raise ValueError("citation_invalid")
+        if row["exercise_kind"] == "ai_generated" and (not statuses or row["source_revision"] is None):
+            raise ValueError("citation_invalid")
+        now = utc_now()
+        connection.execute("UPDATE exercises SET status='ready',confirmed_at=?,updated_at=? WHERE id=?", (now, now, exercise_id))
+    return next(item for item in list_exercises(connection, project_id=project_id, set_id=str(row["set_id"])) if item["id"] == exercise_id)
+
+
+def transition_exercise(connection: sqlite3.Connection, *, project_id: str, exercise_id: str,
+                        target: str) -> dict[str, object]:
+    row = connection.execute("SELECT set_id,status FROM exercises WHERE id=? AND project_id=?", (exercise_id, project_id)).fetchone()
+    if row is None:
+        raise ValueError("exercise_not_found")
+    allowed = {"rejected": {"draft"}, "archived": {"draft", "ready", "rejected", "stale"}}
+    if target not in allowed or row["status"] not in allowed[target]:
+        raise ValueError("exercise_invalid_state")
+    now = utc_now()
+    with connection:
+        connection.execute("UPDATE exercises SET status=?,updated_at=?,archived_at=? WHERE id=?", (target, now, now if target == "archived" else None, exercise_id))
+    return next(item for item in list_exercises(connection, project_id=project_id, set_id=str(row["set_id"])) if item["id"] == exercise_id)
+
+
+def list_exercise_attempts(connection: sqlite3.Connection, *, project_id: str, exercise_id: str) -> list[dict[str, object]]:
+    if connection.execute("SELECT 1 FROM exercises WHERE id=? AND project_id=?", (exercise_id, project_id)).fetchone() is None:
+        raise ValueError("exercise_not_found")
+    rows = connection.execute(
+        "SELECT id,exercise_id,score,is_correct,grading_status,submitted_at,reviewed_at,feedback "
+        "FROM exercise_attempts WHERE exercise_id=? ORDER BY rowid", (exercise_id,)
+    ).fetchall()
+    return [{**dict(row), "is_correct": (None if row["is_correct"] is None else bool(row["is_correct"]))}
+            for row in rows]
+
+
+def submit_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, exercise_id: str, answer: object) -> dict[str, object]:
+    row = connection.execute("SELECT * FROM exercises WHERE id=? AND project_id=? AND status='ready'", (exercise_id, project_id)).fetchone()
+    if row is None:
+        raise ValueError("exercise_not_ready")
+    if isinstance(answer, str) and len(answer) > MAX_EXERCISE_ANSWER_LENGTH:
+        raise ValueError("invalid_exercise_answer")
+    expected, correct, score, grading = json.loads(row["answer_key_json"]), None, None, "deterministic"
+    if row["exercise_type"] == "multiple_choice":
+        if not isinstance(answer, int) or isinstance(answer, bool) or not 0 <= answer < len(json.loads(row["options_json"])):
+            raise ValueError("invalid_exercise_answer")
+        correct, score = answer == expected, 1.0 if answer == expected else 0.0
+    elif row["exercise_type"] == "true_false":
+        if not isinstance(answer, bool):
+            raise ValueError("invalid_exercise_answer")
+        correct, score = answer == expected, 1.0 if answer == expected else 0.0
+    else:
+        if not isinstance(answer, str) or not answer.strip():
+            raise ValueError("invalid_exercise_answer")
+        grading = "pending_review"
+    attempt_id = f"attempt_{uuid.uuid4().hex}"
+    with connection:
+        connection.execute("INSERT INTO exercise_attempts VALUES (?,?,?,?,?,?,?,?,?)", (attempt_id, exercise_id, json.dumps(answer, ensure_ascii=False), score, int(correct) if correct is not None else None, grading, utc_now(), None, ""))
+    return {"id": attempt_id, "exercise_id": exercise_id, "score": score, "is_correct": correct, "grading_status": grading}
+
+
 def material_state(connection: sqlite3.Connection, material_id: str) -> str:
     row = connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (material_id,)).fetchone()
     if row is None:
@@ -578,6 +818,10 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
         connection.execute(
             "UPDATE qa_citations SET status = 'source_unavailable' "
             "WHERE material_id = ? AND status = 'valid'",
+            (material_id,),
+        )
+        connection.execute(
+            "UPDATE exercise_citations SET status = 'source_unavailable' WHERE material_id = ?",
             (material_id,),
         )
         connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
@@ -706,6 +950,8 @@ def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bo
             "UPDATE materials SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
             (deleted_at, deleted_at, material_id),
         )
+        if cursor.rowcount == 1:
+            _refresh_exercise_citations_for_material(connection, material_id)
     return cursor.rowcount == 1
 
 
@@ -777,6 +1023,7 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
         raise ValueError("source_deleted")
     with connection:
         revision = create_or_get_revision(connection, material_id, extraction_id)
+        _refresh_exercise_citations_for_material(connection, material_id)
         existing = connection.execute(
             "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
         ).fetchone()[0]

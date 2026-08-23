@@ -6,7 +6,7 @@
 ## 任务
 1. 扩展 backup/verify/restore tests：draft、ready、rejected/stale、archived card/exercise、citations、reviews、attempts、operations 全部保留。
 2. 验证 restore 到新空 data root；verify/restore 不自动生成、不 repair、不 rebuild、不把 stale 变 ready。
-3. 运行 focused backend tests、Phase 8 Chromium tests、完整 backend suite；按项目 Python 环境执行：`D:\miniconda\py310\python.exe -m pytest backend/tests/`。
+3. 运行 focused backend tests、Phase 8 Chromium tests、完整 backend suite；按项目 Python 环境执行：`C:\miniconda\py310\python.exe -m pytest backend/tests/`。
 4. 运行 migration rollback、lifecycle invariant、API boundary、provider failure 和 frontend failure contract 回归。
 5. 检查日志/API/UI 不泄露路径、SQL、traceback、raw provider response、secret、完整 source text 或 answer key。
 6. 更新 `docs/STATUS.md`、`docs/TODO.md`、`docs/PHASE_ROADMAP.md`、`docs/PROJECT_PROGRESS_REPORT.md`，必要时更新 `docs/ARCHITECTURE.md`、`docs/DECISIONS.md`、`docs/INDEX.md`。

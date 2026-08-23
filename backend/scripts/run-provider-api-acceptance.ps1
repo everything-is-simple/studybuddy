@@ -57,7 +57,7 @@ if ($env:STUDYBUDDY_AI_PROVIDER -and $env:STUDYBUDDY_AI_PROVIDER -ne $ProviderId
 if ($env:STUDYBUDDY_AI_MODEL -and $env:STUDYBUDDY_AI_MODEL -ne $ModelId) { Stop-NotRun 'provider_acceptance_target_mismatch' }
 if ($env:STUDYBUDDY_AI_BASE_URL -and $env:STUDYBUDDY_AI_BASE_URL.TrimEnd('/') -ne $BaseUrl.TrimEnd('/')) { Stop-NotRun 'provider_acceptance_target_mismatch' }
 
-$projectPython = 'D:/miniconda/py310/python.exe'
+$projectPython = 'C:/miniconda/py310/python.exe'
 $python = if ($env:STUDYBUDDY_PYTHON) { $env:STUDYBUDDY_PYTHON } elseif (Test-Path $projectPython) { $projectPython } else { 'python' }
 $passed = 0
 $failed = 0

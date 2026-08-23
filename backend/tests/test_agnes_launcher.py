@@ -41,8 +41,8 @@ def test_agnes_entrypoints_set_expected_gate():
     ui = read_script("test-agnes-ui.ps1")
     start = read_script("start-agnes.ps1")
     assert "test_real_provider_smoke.py" in provider
-    assert "D:/miniconda/py310/python.exe" in provider
-    assert "D:/miniconda/py310/python.exe" in start
+    assert "C:/miniconda/py310/python.exe" in provider
+    assert "C:/miniconda/py310/python.exe" in start
     assert "Invoke-AgnesProcess -FilePath $python -Arguments $arguments -Config $AgnesConfig" in provider
     assert "New-AgnesProcessInfo -FilePath $node -Arguments $arguments -Config $AgnesConfig" in ui
     assert "(Get-Command 'npx.cmd' -ErrorAction Stop).Source" in ui

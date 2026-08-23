@@ -7,7 +7,7 @@ const fixture = path.resolve('H:/studybuddy-test/fixtures/kaobuddy-foundation/sa
 const folderFixture = path.resolve('H:/studybuddy-test/fixtures/kaobuddy-foundation');
 const BASE = 'http://127.0.0.1:8791';
 let server;
-test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}); server = spawn('D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8791'], { cwd: 'H:/studybuddy/backend', env: {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT}, stdio: 'ignore', windowsHide: true }); await expect.poll(async () => { try { return (await fetch(`${BASE}/api/health`)).ok; } catch (_) { return false; } }, { timeout: 15000 }).toBe(true); });
+test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}); server = spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8791'], { cwd: 'H:/studybuddy/backend', env: {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT}, stdio: 'ignore', windowsHide: true }); await expect.poll(async () => { try { return (await fetch(`${BASE}/api/health`)).ok; } catch (_) { return false; } }, { timeout: 15000 }).toBe(true); });
 test.afterEach(() => { if (server && !server.killed) server.kill(); server = null; });
 const forbidden = ['stored_path', 'traceback', 'database is locked', 'C:/secret', 'internal backend text'];
 async function assertSafe(page){const text=(await page.locator('body').innerText()).toLowerCase();for(const value of forbidden)expect(text).not.toContain(value.toLowerCase())}

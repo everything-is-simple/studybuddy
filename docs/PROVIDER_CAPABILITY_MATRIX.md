@@ -39,7 +39,7 @@ set STUDYBUDDY_AI_PROVIDER=<provider-id>
 set STUDYBUDDY_AI_MODEL=<provider-issued-model-id>
 set STUDYBUDDY_AI_BASE_URL=https://<provider-base-url>
 set STUDYBUDDY_AI_API_KEY=<secret>
-D:/miniconda/py310/python.exe -m pytest backend/tests/test_real_provider_smoke.py -q
+C:/miniconda/py310/python.exe -m pytest backend/tests/test_real_provider_smoke.py -q
 ```
 
 For the browser gate:

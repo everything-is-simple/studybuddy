@@ -47,7 +47,7 @@ powershell -NoProfile -File .\backend\scripts\test-backend.ps1
 等价的直接命令为：
 
 ```text
-D:\miniconda\py310\python.exe -m pytest backend/tests/ -q
+C:\miniconda\py310\python.exe -m pytest backend/tests/ -q
 ```
 
 浏览器门禁必须串行执行，并通过统一入口指定 spec：

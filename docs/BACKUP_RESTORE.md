@@ -5,7 +5,7 @@ StudyBuddy 的备份与恢复是显式 operator 操作，不是普通用户 API�
 ## 备份
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli backup \
+C:/miniconda/py310/python.exe -m app.cli backup \
   --data-root <data-root> \
   --output <backup-root>
 ```
@@ -23,7 +23,7 @@ SQLite 使用 Online Backup API 生成一致性快照，并执行 `integrity_che
 ## 验证
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
+C:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
 ```
 
 验证只检查 manifest、SQLite hash/integrity/foreign keys/schema version、original 文件路径/类型/大小/hash 及数据库引用。验证不删除、不运行 migration、不重建 FTS、不修复数据库或修改 backup。
@@ -33,7 +33,7 @@ D:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
 恢复是破坏性操作。第一版只允许恢复到不存在或为空的目标目录；必须先停止服务，并显式提供 `--confirm`：
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli restore \
+C:/miniconda/py310/python.exe -m app.cli restore \
   --data-root <empty-target> \
   --backup <backup-root> \
   --confirm
@@ -44,7 +44,7 @@ D:/miniconda/py310/python.exe -m app.cli restore \
 完成后重新启动服务并执行：
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli verify-restored-data \
+C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
   --data-root <restored-root>
 ```
 

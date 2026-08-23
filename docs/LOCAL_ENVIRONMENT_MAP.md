@@ -1,6 +1,6 @@
 # 本地环境目录地图与治理
 
-> 更新：2026-08-25
+> 更新：2026-08-28（Windows 重装后环境恢复验证）
 >
 > 本文记录 StudyBuddy 全部本地目录的职责、远端、Git 状态和相互关系，作为系统治理的单一事实来源之一。目录本身不含密钥；`H:\pi-references` 等含密钥目录只标注用途，不记录任何凭据内容。
 
@@ -53,24 +53,23 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 
 | 路径 | 说明 |
 |---|---|
-| `D:\miniconda\py310` | Python 3.10，项目当前测试/运行环境（未在 PATH，需完整路径调用） |
-| `D:\node-v24.14.0-win-x64` | Node.js 24.14.0 |
-| `D:\Git\bin` | Git 可执行文件 |
-| `D:\PowerShell\7` | PowerShell 7 |
-| `D:\msys64` | MSYS2/MinGW |
-| `D:\cygwin64\bin` | Cygwin 可执行文件（当前 shell 基础） |
+| `C:\miniconda\py310` | Python 3.10.19，StudyBuddy 测试/运行环境；依赖以 `backend/requirements.txt` 固定并已恢复验证 |
+| `C:\Program Files\nodejs` | Node.js 24.14.0；Playwright 由仓库 `node_modules` 提供 |
+| `C:\Git\bin` | Git 可执行文件 |
+| `C:\Program Files\PowerShell\7` | PowerShell 7 |
+| `C:\cygwin64\bin` | Cygwin 可执行文件（当前 agent shell 基础） |
 
 ## 四、当前正式系统状态
 
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
-- Phase 7 仍为 partial：真实 embedding provider、retrieval mode Chromium final acceptance、完整 lease/失败重试证据未完成。
+- Phase 7 已按 Mistral 精确配置范围收口；Phase 8.1 migration 和 8.2 Cards 已提交，8.3 Exercises 正在实现/验收。
 - 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
 - Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
 ## 五、下一步准备
 
-Phase 7 收口前，不启动 Phase 8/9 的正式业务实现。Phase 7 收口后，先建立 Phase 8 Cards/Exercises，再按 9A–9D 顺序推进学习领域基础、资料学习、练习反馈和条件性扩展服务。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
+Phase 7 已收口，当前按 Phase 8 的子任务依序完成 Cards/Exercises；Phase 8 完成后才按 9A–9D 推进学习领域基础、资料学习、练习反馈和条件性扩展服务。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序
