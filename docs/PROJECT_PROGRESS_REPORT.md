@@ -16,7 +16,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
 | 前端用户体验 | 60%–70% | P6-A–P6-E fake/default/narrow/keyboard/accessibility contract 已通过；真实 Provider UI、系统级辅助技术和极端运行条件仍有限制 |
-| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter、Phase 7 retrieval，以及 Phase 8 Cards/Exercises backend MVP 已实现并验收；AI generation、Cards/Exercises UI、计划和后台任务仍未完成 |
+| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter、Phase 7 retrieval，以及 Phase 8 Cards/Exercises backend MVP 与 fake-provider draft generation 已实现并验收；真实 Provider generation、Cards/Exercises UI、计划和后台任务仍未完成 |
 | 全项目整体 | 约 50%–55%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
 
 整体进度不应简单按“已通过测试数量”计算：当前可靠性投入较多，而 AI、学习工作流、多用户和运维能力尚未开始，因此产品整体完成度明显低于文件基础设施完成度。
@@ -117,7 +117,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### Phase 8：Cards / Exercises — backend MVP in progress
 
-Phase 8.1 migration、8.2 Cards backend 与 8.3 Exercises backend MVP 已实现。Exercises 支持 set、三种已冻结题型、draft → ready/rejected/archived、draft-only edit、current revision/chunk/span citation revalidation、delete/restore/purge/re-index source lifecycle、append-only attempt history、multiple-choice/true-false deterministic grading 和 short-answer `pending_review`。普通列表/history 不返回 answer key 或 answer body；migration v8 与 backup/restore/restart 测试已通过。尚未实现 AI draft generation、Cards/Exercises UI/Chromium、简答人工 review 与 Phase 8 完整收口，因此不能宣称 Phase 8 completed 或有 Cards/Exercises 用户路径 `real-pass`。
+Phase 8.1 migration、8.2 Cards backend、8.3 Exercises backend MVP 与 8.4 fake-provider citation-safe draft generation 已实现。Exercises 支持 set、三种已冻结题型、draft → ready/rejected/archived、draft-only edit、current revision/chunk/span citation revalidation、delete/restore/purge/re-index source lifecycle、append-only attempt history、multiple-choice/true-false deterministic grading 和 short-answer `pending_review`。8.4 要求显式已索引的单材料 scope，经 lexical/vector/hybrid retrieval、context、provider 的结构化内存校验及 server-side citation/source revalidation 后，才原子保存 AI draft 与 operation metadata；支持 idempotency、failed retry、malformed/forged citation、rollback 和 stale boundary。普通列表/history 不返回 answer key 或 answer body，raw prompt/provider response 不持久化；migration v8 与 backup/restore/restart 测试已通过。尚未实现真实 Provider generation evidence、Cards/Exercises UI/Chromium、简答人工 review 与 Phase 8 完整收口，因此不能宣称 Phase 8 completed 或有 Cards/Exercises 用户路径 `real-pass`。
 
 ### Phase 5 之后：AI 与学习工作流 — 后续工作
 
@@ -151,7 +151,7 @@ Phase 8.1 migration、8.2 Cards backend 与 8.3 Exercises backend MVP 已实现�
 
 ### 当前阶段：Phase 8 后续实现与精确 Provider evidence
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线是 Phase 8.4 AI draft generation：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线是 Phase 8.5 Cards/Exercises UI 与 Chromium acceptance：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
