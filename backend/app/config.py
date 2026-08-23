@@ -38,6 +38,8 @@ class AppConfig:
     ai_max_retries: int = DEFAULT_AI_MAX_RETRIES
     embedding_provider_id: str | None = DEFAULT_EMBEDDING_PROVIDER
     embedding_model_id: str | None = DEFAULT_EMBEDDING_MODEL
+    embedding_base_url: str | None = None
+    embedding_api_key: str | None = field(default=None, repr=False)
     embedding_model_revision: str = DEFAULT_EMBEDDING_MODEL_REVISION
     embedding_timeout_seconds: float = DEFAULT_EMBEDDING_TIMEOUT_SECONDS
     embedding_max_batch_size: int = DEFAULT_EMBEDDING_MAX_BATCH_SIZE
@@ -126,6 +128,8 @@ def config_from_environment() -> AppConfig:
         ai_max_retries=_env_int("STUDYBUDDY_AI_MAX_RETRIES", DEFAULT_AI_MAX_RETRIES, minimum=0, maximum=2),
         embedding_provider_id=os.environ.get("STUDYBUDDY_EMBEDDING_PROVIDER") or None,
         embedding_model_id=os.environ.get("STUDYBUDDY_EMBEDDING_MODEL") or None,
+        embedding_base_url=_valid_base_url(os.environ.get("STUDYBUDDY_EMBEDDING_BASE_URL")),
+        embedding_api_key=os.environ.get("STUDYBUDDY_EMBEDDING_API_KEY") or None,
         embedding_model_revision=os.environ.get("STUDYBUDDY_EMBEDDING_MODEL_REVISION", DEFAULT_EMBEDDING_MODEL_REVISION),
         embedding_timeout_seconds=_env_float("STUDYBUDDY_EMBEDDING_TIMEOUT_SECONDS", DEFAULT_EMBEDDING_TIMEOUT_SECONDS, minimum=0.1, maximum=120.0),
         embedding_max_batch_size=_env_int("STUDYBUDDY_EMBEDDING_MAX_BATCH_SIZE", DEFAULT_EMBEDDING_MAX_BATCH_SIZE, minimum=1, maximum=32),

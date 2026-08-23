@@ -143,7 +143,7 @@ migration / schema versioning
 
 ### Phase 6：AI MVP 产品化与整体验收
 
-**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接、P6-D 统一导航/通知/响应式/可访问性已完成；P6-E fake Provider 核心工作流整体验收和失败矩阵已完成，DeepSeek/Agnes 本轮真实 UI 路径未执行。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
+**状态：P6-A Provider 运行契约和状态可见性、P6-B Q&A Thread 工作区、P6-C 跨材料浏览和引用/导出衔接、P6-D 统一导航/通知/响应式/可访问性已完成；P6-E fake Provider 核心工作流、失败矩阵以及 DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 的精确真实 UI 路径均已通过。其它 Provider/model 和系统级辅助技术仍未完成独立验收。依赖 Phase 4 Q&A 闭环和 Phase 5 真实 Provider 接入。**
 
 P6-A 已明确默认运行状态为 `not_configured`，显式 `fake` 为 deterministic/demo，generic OpenAI-compatible 配置为 `configured` + `unverified`；`GET /api/ai/capabilities` 和 UI 已统一安全状态语义。capabilities 不执行网络 health probe，真实 Provider verified 仍仅按精确 provider/model/gateway 的既有 evidence 判定。
 
@@ -159,13 +159,18 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 ### Phase 7：Embedding 与 Hybrid Retrieval
 
-**状态：7.1–7.6 已完成；7.7 fake/backend 最终验收、专项 backup/restore 和 synthetic benchmark 已完成；真实 embedding provider 与 retrieval mode Chromium UI 未验证。Phase 7 为 partial。**
+**状态：completed（精确配置范围）。7.1–7.7 fake/backend 主体、专项 backup/restore、synthetic benchmark、retrieval mode Chromium UI、indexing lease/失败重试/恢复专项，以及 Mistral `mistral-embed` 外部真实 embedding acceptance 均已完成。该 completed 结论仅适用于明确的 provider/model/gateway 配置，不代表通用多 Provider 或全局生产级 real-pass。**
 
 - 已完成：审计 `embeddings`、retrieval run/hit、chunking、migration 和 backup/restore 边界；冻结 embedding identity、status/stale、lexical/vector/hybrid/fallback 语义，以及连续 v5 migration 要求。正式记录见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
 - 已实现：v5 embedding schema migration、非 NULL model revision、status CHECK/updated_at/完整 identity 唯一约束；版本化离线 deterministic fake embedding、独立 registry、embedding 环境配置、canonical identity/stale 判定、f32 little-endian codec、显式增量 indexing、显式 material rebuild/retry、只读 verify 报告、vector cosine API 最小路径和安全 capabilities 扩展。
 - 已实现：Q&A 显式 lexical/vector/hybrid mode、hybrid fallback、retrieval policy/operation/answer linkage、replay metadata 和 citation-safe context path；不新增 migration，复用 v5 embedding 与现有 Q&A/citation schema。
 - 已完成：embedding/retrieval/Q&A metadata backup/restore 专项、损坏 payload/lifecycle 验收、102/1,002 chunks synthetic benchmark、完整 backend regression。
-- 未完成：真实 embedding provider 配置与错误映射、retrieval mode UI/Chromium final acceptance、完整 lease/失败重试专项；因此 Phase 7 仍为 partial，不标记 completed 或 real-pass。
+- 已完成：独立 OpenAI-compatible embedding adapter、环境配置、secret 隔离、`/embeddings` 请求契约、稳定 HTTP/timeout/schema/vector/response-size 错误映射；loopback protocol tests 已通过，但不等于外部真实 Provider real-pass。
+- 已完成：retrieval mode UI/Chromium final acceptance，覆盖 lexical/vector/hybrid、hybrid lexical fallback、vector 不自动 fallback 和安全错误显示。
+- 已完成：indexing lease、`embedding_index` operation 审计、stale lease reclaim、失败错误码保留和显式 retry_count/retry 路径；仍是同步单进程流程，不宣称后台 worker、cancel 或跨进程恢复。
+- 已完成：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确外部真实 embedding gate；直接请求返回 1024 维向量，隔离 StudyBuddy data root 的 indexing 写入 `ready`，vector retrieval 返回 `succeeded`，provider/model/retrieval/index operation 审计一致。证据见 [`PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md)。
+- 未通过的候选不替代 Mistral gate：Agnes `agnes-2.5-flash` 返回 `embedding_provider_protocol_error`，ARK `deepseek-v4-flash` 返回 `embedding_provider_invalid_config`，MiniMax `embo-01` 返回 `embedding_schema_mismatch`，NVIDIA `nvidia/nv-embedqa-e5-v5` 返回 `embedding_provider_protocol_error`。
+- Phase 7 completed 仅表示上述精确配置范围；不宣称其它 embedding model、通用多 Provider、配额/质量/可用性或全局生产级 real-pass。
 - 规模充分前不引入外部 vector database。
 
 ### Phase 8：卡片与练习
@@ -177,17 +182,22 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 - card review、exercise attempt、deterministic grading。
 - 不允许重新生成静默覆盖用户已编辑或已确认状态。
 
-### Phase 9：学习计划与 S1–S7
+### Phase 9：学习产品构建计划（拆分为 9A–9D）
 
-**状态：延后。**
+**状态：未开始；不得把 Phase 9 作为单一交付承诺。**
 
-- study plan / item：draft → confirm → active。
-- 进度、依赖、完成记录和 source unavailable。
-- 先明确 S1–S7 的产品范围，再分批实现。
+Phase 9 原先同时承载学习计划和 S1–S7 七个业务子系统，范围过宽，无法用一个统一的完成标准、数据模型、用户路径或验收周期证明完成。Phase 9 现在是一个路线族，必须按以下独立 gate 顺序推进；每个子阶段都要单独更新代码、migration、测试、浏览器路径、artifact、状态和文档。
+
+- **Phase 9A：学习领域基础与计划核心**：学习目标、知识模块、study plan/item、依赖、进度事件、draft → confirm → active 生命周期，以及 source revision/citation/source_unavailable 关联。不得在此阶段顺带实现 S1–S7 全部体验。
+- **Phase 9B：资料学习工作流（S1/S2）**：学习节奏、资料笔记/知识模块用户路径。必须先复用已验证的 revision/chunk/retrieval/citation，不得把历史版本的 `KnowledgeModule` 设计直接视为正式实现。
+- **Phase 9C：练习与反馈工作流（S3/S4/S5）**：限时练习、错题改错、期末冲刺。依赖 Phase 8 的 exercise/card 生命周期、attempt 历史和确定性评分边界；每个子系统仍需独立验收。
+- **Phase 9D：扩展学习服务（S6/S7，条件性范围）**：家长报告、课堂采集/OCR/ASR。只有在用户需求、隐私边界、真实组件证据和运维成本明确后才立项；不因历史版本存在就自动纳入正式范围。
+
+Phase 9A–9D 均不是“已实现”的占位。每个子阶段完成后才能进入下一个；Phase 9 全部完成也不等于全局生产级 `real-pass`。
 
 ### Phase 10：后台任务、生产化与扩展
 
-**状态：未开始；在 MVP 验证后分阶段推进。**
+**状态：未开始；在 MVP 和学习业务边界验证后分阶段推进。**
 
 - ai operation worker、任务状态、progress、retry、cancel、长任务恢复。
 - structured logging、metrics、request/operation tracing、degraded readiness。
@@ -205,7 +215,10 @@ I4：真实环境与容量基线（时间盒） ✅ 已验收
 → Phase 6：AI MVP 产品化与整体验收（P6-A–P6-E）✅ fake/default/UI acceptance 已完成，精确 P6-E real UI path 按 gate 运行
 → Phase 7：embedding / hybrid retrieval（按需，下一产品阶段）
 → Phase 8：卡片与练习
-→ Phase 9：学习计划 / S1–S7
+→ Phase 9A：学习领域基础与计划核心
+→ Phase 9B：资料学习工作流（S1/S2）
+→ Phase 9C：练习与反馈工作流（S3/S4/S5）
+→ Phase 9D：扩展学习服务（S6/S7，条件性）
 → Phase 10：后台任务、生产化、多用户和扩展
 ```
 
@@ -223,3 +236,5 @@ I4：真实环境与容量基线（时间盒） ✅ 已验收
 - 不宣称所有真实 Provider、Embedding、Cards、Exercises、学习计划或 S1–S7 已实现；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已有各自精确 API/UI smoke evidence；其它 Provider/model 仍需独立验证。Phase 4 fake Provider Q&A 与 P6-E fake 核心工作流已通过对应验收。
 - 不宣称支持多进程、多实例共享 `data_root`。
 - 不宣称覆盖真实断电、磁盘损坏、网络盘、真实磁盘满或容量压力。
+- 不宣称历史版本已有的学习功能已经被正式系统吸收；当前 StudyBuddy 在治理、可靠性、资料生命周期和可信 Q&A 基础上进化，但产品功能宽度仍未全面超过前代版本。
+- 不把 Phase 9 作为单一“大业务建设阶段”；9A–9D 必须分别立项、实现和验收。

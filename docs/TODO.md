@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-25  
-> 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **45%–50%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
+> 更新：2026-08-27
+> 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **50%–55%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -41,7 +41,7 @@
 
 ## Phase 4：AI 最小闭环（已完成）
 
-目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter、精确 Provider smoke 和 Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；下一执行项为显式 gate 下的 P6-E 精确真实 Provider UI evidence，随后进入 Phase 7。
+目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter、精确 Provider smoke 和 Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前 Phase 7 已在 Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确配置范围完成；其它 provider/model 的独立验证不阻塞后续 Phase 8。
 
 ### 顺序与任务
 
@@ -82,8 +82,8 @@ revision → chunks → retrieval → citations → Q&A
 - [x] provider timeout/rate-limit/auth/quota/refusal/malformed response 稳定错误映射。
 - [x] capabilities endpoint、usage/latency/provider request metadata，禁止 secret 泄露。
 - [x] 同步 Q&A stale transition：每个 Q&A 请求会事务性回收同 project 中超过 5 分钟 lease 的 `running` operation，标记 `stale/qa_operation_stale` 并保留审计消息；同一 Idempotency-Key 可随后创建新 operation。未实现后台扫描、cancel、跨进程协调或真实断电恢复。
-- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；其它 Provider 仍待验收。
-- [ ] ARK、硅基流动、Agnes AI-Hub、Sub2API 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 强制 target 与 runtime provider 一致；通用三次 API acceptance runner 已实现，每次使用独立临时 data root，`2/3` 仅为 API evidence；Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI smoke；`pro`/`agnes-2.5-pro` API smoke 返回 `provider_unavailable`，UI 未运行，仍待独立验证；其它 Agnes profiles 未验证）。
+- [x] DeepSeek 官方 `deepseek-chat` 真实网络 smoke：adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E 均已通过；Agnes `agnes-2.5-flash` 也已通过精确 adapter/API/UI smoke；其它 Provider/model 仍待独立验收。
+- [ ] ARK、硅基流动、Sub2API 及其它 Agnes profiles 逐个完成脱敏 capability matrix 和真实验收（API/UI smoke 强制 target 与 runtime provider 一致；通用三次 API acceptance runner 已实现，每次使用独立临时 data root，`2/3` 仅为 API evidence；Agnes `advanced`/`agnes-2.5-flash` 已通过独立 adapter/API/UI smoke；`pro`/`agnes-2.5-pro` API smoke 返回 `provider_unavailable`，UI 未运行，仍待独立验证）。
 
 **Phase 5 当前状态：** adapter、配置隔离、HTTPS/loopback URL 边界、响应体读取上限、稳定错误映射、timeout/output limit/retry、mock HTTP 测试、provider request/usage/latency metadata、citation 缺失/伪造拒绝、secret redaction、真实 Provider failure UX、retry、重复点击、安全渲染、显式 Idempotency-Key 幂等和请求触发的 stale recovery 已实现并验证。DeepSeek 官方 `deepseek-chat` 与 Agnes `advanced`/`agnes-2.5-flash` 的 adapter/API/UI smoke 均有精确 evidence；ARK、硅基流动、其它 Agnes profiles、Sub2API 仍待独立验证。P6-E 真实 UI path 已在本轮以显式 gate 分别通过；不得将该精确 evidence 扩大解释为所有 Provider/model 的可用性。
 
@@ -134,7 +134,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；已分别使用精确 runtime gate 和临时 synthetic data root 通过，结果见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
 - [ ] 系统级 screen reader、真实 offline/极端长回答和长时整批 Chromium 稳定性验收。
 
-## 后续学习能力：Cards / Exercises（仅在 Phase 4 Q&A 完成后）
+## Phase 8：Cards / Exercises（仅在 Phase 7 收口后）
 
 - [ ] 新 migration（不得运行时建表）增加 `study_decks`、`study_cards`、`card_citations`、`card_reviews`。
 - [ ] 新 migration 增加 `exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。
@@ -154,7 +154,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 冻结 lexical-only、vector-only、hybrid、fallback 与 empty 行为。
 - [x] 将正式记录写入 `docs/PHASE7_1_AUDIT_AND_CONTRACT.md`。
 
-**当前限制：** 7.1–7.7 已完成 fake/backend 验收、embedding/retrieval/Q&A metadata backup/restore 专项、损坏生命周期测试和 102/1,002 chunks synthetic benchmark；不新增 migration。真实网络 embedding adapter、retrieval mode UI/Chromium final acceptance 和完整 lease/失败重试专项仍为 not_verified，因此 Phase 7 保持 partial。
+**当前限制：** 7.1–7.7 fake/backend 验收、embedding/retrieval/Q&A metadata backup/restore、损坏生命周期、102/1,002 chunks synthetic benchmark、retrieval mode UI/Chromium final acceptance、indexing lease/失败重试/恢复专项，以及 Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确真实 embedding gate 均已通过。Phase 7 已在该精确配置范围完成；其它 provider/model 仍独立处理。
 
 ### 后续实现
 
@@ -163,12 +163,51 @@ revision → chunks → retrieval → citations → Q&A
 - [x] EmbeddingProvider protocol、独立 registry、deterministic fake provider、环境配置、capability 安全扩展和基础稳定错误边界。
 - [x] 显式增量 indexing、material rebuild/retry、只读 verify、失败状态基础处理和 active/current/ready 生命周期过滤。
 - [x] vector cosine、hybrid RRF、固定 candidate pool/RRF_K/tie-breaker、lexical fallback policy 和 lexical/vector/final score persistence 基础。
-- [ ] 真实 provider adapter、完整失败重试/lease、embedding/retrieval 专项 backup/restore 验收、Q&A/citation/API/UI 接入。
-- [ ] Study plan / items：draft → confirm → active，完成记录不可静默覆盖。
-- [ ] 明确并实现首批 S1–S7。
+- [x] 独立 OpenAI-compatible embedding provider adapter、配置/secret 隔离、`/embeddings` 请求契约和稳定错误映射；Mistral 精确真实网络 acceptance 已通过，loopback evidence 仍作为协议补充。
+- [x] embedding/retrieval/Q&A metadata backup/restore 专项验收、损坏生命周期测试和 synthetic benchmark。
+- [x] retrieval mode UI/Chromium final acceptance：lexical/vector/hybrid、fallback 和 vector 不回退边界。
+- [x] indexing lease、`embedding_index` operation 审计、stale reclaim、失败保留和显式 retry_count/retry 专项。
+- [x] 真实 embedding provider 外部网络 acceptance：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 已通过直接向量、隔离 indexing、vector retrieval 和审计 metadata gate；证据见 `docs/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`。
+- [ ] 其它 provider/model 的 embedding 独立验证：Agnes `agnes-2.5-flash`、ARK `deepseek-v4-flash`、MiniMax `embo-01`、NVIDIA `nvidia/nv-embedqa-e5-v5` 本轮未通过，不阻塞 Mistral 精确配置范围的 Phase 7 完成。
 
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
 - [ ] structured tracing、扩展 metrics、degraded readiness。
+
+## Phase 9：学习产品构建计划
+
+> Phase 9 不能承载一次性完成的全部学习业务。以下 9A–9D 是独立验收阶段，必须按顺序推进；未开始项目不得用设计文档或历史版本证据标记完成。
+
+### Phase 9A：学习领域基础与计划核心
+
+- [ ] 冻结 learning goal、knowledge module、study plan/item、dependency、progress event 的正式领域契约。
+- [ ] 通过 migration 增加计划、目标、进度事件和 source revision/citation 关联；禁止运行时建表。
+- [ ] 实现 draft → confirm → active 生命周期、用户编辑保护、source unavailable 和删除/恢复边界。
+- [ ] 实现最小计划创建、确认、查看、完成记录和重算失败路径。
+- [ ] 完成 repository/API/失败边界/Chromium/backup-restore 验收后，才能宣称 9A completed。
+
+### Phase 9B：资料学习工作流（S1/S2）
+
+- [ ] 明确学习节奏和资料笔记的最小用户目标，不直接复制前代 `KnowledgeModule` 实现。
+- [ ] 基于正式 revision/chunk/retrieval/citation 重新实现资料笔记/知识模块。
+- [ ] 计划 item 与材料 revision、citation、source unavailable 生命周期联动。
+- [ ] 分别完成 S1、S2 的 API、状态、浏览器路径和恢复/导出验收。
+
+### Phase 9C：练习与反馈工作流（S3/S4/S5）
+
+- [ ] 将 Phase 8 exercise/card 产物接入限时练习、错题和冲刺目标。
+- [ ] 实现 attempt、deterministic grading、人工复核、错题状态和历史不可覆盖。
+- [ ] 分别完成 S3、S4、S5 的用户路径、失败边界、citation/source lifecycle 和浏览器验收。
+
+### Phase 9D：扩展学习服务（S6/S7，条件性）
+
+- [ ] 在需求、隐私、数据保留、真实组件证据和运维成本评审通过前，不立项家长报告或课堂采集。
+- [ ] 若立项，先在 Composer/Integration 验证 OCR/ASR/report/delivery 组件，再由正式系统重新实现。
+- [ ] 分别完成 S6、S7 的数据授权、脱敏、失败恢复和真实用户路径验收。
+
+### Phase 9 总门槛
+
+- [ ] 只有 9A–9D 中明确立项的子阶段全部完成，才可称为 Phase 9 completed；未立项的 9D 能力不计入“已实现”。
+- [ ] Phase 9 完成不等于全局生产级 `real-pass`，也不代表多用户、云同步、OCR/ASR 或后台任务自动完成。
 
 ## P2：生产化与扩展
 
@@ -179,7 +218,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ## 明确暂不做
 
-在 Phase 5 真实 Provider 和后续产品路线明确前，不并行推进：OCR、ASR、ZIP import、文件夹 export、外部 vector database、复杂后台队列、多用户/协作、云同步、订阅/账户系统。
+在 Phase 7 收口和后续产品路线明确前，不并行推进：OCR、ASR、ZIP import、文件夹 export、外部 vector database、复杂后台队列、多用户/协作、云同步、订阅/账户系统。
 
 ## 每个 TODO 的交付模板
 

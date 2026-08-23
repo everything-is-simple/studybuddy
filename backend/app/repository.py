@@ -15,7 +15,6 @@ from .embedding import (EMBEDDING_ENCODING, MAX_EMBEDDING_PAYLOAD_BYTES, Embeddi
 from .migrations.runner import MigrationError, assert_schema_version, migrate
 
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
-SEARCH_SCHEMA = "CREATE VIRTUAL TABLE IF NOT EXISTS material_search USING fts5(material_id UNINDEXED, original_name, text, tokenize='unicode61')"
 RETRIEVAL_POLICY_VERSION = "lexical_fts_v1"
 CONTEXT_ASSEMBLER_POLICY_VERSION = "context_assembler_v1"
 MAX_CONTEXT_TOKENS = 2000
@@ -33,7 +32,6 @@ QA_OPERATION_LEASE_SECONDS = 300
 
 
 def _ensure_search_index(connection: sqlite3.Connection) -> None:
-    connection.execute(SEARCH_SCHEMA)
     existing = {row[0] for row in connection.execute("SELECT material_id FROM material_search")}
     rows = connection.execute(
         "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id"
@@ -209,7 +207,8 @@ def _snippet(text: str, tokens: list[str]) -> str:
     return text[start:end]
 
 
-def _search_rows(connection: sqlite3.Connection, status: str | None, query: str) -> list[sqlite3.Row]:
+def _search_rows(connection: sqlite3.Connection, status: str | None, query: str,
+                 *, limit: int | None = None, offset: int = 0) -> list[sqlite3.Row]:
     tokens = _search_tokens(query)
     if not tokens:
         return []
@@ -232,11 +231,37 @@ def _search_rows(connection: sqlite3.Connection, status: str | None, query: str)
             query_sql += " AND (instr(lower(m.original_name), lower(?)) > 0 OR instr(lower(e.text), lower(?)) > 0)"
             params.extend((token, token))
     query_sql += " ORDER BY e.created_at DESC, m.id DESC"
+    if limit is not None:
+        query_sql += " LIMIT ? OFFSET ?"
+        params.extend((str(limit), str(offset)))
     rows = connection.execute(query_sql, params).fetchall()
     return [row for row in rows if all(
         token.casefold() in str(row[1]).casefold() or token.casefold() in str(row[10]).casefold()
         for token in tokens
     )]
+
+
+def _search_count(connection: sqlite3.Connection, status: str | None, query: str) -> int:
+    tokens = _search_tokens(query)
+    if not tokens:
+        return 0
+    query_sql = (
+        "SELECT COUNT(*) FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE m.deleted_at IS NULL"
+    )
+    params: list[str] = []
+    if status is not None:
+        query_sql += " AND e.status = ?"
+        params.append(status)
+    if all(token.isascii() and token.replace("_", "").isalnum() for token in tokens):
+        match = " AND ".join(f'"{token.replace(chr(34), chr(34) * 2)}"' for token in tokens)
+        query_sql += " AND m.id IN (SELECT material_id FROM material_search WHERE material_search MATCH ?)"
+        params.append(match)
+    else:
+        for token in tokens:
+            query_sql += " AND (instr(lower(m.original_name), lower(?)) > 0 OR instr(lower(e.text), lower(?)) > 0)"
+            params.extend((token, token))
+    return int(connection.execute(query_sql, params).fetchone()[0])
 
 
 def list_materials(connection: sqlite3.Connection, status: str | None = None,
@@ -283,14 +308,56 @@ def list_deleted_materials(connection: sqlite3.Connection) -> list[sqlite3.Row]:
 
 def list_materials_page(connection: sqlite3.Connection, status: str | None = None, query: str | None = None,
                         limit: int = 20, offset: int = 0) -> tuple[list[sqlite3.Row | dict[str, object]], int]:
-    rows = list_materials(connection, status, query)
-    return rows[offset:offset + limit], len(rows)
+    normalized = (query or "").strip()
+    if normalized:
+        # Keep the same filtering contract as list_materials while applying the
+        # page window in SQLite rather than materializing every match.
+        total = _search_count(connection, status, normalized)
+        rows = _search_rows(connection, status, normalized, limit=limit, offset=offset)
+        tokens = _search_tokens(normalized)
+        results: list[dict[str, object]] = []
+        for row in rows:
+            payload = dict(row)
+            text = str(payload.pop("search_text"))
+            payload["match_fields"] = [field for field, value in (
+                ("original_name", payload["original_name"]), ("text", text)
+            ) if any(token.casefold() in str(value).casefold() for token in tokens)]
+            payload["snippet"] = _snippet(text, tokens)
+            results.append(payload)
+        return results, total
+    base = (
+        " FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE m.deleted_at IS NULL"
+    )
+    params: list[str] = []
+    if status is not None:
+        base += " AND e.status = ?"
+        params.append(status)
+    total = int(connection.execute("SELECT COUNT(*)" + base, params).fetchone()[0])
+    rows = connection.execute(
+        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, "
+        "e.created_at, m.updated_at, length(e.text) AS text_length, "
+        "(SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count" + base +
+        " ORDER BY e.created_at DESC, m.id DESC LIMIT ? OFFSET ?",
+        [*params, limit, offset],
+    ).fetchall()
+    return rows, total
 
 
 def list_deleted_materials_page(connection: sqlite3.Connection, limit: int = 20,
                                 offset: int = 0) -> tuple[list[sqlite3.Row], int]:
-    rows = list_deleted_materials(connection)
-    return rows[offset:offset + limit], len(rows)
+    base = (
+        " FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE m.deleted_at IS NOT NULL"
+    )
+    total = int(connection.execute("SELECT COUNT(*)" + base).fetchone()[0])
+    rows = connection.execute(
+        "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, "
+        "e.created_at, m.updated_at, m.deleted_at, length(e.text) AS text_length, "
+        "(SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count" + base +
+        " ORDER BY m.deleted_at DESC, m.id DESC LIMIT ? OFFSET ?", (limit, offset)
+    ).fetchall()
+    return rows, total
 
 
 def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite3.Row | None:
@@ -601,10 +668,65 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
         return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
 
 
+def reclaim_stale_embedding_operations(connection: sqlite3.Connection, *, project_id: str,
+                                       lease_seconds: int = QA_OPERATION_LEASE_SECONDS) -> int:
+    cutoff = datetime.now(timezone.utc).timestamp() - lease_seconds
+    stale_ids = []
+    for row in connection.execute(
+        "SELECT id, started_at FROM ai_operations WHERE project_id=? AND operation_type='embedding_index' AND status='running'",
+        (project_id,),
+    ).fetchall():
+        try:
+            started = datetime.fromisoformat(str(row["started_at"])).timestamp()
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if started <= cutoff:
+            stale_ids.append(str(row["id"]))
+    if stale_ids:
+        with connection:
+            connection.executemany(
+                "UPDATE ai_operations SET status='stale', error_code='embedding_index_lease_expired', finished_at=? WHERE id=? AND status='running'",
+                [(utc_now(), operation_id) for operation_id in stale_ids],
+            )
+    return len(stale_ids)
+
+
+def create_embedding_index_operation(connection: sqlite3.Connection, *, project_id: str,
+                                     material_id: str, source_revision: str,
+                                     retry_count: int = 0) -> str:
+    operation_id = f"embedding_index_{uuid.uuid4().hex}"
+    now = utc_now()
+    fingerprint = hashlib.sha256(f"{material_id}:{source_revision}".encode("utf-8")).hexdigest()
+    connection.execute(
+        "INSERT INTO ai_operations (id,operation_type,status,project_id,material_id,input_fingerprint,source_revision,retry_count,created_at,started_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (operation_id, "embedding_index", "running", project_id, material_id, fingerprint, source_revision, retry_count, now, now),
+    )
+    return operation_id
+
+
+def finish_embedding_index_operation(connection: sqlite3.Connection, operation_id: str, *, status: str,
+                                      error_code: str | None = None) -> None:
+    if status not in {"succeeded", "failed", "stale"}:
+        raise ValueError("embedding_operation_invalid_status")
+    with connection:
+        connection.execute(
+            "UPDATE ai_operations SET status=?, error_code=?, finished_at=? WHERE id=? AND status='running'",
+            (status, error_code, utc_now(), operation_id),
+        )
+
+
 def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id: str,
                                   provider: EmbeddingProvider, rebuild: bool = False,
-                                  retry_failed: bool = False) -> dict[str, object]:
+                                  retry_failed: bool = False, operation_id: str | None = None) -> dict[str, object]:
     """Explicit, synchronous SQLite-first indexing; never called during startup."""
+    if getattr(provider, "dimensions", 0) == 0:
+        probe = connection.execute(
+            "SELECT text FROM chunks WHERE material_id=? AND status='ready' ORDER BY chunk_index, id LIMIT 1",
+            (material_id,),
+        ).fetchone()
+        if probe is not None:
+            provider.embed([str(probe["text"])])
     with connection:
         rows = connection.execute(
             "SELECT c.id, c.text, c.revision_id FROM chunks c JOIN materials m ON m.id=c.material_id "
@@ -800,9 +922,24 @@ def _lexical_candidates(connection: sqlite3.Connection, *, project_id: str, quer
     return ("succeeded" if rows else "empty"), list(rows)
 
 
+def _hydrate_provider_dimensions(connection: sqlite3.Connection, *, project_id: str,
+                                  provider: EmbeddingProvider) -> None:
+    if getattr(provider, "dimensions", 0):
+        return
+    row = connection.execute(
+        "SELECT dimensions FROM embeddings e JOIN chunks c ON c.id=e.chunk_id "
+        "JOIN materials m ON m.id=c.material_id WHERE c.project_id=? AND e.provider_id=? "
+        "AND e.model_id=? AND e.model_revision=? AND e.status='ready' ORDER BY e.updated_at DESC LIMIT 1",
+        (project_id, provider.provider_id, provider.model_id, provider.model_revision),
+    ).fetchone()
+    if row is not None:
+        setattr(provider, "dimensions", int(row["dimensions"]))
+
+
 def _vector_candidates(connection: sqlite3.Connection, *, project_id: str, query: str,
                        provider: EmbeddingProvider, material_ids: list[str] | None,
                        limit: int) -> tuple[str, list[dict[str, object]]]:
+    _hydrate_provider_dimensions(connection, project_id=project_id, provider=provider)
     query_vector = provider.embed([query.strip()])[0]
     requested = material_ids or []
     scope = ""
@@ -903,6 +1040,7 @@ def run_vector_retrieval(connection: sqlite3.Connection, *, project_id: str, que
                          top_k: int = 5) -> dict[str, object]:
     if not query.strip() or len(query.strip()) > MAX_RETRIEVAL_QUERY_LENGTH or not 1 <= top_k <= MAX_RETRIEVAL_TOP_K:
         raise ValueError("retrieval_invalid_query" if not query.strip() else "retrieval_invalid_top_k")
+    _hydrate_provider_dimensions(connection, project_id=project_id, provider=provider)
     vectors = provider.embed([query.strip()])
     query_vector = vectors[0]
     requested = material_ids or []
@@ -1077,14 +1215,17 @@ def reclaim_stale_qa_operations(connection: sqlite3.Connection, *, project_id: s
 
 
 def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: str,
-                                idempotency_key: str, retrieval_mode: str = "lexical") -> dict[str, object] | None:
+                                idempotency_key: str, retrieval_mode: str = "lexical",
+                                expected_fingerprint: str | None = None) -> dict[str, object] | None:
     operation = connection.execute(
-        "SELECT id, status, thread_id, retrieval_run_id, output_artifact_id, error_code "
+        "SELECT id, status, thread_id, retrieval_run_id, output_artifact_id, error_code, input_fingerprint "
         "FROM ai_operations WHERE project_id = ? AND idempotency_key = ?",
         (project_id, idempotency_key),
     ).fetchone()
     if operation is None:
         return None
+    if expected_fingerprint is not None and str(operation["input_fingerprint"]) != expected_fingerprint:
+        raise ValueError("qa_idempotency_key_mismatch")
     if operation["status"] == "running":
         raise ValueError("qa_operation_in_progress")
     run = connection.execute(
@@ -1144,6 +1285,14 @@ def get_idempotent_qa_response(connection: sqlite3.Connection, *, project_id: st
     }
 
 
+def qa_request_fingerprint(*, question: str, material_ids: list[str], thread_id: str | None,
+                           retrieval_mode: str, allow_retrieval_fallback: bool) -> str:
+    normalized = question.strip()
+    payload = "\x1f".join((normalized, "\x1e".join(sorted(material_ids)), thread_id or "",
+                           retrieval_mode, str(int(allow_retrieval_fallback))))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def create_qa_request(connection: sqlite3.Connection, *, project_id: str, question: str,
                       material_ids: list[str], thread_id: str | None,
                       request_id: str | None, idempotency_key: str | None = None,
@@ -1158,10 +1307,10 @@ def create_qa_request(connection: sqlite3.Connection, *, project_id: str, questi
     if not isinstance(allow_retrieval_fallback, bool):
         raise ValueError("retrieval_invalid_fallback")
     created_at = utc_now()
-    fingerprint = hashlib.sha256(
-        (normalized + "\x1f" + "\x1f".join(sorted(material_ids)) + "\x1f" + retrieval_mode
-         + "\x1f" + str(int(allow_retrieval_fallback))).encode("utf-8")
-    ).hexdigest()
+    fingerprint = qa_request_fingerprint(
+        question=normalized, material_ids=material_ids, thread_id=thread_id,
+        retrieval_mode=retrieval_mode, allow_retrieval_fallback=allow_retrieval_fallback,
+    )
     with connection:
         if idempotency_key:
             existing = connection.execute(

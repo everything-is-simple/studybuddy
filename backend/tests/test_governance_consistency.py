@@ -50,7 +50,16 @@ def test_roadmap_orders_deferred_learning_after_phase6():
     assert roadmap.index("Phase 6：AI MVP 产品化与整体验收") < roadmap.index("### Phase 7：Embedding 与 Hybrid Retrieval")
     assert "Phase 7：embedding / hybrid retrieval（按需，下一产品阶段）" in roadmap
     assert "Phase 8：卡片与练习" in roadmap
-    assert "Phase 9：学习计划 / S1–S7" in roadmap
+    phase8 = roadmap.index("Phase 8：卡片与练习")
+    for phase in (
+        "Phase 9A：学习领域基础与计划核心",
+        "Phase 9B：资料学习工作流（S1/S2）",
+        "Phase 9C：练习与反馈工作流（S3/S4/S5）",
+        "Phase 9D：扩展学习服务（S6/S7，条件性）",
+    ):
+        assert phase in roadmap
+        assert phase8 < roadmap.index(phase)
+        phase8 = roadmap.index(phase)
 
 
 def test_repository_has_one_executable_test_contract():

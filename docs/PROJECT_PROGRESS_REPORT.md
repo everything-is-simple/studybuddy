@@ -16,7 +16,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
 | 前端用户体验 | 60%–70% | P6-A–P6-E fake/default/narrow/keyboard/accessibility contract 已通过；真实 Provider UI、系统级辅助技术和极端运行条件仍有限制 |
-| AI/学习产品能力 | 35%–45% | Q&A 与 Provider adapter 已实现并验收；cards、练习、计划、embedding 和后台任务仍未实现 |
+| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter 和 Phase 7 fake/backend retrieval 主体已实现并验收；真实 embedding provider、cards、练习、计划和后台任务仍未完成 |
 | 全项目整体 | 约 50%–55%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
 
 整体进度不应简单按“已通过测试数量”计算：当前可靠性投入较多，而 AI、学习工作流、多用户和运维能力尚未开始，因此产品整体完成度明显低于文件基础设施完成度。
@@ -111,15 +111,15 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨材料导航、统一 loading/empty/error/success、toast/retry、响应式与基础可访问性，以及导入→检索→问答→引用的完整 Chromium E2E 均已通过。Phase 5 adapter 已实现，DeepSeek 官方 `deepseek-chat` 的 adapter-level、完整 API-level synthetic Q&A 和 Chromium UI/E2E smoke 已通过；其它 Provider 和后续学习能力仍待验收/实现；cards、练习和学习计划属于后续阶段。
 
-### Phase 7：Embedding 与 Hybrid Retrieval — partial
+### Phase 7：Embedding 与 Hybrid Retrieval — completed（Mistral 精确配置范围）
 
-7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider、批量/文本/维度边界、embedding 环境配置及 `/api/ai/capabilities` 安全扩展；7.3 已补齐 canonical identity、f32le_v1 codec、payload malformed boundaries、stale/source-binding 判定和 ready-only vector guard；7.4 已补齐显式增量 indexing、material rebuild/retry、只读 verify 报告和 active/current/ready 生命周期过滤；7.5 已补齐 vector cosine、固定 candidate pool、hybrid RRF、score persistence 和显式 lexical fallback；7.6 已将 lexical/vector/hybrid/fallback 接入 Q&A，保留 server-side context/citation verification、operation/retrieval linkage 和 replay metadata；7.7 已完成 fake/backend 最终回归、embedding/retrieval/Q&A metadata backup/restore 专项、损坏生命周期测试和 102/1,002 chunks synthetic benchmark。fake provider 不联网、不使用随机数或 Python 内置 hash。真实网络 embedding provider、retrieval mode UI/Chromium final acceptance 和完整 lease/失败重试专项仍为 not_verified，因此 Phase 7 不标记 completed 或 real-pass。
+7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider 和独立 OpenAI-compatible embedding adapter；配置、secret 隔离、`/embeddings` 请求契约和稳定 HTTP/timeout/schema/vector/response-size 错误映射均已实现，loopback protocol tests 已通过。7.3 已补齐 canonical identity、f32le_v1 codec、payload malformed boundaries、stale/source-binding 判定和 ready-only vector guard；7.4 已补齐显式增量 indexing、material rebuild/retry、只读 verify、`embedding_index` operation lease、stale reclaim、失败审计和 retry_count；7.5 已补齐 vector cosine、固定 candidate pool、hybrid RRF、score persistence 和显式 lexical fallback；7.6 已将 lexical/vector/hybrid/fallback 接入 Q&A，保留 server-side context/citation verification、operation/retrieval linkage 和 replay metadata；retrieval mode UI/Chromium final acceptance 已覆盖 lexical/vector/hybrid、hybrid fallback 和 vector 不回退；7.7 已完成 fake/backend 最终回归、embedding/retrieval/Q&A metadata backup/restore、损坏生命周期测试和 102/1,002 chunks synthetic benchmark。完整 backend 为 231 passed/2 skipped，Phase 7 专项 Chromium 与 P6-E 回归通过。Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 已通过外部真实 embedding direct vector、隔离 indexing、vector retrieval 和审计 metadata gate，返回 1024 维向量；因此 Phase 7 在该精确配置范围 completed。Agnes、ARK、MiniMax、NVIDIA 候选未通过或未形成可验证 embedding evidence，不扩展为通用多-provider 或全局 production real-pass。
 
 ### Phase 5 之后：AI 与学习工作流 — 尚未进入
 
 以下后续核心产品能力尚未形成可用用户路径：
 
-- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material。
+- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material，不能扩展为所有 Provider/model 的通用 real-pass。
 - hybrid/fallback RAG 扩展、真实 embedding provider 和其它 Provider 独立验证。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
@@ -147,7 +147,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### 当前阶段：P6-E 后的精确 Provider evidence 与后续路线
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已经完成；尚未达到多 Provider 通用 real-pass，且 P6-E 精确真实 UI evidence 仍需显式运行：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已经完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线转为 Phase 7 收口：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
@@ -160,7 +160,15 @@ Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错�
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Cards、练习、学习计划、embedding/hybrid retrieval、后台任务、多用户和扩展能力按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 7–10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；当前 Phase 7 仍需完成真实 embedding provider、retrieval-mode Chromium 和 indexing lease/失败重试证据。之后按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 的 Phase 8、9A–9D、10 顺序推进，不在当前阶段并行承诺。
+
+### 与祖宗/前两代版本的治理结论
+
+StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-audit`、`ai-studybuddy`、`AIStudyBuddy` 和 `pi-studybuddy`，它在正式 source of truth、Composer/Integration/Test 分层、migration 控制、原文件与 SQLite 安全、backup/restore、revision → chunk → retrieval → citation 可追溯链、Provider evidence 边界和分层验收状态上更成熟。
+
+但它还不是功能宽度上的全面替代品。前代版本仍覆盖更多学习业务，例如 cards、exercises、study plans、S1–S7、OCR/ASR、报告或桌面工作流。历史代码、设计、组件 smoke、fake Provider 或前代用户路径只能作为需求和契约参考，不能作为正式系统完成证据。当前完成度约 50%–55% 的主要含义正是：可靠基础和可信 Q&A 已形成，但学习产品上层尚未完成。
+
+Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
 ### P1：在 AI 闭环后补齐运行保障
 
