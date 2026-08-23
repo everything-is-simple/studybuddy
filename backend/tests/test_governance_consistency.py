@@ -45,6 +45,22 @@ def test_governance_preserves_real_provider_and_runtime_boundaries():
     assert "explicit opt-in" in provider_setup
 
 
+def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
+    roadmap = read("PHASE_ROADMAP.md")
+    status = read("STATUS.md")
+    todo = read("TODO.md")
+    progress = read("PROJECT_PROGRESS_REPORT.md")
+    evidence = read("PHASE8_ACCEPTANCE_EVIDENCE.md")
+
+    for document in (roadmap, status, todo, progress):
+        assert "PHASE8_ACCEPTANCE_EVIDENCE.md" in document
+    assert "completed" in roadmap
+    assert "deterministic `fake` LLM provider" in evidence
+    assert "No real Provider Cards/Exercises generation evidence" in evidence
+    assert "250 passed, 2 skipped" in evidence
+    assert not (DOCS / "phase8").exists()
+
+
 def test_roadmap_orders_deferred_learning_after_phase6():
     roadmap = read("PHASE_ROADMAP.md")
     assert roadmap.index("Phase 6：AI MVP 产品化与整体验收") < roadmap.index("### Phase 7：Embedding 与 Hybrid Retrieval")

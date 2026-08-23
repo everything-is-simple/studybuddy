@@ -1,6 +1,6 @@
 # StudyBuddy Architecture Boundary
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；当前重点是 Phase 8 后续 AI draft generation 与 Cards/Exercises UI。多进程、多用户和云同步仍不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 已完成，当前下一业务阶段是 Phase 9A 学习领域与计划核心。多进程、多用户和云同步仍不在支持范围。
 
 ## Evolution boundary
 
@@ -51,4 +51,4 @@ material revision
 → cards / exercises
 ```
 
-Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8.1 schema、8.2 Cards backend MVP、8.3 Exercises backend MVP、8.4 fake-provider citation-safe draft generation 和 8.5 fake-provider Chromium workspace 已实现：exercise 支持三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading 和 short-answer `pending_review`；generation 要求显式已索引的 single-material scope，经 retrieval/context/provider 结构化内存校验和服务端 citation 重验后才原子保存 draft/operation；workspace 支持 collection、draft、citation、review/attempt、refresh、failure、窄屏和键盘路径。真实 Provider generation evidence、系统级辅助技术/极端内容、人工简答复核、plans、worker 和多用户能力仍须按路线图逐阶段实现；这些局部 browser evidence 不等于全局 `real-pass`。
+Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 已在 deterministic fake-provider 范围收口：schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace、三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading、short-answer `pending_review`，以及 backup → verify → 新空目录 restore 均有证据。generation 要求显式已索引的 single-material scope，经 retrieval/context/provider 结构化内存校验和服务端 citation 重验后才原子保存 draft/operation；restore/startup 不自动生成、repair、rebuild 或提升 unavailable citation。详细范围见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。真实 Provider generation evidence、系统级辅助技术/极端内容、人工简答复核、plans、worker 和多用户能力仍须按路线图逐阶段实现；这些 fake-provider browser evidence 不等于全局 `real-pass`。
