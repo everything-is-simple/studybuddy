@@ -14,6 +14,7 @@
 - `DECISIONS.md`：架构和产品决策记录。
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构与已实现的 Phase 4–7、Phase 8 fake-provider 范围；不是完整学习产品完成声明。
 - [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)：Phase 8 fake-provider backend/Chromium/backup-restore 收口证据与限制。
+- [`PHASE9A_EXECUTION_PROMPTS.md`](PHASE9A_EXECUTION_PROMPTS.md)：Phase 9A 领域基础与计划核心的充分上下文规划和逐子任务执行 prompts；仅为 planned，不代表实现完成。
 - [`PROVIDER_CAPABILITY_MATRIX.md`](PROVIDER_CAPABILITY_MATRIX.md)：Phase 5 各 OpenAI-compatible Provider 的独立证据矩阵和 opt-in 验收命令。
 - [`AI_PROVIDER_SETUP.md`](AI_PROVIDER_SETUP.md)：StudyBuddy Provider 配置边界、密钥安全规则和三次 API acceptance runner。
 - [`AGNES_PROVIDER_RUNBOOK.md`](AGNES_PROVIDER_RUNBOOK.md)：Agnes AI-Hub 独立本地 launcher、smoke gate 和运维边界。

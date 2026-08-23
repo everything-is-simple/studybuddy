@@ -182,6 +182,18 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9A：学习领域基础与计划核心
 
+> 充分上下文、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`PHASE9A_EXECUTION_PROMPTS.md`](PHASE9A_EXECUTION_PROMPTS.md)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
+
+- [ ] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结。
+- [ ] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机。
+- [ ] 9A-2：通过连续 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 rollback/幂等测试。
+- [ ] 9A-3：实现 repository/domain 事务、DAG 依赖校验、append-only progress 和用户编辑保护。
+- [ ] 9A-4：实现最小计划核心 API、输入边界、稳定错误和生命周期 contract。
+- [ ] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace。
+- [ ] 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的 source lifecycle 集成。
+- [ ] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收。
+- [ ] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。
+
 - [ ] 冻结 learning goal、knowledge module、study plan/item、dependency、progress event 的正式领域契约。
 - [ ] 通过 migration 增加计划、目标、进度事件和 source revision/citation 关联；禁止运行时建表。
 - [ ] 实现 draft → confirm → active 生命周期、用户编辑保护、source unavailable 和删除/恢复边界。
