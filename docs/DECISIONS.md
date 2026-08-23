@@ -7,7 +7,7 @@
 - DeepSeek `deepseek-chat` and Agnes `agnes-ai-hub` / `agnes-2.5-flash` real Provider evidence remains scoped to exact provider/model/gateway configurations. A real Provider UI path is `not_verified` unless its explicit target, model, gateway and secret-backed runtime gate actually ran; fake/mock results never become real-pass.
 - No P6-E API, business table or migration is required. Existing generation/context checks are the cancellation boundary: synchronous Provider requests are not cancelled, stale responses are ignored.
 - Governance source of truth is split deliberately: `PHASE_ROADMAP.md` defines sequence and completion criteria, `STATUS.md` records evidence state, `TODO.md` is the executable checklist, and `P6E_ACCEPTANCE_EVIDENCE.md` records redacted P6-E gates. Contradictory claims in other documents must be corrected to these sources.
-- The next product priority after P6-E is exact real Provider UI evidence only when explicitly configured, followed by the deferred Phase 7–10 roadmap. Cards, exercises, plans, embeddings, workers, multi-user and cloud capabilities remain unimplemented.
+- P6-E exact real Provider UI evidence for DeepSeek `deepseek-chat` and Agnes `agnes-2.5-flash` has passed under explicit target/model/gateway gates. The current product priority is to close the remaining Phase 7 evidence: a real embedding provider, retrieval-mode Chromium acceptance, and lease/failure-retry coverage. Cards, exercises, plans, workers, multi-user and cloud capabilities remain unimplemented.
 
 ## 2026-08-25: project progress and priority boundary
 
@@ -60,7 +60,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- 当前 migration v4 已包含 revision/chunk/retrieval/Q&A 所需 schema；v3/v4 分别补充 Provider metadata 与 Q&A idempotency。Phase 7.1 审计确认 embeddings 与 retrieval 的 vector 字段仍是预留，Cards、Exercises、Plans 等后续业务逻辑仍未实现。
+- 当前 migration v5 已包含 revision/chunk/retrieval/Q&A 与 embedding 所需 schema；v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract。Phase 7.1–7.7 的 fake/backend 主体已实现，但真实 embedding provider、retrieval-mode Chromium acceptance 和完整 lease/失败重试专项仍未完成；Cards、Exercises、Plans 等后续业务逻辑仍未实现。
 
 ## 2026-08-19: four-directory boundary
 
@@ -85,7 +85,7 @@
 - I1 migration/schema versioning、I2 backup/restore operator 闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成。
 - I4 中 Windows ACL/只读目录、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏等项保持 `not_verified`，并已明确作为 v1 运行边界接受；这些项目不阻塞基础设施 v1 收口，也不得标记为已通过。
 - 自此可以正式宣告 StudyBuddy **本地单进程文件材料基础设施 v1 基本完工**，并作为 AI MVP 的数据基础。
-- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口。下一优先级是显式 gate 下的精确 P6-E real Provider UI evidence，随后按路线图进入 Phase 7；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
+- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。下一优先级是 Phase 7 的真实 embedding provider、retrieval-mode Chromium acceptance 和 lease/失败重试专项；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
 
 ## 2026-08-25: local environment governance map
 

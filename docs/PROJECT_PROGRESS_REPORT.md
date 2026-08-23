@@ -16,7 +16,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
 | 前端用户体验 | 60%–70% | P6-A–P6-E fake/default/narrow/keyboard/accessibility contract 已通过；真实 Provider UI、系统级辅助技术和极端运行条件仍有限制 |
-| AI/学习产品能力 | 35%–45% | Q&A 与 Provider adapter 已实现并验收；cards、练习、计划、embedding 和后台任务仍未实现 |
+| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter 和 Phase 7 fake/backend retrieval 主体已实现并验收；真实 embedding provider、cards、练习、计划和后台任务仍未完成 |
 | 全项目整体 | 约 50%–55%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
 
 整体进度不应简单按“已通过测试数量”计算：当前可靠性投入较多，而 AI、学习工作流、多用户和运维能力尚未开始，因此产品整体完成度明显低于文件基础设施完成度。
@@ -119,7 +119,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 以下后续核心产品能力尚未形成可用用户路径：
 
-- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material。
+- P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material，不能扩展为所有 Provider/model 的通用 real-pass。
 - hybrid/fallback RAG 扩展、真实 embedding provider 和其它 Provider 独立验证。
 - 知识卡片、Quiz/练习。
 - 学习计划及 S1–S7。
@@ -147,7 +147,7 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 ### 当前阶段：P6-E 后的精确 Provider evidence 与后续路线
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已经完成；尚未达到多 Provider 通用 real-pass，且 P6-E 精确真实 UI evidence 仍需显式运行：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收已经完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，当前主线转为 Phase 7 收口：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；

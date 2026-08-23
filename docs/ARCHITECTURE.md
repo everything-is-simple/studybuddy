@@ -1,6 +1,6 @@
 # StudyBuddy Architecture Boundary
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。当前重点是 P6-E 之后的精确真实 Provider UI evidence 和后续学习能力边界；多进程、多用户和云同步仍不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过；当前重点是 Phase 7 的剩余 embedding/retrieval 验收和后续学习能力边界。多进程、多用户和云同步仍不在支持范围。
 
 ## Runtime target
 
