@@ -4,7 +4,7 @@
 
 按 Phase 的长期进度、完成标准和执行顺序见 [`docs/PHASE_ROADMAP.md`](docs/PHASE_ROADMAP.md)。基础设施真实状态及收尾计划见 [`docs/INFRASTRUCTURE_CLOSEOUT.md`](docs/INFRASTRUCTURE_CLOSEOUT.md)。完整文档索引见 [`docs/INDEX.md`](docs/INDEX.md)。
 
-项目总进度报告见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)，具体执行清单见 [`docs/TODO.md`](docs/TODO.md)。**本地单进程文件材料基础设施 v1 已基本完工**，当前定位是可靠的本地单进程文件材料管理基础系统，并作为 AI MVP 的数据基础；尚不是完整 AI 学习产品，也不是全局生产级 `real-pass`。
+项目总进度报告见 [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md)，具体执行清单见 [`docs/TODO.md`](docs/TODO.md)。代码、测试和状态治理统一见 [`docs/CODE_TEST_GOVERNANCE.md`](docs/CODE_TEST_GOVERNANCE.md)；默认后端门禁为 `backend/scripts/test-backend.ps1`，浏览器门禁为 `backend/scripts/test-browser.ps1`。**本地单进程文件材料基础设施 v1 已基本完工**，当前定位是可靠的本地单进程文件材料管理基础系统，并作为 AI MVP 的数据基础；尚不是完整 AI 学习产品，也不是全局生产级 `real-pass`。
 
 Operator backup / restore 已提供 CLI，详见 [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity/schema-version metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录；`verify-restored-data` 提供 offline/online restore 后验收。备份保留、轮换和 restore drill 见 `docs/BACKUP_OPERATIONS.md` 与 `docs/RESTORE_DRILL.md`。应用启动不会自动 backup、restore 或 repair。数据库 migration/schema versioning 已实现，升级和不可自动回滚流程见 [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
 
