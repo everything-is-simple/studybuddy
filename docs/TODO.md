@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
 > 更新：2026-08-27
-> 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **50%–55%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
+> 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **55%–60%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -143,7 +143,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] answer key 和 submitted answer 不进入普通 exercise/attempt 列表响应；backup/restore 和 restart 保留 exercise/attempt history。
 - [x] 8.4 AI draft generation：card/exercise generation 接入显式 indexed single-material lexical/vector/hybrid retrieval、context/citation verification、provider 和 `ai_operations`；结构化输出仅在内存校验，不持久化 raw prompt/response，成功只原子保存 cited draft，失败只保留安全 failed operation。支持 1–10 draft、Idempotency-Key replay/running conflict/failed retry、source-stale、malformed/forged citation、provider failure、rollback 边界；fake provider backend 验收完成，真实 Provider 不在本子任务扩大范围。
 - [x] 8.5 Cards/Exercises UI、fake-provider Chromium 用户路径和基础可访问性验收：统一 nav、deck/set、draft generation/list/detail、citation 定位/unavailable、draft edit/save、confirm/reject/archive、card review、exercise attempt、刷新恢复、busy/retry failure、answer-key privacy、390x844 overflow 和键盘 nav；证据为 `backend/tests/browser_phase8.spec.js`。未做真实 Provider generation、系统级 screen reader 或极端长内容验收。
-- [ ] 8.6 Phase 8 完整 citation source lifecycle、backup/restore、全量回归、正式证据/文档收口；完成后删除 `docs/phase8/` 临时执行资料。
+- [x] 8.6 Phase 8 完整 citation source lifecycle、backup/restore、全量回归、正式证据/文档收口：新增 `backend/tests/test_phase8_closeout.py` 覆盖 artifact/citation/review/attempt/operation 的 backup → verify → 新空目录 restore 与 startup/read non-repair；full backend `250 passed, 2 skipped`、Phase 8 Chromium `3 passed`、相关 UI failure regression `9 passed`。证据：[`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。
 
 ## Phase 7：Embedding 与 Hybrid Retrieval
 
@@ -173,6 +173,8 @@ revision → chunks → retrieval → citations → Q&A
 
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
 - [ ] structured tracing、扩展 metrics、degraded readiness。
+
+**Phase 8 收口结论：** 在 deterministic fake-provider、单进程 SQLite、本地 Chromium 和 backup/restore 的精确范围内 completed。该结论不包含真实 Provider generation、人工简答复核、系统级辅助技术、极端内容或长时稳定性；这些仍为 `not_verified`。下一阶段按 9A（学习领域基础与计划核心）推进，不跳过其独立契约和 migration gate。
 
 ## Phase 9：学习产品构建计划
 

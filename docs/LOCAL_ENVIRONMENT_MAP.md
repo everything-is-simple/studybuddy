@@ -63,13 +63,13 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
-- Phase 7 已按 Mistral 精确配置范围收口；Phase 8.1 migration 和 8.2 Cards 已提交，8.3 Exercises 正在实现/验收。
+- Phase 7 已按 Mistral 精确配置范围收口；Phase 8 已按 deterministic fake-provider、Chromium 与 backup/restore 精确范围收口，证据见 `PHASE8_ACCEPTANCE_EVIDENCE.md`。
 - 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
 - Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
 ## 五、下一步准备
 
-Phase 7 已收口，当前按 Phase 8 的子任务依序完成 Cards/Exercises；Phase 8 完成后才按 9A–9D 推进学习领域基础、资料学习、练习反馈和条件性扩展服务。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
+Phase 7 与 Phase 8 fake-provider closeout 已完成，下一步按 9A–9D 推进学习领域基础、资料学习、练习反馈和条件性扩展服务；先进入 9A，不能跳过其独立契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序

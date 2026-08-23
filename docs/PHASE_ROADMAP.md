@@ -15,9 +15,9 @@
 |---|---:|---|
 | 本地单进程基础设施 | 90%–95% | 导入、SQLite、storage、一致性、恢复、migration、backup/restore 和启动安全已具备；I4 已时间盒验收 |
 | 文件材料管理 | 80%–85% | 当前最成熟，核心路径为局部 `real-pass` |
-| 前端体验 | 45%–55% | 内嵌可用单页，不是完整产品前端 |
-| AI / 学习产品能力 | 25%–35% | 目前仅完成架构设计，未形成用户功能 |
-| **项目整体（功能加权估算）** | **45%–50%** | 不是测试通过率，不能标记为全局 `real-pass` |
+| 前端体验 | 60%–70% | Materials、Q&A 和 Cards/Exercises 的受限工作区已有 Chromium 路径；不是完整产品前端 |
+| AI / 学习产品能力 | 40%–50% | Q&A、retrieval 和 Phase 8 fake-provider Cards/Exercises 闭环已完成；真实 Provider generation、计划和后台任务未完成 |
+| **项目整体（功能加权估算）** | **55%–60%** | 不是测试通过率，不能标记为全局 `real-pass` |
 
 ## 已交付能力与基础设施状态
 
@@ -175,13 +175,13 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 ### Phase 8：卡片与练习
 
-**状态：进行中。** Phase 8.1 schema、8.2 Cards backend MVP、8.3 Exercises backend MVP、8.4 fake-provider citation-safe AI draft generation 与 8.5 fake-provider Cards/Exercises Chromium workspace 已完成对应验收；Phase 8 总收口仍未完成。
+**状态：completed（deterministic fake-provider / local Chromium / backup-restore 精确范围）。** v7/v8 migration、Cards/Exercises lifecycle、citation-safe fake-provider draft generation、workspace、append-only review/attempt、deterministic grading、source lifecycle、backup/restore 和完整回归已收口。证据见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。这不表示真实 Provider generation 或全局 Cards/Exercises `real-pass`。
 
 - v7 已通过 migration 增加 Card/Exercise 业务表；v8 记录 exercise provenance，保持 migration history 与 `user_version` 一致。
 - Exercises 支持 `multiple_choice`、`true_false`、`short_answer`，draft → ready/rejected/archived、draft-only edit、append-only attempts、MC/TF deterministic grading 和 short-answer `pending_review`。
 - AI exercise 必须从 draft 开始，必须绑定 current active revision 和 valid citation；confirm 会重新验证 citation，delete/restore/purge/re-index 会更新 citation lifecycle。
 - 普通 exercise 和 attempt history 响应不返回 answer key 或用户提交原文。
-- 8.4 已实现显式 indexed single-material scope 的 lexical/vector/hybrid retrieval → context → provider → server-side citation revalidation → atomic draft/operation persistence；结构化 provider output 只在内存校验，raw prompt/response 不持久化，失败只保留安全 operation。8.5 已实现 fake-provider workspace 与 Chromium 路径：draft generation/list/detail/edit/confirm/reject/archive、citation location/unavailable、review/attempt、refresh、failure retry、privacy、窄屏和键盘基础 contract。真实 Provider generation、系统级 screen reader/极端内容、人工简答复核和完整 Phase 8 closeout 尚未实现；不允许重新生成静默覆盖用户已编辑或已确认状态。
+- 显式 indexed single-material scope 的 lexical/vector/hybrid retrieval → context → provider → server-side citation revalidation → atomic draft/operation persistence 已实现；结构化 provider output 只在内存校验，raw prompt/response 不持久化，失败只保留安全 operation。fake-provider workspace 与 Chromium 路径覆盖 draft generation/list/detail/edit/confirm/reject/archive、citation location/unavailable、review/attempt、refresh、failure retry、privacy、窄屏和键盘基础 contract。8.6 还验证了 draft/ready/rejected/archived artifact、citation、review、attempt 和 operation 的 backup → verify → 新空目录 restore，且 restore/startup 不 repair、rebuild 或提升 unavailable 状态。真实 Provider generation、系统级 screen reader/极端内容和人工简答复核仍未实现；不允许重新生成静默覆盖用户已编辑或已确认状态。
 
 ### Phase 9：学习产品构建计划（拆分为 9A–9D）
 
