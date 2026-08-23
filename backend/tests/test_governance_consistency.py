@@ -5,6 +5,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 
 
+def tracked_files(*parts: str) -> list[Path]:
+    return [path for path in ROOT.joinpath(*parts).rglob("*") if path.is_file()]
+
+
 def read(name: str) -> str:
     return (DOCS / name).read_text(encoding="utf-8")
 
@@ -47,3 +51,26 @@ def test_roadmap_orders_deferred_learning_after_phase6():
     assert "Phase 7：embedding / hybrid retrieval（按需，下一产品阶段）" in roadmap
     assert "Phase 8：卡片与练习" in roadmap
     assert "Phase 9：学习计划 / S1–S7" in roadmap
+
+
+def test_repository_has_one_executable_test_contract():
+    config = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    governance = read("CODE_TEST_GOVERNANCE.md")
+    assert 'testpaths = ["backend/tests"]' in config
+    assert "test-backend.ps1" in governance
+    assert "test-browser.ps1" in governance
+    backend_runner = ROOT / "backend/scripts/test-backend.ps1"
+    browser_runner = ROOT / "backend/scripts/test-browser.ps1"
+    assert backend_runner.is_file()
+    assert browser_runner.is_file()
+    assert "'--workers=1'" in browser_runner.read_text(encoding="utf-8")
+
+
+def test_repository_boundaries_and_runtime_artifacts_are_explicit():
+    assert all(path.is_relative_to(ROOT / "backend" / "app") for path in tracked_files("backend", "app"))
+    assert all(path.is_relative_to(ROOT / "backend" / "tests") for path in tracked_files("backend", "tests"))
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    for entry in ("*.sqlite3", "*.db", "test-results/", "playwright-report/", ".env"):
+        assert entry in gitignore
+    for name in ("STATUS.md", "TODO.md", "PHASE_ROADMAP.md", "CODE_TEST_GOVERNANCE.md"):
+        assert name in read("INDEX.md")

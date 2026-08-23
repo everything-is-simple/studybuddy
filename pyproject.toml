@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+addopts = "-ra"
+# Real network/provider tests are opt-in through their own environment gates.
+markers = [
+  "real_provider: opt-in tests that call a configured external provider",
+]
+filterwarnings = [
+  "ignore::DeprecationWarning:httpx.*",
+]
