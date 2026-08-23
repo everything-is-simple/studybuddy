@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 5
+CURRENT_SCHEMA_VERSION = 6
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -54,7 +54,7 @@ def _baseline_complete(connection: sqlite3.Connection) -> bool:
         "retrieval_runs", "retrieval_hits", "qa_citations",
         "ai_operations", "qa_threads", "qa_messages", "qa_answers",
     }
-    if not (required_core | required_ai).issubset(objects):
+    if not (required_core | required_ai | {"material_search", "chunks_search"}).issubset(objects):
         return False
     if not {
         "id", "project_id", "original_name", "source_sha256", "stored_path",
@@ -73,6 +73,14 @@ def _baseline_complete(connection: sqlite3.Connection) -> bool:
     if not {
         "id", "thread_id", "role", "content", "created_at", "ai_operation_id",
     }.issubset(_columns(connection, "qa_messages")):
+        return False
+    if not {
+        "provider_request_id", "total_tokens", "finish_reason", "idempotency_key", "retrieval_run_id",
+    }.issubset(_columns(connection, "ai_operations")):
+        return False
+    if not {
+        "model_revision", "updated_at", "vector_encoding", "source_revision",
+    }.issubset(_columns(connection, "embeddings")):
         return False
     return True
 
@@ -346,12 +354,25 @@ def _migration_v5(connection: sqlite3.Connection) -> None:
     connection.execute("CREATE INDEX embeddings_ready_lookup_idx ON embeddings(status, provider_id, model_id, model_revision, dimensions, vector_encoding)")
 
 
+def _migration_v6(connection: sqlite3.Connection) -> None:
+    # Search indexes are schema objects and must be created transactionally.
+    connection.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS material_search USING "
+        "fts5(material_id UNINDEXED, original_name, text, tokenize='unicode61')"
+    )
+    connection.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS chunks_search USING "
+        "fts5(id UNINDEXED, text, normalized_text, tokenize='unicode61')"
+    )
+
+
 _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] = (
     (1, "canonical_material_schema", _migration_v1),
     (2, "ai_phase0_schema", _migration_v2),
     (3, "phase5_provider_metadata", _migration_v3),
     (4, "qa_operation_idempotency", _migration_v4),
     (5, "phase7_embedding_schema", _migration_v5),
+    (6, "search_index_schema_contract", _migration_v6),
 )
 
 
@@ -401,12 +422,13 @@ def migrate(connection: sqlite3.Connection) -> MigrationResult:
         _create_history(connection)
         current = _check_history(connection)
         if current == 0 and _baseline_complete(connection):
-            migration = _MIGRATIONS[0]
-            connection.execute(
+            # A complete pre-runner database already has the current schema.
+            # Adopt it with the full consecutive history; do not replay ALTERs.
+            connection.executemany(
                 "INSERT INTO schema_migrations(version, name, applied_at) VALUES (?, ?, ?)",
-                (migration[0], migration[1], _now()),
+                [(version, name, _now()) for version, name, _function in _MIGRATIONS],
             )
-            current = migration[0]
+            current = CURRENT_SCHEMA_VERSION
             adopted = True
         elif current == 0 and _objects(connection) - {HISTORY_TABLE}:
             # Existing pre-runner databases may have the core tables but lack

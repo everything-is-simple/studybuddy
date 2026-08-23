@@ -36,7 +36,7 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
                          purge_material, reclaim_stale_qa_operations, rename_material, restore_material, run_chunk_retrieval,
                          run_hybrid_retrieval, run_vector_retrieval, save_material_with_extraction, soft_delete_material,
-                         validate_citation_key)
+                         validate_citation_key, qa_request_fingerprint)
 from .storage import sha256_file, store_original
 
 
@@ -555,9 +555,14 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                 if idempotency_key:
                     if len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key):
                         raise HTTPException(status_code=400, detail="qa_invalid_idempotency_key")
+                    expected_fingerprint = qa_request_fingerprint(
+                        question=request.question, material_ids=request.material_ids, thread_id=request.thread_id,
+                        retrieval_mode=request.retrieval_mode,
+                        allow_retrieval_fallback=request.allow_retrieval_fallback,
+                    )
                     replay = get_idempotent_qa_response(
                         connection, project_id=app.state.config.project_id, idempotency_key=idempotency_key,
-                        retrieval_mode=request.retrieval_mode,
+                        retrieval_mode=request.retrieval_mode, expected_fingerprint=expected_fingerprint,
                     )
                     if replay is not None:
                         return replay
@@ -571,6 +576,11 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     replay = get_idempotent_qa_response(
                         connection, project_id=app.state.config.project_id, idempotency_key=idempotency_key,
                         retrieval_mode=request.retrieval_mode,
+                        expected_fingerprint=qa_request_fingerprint(
+                            question=request.question, material_ids=request.material_ids, thread_id=request.thread_id,
+                            retrieval_mode=request.retrieval_mode,
+                            allow_retrieval_fallback=request.allow_retrieval_fallback,
+                        ),
                     )
                     if replay is not None:
                         return replay
@@ -673,7 +683,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             if operation is not None:
                 with connect(app.state.config.database_path) as connection:
                     fail_qa_operation(connection, str(operation["operation_id"]), code)
-            status = 404 if code in {"material_not_found", "source_deleted", "qa_thread_not_found"} else 409 if code == "qa_operation_in_progress" else 400
+            status = 404 if code in {"material_not_found", "source_deleted", "qa_thread_not_found"} else 409 if code in {"qa_operation_in_progress", "qa_idempotency_key_mismatch"} else 400
             raise HTTPException(status_code=status, detail=code) from None
         except sqlite3.Error:
             if operation is not None:
@@ -777,6 +787,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             if row is None:
                 raise HTTPException(status_code=404, detail="material_not_found")
             payload = dict(row)
+            payload.pop("stored_path", None)
             payload["warnings"] = json.loads(payload.pop("warnings_json"))
             payload["spans"] = [dict(span) for span in get_spans(connection, row["extraction_id"])]
             return payload
@@ -793,7 +804,9 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             if state == "missing":
                 raise HTTPException(status_code=404, detail="material_not_found")
             raise HTTPException(status_code=404, detail="material_not_deleted")
-        return dict(row)
+        payload = dict(row)
+        payload.pop("stored_path", None)
+        return payload
 
     @app.post("/api/materials/{material_id}/purge")
     def purge_existing_material(material_id: str) -> dict[str, object]:
@@ -836,7 +849,9 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=500, detail="material_update_failed") from exc
         if row is None:
             raise HTTPException(status_code=404, detail="material_not_found")
-        return dict(row)
+        payload = dict(row)
+        payload.pop("stored_path", None)
+        return payload
 
     @app.delete("/api/materials/{material_id}", status_code=204)
     def delete_existing_material(material_id: str) -> Response:
