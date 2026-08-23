@@ -37,7 +37,8 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          purge_material, reclaim_stale_qa_operations, reclaim_stale_embedding_operations,
                          create_embedding_index_operation, finish_embedding_index_operation, rename_material, restore_material, run_chunk_retrieval,
                          run_hybrid_retrieval, run_vector_retrieval, save_material_with_extraction, soft_delete_material,
-                         validate_citation_key, qa_request_fingerprint)
+                         validate_citation_key, qa_request_fingerprint, create_deck, get_deck,
+                         list_decks, list_cards, create_card, update_card, confirm_card, review_card)
 from .storage import sha256_file, store_original
 
 
@@ -172,6 +173,25 @@ class QaAskRequest(BaseModel):
     top_k: int = 5
     retrieval_mode: str = "lexical"
     allow_retrieval_fallback: bool = True
+
+
+class DeckRequest(BaseModel):
+    title: str
+    description: str = ""
+
+
+class CardRequest(BaseModel):
+    front: str
+    back: str
+    explanation: str = ""
+    tags: list[str] = []
+    citations: list[dict[str, object]] = []
+    card_type: str = "user_created"
+    source_revision: str | None = None
+
+
+class CardReviewRequest(BaseModel):
+    result: str
 
 
 def _rename_name(raw_name: str) -> str | None:
@@ -785,6 +805,78 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         if result is None:
             raise HTTPException(status_code=404, detail="material_not_found")
         return result
+
+    @app.get("/api/study/decks")
+    def study_decks() -> list[dict[str, object]]:
+        with connect(app.state.config.database_path) as connection:
+            return list_decks(connection, project_id=app.state.config.project_id)
+
+    @app.post("/api/study/decks", status_code=201)
+    def create_study_deck(request: DeckRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return create_deck(connection, project_id=app.state.config.project_id, title=request.title, description=request.description)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="deck_create_failed") from None
+
+    @app.get("/api/study/decks/{deck_id}")
+    def study_deck(deck_id: str) -> dict[str, object]:
+        if not deck_id or len(deck_id) > 100: raise HTTPException(status_code=404, detail="deck_not_found")
+        with connect(app.state.config.database_path) as connection:
+            result = get_deck(connection, project_id=app.state.config.project_id, deck_id=deck_id)
+        if result is None: raise HTTPException(status_code=404, detail="deck_not_found")
+        return result
+
+    @app.get("/api/study/cards")
+    def study_cards(deck_id: str | None = None) -> list[dict[str, object]]:
+        with connect(app.state.config.database_path) as connection:
+            return list_cards(connection, project_id=app.state.config.project_id, deck_id=deck_id)
+
+    @app.post("/api/study/decks/{deck_id}/cards", status_code=201)
+    def create_study_card(deck_id: str, request: CardRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return create_card(connection, project_id=app.state.config.project_id, deck_id=deck_id, payload=request.model_dump(), card_type=request.card_type, source_revision=request.source_revision)
+        except ValueError as error:
+            code = str(error); status = 404 if code == "deck_not_found" else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="card_create_failed") from None
+
+    @app.patch("/api/study/cards/{card_id}")
+    def update_study_card(card_id: str, request: CardRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return update_card(connection, project_id=app.state.config.project_id, card_id=card_id, payload=request.model_dump())
+        except ValueError as error:
+            code = str(error); status = 404 if code == "card_not_found" else 409 if code == "card_edit_not_allowed" else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="card_update_failed") from None
+
+    @app.post("/api/study/cards/{card_id}/confirm")
+    def confirm_study_card(card_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return confirm_card(connection, project_id=app.state.config.project_id, card_id=card_id)
+        except ValueError as error:
+            code = str(error); status = 404 if code == "card_not_found" else 409 if code in {"card_invalid_state", "citation_invalid"} else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="card_confirm_failed") from None
+
+    @app.post("/api/study/cards/{card_id}/reviews", status_code=201)
+    def review_study_card(card_id: str, request: CardReviewRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return review_card(connection, project_id=app.state.config.project_id, card_id=card_id, result=request.result)
+        except ValueError as error:
+            code = str(error); status = 404 if code == "card_not_ready" else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="card_review_failed") from None
 
     @app.get("/api/materials/{material_id}/original")
     def download_original(material_id: str):
