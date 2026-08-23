@@ -159,13 +159,18 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 ### Phase 7：Embedding 与 Hybrid Retrieval
 
-**状态：7.1–7.6 已完成；7.7 fake/backend 最终验收、专项 backup/restore 和 synthetic benchmark 已完成；真实 embedding provider 与 retrieval mode Chromium UI 未验证。Phase 7 为 partial。**
+**状态：completed（精确配置范围）。7.1–7.7 fake/backend 主体、专项 backup/restore、synthetic benchmark、retrieval mode Chromium UI、indexing lease/失败重试/恢复专项，以及 Mistral `mistral-embed` 外部真实 embedding acceptance 均已完成。该 completed 结论仅适用于明确的 provider/model/gateway 配置，不代表通用多 Provider 或全局生产级 real-pass。**
 
 - 已完成：审计 `embeddings`、retrieval run/hit、chunking、migration 和 backup/restore 边界；冻结 embedding identity、status/stale、lexical/vector/hybrid/fallback 语义，以及连续 v5 migration 要求。正式记录见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
 - 已实现：v5 embedding schema migration、非 NULL model revision、status CHECK/updated_at/完整 identity 唯一约束；版本化离线 deterministic fake embedding、独立 registry、embedding 环境配置、canonical identity/stale 判定、f32 little-endian codec、显式增量 indexing、显式 material rebuild/retry、只读 verify 报告、vector cosine API 最小路径和安全 capabilities 扩展。
 - 已实现：Q&A 显式 lexical/vector/hybrid mode、hybrid fallback、retrieval policy/operation/answer linkage、replay metadata 和 citation-safe context path；不新增 migration，复用 v5 embedding 与现有 Q&A/citation schema。
 - 已完成：embedding/retrieval/Q&A metadata backup/restore 专项、损坏 payload/lifecycle 验收、102/1,002 chunks synthetic benchmark、完整 backend regression。
-- 未完成：真实 embedding provider 配置与错误映射、retrieval mode UI/Chromium final acceptance、完整 lease/失败重试专项；因此 Phase 7 仍为 partial，不标记 completed 或 real-pass。
+- 已完成：独立 OpenAI-compatible embedding adapter、环境配置、secret 隔离、`/embeddings` 请求契约、稳定 HTTP/timeout/schema/vector/response-size 错误映射；loopback protocol tests 已通过，但不等于外部真实 Provider real-pass。
+- 已完成：retrieval mode UI/Chromium final acceptance，覆盖 lexical/vector/hybrid、hybrid lexical fallback、vector 不自动 fallback 和安全错误显示。
+- 已完成：indexing lease、`embedding_index` operation 审计、stale lease reclaim、失败错误码保留和显式 retry_count/retry 路径；仍是同步单进程流程，不宣称后台 worker、cancel 或跨进程恢复。
+- 已完成：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确外部真实 embedding gate；直接请求返回 1024 维向量，隔离 StudyBuddy data root 的 indexing 写入 `ready`，vector retrieval 返回 `succeeded`，provider/model/retrieval/index operation 审计一致。证据见 [`PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md)。
+- 未通过的候选不替代 Mistral gate：Agnes `agnes-2.5-flash` 返回 `embedding_provider_protocol_error`，ARK `deepseek-v4-flash` 返回 `embedding_provider_invalid_config`，MiniMax `embo-01` 返回 `embedding_schema_mismatch`，NVIDIA `nvidia/nv-embedqa-e5-v5` 返回 `embedding_provider_protocol_error`。
+- Phase 7 completed 仅表示上述精确配置范围；不宣称其它 embedding model、通用多 Provider、配额/质量/可用性或全局生产级 real-pass。
 - 规模充分前不引入外部 vector database。
 
 ### Phase 8：卡片与练习

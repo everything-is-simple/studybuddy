@@ -8,9 +8,20 @@ __pycache__/
 .venv/
 node_modules/
 test-results/
+playwright-report/
+blob-report/
+coverage/
+.pytest_cache/
 
-# pi API key material (personal, never commit)
-。backup/
+# local test/runtime data and generated evidence
+backend/.pytest_cache/
+backend/test-results/
+artifacts/
+runs/
+
+# pi API key material and local agent state (personal, never commit)
+.pi/
+.backup/
 
 # local runtime secrets and environment files
 .env

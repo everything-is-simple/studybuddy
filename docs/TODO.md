@@ -41,7 +41,7 @@
 
 ## Phase 4：AI 最小闭环（已完成）
 
-目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter、精确 Provider smoke 和 Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前执行重点是 Phase 7 partial 的真实 embedding provider、retrieval mode 浏览器验收和 lease/失败重试专项。
+目标：用户选择已导入材料提问，系统以可追溯的检索和验证引用回答。deterministic fake provider 下的完整 Q&A 用户闭环、history、多材料范围、citation 导航、浏览器验收和文档证据均已完成。Phase 5 adapter、精确 Provider smoke 和 Phase 6 P6-A–P6-E fake/default/UI 产品化验收已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前 Phase 7 已在 Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确配置范围完成；其它 provider/model 的独立验证不阻塞后续 Phase 8。
 
 ### 顺序与任务
 
@@ -154,7 +154,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 冻结 lexical-only、vector-only、hybrid、fallback 与 empty 行为。
 - [x] 将正式记录写入 `docs/PHASE7_1_AUDIT_AND_CONTRACT.md`。
 
-**当前限制：** 7.1–7.7 已完成 fake/backend 验收、embedding/retrieval/Q&A metadata backup/restore 专项、损坏生命周期测试和 102/1,002 chunks synthetic benchmark；不新增 migration。真实网络 embedding adapter、retrieval mode UI/Chromium final acceptance 和完整 lease/失败重试专项仍为 not_verified，因此 Phase 7 保持 partial。
+**当前限制：** 7.1–7.7 fake/backend 验收、embedding/retrieval/Q&A metadata backup/restore、损坏生命周期、102/1,002 chunks synthetic benchmark、retrieval mode UI/Chromium final acceptance、indexing lease/失败重试/恢复专项，以及 Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确真实 embedding gate 均已通过。Phase 7 已在该精确配置范围完成；其它 provider/model 仍独立处理。
 
 ### 后续实现
 
@@ -163,9 +163,12 @@ revision → chunks → retrieval → citations → Q&A
 - [x] EmbeddingProvider protocol、独立 registry、deterministic fake provider、环境配置、capability 安全扩展和基础稳定错误边界。
 - [x] 显式增量 indexing、material rebuild/retry、只读 verify、失败状态基础处理和 active/current/ready 生命周期过滤。
 - [x] vector cosine、hybrid RRF、固定 candidate pool/RRF_K/tie-breaker、lexical fallback policy 和 lexical/vector/final score persistence 基础。
-- [ ] 真实 embedding provider adapter 与完整错误映射。
+- [x] 独立 OpenAI-compatible embedding provider adapter、配置/secret 隔离、`/embeddings` 请求契约和稳定错误映射；Mistral 精确真实网络 acceptance 已通过，loopback evidence 仍作为协议补充。
 - [x] embedding/retrieval/Q&A metadata backup/restore 专项验收、损坏生命周期测试和 synthetic benchmark。
-- [ ] retrieval mode UI/Chromium final acceptance，以及完整 indexing lease/失败重试专项。
+- [x] retrieval mode UI/Chromium final acceptance：lexical/vector/hybrid、fallback 和 vector 不回退边界。
+- [x] indexing lease、`embedding_index` operation 审计、stale reclaim、失败保留和显式 retry_count/retry 专项。
+- [x] 真实 embedding provider 外部网络 acceptance：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 已通过直接向量、隔离 indexing、vector retrieval 和审计 metadata gate；证据见 `docs/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`。
+- [ ] 其它 provider/model 的 embedding 独立验证：Agnes `agnes-2.5-flash`、ARK `deepseek-v4-flash`、MiniMax `embo-01`、NVIDIA `nvidia/nv-embedqa-e5-v5` 本轮未通过，不阻塞 Mistral 精确配置范围的 Phase 7 完成。
 
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
 - [ ] structured tracing、扩展 metrics、degraded readiness。
