@@ -12,7 +12,7 @@ function startServer() {
   delete env.STUDYBUDDY_AI_MODEL;
   delete env.STUDYBUDDY_AI_BASE_URL;
   delete env.STUDYBUDDY_AI_API_KEY;
-  return spawn('D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
+  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 
 async function ready() {

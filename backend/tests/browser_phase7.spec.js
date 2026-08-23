@@ -18,7 +18,7 @@ function startServer(embedding) {
     delete env.STUDYBUDDY_EMBEDDING_PROVIDER;
     delete env.STUDYBUDDY_EMBEDDING_MODEL;
   }
-  return spawn('D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)],
+  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)],
     {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function ready() {

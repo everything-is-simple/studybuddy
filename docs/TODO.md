@@ -136,13 +136,14 @@ revision → chunks → retrieval → citations → Q&A
 
 ## Phase 8：Cards / Exercises（仅在 Phase 7 收口后）
 
-- [ ] 新 migration（不得运行时建表）增加 `study_decks`、`study_cards`、`card_citations`、`card_reviews`。
-- [ ] 新 migration 增加 `exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`。
-- [ ] AI 生成 card/exercise 默认 `draft`；用户确认后才可 `ready`。
-- [ ] citation 必须可验证并关联 revision/chunk/span；无效引用不得 ready。
-- [ ] 用户编辑保护、stale/source_unavailable、review/attempt 历史。
-- [ ] 选择题/判断题 deterministic grading；简答 AI grading 标记待复核。
-- [ ] answer key 不进入普通列表响应。
+- [x] v7 migration（不得运行时建表）增加 `study_decks`、`study_cards`、`card_citations`、`card_reviews`、`exercise_sets`、`exercises`、`exercise_citations`、`exercise_attempts`；v8 追加 `exercise_kind` provenance，保持连续 migration/history/user_version 一致。
+- [x] 8.2 Cards backend MVP：deck/card draft → ready、编辑保护、citation 基础校验和 append-only review（已提交）；完整 source lifecycle/UI 仍留在后续 Phase 8 子任务。
+- [x] 8.3 Exercises backend MVP：set、`multiple_choice`/`true_false`/`short_answer`、draft → ready/rejected/archived、draft-only edit、attempt history、deterministic grading 与 short-answer `pending_review`。
+- [x] AI exercise 必须有 current active source revision 与 valid revision/chunk/span citation；confirm 时重新验证，source delete/restore/purge 与 revision re-index 更新 citation lifecycle。
+- [x] answer key 和 submitted answer 不进入普通 exercise/attempt 列表响应；backup/restore 和 restart 保留 exercise/attempt history。
+- [ ] 8.4 AI draft generation：接入 retrieval/provider/`ai_operations`；AI 生成 card/exercise 默认 `draft`，不得静默覆盖 user-edited 或 confirmed artifact。
+- [ ] 8.5 Cards/Exercises UI、Chromium 用户路径和可访问性验收。
+- [ ] 8.6 Phase 8 完整 citation source lifecycle、backup/restore、全量回归、正式证据/文档收口；完成后删除 `docs/phase8/` 临时执行资料。
 
 ## Phase 7：Embedding 与 Hybrid Retrieval
 

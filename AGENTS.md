@@ -49,7 +49,7 @@ AI-generated cards and exercises must start as drafts, retain source revision an
 Use the project Python environment:
 
 ```text
-D:\miniconda\py310\python.exe -m pytest backend/tests/
+C:\miniconda\py310\python.exe -m pytest backend/tests/
 ```
 
 Before reporting a change complete:

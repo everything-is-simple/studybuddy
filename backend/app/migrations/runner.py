@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 7
+CURRENT_SCHEMA_VERSION = 8
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -83,6 +83,8 @@ def _baseline_complete(connection: sqlite3.Connection) -> bool:
     if not {
         "model_revision", "updated_at", "vector_encoding", "source_revision",
     }.issubset(_columns(connection, "embeddings")):
+        return False
+    if not {"exercise_kind"}.issubset(_columns(connection, "exercises")):
         return False
     return True
 
@@ -447,6 +449,16 @@ def _migration_v7(connection: sqlite3.Connection) -> None:
         CREATE INDEX exercise_attempts_exercise_time_idx ON exercise_attempts(exercise_id, submitted_at);
     """)
 
+
+def _migration_v8(connection: sqlite3.Connection) -> None:
+    # The original v7 table intentionally remains immutable.  This separate
+    # migration records whether an exercise came from a user or an AI draft.
+    connection.execute(
+        "ALTER TABLE exercises ADD COLUMN exercise_kind TEXT NOT NULL "
+        "DEFAULT 'user_created' CHECK(exercise_kind IN ('ai_generated','user_created'))"
+    )
+
+
 _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] = (
     (1, "canonical_material_schema", _migration_v1),
     (2, "ai_phase0_schema", _migration_v2),
@@ -455,6 +467,7 @@ _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] =
     (5, "phase7_embedding_schema", _migration_v5),
     (6, "search_index_schema_contract", _migration_v6),
     (7, "phase8_cards_exercises_schema", _migration_v7),
+    (8, "phase8_exercise_provenance", _migration_v8),
 )
 
 

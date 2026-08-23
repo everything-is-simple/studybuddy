@@ -1,6 +1,6 @@
 # Database migrations
 
-Current schema version: **7**.
+Current schema version: **8**.
 
 The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The migration runner is `backend/app/migrations/runner.py`.
 
@@ -12,6 +12,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 5 | phase7_embedding_schema
 6 | search_index_schema_contract
 7 | phase8_cards_exercises_schema
+8 | phase8_exercise_provenance
 ```
 
 ## Rules
@@ -25,7 +26,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 ## Inspecting a database
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli schema-version \
+C:/miniconda/py310/python.exe -m app.cli schema-version \
   --database <data-root>/studybuddy.sqlite3
 ```
 

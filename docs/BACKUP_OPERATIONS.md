@@ -31,9 +31,9 @@ Never delete the most recent verified backup or the only available verified back
 ## Routine commands
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli backup --data-root <live-root> --output <new-backup>
-D:/miniconda/py310/python.exe -m app.cli verify-backup --backup <new-backup>
-D:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <restored-root>
+C:/miniconda/py310/python.exe -m app.cli backup --data-root <live-root> --output <new-backup>
+C:/miniconda/py310/python.exe -m app.cli verify-backup --backup <new-backup>
+C:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <restored-root>
 ```
 
 The final command is offline unless `--base-url` is supplied. It never starts a service, migrates, repairs, rebuilds FTS, or modifies data.

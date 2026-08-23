@@ -13,7 +13,7 @@ Set these variables in the local PowerShell process or a secrets manager. Never 
 ```powershell
 $env:STUDYBUDDY_AGNES_PROVIDER_ID = "agnes-ai-hub"
 $env:STUDYBUDDY_AGNES_KEY = "<rotated-local-secret>"
-$env:STUDYBUDDY_PYTHON = "D:\miniconda\py310\python.exe"
+$env:STUDYBUDDY_PYTHON = "C:\miniconda\py310\python.exe"
 ```
 
 The launcher defaults to the official Agnes gateway `https://apihub.agnes-ai.com/v1`. Set `STUDYBUDDY_AGNES_BASE_URL` only when Agnes explicitly supplies a different HTTPS-compatible gateway. The base URL must not contain credentials, query or fragment values.

@@ -50,14 +50,14 @@ npx playwright test H:/studybuddy/backend/tests/browser_p6e_real_provider.spec.j
 Backend focused:
 
 ```text
-D:/miniconda/py310/python.exe -m pytest backend/tests/test_qa_api.py backend/tests/test_ai_citation_lifecycle.py backend/tests/test_material_export.py backend/tests/test_ai_provider.py backend/tests/test_phase5_provider.py backend/tests/test_real_provider_smoke.py backend/tests/test_provider_acceptance_runner.py -q
+C:/miniconda/py310/python.exe -m pytest backend/tests/test_qa_api.py backend/tests/test_ai_citation_lifecycle.py backend/tests/test_material_export.py backend/tests/test_ai_provider.py backend/tests/test_phase5_provider.py backend/tests/test_real_provider_smoke.py backend/tests/test_provider_acceptance_runner.py -q
 47 passed, 2 skipped
 ```
 
 Full backend:
 
 ```text
-D:/miniconda/py310/python.exe -m pytest backend/tests/ -q
+C:/miniconda/py310/python.exe -m pytest backend/tests/ -q
 200 passed, 2 skipped
 ```
 

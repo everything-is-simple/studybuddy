@@ -14,17 +14,17 @@ This drill verifies that an operator can recover StudyBuddy without overwriting 
 ## Procedure
 
 ```text
-D:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
-D:/miniconda/py310/python.exe -m app.cli restore --data-root <drill-root> --backup <backup-root> --confirm
-D:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <drill-root>
+C:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
+C:/miniconda/py310/python.exe -m app.cli restore --data-root <drill-root> --backup <backup-root> --confirm
+C:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <drill-root>
 ```
 
 For online verification, start a separate drill instance with the restored root:
 
 ```text
-D:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8792
-D:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <drill-root> --base-url http://127.0.0.1:8792
-D:/miniconda/py310/python.exe -m app.cli schema-version --database <drill-root>/studybuddy.sqlite3
+C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8792
+C:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <drill-root> --base-url http://127.0.0.1:8792
+C:/miniconda/py310/python.exe -m app.cli schema-version --database <drill-root>/studybuddy.sqlite3
 ```
 
 The online check covers health, active/deleted lists, one active detail when present,

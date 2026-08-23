@@ -19,7 +19,10 @@ $paths = foreach ($item in $Spec) {
 Push-Location $root
 try {
     # Browser evidence is serial by policy; each spec owns its isolated runtime data.
-    & $npx playwright test @paths '--workers=1' '--reporter=line'
+    # Pass the resolved array as a native-command argument value.  `@paths`
+    # is not PowerShell array splatting and silently caused Playwright to
+    # ignore the requested spec after the environment rebuild.
+    & $npx playwright test $paths '--workers=1' '--reporter=line'
     exit $LASTEXITCODE
 } finally {
     Pop-Location

@@ -16,7 +16,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 | 文件材料管理子系统 | 80%–85% | 当前完成度最高，主要用户路径已局部 `real-pass` |
 | SQLite/Storage 一致性 | 约 80% | 单机事务、FTS、生命周期和故障边界较完整 |
 | 前端用户体验 | 60%–70% | P6-A–P6-E fake/default/narrow/keyboard/accessibility contract 已通过；真实 Provider UI、系统级辅助技术和极端运行条件仍有限制 |
-| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter 和 Phase 7 fake/backend retrieval 主体已实现并验收；真实 embedding provider、cards、练习、计划和后台任务仍未完成 |
+| AI/学习产品能力 | 35%–45% | Q&A、Provider adapter、Phase 7 retrieval，以及 Phase 8 Cards/Exercises backend MVP 已实现并验收；AI generation、Cards/Exercises UI、计划和后台任务仍未完成 |
 | 全项目整体 | 约 50%–55%（阶段性估算） | 该数字为功能加权估算，不是测试通过率；仍不得标记为全局 `real-pass` |
 
 整体进度不应简单按“已通过测试数量”计算：当前可靠性投入较多，而 AI、学习工作流、多用户和运维能力尚未开始，因此产品整体完成度明显低于文件基础设施完成度。
@@ -115,13 +115,17 @@ Phase 4 已完成：完整 Q&A history/multi-material UX、citation 详情与跨
 
 7.2 已补齐 EmbeddingProvider protocol、独立 registry、版本化 deterministic fake provider 和独立 OpenAI-compatible embedding adapter；配置、secret 隔离、`/embeddings` 请求契约和稳定 HTTP/timeout/schema/vector/response-size 错误映射均已实现，loopback protocol tests 已通过。7.3 已补齐 canonical identity、f32le_v1 codec、payload malformed boundaries、stale/source-binding 判定和 ready-only vector guard；7.4 已补齐显式增量 indexing、material rebuild/retry、只读 verify、`embedding_index` operation lease、stale reclaim、失败审计和 retry_count；7.5 已补齐 vector cosine、固定 candidate pool、hybrid RRF、score persistence 和显式 lexical fallback；7.6 已将 lexical/vector/hybrid/fallback 接入 Q&A，保留 server-side context/citation verification、operation/retrieval linkage 和 replay metadata；retrieval mode UI/Chromium final acceptance 已覆盖 lexical/vector/hybrid、hybrid fallback 和 vector 不回退；7.7 已完成 fake/backend 最终回归、embedding/retrieval/Q&A metadata backup/restore、损坏生命周期测试和 102/1,002 chunks synthetic benchmark。完整 backend 为 231 passed/2 skipped，Phase 7 专项 Chromium 与 P6-E 回归通过。Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 已通过外部真实 embedding direct vector、隔离 indexing、vector retrieval 和审计 metadata gate，返回 1024 维向量；因此 Phase 7 在该精确配置范围 completed。Agnes、ARK、MiniMax、NVIDIA 候选未通过或未形成可验证 embedding evidence，不扩展为通用多-provider 或全局 production real-pass。
 
-### Phase 5 之后：AI 与学习工作流 — 尚未进入
+### Phase 8：Cards / Exercises — backend MVP in progress
+
+Phase 8.1 migration、8.2 Cards backend 与 8.3 Exercises backend MVP 已实现。Exercises 支持 set、三种已冻结题型、draft → ready/rejected/archived、draft-only edit、current revision/chunk/span citation revalidation、delete/restore/purge/re-index source lifecycle、append-only attempt history、multiple-choice/true-false deterministic grading 和 short-answer `pending_review`。普通列表/history 不返回 answer key 或 answer body；migration v8 与 backup/restore/restart 测试已通过。尚未实现 AI draft generation、Cards/Exercises UI/Chromium、简答人工 review 与 Phase 8 完整收口，因此不能宣称 Phase 8 completed 或有 Cards/Exercises 用户路径 `real-pass`。
+
+### Phase 5 之后：AI 与学习工作流 — 后续工作
 
 以下后续核心产品能力尚未形成可用用户路径：
 
 - P6-E 精确真实 Provider UI evidence：DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已分别通过真实网络 backend/UI gate；证据仅限精确 gateway、model 和 synthetic material，不能扩展为所有 Provider/model 的通用 real-pass。
 - hybrid/fallback RAG 扩展、真实 embedding provider 和其它 Provider 独立验证。
-- 知识卡片、Quiz/练习。
+- AI 生成知识卡片、Quiz/练习以及 Cards/Exercises UI。
 - 学习计划及 S1–S7。
 - OCR、ASR、旧格式转换。
 - 后台任务、进度、暂停/取消、retry 和导入历史。

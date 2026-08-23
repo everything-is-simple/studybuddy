@@ -38,7 +38,10 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          create_embedding_index_operation, finish_embedding_index_operation, rename_material, restore_material, run_chunk_retrieval,
                          run_hybrid_retrieval, run_vector_retrieval, save_material_with_extraction, soft_delete_material,
                          validate_citation_key, qa_request_fingerprint, create_deck, get_deck,
-                         list_decks, list_cards, create_card, update_card, confirm_card, review_card)
+                         list_decks, list_cards, create_card, update_card, confirm_card, review_card,
+                         create_exercise_set, list_exercise_sets, get_exercise_set, list_exercises,
+                         create_exercise, update_exercise, confirm_exercise, transition_exercise,
+                         list_exercise_attempts, submit_exercise_attempt)
 from .storage import sha256_file, store_original
 
 
@@ -192,6 +195,34 @@ class CardRequest(BaseModel):
 
 class CardReviewRequest(BaseModel):
     result: str
+
+
+class ExerciseSetRequest(BaseModel):
+    title: str
+    description: str = ""
+
+
+class ExerciseRequest(BaseModel):
+    exercise_type: str
+    prompt: str
+    options: list[str] = []
+    answer_key: object
+    explanation: str = ""
+    citations: list[dict[str, object]] = []
+    exercise_kind: str = "user_created"
+    source_revision: str | None = None
+
+
+class ExerciseAttemptRequest(BaseModel):
+    answer: object
+
+
+class ExerciseUpdateRequest(BaseModel):
+    prompt: str
+    options: list[str] = []
+    answer_key: object
+    explanation: str = ""
+    citations: list[dict[str, object]] = []
 
 
 def _rename_name(raw_name: str) -> str | None:
@@ -877,6 +908,114 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=status, detail=code) from None
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="card_review_failed") from None
+
+    @app.get("/api/study/exercise-sets")
+    def exercise_sets() -> list[dict[str, object]]:
+        with connect(app.state.config.database_path) as connection:
+            return list_exercise_sets(connection, project_id=app.state.config.project_id)
+
+    @app.post("/api/study/exercise-sets", status_code=201)
+    def create_study_exercise_set(request: ExerciseSetRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return create_exercise_set(connection, project_id=app.state.config.project_id, title=request.title, description=request.description)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_set_create_failed") from None
+
+    @app.get("/api/study/exercise-sets/{set_id}")
+    def study_exercise_set(set_id: str) -> dict[str, object]:
+        with connect(app.state.config.database_path) as connection:
+            result = get_exercise_set(connection, project_id=app.state.config.project_id, set_id=set_id)
+        if result is None: raise HTTPException(status_code=404, detail="exercise_set_not_found")
+        return result
+
+    @app.get("/api/study/exercises")
+    def study_exercises(set_id: str | None = None) -> list[dict[str, object]]:
+        with connect(app.state.config.database_path) as connection:
+            return list_exercises(connection, project_id=app.state.config.project_id, set_id=set_id)
+
+    @app.post("/api/study/exercise-sets/{set_id}/exercises", status_code=201)
+    def create_study_exercise(set_id: str, request: ExerciseRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return create_exercise(connection, project_id=app.state.config.project_id, set_id=set_id, exercise_type=request.exercise_type, payload=request.model_dump(), source_revision=request.source_revision, exercise_kind=request.exercise_kind)
+        except ValueError as error:
+            code = str(error); status = 404 if code == "exercise_set_not_found" else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_create_failed") from None
+
+    @app.patch("/api/study/exercises/{exercise_id}")
+    def update_study_exercise(exercise_id: str, request: ExerciseUpdateRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return update_exercise(connection, project_id=app.state.config.project_id,
+                                       exercise_id=exercise_id, payload=request.model_dump())
+        except ValueError as error:
+            code = str(error)
+            status = 404 if code == "exercise_not_found" else 409 if code == "exercise_edit_not_allowed" else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_update_failed") from None
+
+    @app.post("/api/study/exercises/{exercise_id}/confirm")
+    def confirm_study_exercise(exercise_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return confirm_exercise(connection, project_id=app.state.config.project_id, exercise_id=exercise_id)
+        except ValueError as error:
+            code = str(error); status = 404 if code == "exercise_not_found" else 409
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_confirm_failed") from None
+
+    @app.post("/api/study/exercises/{exercise_id}/reject")
+    def reject_study_exercise(exercise_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return transition_exercise(connection, project_id=app.state.config.project_id,
+                                           exercise_id=exercise_id, target="rejected")
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "exercise_not_found" else 409, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_reject_failed") from None
+
+    @app.post("/api/study/exercises/{exercise_id}/archive")
+    def archive_study_exercise(exercise_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return transition_exercise(connection, project_id=app.state.config.project_id,
+                                           exercise_id=exercise_id, target="archived")
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "exercise_not_found" else 409, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_archive_failed") from None
+
+    @app.get("/api/study/exercises/{exercise_id}/attempts")
+    def study_exercise_attempts(exercise_id: str) -> list[dict[str, object]]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return list_exercise_attempts(connection, project_id=app.state.config.project_id,
+                                              exercise_id=exercise_id)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="exercise_not_found") from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_attempt_list_failed") from None
+
+    @app.post("/api/study/exercises/{exercise_id}/attempts", status_code=201)
+    def attempt_study_exercise(exercise_id: str, request: ExerciseAttemptRequest) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return submit_exercise_attempt(connection, project_id=app.state.config.project_id, exercise_id=exercise_id, answer=request.answer)
+        except ValueError as error:
+            code = str(error); status = 404 if code == "exercise_not_ready" else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="exercise_attempt_failed") from None
 
     @app.get("/api/materials/{material_id}/original")
     def download_original(material_id: str):
