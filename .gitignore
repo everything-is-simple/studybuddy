@@ -22,6 +22,12 @@ runs/
 # pi API key material and local agent state (personal, never commit)
 .pi/
 .backup/
+backup/
+
+# local machine recovery/configuration artifacts (never commit)
+settings.json
+omp-windows-*.exe
+tmp_sb/
 
 # local runtime secrets and environment files
 .env

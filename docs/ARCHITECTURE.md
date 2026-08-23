@@ -1,6 +1,6 @@
 # StudyBuddy Architecture Boundary
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过；当前重点是 Phase 7 的剩余 embedding/retrieval 验收和后续学习能力边界。多进程、多用户和云同步仍不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；当前重点是 Phase 8 后续 AI draft generation 与 Cards/Exercises UI。多进程、多用户和云同步仍不在支持范围。
 
 ## Evolution boundary
 
@@ -24,7 +24,7 @@ Phase 9 is therefore a gated learning-program family (9A–9D), not one delivery
 
 `backend/app/adapters/file_parsers/` 是正式系统自己的解析模块，不导入 Composer、Integration 或 KaoBuddy。`parse_file(Path, declared_media_type, ParseOptions)` 返回版本、hash、状态、错误码、warning 和 document/page/slide spans。当前只实现 TXT、Markdown、PDF、DOCX、PPTX；RTF、旧 DOC、旧 PPT 拒绝。Parser 不保存原文件、不依赖网络、不打印完整正文。
 
-`backend/app/storage.py` 通过配置传入的 root 保存 hash 派生路径下的原文件，并使用临时文件加原子替换。`backend/app/repository.py` 只承载 projects/materials/extractions/text_spans 最小 schema，启用外键和 WAL，extraction 与 spans 在同一事务中写入。
+`backend/app/storage.py` 通过配置传入的 root 保存 hash 派生路径下的原文件，并使用临时文件加原子替换。`backend/app/repository.py` 承载 SQLite projects/materials/extractions/text_spans、AI retrieval/Q&A 与已实现的 Phase 8 Cards/Exercises backend 持久化，启用外键和 WAL；material import 的 extraction 与 spans 仍在同一事务中写入。
 
 正式默认运行路径不指向 fixture；本阶段测试使用 `H:\studybuddy-test\runs`。`backend/app/main.py` 提供最小 FastAPI 用户路径：multipart 文件选择与上传、配置存储根下的原文件保存、Parser 调用、SQLite extraction/span 事务写入、材料列表/详情 API 和同服务的文件选择器页面。默认单文件上传上限为 50 MiB，可由 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这属于正式系统配置，不是免费版或 Parser 能力限制。服务重新启动后，材料详情从 SQLite 回读。
 
@@ -51,4 +51,4 @@ material revision
 → cards / exercises
 ```
 
-Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation。真实 provider、embedding、cards、exercises、plans、worker 和多用户能力必须按路线图逐阶段实现；Phase 4 已完成不等于真实 provider、embedding 或全局产品化已完成，不得因 schema 已预留而宣称功能已可用。
+Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8.1 schema、8.2 Cards backend MVP 和 8.3 Exercises backend MVP 已实现：exercise 支持三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading 和 short-answer `pending_review`。AI generation、Cards/Exercises UI、人工简答复核、plans、worker 和多用户能力仍须按路线图逐阶段实现；任何 backend implementation 均不等于全局产品化或浏览器 `real-pass`。

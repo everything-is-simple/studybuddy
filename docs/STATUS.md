@@ -16,7 +16,7 @@
 | I3 minimal observability | implemented | `backend/app/observability.py`, `backend/tests/test_observability.py` |
 | I4 real environment/capacity baseline | time-box closed (v1) | `H:\studybuddy-test\artifacts\infrastructure-i4\latest.json`, `latest.md` |
 | Local single-process infrastructure v1 | basically complete | I1+I2+I3 implemented; I4 time-box closed with declared limits |
-| AI/learning architecture | architecture plus Phase 4 implementation | `ai-learning-architecture.md`; real provider and later learning design remain future scope |
+| AI/learning architecture | architecture plus Phase 4–7 implementation and Phase 8 backend MVP | `ai-learning-architecture.md`; AI generation, Cards/Exercises UI and later learning workflows remain future scope |
 | Material revision / deterministic chunks | implemented / backend-tested | `backend/app/chunking.py`, `backend/app/repository.py`, `backend/tests/test_ai_indexing.py` |
 | Chunk FTS5 retrieval | implemented / backend-tested | `backend/app/repository.py`, `backend/tests/test_retrieval.py` |
 | Context assembler + citation contract | implemented / backend-tested | `backend/app/repository.py`, `backend/tests/test_context_assembler.py` |

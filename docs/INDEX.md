@@ -12,7 +12,7 @@
 
 - `ARCHITECTURE.md`：系统架构边界。
 - `DECISIONS.md`：架构和产品决策记录。
-- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构；仅设计，非已实现功能。
+- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构与已实现的 Phase 4–7、Phase 8 backend MVP 边界；不是完整学习产品完成声明。
 - [`PROVIDER_CAPABILITY_MATRIX.md`](PROVIDER_CAPABILITY_MATRIX.md)：Phase 5 各 OpenAI-compatible Provider 的独立证据矩阵和 opt-in 验收命令。
 - [`AI_PROVIDER_SETUP.md`](AI_PROVIDER_SETUP.md)：StudyBuddy Provider 配置边界、密钥安全规则和三次 API acceptance runner。
 - [`AGNES_PROVIDER_RUNBOOK.md`](AGNES_PROVIDER_RUNBOOK.md)：Agnes AI-Hub 独立本地 launcher、smoke gate 和运维边界。
