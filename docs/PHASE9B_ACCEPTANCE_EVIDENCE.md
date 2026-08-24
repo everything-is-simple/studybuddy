@@ -39,7 +39,7 @@ C:/miniconda/py310/python.exe -m pytest backend/tests/test_phase9b_domain.py bac
 Result:
 
 ```text
-58 passed in 15.07s
+59 passed in 15.70s
 ```
 
 Complete backend regression:
@@ -51,7 +51,7 @@ C:/miniconda/py310/python.exe -m pytest backend/tests/ -q
 Result:
 
 ```text
-298 passed, 2 skipped in 81.80s
+299 passed, 2 skipped in 84.67s
 ```
 
 The two skipped backend tests are the opt-in real-provider smoke tests. They are deliberately outside the Phase 9B completion scope.
@@ -114,7 +114,7 @@ Result: `2 skipped`. Its DeepSeek and Agnes tests require explicit provider/mode
 | F. S1 workflow | **passed** | `test_phase9b_rhythm.py`, `test_phase9b_api.py`, `browser_phase9b.spec.js`; settings, allocation move/delete, summary/progress and reload; no scheduler or auto-progress |
 | G. API/UI | **passed** | Phase 9B API tests, Phase 9B Chromium desktop/narrow/keyboard/reload/failure paths, Phase 8/9A Chromium and frontend failure regression |
 | H. Lifecycle/restore | **passed** | `test_phase9b_source_lifecycle.py`, `test_phase9b_backup_restore.py`, extended `restore_acceptance.py`; explicit refresh is the only positive source promotion, restore is non-repair |
-| I. Full regression/closeout | **passed** | Focused `58 passed`; full backend `298 passed, 2 skipped`; related Chromium `45 passed, 1 skipped`; docs synchronized by this closeout |
+| I. Full regression/closeout | **passed** | Focused `59 passed`; full backend `299 passed, 2 skipped`; related Chromium `45 passed, 1 skipped`; docs synchronized by this closeout |
 
 ## 4. S1 user path
 
