@@ -189,7 +189,7 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 Phase 9 原先同时承载学习计划和 S1–S7 七个业务子系统，范围过宽，无法用一个统一的完成标准、数据模型、用户路径或验收周期证明完成。Phase 9 现在是一个路线族，必须按以下独立 gate 顺序推进；每个子阶段都要单独更新代码、migration、测试、浏览器路径、artifact、状态和文档。
 
-- **Phase 9A：学习领域基础与计划核心**：状态为 `planned`；9A-0 `planned/audit-draft`、9A-1 `planned/contract-frozen` 与 9A-2 `implemented/backend-pass` 已完成。v9 已建立 9A schema 并通过 new-db/v8-upgrade/rollback/backup schema-history tests；repository/domain、API、UI、source lifecycle、9A artifact backup/restore 和 acceptance 尚未实现。目标范围包括学习目标、知识模块、study plan/item、依赖、进度事件、draft → confirm → active 生命周期，以及 source revision/citation/source_unavailable 关联。不得在此阶段顺带实现 S1–S7 全部体验。充分上下文、总规划、子任务切分和逐任务执行 prompts 见 [`phase9a/`](phase9a/)。
+- **Phase 9A：学习领域基础与计划核心**：状态为 `planned`；9A-0 `planned/audit-draft`、9A-1 `planned/contract-frozen` 与 9A-2/9A-3 `implemented/backend-pass` 已完成。v9 schema、repository/domain transactions、DAG、append-only progress/projection、source identity validation 和 focused/full backend tests 已通过；API、UI、完整 source lifecycle API contract、9A artifact backup/restore 和 acceptance 尚未实现。目标范围包括学习目标、知识模块、study plan/item、依赖、进度事件、draft → confirm → active 生命周期，以及 source revision/citation/source_unavailable 关联。不得在此阶段顺带实现 S1–S7 全部体验。充分上下文、总规划、子任务切分和逐任务执行 prompts 见 [`phase9a/`](phase9a/)。
 - **Phase 9B：资料学习工作流（S1/S2）**：学习节奏、资料笔记/知识模块用户路径。必须先复用已验证的 revision/chunk/retrieval/citation，不得把历史版本的 `KnowledgeModule` 设计直接视为正式实现。
 - **Phase 9C：练习与反馈工作流（S3/S4/S5）**：限时练习、错题改错、期末冲刺。依赖 Phase 8 的 exercise/card 生命周期、attempt 历史和确定性评分边界；每个子系统仍需独立验收。
 - **Phase 9D：扩展学习服务（S6/S7，条件性范围）**：家长报告、课堂采集/OCR/ASR。只有在用户需求、隐私边界、真实组件证据和运维成本明确后才立项；不因历史版本存在就自动纳入正式范围。

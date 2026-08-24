@@ -80,7 +80,9 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "CURRENT_SCHEMA_VERSION = 9" in runner
     assert '(9, "phase9a_learning_plan_schema", _migration_v9)' in runner
     assert "implemented/backend-pass" in contract
-    assert "repository/domain、API、UI、source lifecycle integration" in contract
+    assert "repository/domain transaction" in contract
+    assert "API/UI" in contract
+    assert "source lifecycle refresh" in contract
     assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()
 
 
