@@ -15,7 +15,7 @@
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构与已实现的 Phase 4–7、Phase 8 fake-provider 范围；不是完整学习产品完成声明。
 - [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)：Phase 8 fake-provider backend/Chromium/backup-restore 收口证据与限制。
 - [`phase9a/`](phase9a/)：Phase 9A 总规划 prompt、共用上下文、9A-0 至 9A-8 子任务 prompts、执行顺序和验收门槛；prompt 目录不是实现证据，Phase 9A 完成证据见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。
-- [`phase9b/`](phase9b/)：Phase 9B 总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛；当前仅为 planned prompt 包，不是 Phase 9B 实现证据。
+- [`phase9b/`](phase9b/)：Phase 9B 总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛；9B-2/9B-3/9B-4 已达到 `implemented/backend-pass`（v10 schema、共用 domain transaction、S2 deterministic fake-provider note workflow），9B-5 至 9B-9 仍为 planned，prompt 目录本身不是实现证据。
 - [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)：9A-0/9A-1 契约、9A-2 v9 schema、9A-3 repository/domain、9A-4 API、9A-5 browser-pass、9A-6 scoped-gates-pass、9A-7 restore-gates-pass 和 9A-8 closeout 记录。
 - [`PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)：9A-6 source lifecycle 的脱敏 evidence 草案、测试结果和剩余限制。
 - [`PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](PHASE9A_BACKUP_RESTORE_EVIDENCE.md)：9A-7 backup/verify/restore/non-repair 的脱敏 evidence 和限制。

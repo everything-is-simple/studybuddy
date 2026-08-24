@@ -2,7 +2,7 @@
 
 > 更新：2026-08-30（Phase 9A acceptance closeout 后）。当前整体阶段性估算为 **60% 左右**：Phase 9A 在明确范围内完成，完整 StudyBuddy 尚未达到全局 `real-pass`。
 >
-> **当前同步快照：** 正式 schema 为 v10；Phase 9A 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成。9B-3 与 9B-4 已通过 repository/domain focused gate；当前完整 backend 为 `286 passed, 2 skipped`。9B-4 仅完成 S2 deterministic fake-provider backend workflow，不包含 HTTP API、UI、S1、export 或 restore artifact acceptance。仍不得把 Phase 9A、v10 schema、9B-3 或 9B-4 扩大解释为 Phase 9B/Phase 9 全部完成。
+> **当前同步快照：** 正式 schema 为 v10；Phase 9A 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成。9B-2（v10 persistence schema）、9B-3（共用 repository/domain transaction）与 9B-4（S2 deterministic fake-provider note workflow）已通过各自 focused gate；当前完整 backend 为 `286 passed, 2 skipped`。9B-4 仅完成 S2 deterministic fake-provider backend workflow，不包含 HTTP API、UI、S1、export 或 restore artifact acceptance。仍不得把 Phase 9A、v10 schema、9B-2/9B-3/9B-4 扩大解释为 Phase 9B/Phase 9 全部完成。
 
 | Area | Status | Evidence |
 |---|---|---|

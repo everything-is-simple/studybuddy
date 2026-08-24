@@ -1,6 +1,6 @@
 # Phase 9B Prompt 包：资料学习工作流 S1/S2
 
-本目录保存 Phase 9B 的正式规划与逐子任务执行 prompts。Phase 9B 仍处于 `planned`；本目录中的 prompt、设计和计划不是实现证据。
+本目录保存 Phase 9B 的正式规划与逐子任务执行 prompts。Phase 9B 总体仍为 `planned`：9B-0/9B-1 完成审计与契约冻结，9B-2（v10 schema）、9B-3（共用 domain transaction）与 9B-4（S2 deterministic fake-provider note workflow）已到 `implemented/backend-pass`，9B-5 至 9B-9 仍未开始。本目录中的 prompt、设计和计划本身不是实现证据。
 
 ## 文件
 
