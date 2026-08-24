@@ -1,8 +1,8 @@
 # Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4 `implemented/backend-pass`。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5 `implemented/backend-pass`。
 >
-> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow。9B 的 HTTP API、UI、S1 workflow、export、restore artifact acceptance 与正式用户路径仍未实现。
+> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow。9B 的 HTTP API、UI、export、restore artifact acceptance 与正式用户路径仍未实现。
 >
 > 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是完整功能证据；不得因本文出现表名、路径或错误码而宣称任何未通过后续 gate 的 Phase 9B 功能已经存在。
 
@@ -11,7 +11,7 @@
 ### 1.1 当前基线
 
 - 当前源码的 `backend/app/migrations/runner.py:CURRENT_SCHEMA_VERSION` 是 **10**；v1–v10 连续注册在 `_MIGRATIONS`，`migrate()` 在 `BEGIN IMMEDIATE` 内处理 DDL、history 和 `PRAGMA user_version`，失败 rollback。
-- v9 是已完成 Phase 9A 的 schema 基线；v10 `phase9b_material_learning_schema` 加入 note/block/module-link/source-tombstone 与 rhythm persistence schema。9B-3 在 repository/domain 层实现这些 records 的事务操作与显式 source refresh；9B-4 增加单材料 deterministic fake-provider note draft workflow，并在最终写入前重验 retrieval/context/citation/source identity。它不包含 HTTP routes、UI、S1 workflow、export 或 restore artifact acceptance。
+- v9 是已完成 Phase 9A 的 schema 基线；v10 `phase9b_material_learning_schema` 加入 note/block/module-link/source-tombstone 与 rhythm persistence schema。9B-3 在 repository/domain 层实现这些 records 的事务操作与显式 source refresh；9B-4 增加单材料 deterministic fake-provider note draft workflow，并在最终写入前重验 retrieval/context/citation/source identity；9B-5 对 S1 实现 explicit daily/weekly IANA-timezone settings、allocation 保护和确定性 summary。它不包含 HTTP routes、UI、export 或 restore artifact acceptance。
 - `materials`、`extractions`、`text_spans` 是资料正文的 source of truth；`material_revisions`、`chunks`、retrieval/context/citation、AI artifact、9A plan 与本 Phase 的 note/rhythm 都是派生数据或用户状态。
 - 当前部署范围是单进程、单实例、SQLite、本地 data root 与 `project_id` scope；没有 `user_id`、认证、授权、协作或多进程共享 data root。
 - 审计期间曾存在未提交 v10 `notes`/`rhythm_*` 候选 migration，但其索引引用不存在列而失败；该候选已回退。现行 v10 由本冻结契约重新实现，不复用候选 DDL。
@@ -476,6 +476,6 @@ Gate B is satisfied by this document only when downstream reviewers can determin
 
 **Accurate status:**
 
-> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2, 9B-3 and 9B-4 are `implemented/backend-pass`: v10 persistence, shared domain transactions and the S2 deterministic fake-provider note draft workflow have focused tests. HTTP API, UI, S1 workflow, export, restore artifact acceptance and a formal user path remain unimplemented; this is not Phase 9B completed or real-pass.
+> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-5 are `implemented/backend-pass`: v10 persistence, shared domain transactions, the S2 deterministic fake-provider note draft workflow, and the S1 explicit synchronous rhythm workflow have focused tests. S1 uses daily/weekly IANA-timezone settings and local-date workload allocation, deterministic load/progress/source-warning summary, completed/terminal protection and rollback/SQLite-lock retry; it does not write progress, auto-replan or schedule work. HTTP API, UI, export, restore artifact acceptance and a formal user path remain unimplemented; this is not Phase 9B completed or real-pass.
 
-Next task: **9B-5 S1 学习节奏工作流**. It must reuse the current v10/domain contract and stop for a contract change if any required invariant cannot be enforced safely.
+Next task: **9B-6 API contract**. It must expose only the already accepted S1/S2 domain contract without expanding scheduler, export or restore scope.

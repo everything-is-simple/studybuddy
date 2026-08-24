@@ -1,6 +1,6 @@
 # StudyBuddy Architecture Boundary
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 与 Phase 9A 限定范围 acceptance 均已完成。Phase 9B 正在推进：9B-2（v10 schema）、9B-3（共用 repository/domain transaction）与 9B-4（S2 deterministic fake-provider note workflow）已到 `implemented/backend-pass`，9B-5 至 9B-9 仍未开始。多进程、多用户和云同步仍不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 与 Phase 9A 限定范围 acceptance 均已完成。Phase 9B 正在推进：9B-2（v10 schema）、9B-3（共用 repository/domain transaction）、9B-4（S2 deterministic fake-provider note workflow）与 9B-5（S1 synchronous rhythm workflow）已到 `implemented/backend-pass`，9B-6 至 9B-9 仍未开始。多进程、多用户和云同步仍不在支持范围。
 
 ## Evolution boundary
 

@@ -1775,6 +1775,11 @@ def save_rhythm_settings(connection: sqlite3.Connection, *, project_id: str, pla
                 (rhythm_id, project_id, plan_id, cadence, timezone_value, period_value, target_minutes, now, now),
             )
         else:
+            _rhythm_validate_settings_allocation_limits(
+                connection,
+                settings={"project_id": project_id, "plan_id": plan_id, "cadence": cadence,
+                          "timezone": timezone_value, "period_start": period_value},
+            )
             connection.execute(
                 "UPDATE rhythm_settings SET cadence=?,timezone=?,period_start=?,target_minutes=?,updated_at=? "
                 "WHERE id=? AND project_id=? AND plan_id=?",
@@ -1844,6 +1849,24 @@ def _rhythm_validate_allocation_limits(connection: sqlite3.Connection, *, settin
         "WHERE plan_id=? AND local_date BETWEEN ? AND ?" + exclusion, period_params,
     ).fetchone()[0])
     if period_total + planned_minutes > RHYTHM_MAX_PERIOD_MINUTES:
+        raise ValueError("study_rhythm_allocation_limit_exceeded")
+
+
+def _rhythm_validate_settings_allocation_limits(connection: sqlite3.Connection, *,
+                                                 settings: dict[str, object]) -> None:
+    """Reject a settings edit that would make preserved allocations overload a period.
+
+    Settings edits intentionally do not rewrite allocations.  They still must not
+    turn valid existing rows into a rhythm that violates the per-period ceiling.
+    """
+    totals: dict[int, int] = {}
+    for row in connection.execute(
+        "SELECT local_date,planned_minutes FROM rhythm_allocations WHERE project_id=? AND plan_id=?",
+        (settings["project_id"], settings["plan_id"]),
+    ).fetchall():
+        index = _rhythm_period_index(settings, str(row["local_date"]))
+        totals[index] = totals.get(index, 0) + int(row["planned_minutes"])
+    if any(total > RHYTHM_MAX_PERIOD_MINUTES for total in totals.values()):
         raise ValueError("study_rhythm_allocation_limit_exceeded")
 
 
@@ -1926,43 +1949,46 @@ def delete_rhythm_allocation(connection: sqlite3.Connection, *, project_id: str,
 
 def rhythm_summary(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
                    local_date: object | None = None, periods: int = 1) -> dict[str, object]:
+    # Validate an explicit business coordinate even if the plan has not yet
+    # configured a rhythm, so read paths have the same strict date contract.
+    requested_local_date = None if local_date is None else _rhythm_date(local_date)
     plan = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
     if plan is None:
         raise ValueError("study_rhythm_plan_not_found")
     settings = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
     if settings is None:
+        progress = study_progress_summary(connection, plan_id=plan_id, project_id=project_id)
         return {"settings": None, "buckets": [], "allocated_item_count": 0,
-                "unassigned_item_count": 0, "archived_item_count": 0,
-                "source_warning_count": int(study_progress_summary(connection, plan_id=plan_id, project_id=project_id)["source_warning_count"]),
-                "last_progress_event_at": study_progress_summary(connection, plan_id=plan_id, project_id=project_id)["last_event_at"]}
+                "unassigned_item_count": progress["item_count"], "archived_item_count": progress["archived_count"],
+                "item_projection": {key: progress[key] for key in ("pending_count", "in_progress_count", "completed_count", "skipped_count")},
+                "source_warning_count": progress["source_warning_count"], "last_progress_event_at": progress["last_event_at"]}
     if not isinstance(periods, int) or isinstance(periods, bool) or not 1 <= periods <= 52:
         raise ValueError("study_rhythm_invalid_payload")
-    if local_date is None:
+    if requested_local_date is None:
         from zoneinfo import ZoneInfo
         local_date_value = datetime.now(timezone.utc).astimezone(ZoneInfo(str(settings["timezone"]))).date().isoformat()
     else:
-        local_date_value = _rhythm_date(local_date)
-    current_index = max(0, _rhythm_period_index(settings, local_date_value))
+        local_date_value = requested_local_date
+    current_index = _rhythm_period_index(settings, local_date_value)
     allocations = [dict(row) for row in connection.execute(
         "SELECT * FROM rhythm_allocations WHERE project_id=? AND plan_id=? ORDER BY local_date,item_id,id",
         (project_id, plan_id),
     ).fetchall()]
+    item_rows = connection.execute(
+        "SELECT i.id,i.status FROM study_plan_items i WHERE i.plan_id=? AND i.project_id=?", (plan_id, project_id)
+    ).fetchall()
+    item_statuses = {str(row["id"]): str(row["status"]) for row in item_rows}
     buckets: list[dict[str, object]] = []
     for index in range(current_index, current_index + periods):
         start, end = _rhythm_period_dates(settings, index)
         selected = [row for row in allocations if start <= str(row["local_date"]) <= end]
-        active_selected = [row for row in selected if connection.execute(
-            "SELECT status FROM study_plan_items WHERE id=? AND project_id=?", (row["item_id"], project_id)
-        ).fetchone()[0] not in {"archived"}]
+        active_selected = [row for row in selected if item_statuses.get(str(row["item_id"])) != "archived"]
         planned = sum(int(row["planned_minutes"]) for row in active_selected)
         buckets.append({"period_index": index, "local_date_start": start, "local_date_end": end,
                         "planned_minutes": planned, "target_minutes": int(settings["target_minutes"]),
                         "remaining_target_minutes": max(int(settings["target_minutes"]) - planned, 0),
                         "allocated_item_count": len({str(row["item_id"]) for row in active_selected})})
-    item_rows = connection.execute(
-        "SELECT i.id,i.status FROM study_plan_items i WHERE i.plan_id=? AND i.project_id=?", (plan_id, project_id)
-    ).fetchall()
-    allocated_ids = {str(row["item_id"]) for row in allocations}
+    allocated_ids = {str(row["item_id"]) for row in allocations if item_statuses.get(str(row["item_id"])) != "archived"}
     unassigned = sum(1 for row in item_rows if row["status"] != "archived" and str(row["id"]) not in allocated_ids)
     progress = study_progress_summary(connection, plan_id=plan_id, project_id=project_id)
     return {"settings": dict(settings), "buckets": buckets,
