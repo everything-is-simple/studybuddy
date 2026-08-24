@@ -371,7 +371,6 @@ def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite
             return None
         _refresh_exercise_citations_for_material(connection, material_id)
         _refresh_card_citations_for_material(connection, material_id)
-        _refresh_study_source_links_for_material(connection, material_id)
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, "
@@ -1187,7 +1186,11 @@ def _study_dependencies(connection: sqlite3.Connection, *, plan_id: str, project
 def _study_source_links(connection: sqlite3.Connection, *, plan_id: str, project_id: str) -> list[dict[str, object]]:
     return [dict(row) for row in connection.execute(
         "SELECT l.* FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
-        "WHERE i.plan_id=? AND l.project_id=? ORDER BY l.created_at,l.id", (plan_id, project_id)
+        "WHERE i.plan_id=? AND l.project_id=? "
+        "UNION "
+        "SELECT l.* FROM module_source_links l JOIN study_plan_items i ON i.module_id=l.module_id "
+        "WHERE i.plan_id=? AND l.project_id=? ORDER BY created_at,id",
+        (plan_id, project_id, plan_id, project_id),
     ).fetchall()]
 
 
@@ -1204,8 +1207,14 @@ def study_progress_summary(connection: sqlite3.Connection, *, plan_id: str, proj
         (plan_id, project_id),
     ).fetchone()
     warnings = connection.execute(
-        "SELECT COUNT(*) FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
-        "WHERE i.plan_id=? AND l.project_id=? AND l.status != 'valid'", (plan_id, project_id)
+        "SELECT COUNT(*) FROM ("
+        "SELECT l.id,l.status FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
+        "WHERE i.plan_id=? AND l.project_id=? "
+        "UNION "
+        "SELECT l.id,l.status FROM module_source_links l JOIN study_plan_items i ON i.module_id=l.module_id "
+        "WHERE i.plan_id=? AND l.project_id=?"
+        ") WHERE status != 'valid'",
+        (plan_id, project_id, plan_id, project_id),
     ).fetchone()[0]
     return {
         "item_count": item_count,
@@ -1511,14 +1520,19 @@ def list_study_progress_events(connection: sqlite3.Connection, *, project_id: st
     return result
 
 
-def _study_source_status(connection: sqlite3.Connection, *, material_id: str | None, revision_id: str | None,
+def _study_source_status(connection: sqlite3.Connection, *, project_id: str | None = None,
+                         material_id: str | None, revision_id: str | None,
                          extraction_id: str | None, chunk_id: str | None, span_id: str | None,
-                         citation_key: str | None) -> str:
+                         citation_key: str | None, strict: bool = True) -> str:
     if not material_id or not revision_id or not chunk_id:
-        raise ValueError("study_source_invalid")
-    material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
+        if strict:
+            raise ValueError("study_source_invalid")
+        return "stale"
+    material = connection.execute("SELECT project_id,deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
     if material is None:
         return "source_unavailable"
+    if project_id is not None and material["project_id"] != project_id:
+        return "stale"
     if material["deleted_at"] is not None:
         return "source_deleted"
     chunk = connection.execute(
@@ -1530,11 +1544,15 @@ def _study_source_status(connection: sqlite3.Connection, *, material_id: str | N
     if chunk["status"] != "ready" or not chunk["is_current"]:
         return "stale"
     if span_id is not None and connection.execute("SELECT 1 FROM chunk_spans WHERE chunk_id=? AND span_id=?", (chunk_id, span_id)).fetchone() is None:
-        raise ValueError("study_source_invalid")
+        if strict:
+            raise ValueError("study_source_invalid")
+        return "stale"
     if citation_key is not None:
         validation = validate_citation_key(connection, citation_key)
         if validation is None or validation.get("chunk_id") != chunk_id:
-            raise ValueError("study_source_invalid")
+            if strict:
+                raise ValueError("study_source_invalid")
+            return "stale"
     return "valid"
 
 
@@ -1548,9 +1566,9 @@ def _study_source_payload(connection: sqlite3.Connection, *, project_id: str, pa
     for value in (extraction_id, span_id, citation_key):
         if value is not None and (not isinstance(value, str) or len(value) > 200):
             raise ValueError("study_source_invalid")
-    status = _study_source_status(connection, material_id=material_id, revision_id=revision_id,
-                                  extraction_id=extraction_id, chunk_id=chunk_id, span_id=span_id,
-                                  citation_key=citation_key)
+    status = _study_source_status(connection, project_id=project_id, material_id=material_id,
+                                  revision_id=revision_id, extraction_id=extraction_id,
+                                  chunk_id=chunk_id, span_id=span_id, citation_key=citation_key)
     if status != "valid":
         raise ValueError("study_source_invalid")
     prefix = "module_source" if owner_type == "module" else "plan_item_source"
@@ -1597,7 +1615,8 @@ def _refresh_study_source_links_for_material(connection: sqlite3.Connection, mat
             f"SELECT id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key FROM {table} WHERE material_id=?", (material_id,)
         ).fetchall()
         for row in rows:
-            status = "source_deleted" if connection.execute("SELECT deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()["deleted_at"] is not None else _study_source_status(connection, material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"])
+            material = connection.execute("SELECT project_id,deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
+            status = "source_unavailable" if material is None else "source_deleted" if material["deleted_at"] is not None else _study_source_status(connection, project_id=material["project_id"], material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"], strict=False)
             connection.execute(f"UPDATE {table} SET status=?,updated_at=? WHERE id=?", (status, utc_now(), row["id"]))
 
 
@@ -1623,8 +1642,8 @@ def refresh_study_source_links(connection: sqlite3.Connection, *, project_id: st
                     (project_id,),
                 ).fetchall()
             for row in rows:
-                material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (row["material_id"],)).fetchone()
-                status = "source_unavailable" if material is None else "source_deleted" if material["deleted_at"] is not None else _study_source_status(connection, material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"])
+                material = connection.execute("SELECT project_id,deleted_at FROM materials WHERE id=?", (row["material_id"],)).fetchone()
+                status = "source_unavailable" if material is None else "source_deleted" if material["deleted_at"] is not None else _study_source_status(connection, project_id=project_id, material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"], strict=False)
                 changed += connection.execute(f"UPDATE {table} SET status=?,updated_at=? WHERE id=? AND status!=?", (status, utc_now(), row["id"], status)).rowcount
     return changed
 
@@ -1632,14 +1651,27 @@ def refresh_study_source_links(connection: sqlite3.Connection, *, project_id: st
 def get_study_source_links(connection: sqlite3.Connection, *, project_id: str, plan_id: str | None = None,
                            module_id: str | None = None, item_id: str | None = None) -> list[dict[str, object]]:
     if module_id is not None:
-        return [dict(row) for row in connection.execute("SELECT * FROM module_source_links WHERE project_id=? AND module_id=? ORDER BY created_at,id", (project_id, module_id)).fetchall()]
-    query = "SELECT l.* FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id WHERE l.project_id=?"
-    params: list[object] = [project_id]
-    if plan_id is not None:
-        query += " AND i.plan_id=?"; params.append(plan_id)
+        return [dict(row) for row in connection.execute(
+            "SELECT * FROM module_source_links WHERE project_id=? AND module_id=? ORDER BY created_at,id",
+            (project_id, module_id),
+        ).fetchall()]
     if item_id is not None:
-        query += " AND l.plan_item_id=?"; params.append(item_id)
-    return [dict(row) for row in connection.execute(query + " ORDER BY l.created_at,l.id", params).fetchall()]
+        return [dict(row) for row in connection.execute(
+            "SELECT * FROM plan_item_source_links WHERE project_id=? AND plan_item_id=? ORDER BY created_at,id",
+            (project_id, item_id),
+        ).fetchall()]
+    if plan_id is not None:
+        query = (
+            "SELECT l.* FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
+            "WHERE i.plan_id=? AND l.project_id=? UNION "
+            "SELECT l.* FROM module_source_links l JOIN study_plan_items i ON i.module_id=l.module_id "
+            "WHERE i.plan_id=? AND l.project_id=? ORDER BY created_at,id"
+        )
+        params = (plan_id, project_id, plan_id, project_id)
+    else:
+        query = "SELECT * FROM plan_item_source_links WHERE project_id=? UNION SELECT * FROM module_source_links WHERE project_id=? ORDER BY created_at,id"
+        params = (project_id, project_id)
+    return [dict(row) for row in connection.execute(query, params).fetchall()]
 
 
 def material_state(connection: sqlite3.Connection, material_id: str) -> str:
