@@ -283,7 +283,7 @@ def test_phase9a_backup_restore_preserves_all_plan_state_and_history(tmp_path: P
     assert verify_backup(backup)["status"] == "valid"
     assert _snapshot(database) == before
     manifest = json.loads((backup / "manifest.json").read_text(encoding="utf-8"))
-    assert manifest["database"]["schema_version"] == 9
+    assert manifest["database"]["schema_version"] == 10
     assert str(source) not in (backup / "manifest.json").read_text(encoding="utf-8")
     assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
     assert verify_restored_data(restored)["status"] == "passed"

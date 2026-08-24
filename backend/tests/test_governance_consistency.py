@@ -80,10 +80,12 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "Phase 9A" in status
     assert "v9" in status
     assert "phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
-    assert "Current schema version: **9**." in migration_doc
+    assert "Current schema version: **10**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
-    assert "CURRENT_SCHEMA_VERSION = 9" in runner
+    assert "10 | phase9b_material_learning_schema" in migration_doc
+    assert "CURRENT_SCHEMA_VERSION = 10" in runner
     assert '(9, "phase9a_learning_plan_schema", _migration_v9)' in runner
+    assert '(10, "phase9b_material_learning_schema", _migration_v10)' in runner
     assert "implemented/backend-pass" in contract
     assert "repository/domain transaction" in contract
     assert "API/UI" in contract

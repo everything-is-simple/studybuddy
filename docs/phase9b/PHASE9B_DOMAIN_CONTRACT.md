@@ -1,21 +1,22 @@
 # Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2 `implemented/backend-pass`。
 >
-> 审计基线：2026-08-30；正式实现基线为 schema **v9**、Phase 9A closeout。9B 尚未实现 schema、repository/domain、API、UI、source lifecycle 或 backup/restore 用户路径。
+> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 只加入 persistence schema，并已通过 migration focused gate；9B 仍尚未实现 repository/domain、API、UI、source lifecycle、export、backup/restore artifact 或正式用户路径。
 >
-> 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是实现证据；不得因本文出现表名、路径或错误码而宣称任何 Phase 9B 功能已经存在。
+> 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是完整功能证据；不得因本文出现表名、路径或错误码而宣称任何未通过后续 gate 的 Phase 9B 功能已经存在。
 
 ## 1. 审计基线与已验证复用能力
 
 ### 1.1 当前基线
 
-- 当前源码的 `backend/app/migrations/runner.py:CURRENT_SCHEMA_VERSION` 是 **9**；v1–v9 连续注册在 `_MIGRATIONS`，`migrate()` 在 `BEGIN IMMEDIATE` 内处理 DDL、history 和 `PRAGMA user_version`，失败 rollback。
+- 当前源码的 `backend/app/migrations/runner.py:CURRENT_SCHEMA_VERSION` 是 **10**；v1–v10 连续注册在 `_MIGRATIONS`，`migrate()` 在 `BEGIN IMMEDIATE` 内处理 DDL、history 和 `PRAGMA user_version`，失败 rollback。
+- v9 是已完成 Phase 9A 的 schema 基线；v10 `phase9b_material_learning_schema` 仅加入 note/block/module-link/source-tombstone 与 rhythm persistence schema。它不包含 repository/domain operations、HTTP routes、UI、source refresh、export 或 restore artifact acceptance。
 - `materials`、`extractions`、`text_spans` 是资料正文的 source of truth；`material_revisions`、`chunks`、retrieval/context/citation、AI artifact、9A plan 与本 Phase 的 note/rhythm 都是派生数据或用户状态。
 - 当前部署范围是单进程、单实例、SQLite、本地 data root 与 `project_id` scope；没有 `user_id`、认证、授权、协作或多进程共享 data root。
-- 审计期间曾存在未提交 v10 `notes`/`rhythm_*` 候选 migration，但其索引引用不存在列而失败；该候选已经回退，不能作为本契约的实现或 schema 依据。
+- 审计期间曾存在未提交 v10 `notes`/`rhythm_*` 候选 migration，但其索引引用不存在列而失败；该候选已回退。现行 v10 由本冻结契约重新实现，不复用候选 DDL。
 
-**回退后验证：** `backend/tests/test_migrations.py` 为 `9 passed`；Phase 9A domain/API/source lifecycle/backup-restore focused 为 `18 passed`；完整 backend 为 `272 passed, 2 skipped`；`browser_phase9a.spec.js` 为 `3 passed`。这些结果仅验证 v9/9A 基线。
+**验证记录：** 回退后的 v9/9A baseline 为 migration `9 passed`、9A focused `18 passed`、full backend `272 passed, 2 skipped`、Phase 9A Chromium `3 passed`。9B-2 的 migration/backup/governance 与 full-backend 结果以本任务实际命令为准；这些结果只证明 schema gate，不证明后续 9B 用户能力。
 
 ### 1.2 已有能力与 9B 的复用规则
 
@@ -475,6 +476,6 @@ Gate B is satisfied by this document only when downstream reviewers can determin
 
 **Accurate status:**
 
-> Phase 9B-1 is `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. No Phase 9B schema, repository/domain, API, UI or user path has been implemented; this is not Phase 9B completed or real-pass.
+> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 is `implemented/backend-pass`: v10 persistence schema and migration tests exist. No Phase 9B repository/domain, API, UI, source lifecycle, export, restore artifact acceptance or user path has been implemented; this is not Phase 9B completed or real-pass.
 
-Next task: **9B-2 Migration 与 schema**. It must start from current v9 and stop for a contract change if any required invariant cannot be represented safely.
+Next task: **9B-3 Repository 与 domain transaction**. It must use current v10 schema and stop for a contract change if any required invariant cannot be enforced safely.
