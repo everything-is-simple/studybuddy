@@ -15,6 +15,7 @@
 - `9C-0_现状审计与范围冻结.md`：审计 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 边界。
 - `PHASE9C_AUDIT_AND_SCOPE.md`：9C-0 审计产物、Gate A 结论、风险登记和 9C-1 未决问题；状态为 `planned/audit-draft`，不是实现证据。
 - `9C-1_正式领域契约与状态机.md`：冻结 session、attempt、grading/review、mistake、weak-point、cram 的关系和状态机。
+- `PHASE9C_DOMAIN_CONTRACT.md`：9C-1 Gate B 正式契约产物；状态为 `planned/contract-frozen`，不是实现证据。
 - `9C-2_Migration_与_schema.md`：实现连续 migration、约束、升级/回滚和 schema 测试。
 - `9C-3_Repository_与_domain_transaction.md`：实现共享领域事务、投影、幂等、隐私和 append-only 保护。
 - `9C-4_S3_限时练习工作流.md`：实现 S3 session/计时/提交/评分/结果闭环。
