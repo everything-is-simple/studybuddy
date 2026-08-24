@@ -87,14 +87,16 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert (ROOT / "backend" / "tests" / "test_phase9a_api.py").is_file()
     assert "9A-5 browser-pass" in contract
     assert "9A-6 `scoped-gates-pass`" in contract
-    assert "270 passed, 2 skipped" in status
-    assert "270 passed, 2 skipped" in progress
+    assert "272 passed, 2 skipped" in status
+    assert "272 passed, 2 skipped" in progress
     assert "3 passed" in status
     assert "3 passed" in progress
     assert "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md" in status
+    assert "PHASE9A_BACKUP_RESTORE_EVIDENCE.md" in status
     assert "focused backend `16 passed`" in contract
-    assert "full backend `270 passed, 2 skipped`" in contract
+    assert "full backend `272 passed, 2 skipped`" in contract
     assert "Phase 9A Chromium `3 passed`" in contract
+    assert "9A-7 `restore-gates-pass`" in contract
     assert (ROOT / "backend" / "tests" / "browser_phase9a.spec.js").is_file()
     assert "Phase 9A" in roadmap and "browser-pass" in roadmap
     assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()

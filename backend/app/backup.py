@@ -271,6 +271,43 @@ def verify_backup(backup: Path) -> dict[str, Any]:
         raise
 
 
+def _rebase_restored_material_paths(database: Path, data_root: Path) -> None:
+    """Repoint internal original references to the explicitly selected restore root."""
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = sqlite3.connect(database)
+        rows = connection.execute("SELECT id,source_sha256 FROM materials").fetchall()
+        for material_id, digest in rows:
+            if not isinstance(digest, str) or len(digest) != 64 or any(
+                char not in "0123456789abcdef" for char in digest.lower()
+            ):
+                raise BackupError("backup_reference_invalid")
+            stored_path = data_root / "originals" / digest[:2] / digest[2:] / "original"
+            connection.execute(
+                "UPDATE materials SET stored_path=? WHERE id=?",
+                (str(stored_path), material_id),
+            )
+        connection.commit()
+        connection.close()
+        integrity, foreign, _ = _checks(database)
+        if integrity != "ok":
+            raise BackupError("restore_database_integrity_failed")
+        if foreign != "ok":
+            raise BackupError("restore_foreign_key_check_failed")
+    except BackupError:
+        try:
+            connection.close()
+        except Exception:
+            pass
+        raise
+    except (OSError, sqlite3.Error):
+        try:
+            connection.close()
+        except Exception:
+            pass
+        raise BackupError("restore_database_update_failed") from None
+
+
 def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict[str, Any]:
     if not confirm: raise BackupError("restore_confirmation_required")
     data_root, backup = Path(data_root), Path(backup)
@@ -281,6 +318,7 @@ def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict
     verify_backup(backup)
     staging = data_root.parent / (data_root.name + ".restore-staging")
     if staging.exists() or staging.is_symlink(): raise BackupError("restore_staging_failed")
+    connection: sqlite3.Connection | None = None
     try:
         staging.mkdir(parents=True)
         shutil.copy2(backup / _DB_NAME, staging / _DB_NAME)
@@ -289,11 +327,15 @@ def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict
         verify_backup(staging)
         (staging / _DB_NAME).rename(staging / "studybuddy.sqlite3")
         (staging / "manifest.json").unlink()
+        _rebase_restored_material_paths(staging / "studybuddy.sqlite3", data_root)
         if data_root.exists():
             data_root.rmdir()
         staging.rename(data_root)
-    except BackupError: raise
-    except (OSError, shutil.Error):
+    except BackupError:
+        try: shutil.rmtree(staging, ignore_errors=True)
+        except OSError: pass
+        raise
+    except (OSError, shutil.Error, sqlite3.Error):
         try: shutil.rmtree(staging, ignore_errors=True)
         except OSError: pass
         raise BackupError("restore_replace_failed") from None

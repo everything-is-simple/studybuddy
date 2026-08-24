@@ -39,16 +39,16 @@ C:/miniconda/py310/python.exe -m app.cli restore \
   --confirm
 ```
 
-流程为：验证 backup → 写入外部 staging → 再次验证 staging → 将 staging 放入目标目录。目标非空、symlink 或非目录会拒绝。恢复命令不启动服务、不调用 migration/recovery、不执行 repair、不重建 FTS、不改变 source tables。
+流程为：验证 backup → 写入外部 staging → 再次验证 staging → 将 staging 放入目标目录。目标非空、symlink 或非目录会拒绝。恢复命令不启动服务、不调用 migration/recovery、不执行业务 repair、不重建 FTS；除将 material `stored_path` 重定位到新目标的 hash-derived originals 布局外，不改变 source tables 或业务状态。
 
-完成后重新启动服务并执行：
+恢复到新空 data root 时，restore 会将数据库中材料的 `stored_path` 重定位到新目标的 hash-derived originals 布局；这不是业务 repair，不会创建材料、计划、chunk 或 source link，也不会提升 unavailable/stale 状态。完成后重新启动服务并执行：
 
 ```text
 C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
   --data-root <restored-root>
 ```
 
-需要 HTTP 验收时追加 `--base-url`。验收覆盖 integrity、foreign keys、schema version、migration history、材料列表、原文件引用/hash、extraction，以及 online 模式的 health、detail、original download 和 text export。
+需要 HTTP 验收时追加 `--base-url`。验收覆盖 integrity、foreign keys、schema version、migration history、材料列表、原文件引用/hash、extraction、9A goals/modules/plans/items/dependencies/progress/source links 以及 online 模式的 health、detail、original download 和 text export。验收不会运行 migration、rebuild、Provider 或 source repair。
 
 ## 运维边界
 
