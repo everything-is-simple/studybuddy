@@ -203,7 +203,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 当前状态：`planned`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`docs/phase9b/`](phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
 >
-> 当前子任务状态：9B-0 `planned/audit-draft` 已完成；9B-1 `planned/contract-frozen` 已完成。正式契约见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。尚未实现 schema、repository、API、UI 或正式用户路径。
+> 当前子任务状态：9B-0 已形成 `planned/audit-draft`，9B-1 已形成 `planned/contract-frozen`；审计和正式契约见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。尚未实现或验收 9B schema、repository、API、UI、source lifecycle、导出或正式用户路径。
 
 - [x] 9B-0：完成现状审计、S1/S2 范围冻结和风险记录；状态为 `planned/audit-draft`，产出见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。
 - [x] 9B-1：冻结 S1/S2 实体关系、cadence/timezone/workload、note/block/module/citation 关系、状态机、不变量、source lifecycle、AI draft、错误码、API resource、导出和 backup/restore non-repair 边界；状态为 `planned/contract-frozen`，不代表实现完成。
