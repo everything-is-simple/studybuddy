@@ -4,11 +4,11 @@
 >
 > 范围：`embeddings`、`retrieval_runs`、`retrieval_hits`、material revision/chunking、repository、migration、backup/restore。
 >
-> 结论：Phase 7.1 已完成契约冻结；Phase 7 的 embedding provider、payload codec、indexing、vector similarity 和 hybrid retrieval 尚未实现。
+> 结论：Phase 7.1 已完成契约冻结。本文的 schema version v4 是 2026-08-27 的历史审计基线；当前正式 schema 为 v9，Phase 7 已在后续独立 evidence 中完成精确范围 gate。
 
 ## 1. 审计结论
 
-当前数据库 schema version 为 **4**，migration history 为 v1 `canonical_material_schema`、v2 `ai_phase0_schema`、v3 `phase5_provider_metadata`、v4 `qa_operation_idempotency`。`embeddings`、retrieval 的 embedding metadata 和 score 字段是 Phase 4 预留结构，不代表已有 embedding 生成或 vector retrieval。
+审计时数据库 schema version 为 **4**，migration history 为当时的 v1 `canonical_material_schema`、v2 `ai_phase0_schema`、v3 `phase5_provider_metadata`、v4 `qa_operation_idempotency`；这不是当前 schema 版本。当前正式 schema 为 v9，新增 v5–v9 history 已在后续 Phase 7/8/9A 任务中实现。`embeddings`、retrieval 的 embedding metadata 和 score 字段是 Phase 4 预留结构，不代表已有 embedding 生成或 vector retrieval。
 
 当前真实 retrieval 路径是 `repository.run_chunk_retrieval()` 的 `lexical_fts_v1`：
 
@@ -157,7 +157,7 @@ fallback 不是第三种排序算法，而是 hybrid/vector 请求在 embedding 
 
 ## 6. 需要新增的 migration
 
-7.1 **不执行 migration**；当前 schema 保持 v4，避免把未实现的 contract 提前伪装成可用功能。进入 schema implementation 时需要连续的 **v5 migration**（名称待代码提交时冻结），至少完成：
+7.1 **当时不执行 migration**；本节记录的是 2026-08-27 的历史审计决策，审计时 schema 保持 v4。后续 Phase 7 已通过连续 v5/v6 等 migration 实现，并由当前 v9 schema history 保持一致；本节的 v5 proposal 不应被理解为当前未实现待办。
 
 1. 重建/调整 `embeddings`，使 canonical identity 能表达 `dimensions` 与 `vector_encoding`，并将 model revision 从 nullable identity 规范化为非 NULL 稳定值；
 2. 为 `status` 增加数据库 CHECK（仅 `running/ready/stale/failed`），并保留 `error_code`；

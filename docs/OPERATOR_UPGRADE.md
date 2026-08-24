@@ -1,21 +1,20 @@
 # Operator upgrade runbook
 
-本 runbook 用于 StudyBuddy 数据库 schema 升级，当前目标版本为 **schema version 4**。
+本 runbook 用于 StudyBuddy 数据库 schema 升级，当前目标版本为 **schema version 9**。
 升级会由 application startup 触发 migration runner；operator 不应手工修改
 `schema_migrations` 或 `PRAGMA user_version`。
 
 ## 适用范围
 
-当前迁移链为：
+当前迁移链为 `docs/MIGRATIONS.md` 中的连续 v1–v9 history，当前新增阶段为：
 
 ```text
-1 | canonical_material_schema
-2 | ai_phase0_schema (revision/chunk/retrieval/Q&A tables)
-3 | phase5_provider_metadata
-4 | qa_operation_idempotency
+7 | phase8_cards_exercises_schema
+8 | phase8_exercise_provenance
+9 | phase9a_learning_plan_schema
 ```
 
-v2 增加当前项目 Phase 4 使用的 revision/chunk/retrieval/Q&A 持久化表；应用不会在导入或启动时自动创建 AI 索引，不调用真实 provider，也不启动后台任务。Cards、Exercises、Plans 的表不属于本次升级范围。
+v9 增加 Phase 9A 的 goals、knowledge modules、study plans/items、dependencies、progress events 和 source-link schema。应用不会在导入或启动时自动创建学习计划数据、自动 repair source links、调用真实 provider 或启动后台任务。9A repository/domain、API 和本地 Chromium workspace 已有 scoped gate；完整 source lifecycle、backup/restore artifact closeout 和 Phase 9A acceptance 仍按路线图推进。
 
 支持的部署前提是单进程、单实例、单一 `data_root`、本地存储。升级期间不得让多个
 StudyBuddy 进程或其他 SQLite writer 使用同一个数据库。
@@ -68,17 +67,17 @@ preflight
 -> ready
 ```
 
-对于 v1 数据库，runner 只执行缺失的 v2：
+对于已有 v8 数据库，runner 只执行缺失的 v9：
 
 ```text
 BEGIN IMMEDIATE
--> execute ai_phase0_schema
--> insert (2, 'ai_phase0_schema') into schema_migrations
--> set PRAGMA user_version = 2
+-> execute phase9a_learning_plan_schema
+-> insert (9, 'phase9a_learning_plan_schema') into schema_migrations
+-> set PRAGMA user_version = 9
 -> COMMIT
 ```
 
-新数据库会按 v1、v2 的连续顺序创建。重复启动不会重复执行或新增 history row。
+新数据库会按 v1–v9 的连续顺序创建。重复启动不会重复执行或新增 history row。
 
 ## 升级后验收
 
@@ -104,7 +103,7 @@ C:\miniconda\py310\python.exe -m app.cli schema-version ^
 期望：
 
 ```json
-{"schema_version":2}
+{"schema_version":9}
 ```
 
 必要时直接核对 migration history：
@@ -116,8 +115,8 @@ C:\miniconda\py310\python.exe -c "import sqlite3; c=sqlite3.connect(r'<live-data
 期望结果：
 
 ```text
-[(1, 'canonical_material_schema'), (2, 'ai_phase0_schema')]
-2
+[(1, 'canonical_material_schema'), ..., (9, 'phase9a_learning_plan_schema')]
+9
 ```
 
 同时执行现有功能 smoke check：
@@ -134,8 +133,8 @@ C:\miniconda\py310\python.exe -c "import sqlite3; c=sqlite3.connect(r'<live-data
 migration DDL、history row、`PRAGMA user_version` 在同一个 SQLite migration transaction
 内完成。任意一步失败都应 rollback：
 
-- 不写入 v2 history row；
-- 不将 `PRAGMA user_version` 更新为 2；
+- 不写入 v9 history row；
+- 不将 `PRAGMA user_version` 更新为 9；
 - 不把应用置为 ready；
 - 不继续以普通读写模式运行；
 - 不手工删除残留表或编辑版本号。
@@ -175,13 +174,12 @@ schema、完整性、材料和原文件验收。
 升级只有在以下条件全部满足时才算完成：
 
 ```text
-schema version = 4
-history = [(1, canonical_material_schema), (2, ai_phase0_schema), (3, phase5_provider_metadata), (4, qa_operation_idempotency)]
-PRAGMA user_version = 4
+schema version = 9
+history = continuous v1–v9 history ending with phase9a_learning_plan_schema
+PRAGMA user_version = 9
 /api/health = 200 / ok
 backup/restore version consistency 已通过
 现有材料读写、搜索、导出 smoke check 已通过
 ```
 
-通过后才能进入依赖 I1 schema versioning 的后续 AI 开发。该升级不会自动索引历史
-材料，也不会进入 Cards、Exercises 或 Plans 实现。
+通过后才能进入后续业务 gate。该升级不会自动索引历史材料，不会自动 repair source links，不会启动 Cards/Exercises/Plans 生成，也不会启动后台任务。

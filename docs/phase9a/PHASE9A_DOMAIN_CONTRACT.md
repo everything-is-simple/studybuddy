@@ -1,8 +1,8 @@
-# Phase 9A 领域契约与现状审计（9A-0/9A-1 冻结版）
+# Phase 9A 领域契约与现状审计（9A-0 至 9A-5 记录）
 
-> 状态：`planned`；9A-0 `audit-draft` 与 9A-1 `contract-frozen` 已完成。
+> 状态：9A-0 `audit-draft`、9A-1 `contract-frozen`、9A-2/9A-3/9A-4 `implemented/backend-pass`、9A-5 `browser-pass`。
 >
-> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 已实现 v9 schema migration；repository/domain、API、UI 与 source lifecycle 仍不是本文件或 v9 schema 的实现证据。
+> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 至 9A-5 已形成 schema、repository/domain、API 和本地 Chromium workspace 的 scoped evidence；9A-6 source lifecycle、9A-7 backup/restore closeout、9A-8 acceptance 尚未完成。
 >
 > 审计基线：commit `c083975`，审计日期：2026-08-30。
 
@@ -16,7 +16,7 @@
 - 当前 Cards/Exercises 已有独立 citation 表和 source lifecycle refresh 逻辑，可作为 9A source-link contract 的参考；不应直接把 `card_citations` 或 `exercise_citations` 复用为计划领域表。
 - backup 通过 SQLite Online Backup API 快照数据库，因此新增 SQLite 表天然进入数据库备份；manifest 当前记录 database hash、integrity、foreign-key、schema version 和 originals 引用，未逐表列举业务对象。
 - 当前 UI 是 `backend/app/main.py` 中生成的内嵌 HTML/JavaScript 单页，不是独立前端工程。Materials、Q&A、Cards/Exercises 共用页面导航、状态区和 workspace 风格。
-- 当前没有学习目标、知识模块、study plan/item、dependency 或 progress event 表、repository、API 或 UI。Phase 9A 必须从正式 contract 开始，不能把历史版本实现当作已存在能力。
+- 9A 当前已有学习目标、知识模块、study plan/item、dependency、progress repository、API 和本地 Chromium workspace 的 scoped implementation；完整 source lifecycle、artifact backup/restore 和 Phase 9A closeout 仍未完成。不能把历史版本实现当作正式系统证据。
 
 ## 2. 9A 正式术语
 
@@ -75,7 +75,7 @@
 - Materials mutation 如 `restore_material()`（约第 363 行）、`soft_delete_material()`（约第 1177 行）、`purge_material()`（约第 1037 行）使用连接上下文包裹写操作，并在 lifecycle 变化时刷新 Cards/Exercises citation 或标记 Q&A citation。
 - Cards/Exercises 的创建、编辑、确认、状态迁移、review/attempt 约位于第 446–995 行；均以传入连接为事务边界，使用 `ValueError` 稳定错误码与显式状态校验。
 - Embedding/QA 长流程在必要处显式提交 operation lease，再进行 Provider I/O，避免长时间持有 SQLite 写事务；9A 如引入 AI draft 必须复用该边界，不得将 Provider I/O 放入长期写事务。
-- 当前 repository 没有通用 domain service 层；9A-3 需要决定是在 repository 内增加小型领域函数，还是新增专门的 `study_plans.py`/domain 模块，但不得把所有业务继续堆入不可测试的 API handler。
+- 9A-3 已选择在 `backend/app/repository.py` 增加可测试的领域 repository 函数；没有新增独立 domain service 文件，API handler 只负责 HTTP 输入/错误映射，不承载领域事务逻辑。
 
 ### 3.3 ID、项目与用户边界
 
@@ -141,7 +141,7 @@
 - `/api/study/decks*`、`/api/study/cards*`、`/api/study/exercise-sets*`、`/api/study/exercises*` 位于同一 `create_app()`，对应 Phase 8 workspace。
 - 当前页面通过导航按钮切换 materials/Q&A/study 区域；Phase 8 browser test 使用 `#nav-study`、`#study-workspace`、`#study-status`、`#study-detail`、`#study-generate` 等 DOM contract，证明 UI 是内嵌单页而不是独立 bundle。
 - 现有 browser 测试使用 `C:/miniconda/py310/python.exe -m uvicorn app.main:app`，`PYTHONPATH=H:/studybuddy/backend`，每个 spec 使用 `H:/studybuddy-test/runs/...` 隔离 data root、单独端口、`--workers=1`。
-- 9A-5 可以复用 study workspace/navigation/status/toast/busy/stale-response 模式，但应新增独立 DOM contract，不改变 Cards/Exercises 既有路径。
+- 9A-5 已复用 study workspace/navigation/status/toast/busy/stale-response 模式，并通过独立 `browser_phase9a.spec.js` DOM/user-path contract；没有改变 Cards/Exercises 既有路径。
 
 ### 3.9 测试 fixture 与证据
 
@@ -383,7 +383,7 @@ The source-link tables are intentionally separate rather than a polymorphic owne
 
 SQLite v9 enforces lifecycle enum membership, `user_edited` boolean values, non-negative item position, dependency self-edge rejection, unique item positions, unique dependency edges, unique source citation key per owner, source-link status membership and foreign-key existence where identities remain available.
 
-9A-3 must enforce transactionally and test: same-project ownership across every optional reference; same-plan dependency endpoints; full DAG cycle detection; plan/item transition graph; goal/module archive action restrictions; append-only operation policy; active-plan-only progress events; item projection from events; source identity/citation validation; source lifecycle refresh; title/description/metadata size and JSON validation; duplicate-progress idempotency policy; and user-edit/confirmed/completed protection. These repository/domain rules are implemented and covered by `backend/tests/test_phase9a_domain.py`; SQLite CHECK/foreign keys alone cannot prove the cross-row or temporal rules.
+9A-3 enforces transactionally and tests: same-project ownership across every optional reference; same-plan dependency endpoints; full DAG cycle detection; plan/item transition graph; goal/module archive action restrictions; append-only operation policy; active-plan-only progress events; item projection from events; source identity/citation validation; source lifecycle refresh; title/description/metadata size and JSON validation; duplicate-progress idempotency policy; and user-edit/confirmed/completed protection. These repository/domain rules are implemented and covered by `backend/tests/test_phase9a_domain.py`; SQLite CHECK/foreign keys alone cannot prove the cross-row or temporal rules.
 
 ### 9.3 v9 migration transaction and test evidence
 
@@ -399,9 +399,9 @@ Focused migration coverage in `backend/tests/test_migrations.py` verifies:
 
 No migration writes plan/goal/module data, creates runtime tables, repairs source links or changes existing Phase 8 data.
 
-## 10. 9A-0/9A-1/9A-2/9A-3 验收与下一步
+## 10. 9A-0/9A-1/9A-2/9A-3/9A-4/9A-5 验收与下一步
 
-### 已完成的 9A-0/9A-1/9A-2/9A-3 输出
+### 已完成的 9A-0/9A-1/9A-2/9A-3/9A-4/9A-5 输出
 
 - 当前 migration version、history 和 rollback 机制已定位；
 - repository 事务边界和 ID/time/project 约定已定位；
@@ -412,9 +412,11 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 - v9 `phase9a_learning_plan_schema` 已通过 migration runner 创建八张 9A 表及约束/索引；
 - 新库、v8→v9、重复运行、v9 failure rollback、backup/restore schema history 已有 focused backend coverage；
 - repository/domain 已实现 goal/module archive 与编辑、plan draft/confirm/active、item 编辑/归档、同 plan DAG dependency、append-only progress/projection/summary、source identity validation 和材料 lifecycle refresh；
-- `backend/tests/test_phase9a_domain.py` 覆盖状态转移、cycle、progress rollback/replay、cross-project rejection、completed protection、source stale/unavailable 和 archive boundary。
+- `backend/tests/test_phase9a_domain.py` 覆盖状态转移、cycle、progress rollback/replay、cross-project rejection、completed protection、source stale/unavailable 和 archive boundary；
+- `backend/tests/test_phase9a_api.py` 覆盖最小 API path、404/409/400 边界、project scope、progress replay、dependency cycle、source privacy；
+- `backend/tests/browser_phase9a.spec.js` 覆盖本地 Chromium happy path、failure/retry、narrow viewport、keyboard 和 reload recovery。
 
-### 9A-0/9A-1/9A-2 的准确状态
+### 9A-0/9A-1/9A-2/9A-3/9A-4/9A-5 的准确状态
 
 `Phase 9A-0 completed as planned/audit-draft`：代码审计、范围和边界已形成。
 
@@ -422,7 +424,7 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 
 `Phase 9A-2 implemented/backend-pass`：v9 migration/schema、new-db/v8-upgrade/idempotency/failure-rollback 和 backup/restore schema-history tests 已通过。
 
-9A-2 不代表学习目标、知识模块、计划、计划项、依赖或进度的完整可用用户路径已经完成：API、UI、source lifecycle 的完整 API contract、9A artifact backup/restore lifecycle evidence 和 Chromium acceptance 尚未实现。当前 schema 为 v9；startup/read/backup/restore 不创建 plan data、不 repair source link、不生成内容。
+9A-2 只代表 v9 schema/migration gate；它不单独代表学习领域用户路径完成。当前 schema 为 v9；startup/read/backup/restore 不创建 plan data、不 repair source link、不生成内容。
 
 `Phase 9A-3 implemented/backend-pass`：repository/domain transaction、DAG cycle detection、append-only progress、状态投影、跨表/project 验证、用户编辑保护和 source lifecycle refresh 已通过 focused domain tests，并通过完整 backend regression。
 
