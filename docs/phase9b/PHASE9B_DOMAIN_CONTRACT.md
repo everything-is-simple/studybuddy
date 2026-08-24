@@ -1,258 +1,256 @@
-# Phase 9B 资料学习工作流（S1/S2）正式领域契约与状态机
+# Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：`planned/contract-frozen`。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`。
 >
-> 本文由 9B-0 现状审计初稿升级为 9B-1 正式契约。它冻结 Phase 9B 的 S1 学习节奏和 S2 资料笔记/知识模块关联边界，可直接驱动后续 migration、repository/domain、API、Chromium、source lifecycle 和 backup/restore 测试。
+> 审计基线：2026-08-30；正式实现基线为 schema **v9**、Phase 9A closeout。9B 尚未实现 schema、repository/domain、API、UI、source lifecycle 或 backup/restore 用户路径。
 >
-> 本文不是实现证据。当前 Phase 9B 尚未有正式 note、note block、rhythm 或 S2 generation 用户路径；9B-2 之前不得据此修改生产 schema。
+> 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是实现证据；不得因本文出现表名、路径或错误码而宣称任何 Phase 9B 功能已经存在。
 
-## 1. 契约范围与基线
+## 1. 审计基线与已验证复用能力
 
-### 1.1 当前正式基线
+### 1.1 当前基线
 
-- 当前 schema version 为 **9**，由 `backend/app/migrations/runner.py:CURRENT_SCHEMA_VERSION` 和连续 `_MIGRATIONS` 定义；Phase 9B 的 schema 变更必须追加为连续 v10 或更高 migration，不得修改 v1–v9 history。
-- `materials`、`extractions`、`text_spans` 是原始资料 source of truth；`material_revisions`、`chunks`、`retrieval_runs/hits`、context、citations、AI operations、Cards/Exercises、9A plans 和本 Phase 的 notes/rhythm 都是派生数据或用户状态。
-- 当前边界是单进程、单实例、SQLite、本地存储和 `project_id` scope。当前没有 `user_id`、认证、授权或多用户模型；9B 不新增这些能力。
-- Phase 9A 已正式实现并验收：learning goal、knowledge module、study plan/item、same-plan dependency DAG、append-only progress、progress summary、module/item source links 和 source lifecycle。9B 必须复用这些已验证对象，不创建平行的计划或进度事实源。
-- 当前 `knowledge_modules` 是 9A 的 project-scoped 可复用元数据对象，不自动升级为资料笔记正文、AI artifact 或历史版本 `KnowledgeModule`。
+- 当前源码的 `backend/app/migrations/runner.py:CURRENT_SCHEMA_VERSION` 是 **9**；v1–v9 连续注册在 `_MIGRATIONS`，`migrate()` 在 `BEGIN IMMEDIATE` 内处理 DDL、history 和 `PRAGMA user_version`，失败 rollback。
+- `materials`、`extractions`、`text_spans` 是资料正文的 source of truth；`material_revisions`、`chunks`、retrieval/context/citation、AI artifact、9A plan 与本 Phase 的 note/rhythm 都是派生数据或用户状态。
+- 当前部署范围是单进程、单实例、SQLite、本地 data root 与 `project_id` scope；没有 `user_id`、认证、授权、协作或多进程共享 data root。
+- 审计期间曾存在未提交 v10 `notes`/`rhythm_*` 候选 migration，但其索引引用不存在列而失败；该候选已经回退，不能作为本契约的实现或 schema 依据。
 
-源码依据：`backend/app/migrations/runner.py`、`backend/app/repository.py:connect()`、9A study functions、`backend/app/main.py` `/api/study/*` routes、`docs/PHASE9A_ACCEPTANCE_EVIDENCE.md`。
+**回退后验证：** `backend/tests/test_migrations.py` 为 `9 passed`；Phase 9A domain/API/source lifecycle/backup-restore focused 为 `18 passed`；完整 backend 为 `272 passed, 2 skipped`；`browser_phase9a.spec.js` 为 `3 passed`。这些结果仅验证 v9/9A 基线。
 
-### 1.2 Phase 9B 目标
+### 1.2 已有能力与 9B 的复用规则
 
-Phase 9B 只冻结并实现以下两条用户路径：
+| 已验证能力 | 9B 必须复用 | 不能误作的推断 | 证据 |
+|---|---|---|---|
+| revision → chunk → retrieval → context → citation | S2 generation 只能从显式 active material scope 的 current ready chunks 检索、组装 context 并服务端复验 citation | 客户端、模型或用户文本不能自造 valid citation | `repository.py:index_material_revision()`, `run_*_retrieval()`, `assemble_context()`, `validate_citation_key()`；`test_context_assembler.py` |
+| active/deleted/restored/purged lifecycle | source status 由 material/revision/chunk identity 重算；purge 后不得恢复名称、正文或可点击定位 | read/startup/restore 不会自动恢复有效来源 | `repository.py:soft_delete_material()`, `restore_material()`, `purge_material()`；`test_phase9a_source_lifecycle.py` |
+| 9A plan/item/progress | S1 parent 是已有 plan/item；状态改变仍只由已有 append-only progress events 完成 | allocation 不是 task、不是 session、不是实际耗时、不能写 progress event | `repository.py:create_study_plan_item()`, `append_study_progress_event()`, `study_progress_summary()`；`test_phase9a_domain.py` |
+| 9A knowledge module/source link | module 是 project-scoped active/archived 主题元数据；可作为 S2 note 的组织对象 | module 不是笔记正文、不是 note revision、不是 AI confirmed fact；不可把 module source link 改成多态 owner | `repository.py:create_knowledge_module()`, `create_module_source_link()`；`test_phase9a_domain.py:test_module_archive_keeps_existing_plan_reference_but_blocks_new_reference` |
+| Phase 8 draft generation | AI 内容先 draft；失败操作与 artifact 分离；citation 在最终持久化前重验；不覆盖用户编辑或 confirmed artifact | 不可复用 card/exercise 表或直接调用其 artifact persistence 写 note | `repository.py:create_generation_operation()`, `persist_generated_draft()`；`test_phase8_generation.py` |
+| backup/restore | 新 SQLite 业务表会进入 SQLite Online Backup snapshot；verify/restore/startup/read 不调用 provider/rebuild | “天然进入 DB snapshot”不等于已通过 9B restore gate | `backup.py:backup_data()`, `restore_backup()`；`restore_acceptance.py:_study_checks()`；`test_phase9a_backup_restore.py` |
+
+## 2. Phase 9B 范围与不变量
+
+### 2.1 两条正式用户路径
 
 ```text
 S1 学习节奏
-已有 study plan/item/progress
-  → 显式 rhythm/cadence 设置
-  → 按本地日期为 item 安排工作量
-  → 查看 timeline/load/coverage summary
-  → 用户手动调整
-  → 完成 item 后保留安排和 progress 历史
+9A plan/item/progress
+  → 用户显式配置 rhythm
+  → 用户为 item 指定 local-date / planned minutes
+  → 读取确定性 timeline / load / coverage summary
+  → 用户手动移动、修改或删除仍可编辑的 allocation
+  → progress 仍由 9A event 写入，summary 读取时重算
 
 S2 资料笔记
-active material/revision/chunk/retrieval/citation
-  → 用户创建 note/note block
-  → 关联 knowledge module
-  → 关联经服务端验证的 source/citation identity
-  → 可选生成 citation-safe fake-provider note draft
-  → 用户编辑、确认、拒绝或归档
-  → source lifecycle 显式刷新
+active material → current revision → ready chunk → retrieval/context/citation
+  → 用户创建 user note，或显式 fake-provider generate_note
+  → draft note / ordered blocks / block-level source links
+  → 用户编辑、关联已有 module、确认、拒绝或归档
+  → source lifecycle 显式刷新；历史内容保留，status/warning 变化
 ```
 
-### 1.3 明确不做
+### 2.2 全局不变量
 
-Phase 9B 不实现或不把以下内容作为完成前置：
+1. 所有 scope 由服务端 `AppConfig.project_id` 注入；客户端不得传入任意 `project_id` 或未来 `user_id`。
+2. 原始资料与 extraction 正文不被 note、module、rhythm、AI output 或导出反向覆盖。
+3. 用户 note、用户编辑、confirmed note、9A progress event 和 completed item 不得被 AI generation、source refresh、backup/restore 或普通 read 静默改写。
+4. source deleted/stale/unavailable 时不得伪造 source text、material name、stored path、quote 或可定位 citation。
+5. 所有审计时间由服务端生成 timezone-aware UTC ISO-8601；S1 的 business date 是明确 timezone 下的 date-only 值，不能使用宿主机隐式 timezone。
+6. 所有新增表、字段、索引与约束只能在 9B-2 的连续 migration 中加入；不得在 repository/API/startup 中 ad-hoc 建表。
+7. Phase 9B 只有 deterministic fake-provider/local single-process/SQLite/Chromium/backup-restore 的目标范围；真实 Provider acceptance、worker 和 production-scale 不是本契约的完成条件。
 
-- S3 限时练习、S4 错题改错、S5 期末冲刺；
-- S6 家长报告；S7 课堂采集、OCR、ASR；
-- 真实 Provider 下的 note、module、plan generation real-pass；
-- 人工简答复核、教师/家长审核；
-- reminder、push、calendar sync、recurrence engine、background scheduler；
-- worker、queue、cancel、流式长任务、跨进程协调；
-- 多用户、认证授权、云同步、协作、外部 vector DB；
-- 自动索引历史材料、自动 repair/rebuild、自动 re-plan；
-- 导图、知识图谱、复杂推荐、评分或语义图数据库；
-- 通过客户端 project/user 参数绕过当前 project scope。
+### 2.3 明确不做
 
-## 2. 正式术语与实体关系
+- S3/S4/S5 限时练习、错题、冲刺；S6/S7 家长报告、课堂采集、OCR、ASR；
+- reminder、push、calendar sync、recurrence engine、scheduler、自动执行、自动重排、overdue automation、session timer、实际学习时长；
+- real-provider generation acceptance、streaming、queue、worker、cancel、后台 stale scan、跨进程协调；
+- 多用户、认证授权、云同步、协作、跨 project artifact、外部 vector DB；
+- note revision/diff/merge、富文本 HTML、脚本、图片/附件/音频、导图或知识图谱；
+- AI 自动创建/修改/archive `knowledge_modules`、自动重规划或将 AI output 直接当 confirmed knowledge。
 
-### 2.1 Glossary
+## 3. 正式术语与关系
 
-| 术语 | 正式含义 | 是否为 source of truth |
-|---|---|---:|
-| Rhythm | 一个已有 study plan 的显式学习节奏配置，定义 cadence、timezone 和周期边界；不是 scheduler | 否，用户安排状态 |
-| Rhythm Allocation | 一个 plan item 在某个用户本地日上的 planned minutes 安排事实；可由用户调整 | 否，用户安排事实 |
-| Rhythm Summary | 从 rhythm config、allocations、当前 item projection 和 progress events 计算出的只读摘要 | 否，派生响应 |
-| Note | S2 的资料笔记容器，保存标题、生命周期、来源类型和用户编辑保护；可由用户创建或由 fake provider 生成 draft | 否，用户/AI artifact |
-| Note Block | Note 内有序的最小可编辑内容单元。Phase 9B 只保存文本内容和有限 block kind，不保存富文本 HTML | 否，用户/AI artifact |
-| Knowledge Module | 9A 已存在的可复用学习主题元数据对象；S2 通过显式多对多关联组织 note，不改变其 9A 生命周期语义 | 否，用户状态 |
-| Note–Module Link | note 与同一 project 的 knowledge module 的组织关系，不等同于 source provenance | 否 |
-| Note Block Source Link | note block 到 material/revision/chunk/span/citation identity 的可验证来源关系 | 否，provenance |
-| Citation | context/retrieval 产生并由服务端验证的 citation key 及其 source identity；不是模型可自由创建的字符串 | 否，provenance |
-| AI Note Draft | `provenance=ai_generated` 且 `status=draft` 的 note 及其 blocks；必须有可验证 citation，不能直接成为 confirmed | 否，待确认 artifact |
-| User Note | `provenance=user_created` 的 note；可以没有 source，但无 source 的内容不能宣称为资料事实 | 否，用户 artifact |
-| Local Date | 按 note/rhythm 的 IANA timezone 解释的 `YYYY-MM-DD` 日期；不是宿主机隐式本地日期 | 否，安排坐标 |
+### 3.1 Glossary
 
-### 2.2 总体关系
+| 术语 | 冻结定义 | 类型 |
+|---|---|---|
+| Rhythm | 一个既有 study plan 的显式节奏配置，定义 cadence、timezone、period anchor 与每 period target；不是 scheduler | S1 user schedule state |
+| Rhythm Allocation | 既有 plan item 在一个 local date 的 planned minutes 安排事实 | S1 user schedule state |
+| Rhythm Summary | 从 settings、allocations、当前 item projection、progress events 与 9A source warnings 重算的只读响应 | derived response |
+| Local Date | 由 rhythm IANA timezone 解释的严格 `YYYY-MM-DD`；不含时间/offset | business coordinate |
+| Note | project 内的资料笔记容器，具 title、provenance、lifecycle 和 user-edit protection | S2 user/AI artifact |
+| Note Block | note 内有序、最小的文本内容单元；citation provenance 绑定到 block | S2 content artifact |
+| User Note | `provenance=user_created` 的 note；可没有资料来源，但不得展示为已验证资料结论 | user artifact |
+| AI Note Draft | `provenance=ai_generated` 且 `status=draft` 的 note；每一个 block 必须有创建时验证为 valid 的 citation link | proposed AI artifact |
+| Knowledge Module | 9A 已有的 active/archived 主题元数据；S2 只使用它组织 note | reusable 9A metadata |
+| Note–Module Link | note 与同 project module 的组织关系；不是 source provenance | organization relation |
+| Note Block Source Link | block 到 material/revision/extraction/chunk/span/citation identity 的服务端验证 provenance record | provenance relation |
+| Source Tombstone | material purge 后保留在 note link 的 opaque identity 和 `source_unavailable` status；不含可恢复名称/正文/路径 | lifecycle history |
+
+### 3.2 实体关系
 
 ```text
 project
-├── learning_goals                         [Phase 9A]
-├── knowledge_modules                      [Phase 9A, reusable metadata]
-│     └── note_module_links                [Phase 9B, many-to-many organization]
-├── study_plans                            [Phase 9A]
-│     ├── study_plan_items                 [Phase 9A]
-│     │     └── rhythm_allocations         [Phase 9B, optional user schedule facts]
-│     ├── study_progress_events             [Phase 9A, append-only facts]
-│     └── rhythm_settings                  [Phase 9B, at most one per plan]
-└── notes                                  [Phase 9B]
-      └── note_blocks                      [Phase 9B, ordered text units]
-            └── note_block_source_links    [Phase 9B, verified provenance]
+├── learning_goals / knowledge_modules                    [9A]
+│     └── note_module_links                               [9B, organization only]
+├── study_plans → study_plan_items → study_progress_events [9A]
+│     ├── rhythm_settings                                 [9B, max one per plan]
+│     └── rhythm_allocations                              [9B, item/local-date schedule facts]
+└── notes                                                 [9B]
+      └── note_blocks                                     [9B, ordered]
+            └── note_block_source_links                  [9B, verified provenance]
+
+materials → extractions → text_spans                      [source of truth]
+          → material_revisions → chunks → retrieval/context/citation
+                                                              [evidence path]
 ```
 
-关系决策：
+冻结关系：
 
-1. 一个 rhythm 只属于一个已有 study plan；一个 plan 最多一个 rhythm settings 记录。S1 不创建新的 plan、task 或 progress event 事实源。
-2. 一个 note 属于一个 project，可以关联零个或多个同 project 的 knowledge module；一个 module 可以关联零个或多个 note。该关联只表示组织关系，不自动把 module source links 复制到 note。
-3. 一个 note 至少有一个 note block；note block 在 note 内有唯一 position。Phase 9B 不支持跨 note 共享 block。
-4. 一个 note block 可以有零个或多个 source links；一个 source link 只属于一个 block。citation provenance 绑定 block，不绑定整个 note 的模糊文本范围。
-5. 一个 note 可以关联多个 material/revision，但必须通过不同 block source links 表达；不得用 note 级 `material_id` 覆盖多来源关系。
-6. note/module 的关系不能跨 project；source identity 的 material 也必须属于当前 project。所有跨行、跨项目、current revision 和 citation 规则由 repository/domain transaction 强制。
+1. 一个 rhythm 只属于一个同 project 的既有 plan；一个 plan 最多一条 rhythm settings。S1 不创建 plan、item 或 progress 的平行事实源。
+2. allocation 同时属于一个 plan 与该 plan 的一个 item；它不能指向其它 plan/project item。
+3. note 属于一个 project；note 可关联零至多个同 project module，module 可关联零至多个 note。note 与 module 都可以独立存在。
+4. note 至少有一个 block；block 只属于一个 note，且在该 note 内 position 唯一。
+5. 一个 block 可有零至多个 source links；同一 block/citation identity 不重复。不同 block 可以引用相同 chunk。
+6. note 可以通过不同 block links 关联多个 materials/revisions；不得用 note 级单一 `material_id` 伪造多来源 provenance。
+7. 9A `module_source_links`、`plan_item_source_links` 不迁移为多态 owner，不自动复制到 note，也不自动成为 note evidence。
 
-## 3. S1 学习节奏正式契约
+## 4. S1 学习节奏契约
 
-### 3.1 与 Phase 9A 的关系
+### 4.1 Parent 与既有 9A 状态的关系
 
-S1 只扩展已有 `study_plans`、`study_plan_items` 和 `study_progress_events` 的用户安排视图：
+- rhythm parent 必须为同 project 的 9A plan；allocation item 必须属于该 parent plan。
+- settings/allocation **不改变** plan status、item status、dependency 或 progress event；用户仍通过现有 `started`、`completed`、`skipped`、`reopened` progress event 改变 item projection。
+- S1 允许 plan item 没有 rhythm allocation；无 allocation 不是错误，也不创建默认值。
+- draft、confirmed、active、paused plan 可创建/更新 rhythm settings 与对符合条件 item 的 allocation。该授权只扩展新的 rhythm rows，不放宽 9A 对 plan/item title、description、position、module/dependency 的编辑保护。
+- completed 或 archived plan 的 rhythm settings 与 allocation 都只读；不允许新建、更新或删除。
+- pending、in_progress、skipped item 的 allocation 可编辑；completed 或 archived item 的 allocation 只读并保留为历史。9A `reopened` event 将 item projection 改回 `in_progress` 后，该 item allocation 再次可编辑。
+- item 被 9A archive 前，若已有 progress event，9A 既有 archive protection仍有效；S1 不改变它。已 archive item 的既有 allocation 历史保留但不计入 current load/coverage。
 
-- rhythm settings 的 parent 必须是同 project 的既有 plan；plan 不存在或跨 project 时拒绝；
-- allocation 的 item 必须属于该 plan，不能指向其它 plan/project；
-- allocation 不改变 item status，不新增 progress event；只有用户调用已有 progress API 才能改变 progress projection；
-- item 完成、跳过、重开不会删除 allocation 或 progress history；summary 在读取时重新计算；
-- archived item 的 allocation 保留为历史数据，但不进入 active rhythm coverage/load 分母；
-- archived plan 不允许新增或修改 rhythm/allocation；active、paused 和 confirmed plan 允许按后续 API contract 修改安排；draft plan 允许设置安排；completed plan 的 rhythm 只读。
+### 4.2 Rhythm settings 字段/枚举草案
 
-### 3.2 Rhythm settings 字段契约
+9B-2 必须实现语义等价的结构；列名可调整但不得改变以下规则。
 
-9B-2 应实现等价于以下语义的表/字段；具体列名可在不改变语义的情况下由 migration 任务确定：
-
-| 字段 | 约束与语义 |
+| 字段 | 冻结语义 |
 |---|---|
-| `id` | 稳定 `rhythm_...` ID；一个 plan 只能有一个 active settings 记录 |
-| `project_id` | 由服务端注入并与 plan 一致，客户端不可指定任意 project |
-| `plan_id` | 必填，FK 到同 project `study_plans`，唯一 |
-| `cadence` | 只允许 `daily` 或 `weekly`；Phase 9B 不实现 custom recurrence |
-| `timezone` | 必填 IANA timezone 名称，例如 `Asia/Shanghai`、`UTC`；服务端用 `zoneinfo` 校验，禁止任意缩写和静默 fallback |
-| `period_start` | 必填 `YYYY-MM-DD` local date；作为 summary 的固定起点，必须能按 timezone 解释 |
-| `target_minutes` | 非负整数，范围 `0..10080`；为该 rhythm 周期目标，不是已完成时长 |
-| `created_at/updated_at` | UTC ISO-8601；服务端生成 |
+| `id` | 稳定 `rhythm_...` ID |
+| `project_id`, `plan_id` | 服务端 scope；plan 必须同 project；`plan_id` 唯一 |
+| `cadence` | 仅 `daily` 或 `weekly` |
+| `timezone` | 必填、可被 Python `zoneinfo.ZoneInfo` 加载的 IANA name；`UTC` 合法，`CST`/`GMT+8` 等缩写非法 |
+| `period_start` | 必填严格 `YYYY-MM-DD` local date；是固定 anchor，不是 UTC midnight timestamp |
+| `target_minutes` | 每一个 cadence period 的用户目标整数，`0..10080`；`0` 表示没有 target、仍允许 allocation |
+| timestamps | `created_at` / `updated_at`，服务端 UTC ISO-8601 |
 
-`cadence` 语义：
+Cadence：
 
-- `daily`：一个 rhythm period 是一个 `period_start + n days` 的本地日；每个 period 的目标为 `target_minutes`，允许 `0` 表示只使用 item allocation、不设目标。
-- `weekly`：一个 rhythm period 是从 `period_start` 起连续 7 个本地日；每个 period 的目标为 `target_minutes`。`period_start` 不强制为周一，以支持用户明确选择的起始日。
-- 不支持 custom cadence、recurrence rule、例外日、法定节假日、提醒时间、日历事件或宿主机 timezone 推断。
-- `period_start` 是 date-only 业务坐标；不在数据库中伪造午夜 UTC instant。API 返回原始 local date 和 timezone。
+- `daily` 的 period 为一个 local date；每个 local day target 为 `target_minutes`。
+- `weekly` 的 period 从 `period_start` 起每连续七个 local dates 构成；不强制周一，避免宿主 locale/ISO week 隐式规则。
+- 不支持 custom recurrence、例外日、节假日、具体时段、calendar event 或 hour-level DST 排程。
+- timezone 只用于 local date 分桶；S1 不保存一天内时刻，DST 不会隐式增减 planned minutes 或触发重排。
 
-timezone 只用于把 allocation 的 local date 分到 period；S1 不保存一天内的具体时刻，因此 DST 不会产生额外小时或自动重排。若未来要支持具体时段，必须新增独立契约，不得把 minutes 假定为时钟区间。
+### 4.3 Allocation 字段/输入草案
 
-### 3.3 Rhythm allocation 字段契约
-
-| 字段 | 约束与语义 |
+| 字段 | 冻结语义 |
 |---|---|
 | `id` | 稳定 `rhythm_allocation_...` ID |
-| `project_id` | 必须与 plan/item 一致 |
-| `plan_id` | 必须与 item 的 plan 一致 |
-| `item_id` | 必须是该 plan 的非跨项目 item |
-| `local_date` | `YYYY-MM-DD`，按 rhythm timezone 解释；不得包含时间或 offset |
-| `planned_minutes` | 正整数 `1..1440`；单个 item 单日最多 1440 分钟 |
-| `created_at/updated_at` | UTC ISO-8601 |
+| `project_id`, `plan_id`, `item_id` | 服务端验证同 project、同 plan 的 parent/item 关系 |
+| `local_date` | 严格 `YYYY-MM-DD`，按 settings timezone 解释；不接受 datetime、offset、timestamp 或自然语言 |
+| `planned_minutes` | 正整数 `1..1440`；是计划投入，不是实际完成分钟数 |
+| timestamps | 服务端 UTC ISO-8601 |
 
-约束与操作：
+约束：
 
-1. 同一个 `(item_id, local_date)` 最多一个 allocation；重复 create 使用显式 allocation ID 或幂等语义 replay，不产生第二行。
-2. 一个 item 可以拆到多个 local date；一个 local date 可以安排多个 item。
-3. 一个 item 的所有 allocation 总和上限为 `10080` 分钟；单个 rhythm period 的 allocation 总和也上限为 `10080` 分钟。超过上限拒绝，不能自动截断或自动移动。
-4. allocation 的 `local_date` 不受宿主机当前日期影响；API 必须显式传入，服务端按冻结格式解析。
-5. “移动”是同一 allocation 的受限日期/分钟更新，不创建第二套 progress 事件；实现必须在事务中保持唯一约束。
-6. `pending/in_progress/skipped` item 的 allocation 可在允许编辑的 plan 状态下调整；`completed` item 的 allocation 只读，保留历史安排。`archived` item 不能新建 allocation。
-7. allocation 不自动产生 `started/completed/skipped/reopened`，不自动改变 item status，也不因日期经过而产生 overdue event。
-8. 9B 不保存可编辑的 completed minutes；progress summary 的完成状态来自 9A item projection。`planned_minutes` 不是实际耗时，不得在 UI/API 中称为 completed time。
+1. `(item_id, local_date)` 唯一；同 item 同日重复 create 必须以稳定 duplicate/conflict 拒绝，不能隐式累加。显式同 allocation ID 的 retry/idempotent replay 由 API/domain 任务冻结具体 HTTP 表达。
+2. 一个 item 可分配到多个 local dates；一个 local date 可安排多个 items。
+3. 单 item 的 all-time allocation 总和最多 `10080` minutes；任一 current rhythm period 的 allocation 总和最多 `10080` minutes。超过上限拒绝，不截断、拆分或自动移动。
+4. 移动是对一个既有 allocation 的日期和/或分钟受限更新，必须在一个 domain transaction 内维护 uniqueness 和总量上限；不写 progress event。
+5. 删除只允许可编辑 allocation；删除 completed/archived item 的 allocation 或 completed/archived plan 内任一 allocation 均拒绝。
+6. allocation 不会因日期经过而产生 overdue、started、completed、skipped 或实际耗时。跳过/完成/重开仅是既有 9A progress API 的显式用户操作。
 
-### 3.4 S1 状态和合法操作
+### 4.4 S1 state/operation 表
 
-S1 没有独立的执行状态机；其状态由 parent plan、item projection 和 source warning 组成：
+| 对象/当前状态 | 允许操作 | 禁止或不发生 |
+|---|---|---|
+| no settings | 用户显式 create/update settings | 自动默认 rhythm、scheduler |
+| settings on draft/confirmed/active/paused plan | update cadence/timezone/period_start/target；读取 summary | 修改 parent plan status/item/progress |
+| settings on completed/archived plan | read/export | write/delete settings 或 allocations |
+| allocation on pending/in_progress/skipped item | create/update/move/delete | 自动 progress、跨 plan/item 关联 |
+| allocation on completed/archived item | history read/export | create/update/delete |
+| 9A item completed/skipped | 保留 allocation；summary 反映当前 projection | 删除 progress history、将 planned minutes说成完成时间 |
+| 9A item reopened | 既有 allocation 保留且可再编辑 | 重写旧 progress event |
 
-```text
-rhythm settings: absent → present → updated
-allocation:       absent → present → updated → deleted
-plan:              draft/confirmed/active/paused → schedule editable
-                  completed → read-only
-                  archived → read-only/no new rows
-item:              pending/in_progress/skipped → allocation editable
-                  completed/archived → allocation read-only
-```
+更新 settings 不改写旧 allocations。读取 summary 时以**新** timezone/anchor/cadence 分桶；不自动迁移 date。若 allocation 不落入请求的 period window，它只是该 window 外的历史/未来 allocation，不是要被系统修复的数据。
 
-- 删除 allocation 只删除尚未成为历史完成记录的用户安排事实；不删除 progress event。删除已完成 item 的 allocation 被拒绝。
-- rhythm settings 可更新 cadence、timezone、period_start、target_minutes；更新不重写或删除既有 allocation。读取 summary 时按新的 timezone/period_start 重新分组；如果已有 allocation 超出新视图范围，返回 `unassigned`，不自动移动。
-- plan/item 的既有 9A 状态转移保持不变；S1 不新增 `scheduled`、`overdue` 或 `session_completed` 状态。
-- active plan 可以存在 source warning 或没有 source 的 item；S1 不因 source unavailable 阻止 plan 激活，详情只显示 warning。
+### 4.5 Rhythm summary
 
-### 3.5 S1 Summary 规则
+`rhythm_summary` 是实时只读派生响应，不保存 snapshot。它至少返回：
 
-`rhythm_summary` 是只读派生响应，不单独持久化 snapshot。至少包含：
-
-- rhythm settings：cadence、timezone、period_start、target_minutes；
-- period buckets：period key、local date range、planned_minutes、target_minutes、remaining_target_minutes；
+- settings（cadence/timezone/period_start/target_minutes）或明确 `rhythm_not_configured` 空语义；
+- requested/current period buckets 的 local-date range、planned_minutes、target_minutes、`remaining_target_minutes=max(target-planned,0)`；
 - `allocated_item_count`、`unassigned_item_count`、`archived_item_count`；
-- `completed_item_count`、`in_progress_item_count`、`pending_item_count`、`skipped_item_count`；
-- `source_warning_count`；
+- 当前 item projection 的 pending/in_progress/completed/skipped counts；
+- 9A source links 派生的 `source_warning_count`；
 - `last_progress_event_at`。
 
 计算规则：
 
-1. allocation 只按自己的 `local_date` 和当前 rhythm settings 分桶；不根据 UTC 转换日期，不读取服务器当前时区。
-2. `unassigned_item_count` 是未归档、没有至少一条 allocation 的 plan item 数量；completed item 仍可计入历史 `allocated_item_count`，但 summary 必须明确其完成状态。
-3. `remaining_target_minutes = max(target_minutes - planned_minutes, 0)`；不把实际完成状态冒充为完成分钟数。
-4. archived item allocation 不计入当前 load/coverage；其历史行可在 detail/history 中受限展示。
-5. progress event 与 allocation 读取可以分别查询，summary 必须在同一读取快照中保持 project/plan scope 一致；不写 summary 表。
-6. 空计划、无 rhythm settings 或无 allocation 不报错：返回明确的 `rhythm_not_configured`/空 summary 语义，由 API contract 冻结 HTTP 表达；不自动创建默认 rhythm。
+1. 仅以 allocation 的 `local_date` 和 settings timezone/anchor 分桶，不以 server local timezone 或 UTC date 重解释。
+2. `unassigned_item_count` 为同 plan、非 archived、没有任一 allocation 的 item 数；completed item可计入历史 allocated count，但不能被称为未完成 minutes。
+3. archived item allocation 从 current load/coverage 排除，detail/history 可受限显示。
+4. progress 状态来自 9A current item projection；planned minutes 从不替代 actual/completed minutes。
+5. summary read 必须在一致的 project/plan scope 中计算；不得写 summary table、不得创建 settings、allocation 或 progress。
+6. active plan 有 deleted/stale/unavailable source 仍可读/编辑 rhythm，summary 仅给 warning；source warning 不会阻止计划使用。
 
-## 4. S2 资料笔记与知识模块正式契约
+## 5. S2 资料笔记与知识模块契约
 
-### 4.1 Note 字段与来源
+### 5.1 Note 字段/枚举草案
 
-| 字段 | 约束与语义 |
+| 字段 | 冻结语义 |
 |---|---|
 | `id` | 稳定 `note_...` ID |
-| `project_id` | 服务端注入；note/module/source 必须同 project |
-| `title` | 必填，去除首尾空白后 `1..400` 字符 |
-| `status` | `draft`、`confirmed`、`archived` |
-| `provenance` | `user_created` 或 `ai_generated`；创建后不可修改 |
-| `user_edited` | 0/1；用户修改 title/block/module association 后设为 1 |
-| `generation_operation_id` | AI note 可选，指向成功或失败审计 operation；用户 note 为 NULL |
-| `created_at/updated_at` | UTC ISO-8601 |
-| `confirmed_at/archived_at` | 状态转移时由服务端写入 |
+| `project_id` | 服务端注入，note/module/source 均必须同 project |
+| `title` | trim 后 `1..400` Unicode characters |
+| `status` | `draft`、`confirmed`、`rejected`、`archived` |
+| `provenance` | `user_created` 或 `ai_generated`，创建后不可变 |
+| `user_edited` | 0/1；用户修改 note title、block content/order、block source relation 或 module relation 后置 1 |
+| `generation_operation_id` | ai_generated note 可选的 operation reference；user_created 必须为空 |
+| timestamps | `created_at`、`updated_at`、`confirmed_at`、`archived_at`；服务端 UTC ISO-8601 |
 
-Note 创建规则：
+规则：
 
-1. 用户创建的 note 为 `draft + user_created`，可以没有 source；无 source 的 user note 不得被展示为已验证资料结论。
-2. AI 创建的 note 为 `draft + ai_generated`，必须绑定一个成功的 `generate_note` operation，并且每个生成 block 至少有一个创建时验证为 `valid` 的 source link。
-3. note 不能物理删除。draft 可以 archive；confirmed note 只能 archive，不能回到 draft，也不能被普通 patch 静默替换为新内容。
-4. note 至少保留一个 block；空内容 note 的创建、保存或确认由 API/domain 以稳定错误拒绝。
-5. note 的 `status` 不直接变成 `stale` 或 `source_unavailable`。来源状态属于 note block source link；note detail 返回 `source_warning_count` 和每条 link status。
+1. user-created note 创建时为 `draft + user_created`，可无 source；界面/API 必须明确它是用户笔记，不能将无来源文本呈现为已验证资料结论。
+2. AI note 只能由成功 `generate_note` operation 原子创建为 `draft + ai_generated`；每个生成 block 必须至少一条创建时 `valid` 的 source link。
+3. note 没有物理 delete；所有 note 最终可 archive。`rejected` 是 AI draft 的只读历史状态，不是 deletion。
+4. 每个 note 始终至少一个非空 block；空 note、空 block、只空白 content 的创建、保存、确认均拒绝。
+5. source status 不占用 note status：confirmed note 后来源变 stale/deleted/unavailable 时 note 仍 confirmed，detail 返回 links/warning。
 
-### 4.2 Note block 字段与状态
+### 5.2 Note block 字段/编辑规则
 
-| 字段 | 约束与语义 |
+| 字段 | 冻结语义 |
 |---|---|
-| `id` | 稳定 `note_block_...` ID |
-| `note_id/project_id` | 必填，scope 必须一致 |
-| `position` | 非负整数；同一 note 唯一、稳定排序 |
-| `block_kind` | 只允许 `text`、`heading`、`bullet`；不保存 HTML、脚本、图片、图谱或富文本 AST |
-| `content` | 必填 UTF-8 文本；服务端限制总长度和单 block 长度，具体上限由 API contract 采用本契约语义后冻结 |
-| `provenance` | `user_created` 或 `ai_generated`；AI draft block 不得伪装为 user-created |
-| `created_at/updated_at` | UTC ISO-8601 |
+| `id`, `note_id`, `project_id` | 稳定 ID 与同 project/note ownership |
+| `position` | 非负整数、同 note 唯一；稳定排序 |
+| `block_kind` | 仅 `text`、`heading`、`bullet` |
+| `content` | 必填 UTF-8 text，trim 后非空，最大 `12000` characters；整个 note 所有 blocks 合计最多 `48000` characters |
+| `provenance` | `user_created` 或 `ai_generated`；AI block 不可伪装为 user block |
+| timestamps | 服务端 UTC ISO-8601 |
 
-- block 不设独立 confirmed 状态；其可编辑性由 parent note status 和 provenance 保护。
-- draft note 内 block 可编辑、排序和有限增删，但 note 必须始终保留至少一个 block。
-- confirmed/archived note 的 block 不允许普通编辑、删除或排序；用户要修改必须创建新的 user note 或由未来独立契约提供 revision workflow，9B 不实现隐式 revision。
-- 用户对 AI draft 的任何 block 修改把 note 标记 `user_edited=1`，但不会把 provenance 改成 user-created，也不会删除 generation operation 或原始 citation。
-- source link 不保存正文全文；block content 是用户/AI artifact，不是 source replacement。
+- Phase 9B 不保存 HTML、script、image、attachment 或 rich-text AST；UI 以纯文本安全渲染。
+- draft note 内可增加、编辑、删除和重排 blocks，但必须保留至少一个 block，所有更新在一个 transaction 内保持 position/size invariant。
+- confirmed、rejected、archived note 的 blocks 均只读。用户要改 confirmed content，必须创建一条新的 user note；9B 不提供隐式 revision/reopen。
+- 用户编辑 AI draft 后，note `user_edited=1`；不会改写 block/note provenance、operation history 或原有 valid provenance link。
 
-### 4.3 Note–module 关系
+### 5.3 Note–module 组织关系
 
-- `knowledge_modules` 继续使用 9A 的 `active/archived` 生命周期，不新增 `draft`、`confirmed` 或 `stale` module 状态，不改变已有 9A 表的既有语义。
-- S2 新增 note–module link（建议独立表），一条 link 只能连接同 project 的一个 note 和一个 module；同一 pair 不重复。
-- draft note 可以关联 active module；confirmed note 关联的 module 可以后来 archive，历史 link 保留并返回 module archived warning。
-- 新增 link 不能指向 archived module；删除 link 只删除组织关系，不删除 note、module、block、source link 或 progress。
-- AI `generate_note` 不直接创建、修改或 archive knowledge module，不生成“已确认知识点”。用户必须显式创建/选择 module 并关联 note。若未来需要 AI module suggestion，必须另立 operation/output contract，不属于 9B-1 的生成落库范围。
+- `knowledge_modules` 保持 9A 的 `active|archived` lifecycle，不新增 module draft/confirmed/stale 状态。
+- note-module link 只能连接同 project 的 note 与 module；同 pair 唯一；link 仅表达组织关系，不复制 module source links。
+- draft note 可新增/移除 active module link。新建 archived module link 拒绝。
+- confirmed/rejected/archived note 的 module links 只读；module 后续 archive 时既有 link 保留，并在 note detail 返回 archived-module warning。
+- `generate_note` 不得自动 create/update/archive module，不得生成“confirmed module”。用户必须显式创建/选择 module 再组织 note。
 
-### 4.4 Note source link 和 citation
+### 5.4 Note block source link
 
-建议新增独立 `note_block_source_links` 表，不能把 9A 的 `module_source_links` 直接改成多态 owner 表。最小语义字段：
+9B-2 应新增独立 note block source link 结构；禁止改造 9A link 成为多态表。最小语义：
 
 ```text
 id, project_id, note_id, note_block_id,
@@ -260,17 +258,17 @@ material_id, revision_id, extraction_id, chunk_id, span_id,
 citation_key, status, created_at, updated_at
 ```
 
-约束：
+字段规则：
 
-1. `note_id`、`note_block_id` 必须同属当前 project 和同一 note；source material 也必须属于当前 project。
-2. `material_id`、`revision_id`、`extraction_id`、`chunk_id`、`span_id`、`citation_key` 是 source identity/定位 metadata；不得保存 `stored_path`、原文件内容或未受限正文副本。
-3. `citation_key` 如果存在，必须来自当前 `assemble_context()` 或 retrieval 结果并通过 `validate_citation_key()`；客户端不能仅凭字符串建立 valid link。
-4. 一个 block 可以关联多个不同 citation；同一 block/citation pair 不重复。不同 block 可以引用同一 chunk/citation，但各自 link 独立保存。
-5. user-created note 的 block 可以零 source link；AI-generated note 的每个 block 至少一个 valid link 才可创建成功/确认。
-6. source link status 由服务端计算，客户端提交的 status 一律忽略或拒绝；初始落库只能是 `valid`。
-7. source link 不保存 quote。UI/API 需要显示引用内容时，使用当前 citation/source contract 受限读取；source unavailable 时只显示安全状态和稳定 identity，不伪造材料名称、正文或可点击定位。
+1. `note_id` / `note_block_id` 的 ownership、同 project relation 由 FK/domain transaction 强制。
+2. `material_id` 等 source identity 应保留为 opaque TEXT identity，**不对 material/revision/extraction/chunk 建会在 purge 时清空 identity 的 FK**。这是保留 `source_unavailable` tombstone 的刻意选择；其 valid relation 必须由 domain 逐次验证。
+3. 不保存 `stored_path`、原始二进制、source full text、未验证 quote 或 material display name。note block content 是 user/AI artifact，不是 source copy。
+4. 创建 link 的 citation key 必须来自本次 `assemble_context()` / retrieval result，且经 `validate_citation_key()` 与 source identity 二次验证；客户端的 status 一律忽略/拒绝。
+5. 同一 `(note_block_id, citation_key)` 不重复；citation key 不存在、跨 project、跨 current revision、chunk/span不一致均拒绝且不落库。
+6. user note block 可有零 links；ai-generated note 每个 block 必须至少一 valid link，且确认时必须再次满足该条件。
+7. link status 只能由服务端计算为 `valid`、`source_deleted`、`source_unavailable` 或 `stale`；不是客户端可写 note state。
 
-### 4.5 S2 Note 状态机
+### 5.5 S2 状态机
 
 ```text
 user-created:
@@ -278,318 +276,205 @@ user-created:
                  └────────────→ archived
 
 ai-generated:
-  generation_running → draft → confirmed → archived
-                         ├────→ rejected (rejected draft is retained as history)
-                         └────→ archived
+  operation running → draft → confirmed → archived
+                          ├──→ rejected → archived
+                          └──→ archived
+provider/retrieval/validation failure before persistence:
+  operation failed; no note/block/source-link artifact
 ```
 
-正式状态集合为 `draft`、`confirmed`、`rejected`、`archived`。`rejected` 只适用于曾经持久化的 AI-generated draft；它是不可编辑的历史 artifact，不是可确认或可用的 note。Provider 在 note 持久化前失败时不创建 note artifact，只保留 `ai_operations.status='failed'`；只有已经写入的 draft 被用户显式 reject 后才进入 `rejected`。user-created note 不进入 `rejected` 状态。retry 永远创建新的 note draft，不复用或覆盖 rejected artifact。
-
-合法操作：
-
-- user draft：编辑 title/block、排序、添加/删除 source link、关联/取消 module、confirm、archive；
-- AI draft：在 source/citation 验证通过后允许用户编辑、关联 module、confirm、reject、archive；
-- confirmed：只读，可显式 archive；不能 patch、reopen 或被新 generation 覆盖；
-- archived：只读终态；不可恢复到 draft/confirmed；
-- rejected：只读历史 draft，不可 confirm；可 archive；retry 创建新 note draft，不复用或覆盖旧 note。
-
-确认规则：
-
-1. user-created note 可以无 source，内容非空即可 confirm；界面必须明确“用户笔记/无已验证来源”，不得把它显示为 AI 事实。
-2. ai-generated note 每个 block 至少需要一个当前 `valid` source link；任一 required link 为 stale/source_deleted/source_unavailable 或不存在时，confirm 拒绝。
-3. 已确认 AI note 后 source 被删除、purged 或变 stale，不回滚 note status，不删除内容，不提升 link 状态；detail 显示 warning。以后若用户要编辑，9B 不提供把 confirmed note 改回 draft 的 API。
-4. 重新生成永远创建新 note draft；不得静默覆盖 user-edited、confirmed、archived 或 rejected artifact。
-
-### 4.6 AI note generation contract
-
-Phase 9B 只允许 deterministic fake provider 的可选 S2 note generation；真实网络 Provider generation 不属于本 Phase completed evidence。
-
-- 新 operation type：`generate_note`。不复用当前仅支持 card/exercise 的 artifact persistence；9B-3/9B-4 必须实现 note-specific atomic persistence。
-- operation 必须记录 project、material scope、source revision identity、retrieval policy、prompt version、provider/model、request ID/usage/latency、status、error code 和 output note ID；不保存 raw prompt、raw provider response 或 secret。
-- 输入必须是显式的 active material scope，至少一个 material，且已建立 current ready indexing；允许 lexical/vector/hybrid 但必须复用现有 retrieval/context/citation contract。多 material generation 的每个 block 必须保留对应 citation identity。
-- Provider 输出必须在内存中通过固定结构化 schema 验证：title、ordered blocks、block_kind、content、citation keys；未知字段、越界长度、空 blocks、伪造 citation、跨 revision citation 都拒绝。
-- operation 状态沿用 `queued/running/succeeded/failed/cancelled/stale` 语义，但 9B 不实现 queued worker、cancel 或后台 stale scanner；同步请求只使用 running→succeeded/failed，失败后保留安全审计。
-- `Idempotency-Key` 是显式请求 contract：同 key+同 fingerprint 的 succeeded 请求 replay 同一 note response；running 返回 conflict；failed key 可重试并创建新 operation；同 key+不同 fingerprint 拒绝。无 key 的相同请求不视为重复。
-- Provider 未配置、retrieval empty/not ready、timeout、rate-limit、malformed/schema/citation failure 不能留下半成品 note；operation 保留稳定 failed code，重试由用户显式触发。
-- Provider I/O 不得持有 SQLite 长写事务：先创建 operation/必要 retrieval metadata 并 commit，再调用 provider，最后在单独事务中验证 source/citation 并原子写 note、blocks、links、operation success。
-
-## 5. Source lifecycle 正式映射
-
-### 5.1 Note block source link 状态
-
-source link status 只能由实际 source identity 计算：
-
-| 实际条件 | status | 可定位/可作为新确认来源 |
+| Current note | Allowed action | Result / protection |
 |---|---|---|
-| material active；revision current；chunk ready；chunk/material/extraction/span/citation identity 一致 | `valid` | 可定位；可用于 AI draft confirm |
-| material soft-deleted | `source_deleted` | 不可定位；不可用于新 AI confirm |
-| material purged 或 identity 已不存在 | `source_unavailable` | 不可定位；不可用于新 AI confirm |
-| material active 但 revision 非 current、chunk stale/missing/not ready、span/citation 不一致 | `stale` | 不可定位；不可用于新 AI confirm |
-| 客户端提交不存在/伪造 relation | reject，不落库 | 否 |
+| user draft | edit blocks/title, link active module, add/remove source link, confirm, archive | any user edit sets `user_edited=1` |
+| AI draft | same draft edits, confirm, reject, archive | original provenance/operation retained; edits never change it to user-created |
+| confirmed | archive, read/export | no ordinary patch, reject, reopen or regeneration overwrite |
+| rejected AI draft | read/export, archive | no edit/confirm/retry-in-place; retry creates new draft |
+| archived | read/export | terminal; no restore/reopen in 9B |
 
-### 5.2 生命周期操作
+Confirm rules:
 
-- **delete**：note/module/plan artifact 不删除；相关 note block links 更新为 `source_deleted`，已确认 note 保留内容并显示 warning。
-- **restore**：只恢复 material lifecycle；note link 不因 startup/read/restore 自动变 `valid`。必须调用显式 source refresh/read validation；若 source identity 已恢复且 current/ready 一致，显式刷新可变回 `valid`。
-- **purge**：note、blocks、module link、source link、operation history 和用户内容保留；source link 固定为 `source_unavailable`。不得恢复材料名称、正文、stored_path 或 clickable citation。数据库外键清理不能让 link 被误解为 valid；实现必须保留 status 或等价 unavailable tombstone 语义。
-- **new extraction/new revision**：旧 link 变 `stale`，除非 link 指向的新 current identity 是用户显式重新绑定的结果；不自动把旧 note source link 改写到新 revision。
-- **chunk re-index**：原 chunk stale/deleted 或 identity 不一致时 link 变 `stale`；新 chunk 必须通过用户显式 source relink/refresh contract 重新绑定。
-- **module archive**：note/module link 保留并显示 archived module；不能删除 note 或 source link。新 note 不能关联 archived module。
-- **plan/item lifecycle**：S1 allocations 服从 plan/item 读写保护；S2 note 不因 plan archive、item complete 或 progress event 被删除、重生成或改写。
+- user draft: nonempty title and at least one nonempty block; source is optional, but source-free display/export retains user-created/provenance warning.
+- AI draft: every block has at least one **currently valid** source link; stale/deleted/unavailable/missing required link rejects confirm.
+- Confirm is explicit and idempotent only if already confirmed state is not being silently re-applied; API must return stable invalid-state semantics rather than create another transition/history.
+- A later source lifecycle degradation does not revert confirmed/rejected/archived note status or erase user/AI content; it only adds warning/status to links.
 
-### 5.3 Active 对象与 unavailable source
+## 6. S2 fake-provider generation contract
 
-- active study plan 允许 source warning；S1 rhythm 不因 source unavailable 禁止设置或读取。
-- confirmed note 允许在后来 source unavailable 的情况下继续存在，内容和状态保留，detail 返回 warning。
-- AI draft note 在 confirm 时不允许 required source unavailable/stale；user-created note 可以无 source，但必须保持 provenance 和 UI 语义。
-- source unavailable 不会阻止应用启动、普通 note 读取、计划读取或 backup/restore；它只限制新 citation-dependent 操作。
+### 6.1 Scope and operation
 
-## 6. 时间、时区和输入边界
+- New `ai_operations.operation_type` is `generate_note`; it requires note-specific persistence, not Phase 8 card/exercise persistence reuse.
+- Only deterministic fake provider belongs to Phase 9B acceptance. A configured real network provider is not sufficient evidence and must not be claimed as 9B real-pass.
+- One generation request has exactly **one active, same-project, explicitly indexed material**. This deliberately matches the already tested Phase 8 generation scope. Multi-material generation is deferred; manually authored notes can cite multiple materials through blocks.
+- Request includes topic, material ID, optional explicit current source revision, retrieval mode, fallback policy and an optional `Idempotency-Key`; it never accepts project ID, source status, stored path, provider metadata or raw prompt.
+- The operation records safe project/material/source-revision/retrieval-policy/prompt-version/provider-model/request/usage/latency/status/error/output-note metadata. It must not persist raw prompt, raw provider response, API key or source full text beyond note block artifact content.
 
-### 6.1 时间格式
+### 6.2 Structured output and transaction boundary
 
-- 所有系统审计时间 `created_at/updated_at/confirmed_at/...` 保存 timezone-aware UTC ISO-8601，由服务端生成。
-- S1 业务安排日期只接受严格 `YYYY-MM-DD` local date；不接受 datetime、Unix timestamp、任意 offset 或模糊自然语言日期。
-- timezone 只接受 Python `zoneinfo.ZoneInfo` 可加载的 IANA name；不接受 `CST`、`GMT+8` 等有歧义缩写。`UTC` 是有效值。
-- 解析、分桶和错误结果不能依赖宿主机本地 timezone；测试必须固定多个 timezone，至少覆盖 `UTC` 和一个非 UTC IANA zone。
-
-### 6.2 输入边界
-
-以下语义由 domain contract 冻结，具体 HTTP status 由 9B-6 API contract 遵循现有 400/404/409/500 风格：
-
-- title 必须是字符串、去空白后非空、最大 400；description/content/block text 使用服务端固定上限，空内容按资源规则拒绝；
-- `cadence` 只接受 `daily|weekly`；`target_minutes` 为整数 `0..10080`；`planned_minutes` 为整数 `1..1440`；
-- allocation total 超过单 item 或单 period 上限拒绝；不静默截断、拆分、移动；
-- local date、timezone、position、ID、enum、module/note/source ownership 均由服务端验证；
-- 客户端不能提交 `project_id` 作为 scope 选择、source status、stored path、provider metadata 或 operation status；
-- note source citation 必须服务端重新验证，不能信任客户端 quote、material name 或 status；
-- malformed JSON、未知状态、过长 idempotency key、重复/冲突 idempotency key 使用稳定安全错误，不返回 SQLite/Provider 原文。
-
-## 7. 事务、不变量与数据库/领域责任
-
-### 7.1 SQLite/schema 可表达的约束
-
-9B migration 至少应表达：
-
-- project/plan/item/note/block/module 的 foreign key；
-- note status/provenance、block kind、rhythm cadence、source link status 的 CHECK；
-- timezone/date 作为 TEXT 的基础非空约束（IANA/date 语义由 domain 校验）；
-- non-negative position、positive planned minutes；
-- `(plan_id)` rhythm settings 唯一；`(note_id, module_id)` link 唯一；`(note_id, position)` block 唯一；`(item_id, local_date)` allocation 唯一；
-- source link 的 owner/link identity 必填边界和合适索引；
-- AI operation/note generation 的 FK 和 project scope 关系（无法完全由 SQLite 证明的部分由 domain 校验）。
-
-不得用 migration DDL 假定 SQLite CHECK 可以表达跨行 current revision、同 project 或 DAG 规则。
-
-### 7.2 Repository/domain transaction 必须表达
-
-以下规则不能只依赖数据库，必须在 repository/domain 事务中验证并测试：
-
-1. plan/item/rhythm allocation 的同 project、同 plan 关系；
-2. cadence/timezone/local date/workload 解析和所有上限；
-3. archived/completed plan/item 的写保护；
-4. summary 的确定性分桶、unassigned、archived exclusion 和 progress 联动；
-5. note/block/module 同 project 关系和 note 至少一个 block；
-6. note state transition、AI/user provenance、用户编辑保护、confirmed/rejected/archived terminal semantics；
-7. source revision/chunk/span/citation 的 current/ready/active identity 验证；
-8. source lifecycle refresh 和 unavailable tombstone，不提升 stale/unavailable；
-9. AI structured output、citation revalidation、operation idempotency、failed retry 和原子 note persistence；
-10. 导出只读受控 artifact，不暴露路径、secret、raw provider 或未验证 source text；
-11. 所有失败在事务中 rollback，不留下半个 note、block、link、allocation 或错误的 progress projection。
-
-### 7.3 备份/恢复 non-repair 不变量
-
-backup、verify、restore、startup 和普通 read：
-
-- 必须保留 schema version、migration history、note/block/module links、rhythm settings/allocations、operation status、draft/confirmed/archived/rejected 和 source link status；
-- 不得创建默认 rhythm、note、block、citation、progress event 或 AI operation；
-- 不得调用 Provider、重新检索、重建 chunk/FTS/embedding、自动 relink source 或自动生成 note；
-- 不得把 `stale`、`source_deleted`、`source_unavailable` 提升成 `valid`；
-- restore 只能到不存在或空目标目录，保持已有 operator backup/restore contract；
-- manifest、日志和响应不得泄露 live data root、stored_path、secret、raw exception、raw Provider output 或完整 source text。
-
-## 8. 稳定错误码草案（9B-1 冻结语义）
-
-以下错误码是 9B 域/API 的稳定语义集合；9B-6 可以将同一语义映射到现有 HTTP status，但不得返回原始异常文本：
-
-### S1
-
-- `study_rhythm_not_found`
-- `study_rhythm_not_configured`
-- `study_rhythm_invalid_payload`
-- `study_rhythm_invalid_cadence`
-- `study_rhythm_invalid_timezone`
-- `study_rhythm_invalid_date`
-- `study_rhythm_target_out_of_range`
-- `study_rhythm_allocation_not_found`
-- `study_rhythm_allocation_invalid`
-- `study_rhythm_allocation_limit_exceeded`
-- `study_rhythm_allocation_duplicate`
-- `study_rhythm_edit_not_allowed`
-- `study_rhythm_plan_not_found`
-- `study_rhythm_item_not_found`
-- `study_rhythm_summary_failed`
-- `study_rhythm_persist_failed`
-
-### S2 note/module
-
-- `study_note_not_found`
-- `study_note_invalid_payload`
-- `study_note_empty`
-- `study_note_invalid_state`
-- `study_note_edit_not_allowed`
-- `study_note_confirm_required`
-- `study_note_confirm_source_required`
-- `study_note_confirm_source_invalid`
-- `study_note_module_invalid`
-- `study_note_module_archived`
-- `study_note_module_link_duplicate`
-- `study_note_block_not_found`
-- `study_note_block_invalid`
-- `study_note_block_edit_not_allowed`
-- `study_note_source_not_found`
-- `study_note_source_invalid`
-- `study_note_source_deleted`
-- `study_note_source_unavailable`
-- `study_note_source_stale`
-- `study_note_export_failed`
-
-### AI generation
-
-- `study_note_generation_invalid_request`
-- `study_note_generation_not_ready`
-- `study_note_generation_empty`
-- `study_note_generation_in_progress`
-- `study_note_generation_idempotency_mismatch`
-- `study_note_generation_stale_source`
-- `study_note_generation_schema_invalid`
-- `study_note_generation_citation_invalid`
-- `study_note_generation_failed`
-- `study_note_provider_not_configured`
-- `study_note_provider_timeout`
-- `study_note_provider_unavailable`
-- `study_note_operation_not_found`
-- `study_note_operation_stale`
-
-`source_deleted/source_unavailable/source_stale` 表示 source 当前状态；创建/确认路径可将其作为 conflict 返回。普通读取不得为了显示错误而泄露 source text/path。
-
-## 9. API resource 草案
-
-以下只冻结资源边界，9B-6 负责确定最终 method/path/request/response/status：
-
-### S1 resources
-
-- `GET/PUT /api/study/plans/{plan_id}/rhythm`：读取或显式保存一个 plan 的 rhythm settings；不自动创建默认值。
-- `GET /api/study/plans/{plan_id}/rhythm/summary`：读取 settings、period buckets、allocation coverage 和 progress summary；只读计算。
-- `POST /api/study/plans/{plan_id}/rhythm/allocations`：创建一个 item/date/minutes allocation。
-- `PATCH /api/study/plans/{plan_id}/rhythm/allocations/{allocation_id}`：移动或修改未保护 allocation。
-- `DELETE /api/study/plans/{plan_id}/rhythm/allocations/{allocation_id}`：删除未保护 allocation；不影响 progress。
-- `GET /api/study/plans/{plan_id}/rhythm/export?format=json`：导出受控 rhythm settings、allocations 和 summary；不输出服务器路径或 source 正文。
-
-### S2 resources
-
-- `GET/POST /api/study/notes`：按 project 列表或创建 user draft note；客户端不提交 project_id。
-- `GET/PATCH /api/study/notes/{note_id}`：读取或编辑 draft note；confirmed/archived 按 edit protection 拒绝 patch。
-- `POST /api/study/notes/{note_id}/confirm|reject|archive`：显式状态转移。
-- `POST/PATCH/DELETE /api/study/notes/{note_id}/blocks[/{block_id}]`：draft note 内的 block 操作；顺序由 position 受约束。
-- `POST/DELETE /api/study/notes/{note_id}/modules/{module_id}`：note/module 组织关系；不能新关联 archived module。
-- `POST/DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources[/{source_link_id}]`：显式创建/移除经过服务端验证的 source link。
-- `POST /api/study/notes/generate`：显式 fake-provider `generate_note` draft；使用 `Idempotency-Key`，不覆盖现有 note。
-- `POST /api/study/notes/sources/refresh` 或等价显式 refresh resource：重算 source link status，不生成/修改 note content。
-- `GET /api/study/notes/{note_id}/export?format=markdown|json`：受控导出 user/AI note、blocks、module IDs/status 和 citation status；unavailable source 不恢复名称、正文或 link。
-
-API 共用规则：
-
-- 所有 scope 由服务端 `AppConfig.project_id` 注入；不接受任意 project/user scope；
-- 响应可以返回 note content（它是用户 artifact），但不得返回 stored_path、SQL、secret、raw Provider response、原始异常或未验证 quote；
-- source detail 只返回安全材料标识/定位 metadata 和 status，purge 后 material display name 必须为 null 或不返回；
-- export 使用安全 content disposition、大小限制和失败后可 retry；不把数据库 raw row 直接作为公开 API contract；
-- 真实 Provider、scheduler、worker、cancel、multi-user endpoints 不属于 9B API。
-
-## 10. 导出契约
-
-### 10.1 Note Markdown
-
-Markdown export 包含：note title、note status/provenance、按 position 排列的 block kind/content、module title（若安全可用）和每个 block 的 citation status/opaque identity。它不包含：stored_path、原文件二进制、raw prompt/response、secret、SQL、traceback、purged material name 或 source full text 的隐式复制。
-
-对 `valid` citation，导出可以包含受限且由当前 source contract 返回的 quote/定位；对 `source_deleted`、`source_unavailable`、`stale` 只输出状态和安全 identity，不伪造 quote。导出失败返回稳定 `study_note_export_failed`，不生成部分成功文件。
-
-### 10.2 Note JSON
-
-JSON export 是版本化、受控的 artifact representation，至少包含 `format_version`、note metadata、blocks、module relation metadata、source link status、generation operation safe metadata 和导出时间。不得包含 raw provider data、API key、stored path 或未验证正文 source copy。
-
-### 10.3 Rhythm JSON
-
-Rhythm JSON 只包含 format version、plan safe identity/title、settings、local-date allocations、derived summary 和 source warning count。它不包含材料正文、stored_path、Provider response 或系统内部 SQL。9B 不实现 CSV、ICS、calendar invite 或 scheduler import。
-
-## 11. 测试驱动的验收契约
-
-后续任务必须覆盖以下最小事实，而不是只测试 happy path：
-
-### Gate B：契约
-
-- S1/S2 对象、关系、状态、输入、source/citation、export、error 和 non-goals 无歧义；
-- 9A plan/item/progress/module 既有语义没有被覆盖；
-- 所有跨行约束标明 domain transaction enforcement。
-
-### S1 domain/API/UI
-
-- daily/weekly、UTC/非 UTC timezone、period boundary、invalid date/timezone、workload limit；
-- item split、move、duplicate allocation、unassigned、archived/completed protection；
-- progress event 不被 allocation 重复产生；summary 可从事实重算；
-- reload、500/retry、narrow/keyboard、安全错误和 JSON export。
-
-### S2 domain/API/UI
-
-- user note 无 source 可创建/确认并保留 provenance warning；AI note 每个 block citation required；
-- note/block/module cross-project rejection、duplicate link、module archive boundary；
-- draft edit/confirm/reject/archive、confirmed protection、retry 新建不覆盖旧 artifact；
-- malformed output、empty retrieval、provider not configured、timeout、伪造 citation、idempotency replay/conflict/failed retry；
-- delete/restore/purge/new revision/re-index 的 valid/source_deleted/source_unavailable/stale；
-- note Markdown/JSON export、citation unavailable privacy、reload、narrow/keyboard/failure。
-
-### Restore/non-repair
-
-- backup→verify→新空目录 restore 保留 notes/blocks/module links/rhythm allocations/operations/status；
-- restore/startup/read/verify 不创建、修复、重排、重新生成或提升 source；
-- schema history、`PRAGMA user_version`、integrity/foreign key 和 manifest version 一致。
-
-## 12. Deferred decisions（明确延期）
-
-以下不属于 9B-1 冻结的 9B 最小契约，后续若需要必须单独变更契约并增加测试：
-
-1. custom recurrence、节假日、例外日、提醒、calendar sync、具体时段和 DST 小时级排程；
-2. 实际学习时长、session timer、pause/resume timer、自动完成或按时间更新 progress；
-3. note revision history、diff、merge、协同编辑和冲突解决；
-4. 富文本 HTML、图片/附件、音频、导图、知识图谱和 block 类型扩展；
-5. AI 自动创建/修改 knowledge module、AI module suggestion 持久化和自动 re-plan；
-6. 真实 Provider generation、流式输出、worker、cancel、后台 stale scan；
-7. 人工审核、教师/家长角色、quality gate 和多用户权限；
-8. 跨 project note/module/source、共享 artifact 和云同步；
-9. CSV/ICS/PDF/Notion 等额外导出格式；
-10. 外部 vector DB、自动历史材料 indexing 和规模化容量方案。
-
-## 13. 9B-1 完成结论与准确状态
-
-### 已冻结
-
-- S1 使用已有 Phase 9A plan/item/progress，不创建第二套计划/任务/进度事实源；
-- S1 采用 `daily|weekly` cadence、IANA timezone、local-date allocation 和确定性分钟上限；不支持 custom recurrence/scheduler；
-- S2 新增 note/note block 语义；knowledge module 保持 9A active/archived 元数据语义，通过独立 many-to-many 组织 link 关联 note；
-- citation/source provenance 绑定 note block；user note 可无 source，AI note 必须 citation-safe；
-- note 使用 draft/confirmed/rejected/archived；Provider failed 不创建半成品 note，用户 reject 的 AI draft 保留为不可编辑历史；confirmed source 后续 unavailable 时保留内容并显示 warning；
-- source lifecycle 映射为 valid/source_deleted/source_unavailable/stale，restore/read/backup/verify 不自动 repair 或提升状态；
-- operation、idempotency、provider raw data、导出、project scope、隐私和 backup/restore non-repair 边界；
-- S3/S4/S5、S6/S7、Phase 10 和真实 Provider acceptance 明确排除。
-
-### 准确状态措辞
-
-> Phase 9B-1 已完成 `planned/contract-frozen`：S1/S2 的实体关系、cadence/timezone/workload、note/block/module/citation 关系、状态转移、不变量、source lifecycle、AI fake-provider draft、错误码、API resource、导出和 backup/restore non-repair 边界已冻结。尚未实现 Phase 9B schema、repository、API、UI 或正式用户路径；不代表 Phase 9B completed 或 real-pass。
-
-下一任务：
+The provider output is only an in-memory structured payload:
 
 ```text
-9B-2：Migration 与 schema
+{ title, blocks: [{ block_kind, content, citation_keys: [...] }] }
 ```
 
-9B-2 必须依据本文实现连续 v10（或当前源码确认的下一版本）migration，并在发现契约无法安全表达时先提出契约修订，不得隐式改写本文语义。
+- Reject unknown fields, missing/empty blocks, invalid block kind, oversized title/content, forged/duplicate citation, citation absent from current context, or citation whose validated revision differs from request source revision.
+- Do not hold a SQLite long write transaction during provider I/O: create running operation and retrieval metadata then commit; call provider; then revalidate source/citations and atomically write note + blocks + links + succeeded operation in a second transaction.
+- Provider not configured, retrieval not ready/empty, timeout/unavailable, malformed output, stale source, citation mismatch or persistence failure must leave **no** partial note/block/link. A failed operation with stable safe error is retained.
+
+### 6.3 Idempotency and retry
+
+| Existing same project Idempotency-Key | Required behavior |
+|---|---|
+| same fingerprint, succeeded `generate_note` | replay the same persisted note response; no provider I/O or duplicate artifact |
+| same fingerprint, running | conflict/in-progress; no second operation |
+| same fingerprint, failed/stale | explicit retry clears/releases old key and creates a new operation/new draft; no overwrite |
+| different fingerprint | idempotency mismatch conflict |
+| no key | request is not automatically deduplicated |
+
+A retry always creates a new AI draft and new operation. It never replaces a user-edited, confirmed, rejected or archived note.
+
+## 7. Source lifecycle mapping
+
+### 7.1 Canonical link status
+
+| Actual source condition | note block link status | New AI confirm / safe location |
+|---|---|---|
+| active material; stored identity matches current revision, ready chunk, extraction/span and validated citation | `valid` | permitted |
+| material soft-deleted | `source_deleted` | prohibited |
+| material purged or source identity no longer exists | `source_unavailable` | prohibited |
+| active material but non-current revision, missing/not-ready/stale chunk, identity/span/citation mismatch | `stale` | prohibited |
+| client sends nonexistent/forged/cross-project relation at create | reject; no row | prohibited |
+
+### 7.2 Lifecycle operations
+
+| Event | Required outcome |
+|---|---|
+| material delete | relevant note links become `source_deleted`; note/module/rhythm/progress/user content remains |
+| material restore | restores material only; note link must **not** auto-promote. Explicit note-source refresh may become `valid` only after full identity/current/ready validation |
+| material purge | preserve note, blocks, module links, operation and opaque source identities; links become `source_unavailable`; never return material name, quote, full text/path or click target |
+| new extraction/current revision | old link becomes `stale`; no automatic rewrite to new revision |
+| chunk re-index | old missing/non-ready/mismatched identity becomes `stale`; explicit user relink or new generated draft is required |
+| module archive | existing note-module link remains with warning; no new association to archived module |
+| read/startup/backup/verify/restore | no refresh, repair, relink, re-index, generation, status promotion, default rhythm creation or progress write |
+
+Implementation rule: delete/purge paths may eagerly downgrade links inside their material lifecycle transaction; restore never eagerly promotes. The explicit refresh operation is the only positive revalidation path. It must not change note block content, module relation, note status, allocation or progress event.
+
+### 7.3 Active objects with unavailable source
+
+- active/paused 9A plan and S1 rhythm remain readable and manually editable with source warnings; source unavailable does not block existing plan/progress history.
+- confirmed user or AI note remains readable/exportable after later source degradation; source warning is visible and status is not silently changed.
+- a new AI note draft cannot be confirmed with non-valid required source. A user note may be source-free but must retain its provenance warning.
+- source unavailable never blocks app startup, ordinary note read, plan read, backup/restore or verify; it only restricts new citation-dependent create/confirm/relink operations.
+
+## 8. Database and domain-transaction responsibilities
+
+### 8.1 9B-2 schema must express
+
+- note/block/status/provenance/block-kind/cadence/link-status CHECK constraints;
+- note/block/module/plan/item/project ownership FKs where deletion must delete the owned user artifact safely;
+- `rhythm_settings.plan_id` unique; `note_module_links(note_id,module_id)` unique; `note_blocks(note_id,position)` unique; `rhythm_allocations(item_id,local_date)` unique; `note_block_source_links(note_block_id,citation_key)` unique;
+- nonnegative position, positive planned minutes, basic required fields and appropriate read indexes;
+- note source tombstone identity fields as non-FK opaque text, as specified in §5.4;
+- any `generation_operation_id` FK that does not erase note provenance when operation history is retained.
+
+SQLite CHECK/FK cannot prove current revision, same-project external identities, all allocation totals, note nonempty aggregate, item ownership, source lifecycle, or DAG semantics; migrations must not pretend otherwise.
+
+### 8.2 9B-3 domain transactions must enforce
+
+1. plan/item/rhythm settings/allocation same-project/same-plan relation and state protection;
+2. strict timezone/date parsing, cadence enum, workload bounds and aggregate item/period limits;
+3. deterministic summary grouping, unassigned/archived exclusion and progress linkage without writing events;
+4. note/block/module same-project ownership, position/content aggregate and at-least-one-block invariant;
+5. note transition/provenance/user-edit protection and terminal state behavior;
+6. active module association validation and archived-module historical warning;
+7. active/current/ready revision/chunk/span/citation identity validation and opaque unavailable tombstone preservation;
+8. explicit refresh without stale/unavailable promotion except after verified restored identity;
+9. fake-provider output validation, operation idempotency, retry, no long write transaction and atomic draft persistence;
+10. export privacy/size/failure contract; and
+11. rollback of every multi-row write so no half note, block, link, allocation, summary snapshot or erroneous progress projection remains.
+
+## 9. API resource and export draft
+
+This section freezes resource boundaries, not final HTTP method/status/Pydantic naming. 9B-6 must follow existing 400/404/409/500 safe error conventions and must not expose raw SQLite/provider exception details.
+
+### 9.1 S1 resources
+
+- `GET/PUT /api/study/plans/{plan_id}/rhythm`: explicit read/save settings; GET when absent returns frozen not-configured semantics and never creates default.
+- `GET /api/study/plans/{plan_id}/rhythm/summary`: read-only settings/buckets/coverage/progress/source warning summary.
+- `POST /api/study/plans/{plan_id}/rhythm/allocations`
+- `PATCH|DELETE /api/study/plans/{plan_id}/rhythm/allocations/{allocation_id}`
+- `GET /api/study/plans/{plan_id}/rhythm/export?format=json`
+
+### 9.2 S2 resources
+
+- `GET|POST /api/study/notes`: list/create user draft, server-injected project scope.
+- `GET|PATCH /api/study/notes/{note_id}`: draft-only edit.
+- `POST /api/study/notes/{note_id}/confirm|reject|archive`
+- `POST|PATCH|DELETE /api/study/notes/{note_id}/blocks[/{block_id}]`
+- `POST|DELETE /api/study/notes/{note_id}/modules/{module_id}`
+- `POST|DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources[/{source_link_id}]`
+- `POST /api/study/notes/generate`: deterministic fake-provider `generate_note`, explicit `Idempotency-Key`, no overwrite.
+- `POST /api/study/notes/sources/refresh` or equivalent explicit refresh resource.
+- `GET /api/study/notes/{note_id}/export?format=markdown|json`
+
+### 9.3 Controlled exports
+
+- **Note Markdown:** title/status/provenance, ordered block kind/content, safe module metadata, opaque citation identity and source status. Valid citation can include only source detail already safely returned by current source contract. Non-valid source outputs status/opaque identity only.
+- **Note JSON:** versioned `format_version`, note/block/module/link safe representation, safe generation operation metadata and export time. No raw provider data/secret/path/SQL/traceback/source full-text copy.
+- **Rhythm JSON:** versioned settings, plan safe identity/title, local-date allocations, derived summary/source warning. No source body/path/provider response. No CSV/ICS/calendar import in 9B.
+- All exports use the existing safe download/content-disposition and bounded-size pattern. A failure returns one stable error and no partial file.
+
+## 10. Stable error semantic set
+
+9B-6 assigns HTTP statuses but must retain these semantic distinctions and never return raw exception strings.
+
+| Area | Stable codes |
+|---|---|
+| rhythm | `study_rhythm_not_found`, `study_rhythm_not_configured`, `study_rhythm_invalid_payload`, `study_rhythm_invalid_cadence`, `study_rhythm_invalid_timezone`, `study_rhythm_invalid_date`, `study_rhythm_target_out_of_range`, `study_rhythm_allocation_not_found`, `study_rhythm_allocation_duplicate`, `study_rhythm_allocation_limit_exceeded`, `study_rhythm_edit_not_allowed`, `study_rhythm_plan_not_found`, `study_rhythm_item_not_found`, `study_rhythm_summary_failed`, `study_rhythm_persist_failed` |
+| note/block/module | `study_note_not_found`, `study_note_invalid_payload`, `study_note_empty`, `study_note_invalid_state`, `study_note_edit_not_allowed`, `study_note_confirm_source_required`, `study_note_confirm_source_invalid`, `study_note_module_invalid`, `study_note_module_archived`, `study_note_module_link_duplicate`, `study_note_block_not_found`, `study_note_block_invalid`, `study_note_block_edit_not_allowed`, `study_note_source_not_found`, `study_note_source_invalid`, `study_note_source_deleted`, `study_note_source_unavailable`, `study_note_source_stale`, `study_note_export_failed` |
+| generation | `study_note_generation_invalid_request`, `study_note_generation_not_ready`, `study_note_generation_empty`, `study_note_generation_in_progress`, `study_note_generation_idempotency_mismatch`, `study_note_generation_stale_source`, `study_note_generation_schema_invalid`, `study_note_generation_citation_invalid`, `study_note_generation_failed`, `study_note_provider_not_configured`, `study_note_provider_timeout`, `study_note_provider_unavailable`, `study_note_operation_not_found`, `study_note_operation_stale` |
+
+`source_deleted` / `source_unavailable` / `source_stale` are source facts, not permission to expose source data. Read responses can show safe status; create/confirm/relink may use their corresponding conflict semantics.
+
+## 11. Backup/restore non-repair contract
+
+Backup, verify, restore, startup and ordinary reads must preserve schema version/history and all 9B records/states, including draft/confirmed/rejected/archived notes, blocks, module links, source tombstones, rhythm settings/allocations and generation operation status.
+
+They must not:
+
+- create default rhythm/note/block/link/progress/operation;
+- call provider, retrieve, re-index/rebuild FTS/embedding, reorder blocks/allocations, relink source or regenerate note;
+- promote `stale`, `source_deleted` or `source_unavailable` to `valid`;
+- overwrite a live data root; restore remains only to a nonexistent/empty target under existing operator contract;
+- leak data root/stored path/secret/raw exception/raw provider output/full source text in manifest, logs or responses.
+
+9B-8 must extend restore acceptance rather than assuming the general SQLite snapshot is enough.
+
+## 12. Deferred decisions
+
+The following are explicitly outside this frozen minimum. They require a future contract change plus tests, not an implementation shortcut:
+
+1. custom recurrence, holiday/exception days, reminders, calendar sync, scheduled clock time and DST hour-level allocation;
+2. actual time tracking, timer pause/resume, automatic completion or automatic replan;
+3. note revisions, diff, merge, collaboration, conflicts or restoring archived/rejected notes;
+4. rich media/rich text, file attachments, graph/knowledge-map features;
+5. AI module suggestions or automatic module/plan changes;
+6. multi-material generation, real-provider note acceptance, streaming, worker/cancel/background stale scanning;
+7. teacher/parent approval, human review, roles/permissions, multi-user and cross-project sharing;
+8. CSV/ICS/PDF/Notion or other export formats;
+9. external vector database, automatic historical indexing or scale/capacity claims.
+
+## 13. Gate B acceptance and next task
+
+Gate B is satisfied by this document only when downstream reviewers can determine without guessing:
+
+- S1 object ownership, cadence, timezone/date, workload, allocation protection and summary calculation;
+- S2 note/block/module/provenance/source-link ownership and state transitions;
+- AI draft/operation/retry/failure boundaries; source lifecycle and tombstone behavior;
+- schema vs domain-transaction responsibilities; API/export/privacy/non-repair limits; and
+- explicit Phase 9C/9D/10 non-goals.
+
+**Accurate status:**
+
+> Phase 9B-1 is `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. No Phase 9B schema, repository/domain, API, UI or user path has been implemented; this is not Phase 9B completed or real-pass.
+
+Next task: **9B-2 Migration 与 schema**. It must start from current v9 and stop for a contract change if any required invariant cannot be represented safely.
