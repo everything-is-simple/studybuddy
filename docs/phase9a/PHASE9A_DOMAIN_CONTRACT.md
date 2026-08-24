@@ -424,8 +424,10 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 
 9A-2 不代表学习目标、知识模块、计划、计划项、依赖或进度的完整可用用户路径已经完成：API、UI、source lifecycle 的完整 API contract、9A artifact backup/restore lifecycle evidence 和 Chromium acceptance 尚未实现。当前 schema 为 v9；startup/read/backup/restore 不创建 plan data、不 repair source link、不生成内容。
 
-`Phase 9A-3 implemented/backend-pass`：repository/domain transaction、DAG cycle detection、append-only progress、状态投影、跨表/project 验证、用户编辑保护和 source lifecycle refresh 已通过 focused domain tests，并通过完整 backend regression。该状态不代表 API/UI 或 Phase 9A completed。
+`Phase 9A-3 implemented/backend-pass`：repository/domain transaction、DAG cycle detection、append-only progress、状态投影、跨表/project 验证、用户编辑保护和 source lifecycle refresh 已通过 focused domain tests，并通过完整 backend regression。
+
+`Phase 9A-4 implemented/backend-pass`：goal/module/plan/item/dependency/progress/source 的最小 API、project scope、稳定错误映射、malformed input、404/409 边界和隐私 contract 已通过 `backend/tests/test_phase9a_api.py` 与完整 backend regression。该状态不代表 UI、Chromium 或 Phase 9A completed。
 
 ### 下一步
 
-进入 9A-4：将已通过 repository/domain 测试的能力暴露为最小 API，保持稳定错误、输入边界、project scope 和隐私 contract；不实现完整 UI。
+进入 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace；继续复用现有 status/alert、busy guard、stale-response guard 和 safe DOM rendering，不扩展到 9B/9C/9D。

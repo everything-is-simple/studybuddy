@@ -1044,11 +1044,11 @@ def create_learning_goal(connection: sqlite3.Connection, *, project_id: str, tit
                          description: object = "") -> dict[str, object]:
     title_value = _study_text(title, code="study_goal_invalid_payload", maximum=STUDY_TEXT_MAX)
     description_value = _study_description(description, code="study_goal_invalid_payload")
-    if not _study_project_exists(connection, project_id):
-        raise ValueError("project_not_found")
     goal_id = f"{STUDY_GOAL_PREFIX}{uuid.uuid4().hex}"
     now = utc_now()
     with connection:
+        connection.execute("INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)",
+                           (project_id, "Default project", now))
         connection.execute(
             "INSERT INTO learning_goals (id,project_id,title,description,status,created_at,updated_at,archived_at) "
             "VALUES (?,?,?,?,?,?,?,NULL)",
@@ -1106,11 +1106,11 @@ def create_knowledge_module(connection: sqlite3.Connection, *, project_id: str, 
                             description: object = "") -> dict[str, object]:
     title_value = _study_text(title, code="study_module_invalid_payload", maximum=STUDY_TEXT_MAX)
     description_value = _study_description(description, code="study_module_invalid_payload")
-    if not _study_project_exists(connection, project_id):
-        raise ValueError("project_not_found")
     module_id = f"{STUDY_MODULE_PREFIX}{uuid.uuid4().hex}"
     now = utc_now()
     with connection:
+        connection.execute("INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)",
+                           (project_id, "Default project", now))
         connection.execute(
             "INSERT INTO knowledge_modules (id,project_id,title,description,status,created_at,updated_at,archived_at) "
             "VALUES (?,?,?,?,?,?,?,NULL)",
@@ -1301,6 +1301,8 @@ def transition_study_plan(connection: sqlite3.Connection, *, project_id: str, pl
         row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
         if row is None:
             raise ValueError("study_plan_not_found")
+        if target == "active" and row["status"] == "draft":
+            raise ValueError("study_plan_confirm_required")
         if target not in allowed.get(str(row["status"]), set()):
             raise ValueError("study_plan_invalid_state")
         if target == "active" and row["status"] != "confirmed":
