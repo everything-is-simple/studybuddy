@@ -83,6 +83,8 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "repository/domain transaction" in contract
     assert "API/UI" in contract
     assert "source lifecycle refresh" in contract
+    assert "9A-4 implemented/backend-pass" in contract
+    assert (ROOT / "backend" / "tests" / "test_phase9a_api.py").is_file()
     assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()
 
 
