@@ -184,7 +184,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 充分上下文、总规划 prompt、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`phase9a/`](phase9a/)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
 
-- [ ] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结。
+- [x] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结；初稿见 [`PHASE9A_DOMAIN_CONTRACT.md`](PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/audit-draft`，不代表领域能力实现。
 - [ ] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机。
 - [ ] 9A-2：通过连续 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 rollback/幂等测试。
 - [ ] 9A-3：实现 repository/domain 事务、DAG 依赖校验、append-only progress 和用户编辑保护。
