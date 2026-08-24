@@ -4,7 +4,7 @@ import hashlib
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from .adapters.file_parsers.models import ParseResult
@@ -1008,6 +1008,17 @@ STUDY_PLAN_STATUSES = {"draft", "confirmed", "active", "paused", "completed", "a
 STUDY_ITEM_STATUSES = {"pending", "in_progress", "completed", "skipped", "archived"}
 STUDY_PROGRESS_EVENTS = {"started", "completed", "skipped", "reopened"}
 STUDY_SOURCE_STATUSES = {"valid", "source_deleted", "source_unavailable", "stale"}
+RHYTHM_CADENCES = {"daily", "weekly"}
+RHYTHM_MAX_TARGET_MINUTES = 10080
+RHYTHM_MAX_ITEM_MINUTES = 10080
+RHYTHM_MAX_PERIOD_MINUTES = 10080
+RHYTHM_MAX_ALLOCATION_MINUTES = 1440
+NOTE_STATUSES = {"draft", "confirmed", "rejected", "archived"}
+NOTE_PROVENANCES = {"user_created", "ai_generated"}
+NOTE_BLOCK_KINDS = {"text", "heading", "bullet"}
+NOTE_MAX_TITLE = 400
+NOTE_MAX_BLOCK_CONTENT = 12000
+NOTE_MAX_CONTENT = 48000
 
 
 def _study_text(value: object, *, code: str, maximum: int, allow_empty: bool = False) -> str:
@@ -1025,6 +1036,50 @@ def _study_description(value: object, *, code: str = "study_plan_invalid_payload
 
 def _study_project_exists(connection: sqlite3.Connection, project_id: str) -> bool:
     return connection.execute("SELECT 1 FROM projects WHERE id = ?", (project_id,)).fetchone() is not None
+
+
+def _rhythm_date(value: object, *, code: str = "study_rhythm_invalid_date") -> str:
+    if not isinstance(value, str) or len(value) != 10:
+        raise ValueError(code)
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        raise ValueError(code) from None
+    if parsed.strftime("%Y-%m-%d") != value:
+        raise ValueError(code)
+    return value
+
+
+def _rhythm_timezone(value: object) -> str:
+    if not isinstance(value, str) or not value.strip() or value != value.strip():
+        raise ValueError("study_rhythm_invalid_timezone")
+    try:
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+        ZoneInfo(value)
+    except (TypeError, ValueError, ZoneInfoNotFoundError):
+        raise ValueError("study_rhythm_invalid_timezone") from None
+    # IANA names are required. ZoneInfo accepts a few aliases/posix names;
+    # reject the explicitly unsupported abbreviation/offset forms here.
+    if value != "UTC" and "/" not in value:
+        raise ValueError("study_rhythm_invalid_timezone")
+    return value
+
+
+def _rhythm_settings_row(connection: sqlite3.Connection, *, project_id: str,
+                         plan_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM rhythm_settings WHERE project_id=? AND plan_id=?", (project_id, plan_id)
+    ).fetchone()
+
+
+def _rhythm_plan_for_write(connection: sqlite3.Connection, *, project_id: str,
+                           plan_id: str) -> sqlite3.Row:
+    row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    if row is None:
+        raise ValueError("study_rhythm_plan_not_found")
+    if row["status"] in {"completed", "archived"}:
+        raise ValueError("study_rhythm_edit_not_allowed")
+    return row
 
 
 def _study_goal_row(connection: sqlite3.Connection, *, project_id: str, goal_id: str) -> sqlite3.Row | None:
@@ -1609,7 +1664,22 @@ def create_plan_item_source_link(connection: sqlite3.Connection, *, project_id: 
     return dict(connection.execute("SELECT * FROM plan_item_source_links WHERE id=?", (link_id,)).fetchone())
 
 
+def _refresh_note_source_links_for_material(connection: sqlite3.Connection, material_id: str) -> None:
+    rows = connection.execute(
+        "SELECT id,project_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key "
+        "FROM note_block_source_links WHERE material_id=?", (material_id,)
+    ).fetchall()
+    for row in rows:
+        material = connection.execute("SELECT project_id,deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
+        status = "source_unavailable" if material is None else "source_deleted" if material["deleted_at"] is not None else _study_source_status(
+            connection, project_id=row["project_id"], material_id=row["material_id"], revision_id=row["revision_id"],
+            extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"],
+            citation_key=row["citation_key"], strict=False)
+        connection.execute("UPDATE note_block_source_links SET status=?,updated_at=? WHERE id=?", (status, utc_now(), row["id"]))
+
+
 def _refresh_study_source_links_for_material(connection: sqlite3.Connection, material_id: str) -> None:
+    _refresh_note_source_links_for_material(connection, material_id)
     for table, owner in (("module_source_links", "module_id"), ("plan_item_source_links", "plan_item_id")):
         rows = connection.execute(
             f"SELECT id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key FROM {table} WHERE material_id=?", (material_id,)
@@ -1672,6 +1742,625 @@ def get_study_source_links(connection: sqlite3.Connection, *, project_id: str, p
         query = "SELECT * FROM plan_item_source_links WHERE project_id=? UNION SELECT * FROM module_source_links WHERE project_id=? ORDER BY created_at,id"
         params = (project_id, project_id)
     return [dict(row) for row in connection.execute(query, params).fetchall()]
+
+
+# Phase 9B domain transactions. These functions deliberately return safe dictionaries and
+# raise stable ValueError codes; callers own HTTP mapping and project injection.
+def get_rhythm_settings(connection: sqlite3.Connection, *, project_id: str, plan_id: str) -> dict[str, object] | None:
+    row = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+    return dict(row) if row is not None else None
+
+
+def save_rhythm_settings(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                         cadence: object, timezone_name: object, period_start: object,
+                         target_minutes: object) -> dict[str, object]:
+    if cadence not in RHYTHM_CADENCES:
+        raise ValueError("study_rhythm_invalid_cadence")
+    timezone_value = _rhythm_timezone(timezone_name)
+    period_value = _rhythm_date(period_start)
+    if (not isinstance(target_minutes, int) or isinstance(target_minutes, bool) or
+            not 0 <= target_minutes <= RHYTHM_MAX_TARGET_MINUTES):
+        raise ValueError("study_rhythm_target_out_of_range")
+    now = utc_now()
+    rhythm_id = f"rhythm_{uuid.uuid4().hex}"
+    with connection:
+        _rhythm_plan_for_write(connection, project_id=project_id, plan_id=plan_id)
+        existing = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+        if existing is None:
+            connection.execute(
+                "INSERT INTO rhythm_settings (id,project_id,plan_id,cadence,timezone,period_start,target_minutes,created_at,updated_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
+                (rhythm_id, project_id, plan_id, cadence, timezone_value, period_value, target_minutes, now, now),
+            )
+        else:
+            connection.execute(
+                "UPDATE rhythm_settings SET cadence=?,timezone=?,period_start=?,target_minutes=?,updated_at=? "
+                "WHERE id=? AND project_id=? AND plan_id=?",
+                (cadence, timezone_value, period_value, target_minutes, now, existing["id"], project_id, plan_id),
+            )
+    result = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+    if result is None:
+        raise ValueError("study_rhythm_persist_failed")
+    return dict(result)
+
+
+create_rhythm_settings = save_rhythm_settings
+update_rhythm_settings = save_rhythm_settings
+
+
+def _rhythm_allocation_row(connection: sqlite3.Connection, *, project_id: str,
+                           plan_id: str, allocation_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM rhythm_allocations WHERE id=? AND project_id=? AND plan_id=?",
+        (allocation_id, project_id, plan_id),
+    ).fetchone()
+
+
+def list_rhythm_allocations(connection: sqlite3.Connection, *, project_id: str,
+                            plan_id: str) -> list[dict[str, object]]:
+    return [dict(row) for row in connection.execute(
+        "SELECT * FROM rhythm_allocations WHERE project_id=? AND plan_id=? ORDER BY local_date,item_id,id",
+        (project_id, plan_id),
+    ).fetchall()]
+
+
+def _rhythm_period_index(settings: sqlite3.Row | dict[str, object], local_date: str) -> int:
+    delta = (date.fromisoformat(local_date) - date.fromisoformat(str(settings["period_start"]))).days
+    return delta if settings["cadence"] == "daily" else delta // 7
+
+
+def _rhythm_period_dates(settings: sqlite3.Row | dict[str, object], period_index: int) -> tuple[str, str]:
+    start = date.fromisoformat(str(settings["period_start"]))
+    first = start + timedelta(days=period_index if settings["cadence"] == "daily" else period_index * 7)
+    last = first + timedelta(days=0 if settings["cadence"] == "daily" else 6)
+    return first.isoformat(), last.isoformat()
+
+
+def _rhythm_validate_allocation_limits(connection: sqlite3.Connection, *, settings: sqlite3.Row,
+                                       item_id: str, local_date: str, planned_minutes: int,
+                                       allocation_id: str | None = None) -> None:
+    excluded = " AND id != ?" if allocation_id else ""
+    item_params: list[object] = [item_id]
+    if allocation_id:
+        item_params.append(allocation_id)
+    item_total = int(connection.execute(
+        "SELECT COALESCE(SUM(planned_minutes),0) FROM rhythm_allocations WHERE item_id=?" + excluded,
+        item_params,
+    ).fetchone()[0])
+    if item_total + planned_minutes > RHYTHM_MAX_ITEM_MINUTES:
+        raise ValueError("study_rhythm_allocation_limit_exceeded")
+    period_index = _rhythm_period_index(settings, local_date)
+    period_start, period_end = _rhythm_period_dates(settings, period_index)
+    period_params: list[object] = [settings["plan_id"], period_start, period_end]
+    if allocation_id:
+        period_params.append(allocation_id)
+        exclusion = " AND id != ?"
+    else:
+        exclusion = ""
+    period_total = int(connection.execute(
+        "SELECT COALESCE(SUM(planned_minutes),0) FROM rhythm_allocations "
+        "WHERE plan_id=? AND local_date BETWEEN ? AND ?" + exclusion, period_params,
+    ).fetchone()[0])
+    if period_total + planned_minutes > RHYTHM_MAX_PERIOD_MINUTES:
+        raise ValueError("study_rhythm_allocation_limit_exceeded")
+
+
+def create_rhythm_allocation(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                             item_id: str, local_date: object, planned_minutes: object) -> dict[str, object]:
+    local_date_value = _rhythm_date(local_date)
+    if (not isinstance(planned_minutes, int) or isinstance(planned_minutes, bool) or
+            not 1 <= planned_minutes <= RHYTHM_MAX_ALLOCATION_MINUTES):
+        raise ValueError("study_rhythm_invalid_payload")
+    with connection:
+        plan = _rhythm_plan_for_write(connection, project_id=project_id, plan_id=plan_id)
+        settings = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+        if settings is None:
+            raise ValueError("study_rhythm_not_configured")
+        item = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id)
+        if item is None:
+            raise ValueError("study_rhythm_item_not_found")
+        if item["status"] in {"completed", "archived"}:
+            raise ValueError("study_rhythm_edit_not_allowed")
+        _rhythm_validate_allocation_limits(connection, settings=settings, item_id=item_id,
+                                           local_date=local_date_value, planned_minutes=planned_minutes)
+        allocation_id = f"rhythm_allocation_{uuid.uuid4().hex}"
+        now = utc_now()
+        try:
+            connection.execute(
+                "INSERT INTO rhythm_allocations (id,project_id,plan_id,item_id,local_date,planned_minutes,created_at,updated_at) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (allocation_id, project_id, plan_id, item_id, local_date_value, planned_minutes, now, now),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_rhythm_allocation_duplicate") from exc
+    return dict(_rhythm_allocation_row(connection, project_id=project_id, plan_id=plan_id, allocation_id=allocation_id))
+
+
+def update_rhythm_allocation(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                             allocation_id: str, local_date: object | None = None,
+                             planned_minutes: object | None = None) -> dict[str, object]:
+    with connection:
+        _rhythm_plan_for_write(connection, project_id=project_id, plan_id=plan_id)
+        row = _rhythm_allocation_row(connection, project_id=project_id, plan_id=plan_id, allocation_id=allocation_id)
+        if row is None:
+            raise ValueError("study_rhythm_allocation_not_found")
+        item = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=str(row["item_id"]))
+        if item is None or item["status"] in {"completed", "archived"}:
+            raise ValueError("study_rhythm_edit_not_allowed")
+        next_date = str(row["local_date"]) if local_date is None else _rhythm_date(local_date)
+        next_minutes = int(row["planned_minutes"]) if planned_minutes is None else planned_minutes
+        if (not isinstance(next_minutes, int) or isinstance(next_minutes, bool) or
+                not 1 <= next_minutes <= RHYTHM_MAX_ALLOCATION_MINUTES):
+            raise ValueError("study_rhythm_invalid_payload")
+        settings = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+        if settings is None:
+            raise ValueError("study_rhythm_not_configured")
+        _rhythm_validate_allocation_limits(connection, settings=settings, item_id=str(row["item_id"]),
+                                           local_date=next_date, planned_minutes=next_minutes,
+                                           allocation_id=allocation_id)
+        try:
+            connection.execute(
+                "UPDATE rhythm_allocations SET local_date=?,planned_minutes=?,updated_at=? WHERE id=? AND project_id=?",
+                (next_date, next_minutes, utc_now(), allocation_id, project_id),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_rhythm_allocation_duplicate") from exc
+    return dict(_rhythm_allocation_row(connection, project_id=project_id, plan_id=plan_id, allocation_id=allocation_id))
+
+
+def delete_rhythm_allocation(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                             allocation_id: str) -> bool:
+    with connection:
+        _rhythm_plan_for_write(connection, project_id=project_id, plan_id=plan_id)
+        row = _rhythm_allocation_row(connection, project_id=project_id, plan_id=plan_id, allocation_id=allocation_id)
+        if row is None:
+            raise ValueError("study_rhythm_allocation_not_found")
+        item = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=str(row["item_id"]))
+        if item is None or item["status"] in {"completed", "archived"}:
+            raise ValueError("study_rhythm_edit_not_allowed")
+        connection.execute("DELETE FROM rhythm_allocations WHERE id=? AND project_id=?", (allocation_id, project_id))
+    return True
+
+
+def rhythm_summary(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                   local_date: object | None = None, periods: int = 1) -> dict[str, object]:
+    plan = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    if plan is None:
+        raise ValueError("study_rhythm_plan_not_found")
+    settings = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+    if settings is None:
+        return {"settings": None, "buckets": [], "allocated_item_count": 0,
+                "unassigned_item_count": 0, "archived_item_count": 0,
+                "source_warning_count": int(study_progress_summary(connection, plan_id=plan_id, project_id=project_id)["source_warning_count"]),
+                "last_progress_event_at": study_progress_summary(connection, plan_id=plan_id, project_id=project_id)["last_event_at"]}
+    if not isinstance(periods, int) or isinstance(periods, bool) or not 1 <= periods <= 52:
+        raise ValueError("study_rhythm_invalid_payload")
+    if local_date is None:
+        from zoneinfo import ZoneInfo
+        local_date_value = datetime.now(timezone.utc).astimezone(ZoneInfo(str(settings["timezone"]))).date().isoformat()
+    else:
+        local_date_value = _rhythm_date(local_date)
+    current_index = max(0, _rhythm_period_index(settings, local_date_value))
+    allocations = [dict(row) for row in connection.execute(
+        "SELECT * FROM rhythm_allocations WHERE project_id=? AND plan_id=? ORDER BY local_date,item_id,id",
+        (project_id, plan_id),
+    ).fetchall()]
+    buckets: list[dict[str, object]] = []
+    for index in range(current_index, current_index + periods):
+        start, end = _rhythm_period_dates(settings, index)
+        selected = [row for row in allocations if start <= str(row["local_date"]) <= end]
+        active_selected = [row for row in selected if connection.execute(
+            "SELECT status FROM study_plan_items WHERE id=? AND project_id=?", (row["item_id"], project_id)
+        ).fetchone()[0] not in {"archived"}]
+        planned = sum(int(row["planned_minutes"]) for row in active_selected)
+        buckets.append({"period_index": index, "local_date_start": start, "local_date_end": end,
+                        "planned_minutes": planned, "target_minutes": int(settings["target_minutes"]),
+                        "remaining_target_minutes": max(int(settings["target_minutes"]) - planned, 0),
+                        "allocated_item_count": len({str(row["item_id"]) for row in active_selected})})
+    item_rows = connection.execute(
+        "SELECT i.id,i.status FROM study_plan_items i WHERE i.plan_id=? AND i.project_id=?", (plan_id, project_id)
+    ).fetchall()
+    allocated_ids = {str(row["item_id"]) for row in allocations}
+    unassigned = sum(1 for row in item_rows if row["status"] != "archived" and str(row["id"]) not in allocated_ids)
+    progress = study_progress_summary(connection, plan_id=plan_id, project_id=project_id)
+    return {"settings": dict(settings), "buckets": buckets,
+            "allocated_item_count": len(allocated_ids),
+            "unassigned_item_count": unassigned,
+            "archived_item_count": sum(1 for row in item_rows if row["status"] == "archived"),
+            "item_projection": {key: progress[key] for key in ("pending_count", "in_progress_count", "completed_count", "skipped_count")},
+            "source_warning_count": progress["source_warning_count"], "last_progress_event_at": progress["last_event_at"]}
+
+
+def _note_row(connection: sqlite3.Connection, *, project_id: str, note_id: str) -> sqlite3.Row | None:
+    return connection.execute("SELECT * FROM notes WHERE id=? AND project_id=?", (note_id, project_id)).fetchone()
+
+
+def _note_blocks(connection: sqlite3.Connection, *, project_id: str, note_id: str) -> list[dict[str, object]]:
+    rows = connection.execute("SELECT * FROM note_blocks WHERE note_id=? AND project_id=? ORDER BY position,id", (note_id, project_id)).fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["sources"] = [dict(source) for source in connection.execute(
+            "SELECT * FROM note_block_source_links WHERE note_block_id=? AND project_id=? ORDER BY created_at,id",
+            (row["id"], project_id),
+        ).fetchall()]
+        result.append(item)
+    return result
+
+
+def _note_public(connection: sqlite3.Connection, *, project_id: str, note_id: str) -> dict[str, object]:
+    row = _note_row(connection, project_id=project_id, note_id=note_id)
+    if row is None:
+        raise ValueError("study_note_not_found")
+    result = dict(row)
+    result["blocks"] = _note_blocks(connection, project_id=project_id, note_id=note_id)
+    result["modules"] = [dict(module) for module in connection.execute(
+        "SELECT m.* FROM knowledge_modules m JOIN note_module_links l ON l.module_id=m.id "
+        "WHERE l.note_id=? AND l.project_id=? ORDER BY m.id", (note_id, project_id)
+    ).fetchall()]
+    result["source_warning_count"] = sum(1 for block in result["blocks"] for source in block["sources"] if source["status"] != "valid")
+    return result
+
+
+def _note_block_values(payload: object, *, code: str = "study_note_block_invalid") -> tuple[str, str, str]:
+    if not isinstance(payload, dict):
+        raise ValueError(code)
+    kind = payload.get("block_kind", "text")
+    if kind not in NOTE_BLOCK_KINDS:
+        raise ValueError(code)
+    content = _study_text(payload.get("content"), code=code, maximum=NOTE_MAX_BLOCK_CONTENT)
+    provenance = payload.get("provenance", "user_created")
+    if provenance not in NOTE_PROVENANCES:
+        raise ValueError(code)
+    return str(kind), content, str(provenance)
+
+
+def _note_validate_blocks(payloads: object) -> list[tuple[str, str, str]]:
+    if not isinstance(payloads, list) or not payloads:
+        raise ValueError("study_note_empty")
+    values = [_note_block_values(payload) for payload in payloads]
+    if sum(len(value[1]) for value in values) > NOTE_MAX_CONTENT:
+        raise ValueError("study_note_block_invalid")
+    return values
+
+
+def create_note(connection: sqlite3.Connection, *, project_id: str, title: object,
+                blocks: object, provenance: str = "user_created",
+                generation_operation_id: str | None = None) -> dict[str, object]:
+    title_value = _study_text(title, code="study_note_invalid_payload", maximum=NOTE_MAX_TITLE)
+    if provenance not in NOTE_PROVENANCES or (provenance == "user_created") != (generation_operation_id is None):
+        raise ValueError("study_note_invalid_payload")
+    values = _note_validate_blocks(blocks)
+    expected_block_provenance = "ai_generated" if provenance == "ai_generated" else "user_created"
+    if any(block_provenance != expected_block_provenance for _, _, block_provenance in values):
+        raise ValueError("study_note_block_invalid")
+    note_id = f"note_{uuid.uuid4().hex}"
+    now = utc_now()
+    with connection:
+        if not _study_project_exists(connection, project_id):
+            raise ValueError("study_note_invalid_payload")
+        if provenance == "ai_generated" and connection.execute(
+                "SELECT 1 FROM ai_operations WHERE id=? AND project_id=? AND operation_type='generate_note'",
+                (generation_operation_id, project_id)).fetchone() is None:
+            raise ValueError("study_note_invalid_payload")
+        connection.execute(
+            "INSERT INTO notes (id,project_id,title,status,provenance,user_edited,generation_operation_id,created_at,updated_at,confirmed_at,archived_at) "
+            "VALUES (?,?,?,?,?,0,?,?,?,NULL,NULL)",
+            (note_id, project_id, title_value, "draft", provenance, generation_operation_id, now, now),
+        )
+        connection.executemany(
+            "INSERT INTO note_blocks (id,note_id,project_id,position,block_kind,content,provenance,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            [(f"note_block_{uuid.uuid4().hex}", note_id, project_id, position, kind, content, block_provenance, now, now)
+             for position, (kind, content, block_provenance) in enumerate(values)],
+        )
+    return _note_public(connection, project_id=project_id, note_id=note_id)
+
+
+def create_user_note(connection: sqlite3.Connection, *, project_id: str, title: object,
+                     blocks: object) -> dict[str, object]:
+    return create_note(connection, project_id=project_id, title=title, blocks=blocks)
+
+
+def list_notes(connection: sqlite3.Connection, *, project_id: str,
+               include_archived: bool = False) -> list[dict[str, object]]:
+    where = "project_id=?" if include_archived else "project_id=? AND status!='archived'"
+    return [_note_public(connection, project_id=project_id, note_id=str(row["id"])) for row in connection.execute(
+        "SELECT id FROM notes WHERE " + where + " ORDER BY updated_at DESC,id DESC", (project_id,)
+    ).fetchall()]
+
+
+def get_note(connection: sqlite3.Connection, *, project_id: str, note_id: str) -> dict[str, object] | None:
+    return _note_public(connection, project_id=project_id, note_id=note_id) if _note_row(connection, project_id=project_id, note_id=note_id) else None
+
+
+def update_note(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                title: object | None = None) -> dict[str, object]:
+    with connection:
+        row = _note_row(connection, project_id=project_id, note_id=note_id)
+        if row is None:
+            raise ValueError("study_note_not_found")
+        if row["status"] != "draft":
+            raise ValueError("study_note_edit_not_allowed")
+        title_value = str(row["title"]) if title is None else _study_text(title, code="study_note_invalid_payload", maximum=NOTE_MAX_TITLE)
+        connection.execute("UPDATE notes SET title=?,user_edited=1,updated_at=? WHERE id=? AND project_id=?", (title_value, utc_now(), note_id, project_id))
+    return _note_public(connection, project_id=project_id, note_id=note_id)
+
+
+def update_note_blocks(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                       blocks: object) -> dict[str, object]:
+    values = _note_validate_blocks(blocks)
+    with connection:
+        row = _note_row(connection, project_id=project_id, note_id=note_id)
+        if row is None:
+            raise ValueError("study_note_not_found")
+        if row["status"] != "draft":
+            raise ValueError("study_note_block_edit_not_allowed")
+        expected_provenance = "ai_generated" if row["provenance"] == "ai_generated" else "user_created"
+        now = utc_now()
+        existing = connection.execute(
+            "SELECT id,position FROM note_blocks WHERE note_id=? AND project_id=? ORDER BY position,id", (note_id, project_id)
+        ).fetchall()
+        common = min(len(existing), len(values))
+        for position in range(common):
+            kind, content, _ = values[position]
+            connection.execute(
+                "UPDATE note_blocks SET position=?,block_kind=?,content=?,provenance=?,updated_at=? WHERE id=? AND note_id=?",
+                (position, kind, content, expected_provenance, now, existing[position]["id"], note_id),
+            )
+        for old in existing[common:]:
+            connection.execute("DELETE FROM note_blocks WHERE id=? AND note_id=?", (old["id"], note_id))
+        for position, (kind, content, block_provenance) in enumerate(values[common:], start=common):
+            connection.execute(
+                "INSERT INTO note_blocks (id,note_id,project_id,position,block_kind,content,provenance,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                (f"note_block_{uuid.uuid4().hex}", note_id, project_id, position, kind, content, block_provenance, now, now),
+            )
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=? AND project_id=?", (now, note_id, project_id))
+    return _note_public(connection, project_id=project_id, note_id=note_id)
+
+
+def _note_editable_block(connection: sqlite3.Connection, *, project_id: str, note_id: str, block_id: str) -> sqlite3.Row:
+    note = _note_row(connection, project_id=project_id, note_id=note_id)
+    if note is None:
+        raise ValueError("study_note_not_found")
+    if note["status"] != "draft":
+        raise ValueError("study_note_block_edit_not_allowed")
+    block = connection.execute("SELECT * FROM note_blocks WHERE id=? AND note_id=? AND project_id=?", (block_id, note_id, project_id)).fetchone()
+    if block is None:
+        raise ValueError("study_note_block_not_found")
+    return block
+
+
+def create_note_block(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                      block_kind: object, content: object) -> dict[str, object]:
+    kind, body, _ = _note_block_values({"block_kind": block_kind, "content": content})
+    with connection:
+        note = _note_row(connection, project_id=project_id, note_id=note_id)
+        if note is None:
+            raise ValueError("study_note_not_found")
+        if note["status"] != "draft":
+            raise ValueError("study_note_block_edit_not_allowed")
+        total = int(connection.execute("SELECT COALESCE(SUM(length(content)),0) FROM note_blocks WHERE note_id=?", (note_id,)).fetchone()[0])
+        if total + len(body) > NOTE_MAX_CONTENT:
+            raise ValueError("study_note_block_invalid")
+        position = int(connection.execute("SELECT COALESCE(MAX(position),-1)+1 FROM note_blocks WHERE note_id=?", (note_id,)).fetchone()[0])
+        block_id = f"note_block_{uuid.uuid4().hex}"; now = utc_now()
+        connection.execute("INSERT INTO note_blocks (id,note_id,project_id,position,block_kind,content,provenance,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)", (block_id,note_id,project_id,position,kind,body,str(note["provenance"]),now,now))
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (now,note_id))
+    return dict(connection.execute("SELECT * FROM note_blocks WHERE id=?", (block_id,)).fetchone())
+
+
+def update_note_block(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                      block_id: str, block_kind: object | None = None, content: object | None = None) -> dict[str, object]:
+    with connection:
+        block = _note_editable_block(connection, project_id=project_id, note_id=note_id, block_id=block_id)
+        kind, body, _ = _note_block_values({"block_kind": block["block_kind"] if block_kind is None else block_kind,
+                                             "content": block["content"] if content is None else content})
+        total = int(connection.execute("SELECT COALESCE(SUM(length(content)),0) FROM note_blocks WHERE note_id=? AND id!=?", (note_id,block_id)).fetchone()[0])
+        if total + len(body) > NOTE_MAX_CONTENT:
+            raise ValueError("study_note_block_invalid")
+        now = utc_now()
+        connection.execute("UPDATE note_blocks SET block_kind=?,content=?,updated_at=? WHERE id=?", (kind,body,now,block_id))
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (now,note_id))
+    return dict(connection.execute("SELECT * FROM note_blocks WHERE id=?", (block_id,)).fetchone())
+
+
+def delete_note_block(connection: sqlite3.Connection, *, project_id: str, note_id: str, block_id: str) -> bool:
+    with connection:
+        block = _note_editable_block(connection, project_id=project_id, note_id=note_id, block_id=block_id)
+        if int(connection.execute("SELECT COUNT(*) FROM note_blocks WHERE note_id=?", (note_id,)).fetchone()[0]) <= 1:
+            raise ValueError("study_note_empty")
+        deleted_position = int(block["position"])
+        connection.execute("DELETE FROM note_blocks WHERE id=? AND note_id=?", (block_id,note_id))
+        connection.execute("UPDATE note_blocks SET position=position-1 WHERE note_id=? AND position>?", (note_id,deleted_position))
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (utc_now(),note_id))
+    return True
+
+
+def link_note_module(connection: sqlite3.Connection, *, project_id: str, note_id: str, module_id: str) -> dict[str, object]:
+    with connection:
+        note = _note_row(connection, project_id=project_id, note_id=note_id)
+        module = _study_module_row(connection, project_id=project_id, module_id=module_id)
+        if note is None:
+            raise ValueError("study_note_not_found")
+        if note["status"] != "draft":
+            raise ValueError("study_note_edit_not_allowed")
+        if module is None:
+            raise ValueError("study_note_module_invalid")
+        if module["status"] != "active":
+            raise ValueError("study_note_module_archived")
+        link_id = f"note_module_{uuid.uuid4().hex}"
+        try:
+            connection.execute("INSERT INTO note_module_links (id,project_id,note_id,module_id) VALUES (?,?,?,?)", (link_id,project_id,note_id,module_id))
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_note_module_link_duplicate") from exc
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (utc_now(),note_id))
+    return dict(connection.execute("SELECT * FROM note_module_links WHERE id=?", (link_id,)).fetchone())
+
+
+def unlink_note_module(connection: sqlite3.Connection, *, project_id: str, note_id: str, module_id: str) -> bool:
+    with connection:
+        note = _note_row(connection, project_id=project_id, note_id=note_id)
+        if note is None:
+            raise ValueError("study_note_not_found")
+        if note["status"] != "draft":
+            raise ValueError("study_note_edit_not_allowed")
+        cursor = connection.execute("DELETE FROM note_module_links WHERE project_id=? AND note_id=? AND module_id=?", (project_id,note_id,module_id))
+        if cursor.rowcount != 1:
+            raise ValueError("study_note_module_invalid")
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (utc_now(),note_id))
+    return True
+
+
+def _note_source_values(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                        block_id: str, payload: dict[str, object],
+                        context_chunk_ids: object) -> tuple[str, ...]:
+    required = ("material_id", "revision_id", "extraction_id", "chunk_id", "citation_key")
+    if not isinstance(payload, dict) or any(not isinstance(payload.get(key), str) or not str(payload[key]).strip() for key in required):
+        raise ValueError("study_note_source_invalid")
+    material_id, revision_id = str(payload["material_id"]), str(payload["revision_id"])
+    extraction_id, chunk_id, citation_key = str(payload["extraction_id"]), str(payload["chunk_id"]), str(payload["citation_key"])
+    if (not isinstance(context_chunk_ids, list) or not context_chunk_ids or len(context_chunk_ids) > MAX_RETRIEVAL_TOP_K or
+            any(not isinstance(chunk, str) or not chunk for chunk in context_chunk_ids)):
+        raise ValueError("study_note_source_invalid")
+    context = assemble_context(connection, project_id=project_id,
+                               hits=[{"chunk_id": chunk, "rank": index + 1}
+                                     for index, chunk in enumerate(context_chunk_ids)])
+    context_source = next((block for block in context["context_blocks"]
+                           if block.get("citation_key") == citation_key), None)
+    source_info = context_source.get("source_info") if isinstance(context_source, dict) else None
+    if (not isinstance(source_info, dict) or source_info.get("material_id") != material_id or
+            source_info.get("revision_id") != revision_id or chunk_id not in context_chunk_ids):
+        raise ValueError("study_note_source_invalid")
+    span_id = payload.get("span_id")
+    if span_id is not None and (not isinstance(span_id, str) or len(span_id) > 200):
+        raise ValueError("study_note_source_invalid")
+    material = connection.execute("SELECT project_id,deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
+    if material is None or material["project_id"] != project_id:
+        raise ValueError("study_note_source_invalid")
+    if material["deleted_at"] is not None:
+        raise ValueError("study_note_source_deleted")
+    chunk = connection.execute("SELECT revision_id,extraction_id,status FROM chunks WHERE id=? AND material_id=?", (chunk_id,material_id)).fetchone()
+    validation = validate_citation_key(connection, citation_key)
+    if (chunk is None or chunk["revision_id"] != revision_id or chunk["extraction_id"] != extraction_id or
+            chunk["status"] != "ready" or validation is None or validation.get("status") != "valid" or
+            validation.get("material_id") != material_id or validation.get("chunk_id") != chunk_id or
+            validation.get("revision_id") != revision_id):
+        raise ValueError("study_note_source_invalid")
+    if span_id is not None and connection.execute("SELECT 1 FROM chunk_spans WHERE chunk_id=? AND span_id=?", (chunk_id,span_id)).fetchone() is None:
+        raise ValueError("study_note_source_invalid")
+    return material_id, revision_id, extraction_id, chunk_id, span_id, citation_key
+
+
+def create_note_source_link(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                            block_id: str, payload: dict[str, object],
+                            context_chunk_ids: object) -> dict[str, object]:
+    with connection:
+        note = _note_row(connection, project_id=project_id, note_id=note_id)
+        if note is None:
+            raise ValueError("study_note_not_found")
+        if note["status"] != "draft":
+            raise ValueError("study_note_source_invalid")
+        if connection.execute("SELECT 1 FROM note_blocks WHERE id=? AND note_id=? AND project_id=?", (block_id,note_id,project_id)).fetchone() is None:
+            raise ValueError("study_note_block_not_found")
+        values = _note_source_values(connection, project_id=project_id, note_id=note_id, block_id=block_id,
+                                     payload=payload, context_chunk_ids=context_chunk_ids)
+        link_id = f"note_source_{uuid.uuid4().hex}"; now = utc_now()
+        try:
+            connection.execute("INSERT INTO note_block_source_links (id,project_id,note_id,note_block_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (link_id,project_id,note_id,block_id,*values,"valid",now,now))
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_note_source_invalid") from exc
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (now,note_id))
+    return dict(connection.execute("SELECT * FROM note_block_source_links WHERE id=?", (link_id,)).fetchone())
+
+
+def delete_note_source_link(connection: sqlite3.Connection, *, project_id: str, note_id: str, link_id: str) -> bool:
+    with connection:
+        note = _note_row(connection, project_id=project_id, note_id=note_id)
+        if note is None:
+            raise ValueError("study_note_not_found")
+        if note["status"] != "draft":
+            raise ValueError("study_note_source_invalid")
+        cursor = connection.execute("DELETE FROM note_block_source_links WHERE id=? AND note_id=? AND project_id=?", (link_id,note_id,project_id))
+        if cursor.rowcount != 1:
+            raise ValueError("study_note_source_not_found")
+        connection.execute("UPDATE notes SET user_edited=1,updated_at=? WHERE id=?", (utc_now(),note_id))
+    return True
+
+
+def confirm_note(connection: sqlite3.Connection, *, project_id: str, note_id: str) -> dict[str, object]:
+    with connection:
+        row = _note_row(connection, project_id=project_id, note_id=note_id)
+        if row is None:
+            raise ValueError("study_note_not_found")
+        if row["status"] != "draft":
+            raise ValueError("study_note_invalid_state")
+        blocks = connection.execute("SELECT id FROM note_blocks WHERE note_id=? AND project_id=?", (note_id,project_id)).fetchall()
+        if not blocks:
+            raise ValueError("study_note_empty")
+        # Recompute link status inside the confirm transaction; persisted status is not trusted.
+        _refresh_note_source_links(connection, project_id=project_id, note_id=note_id)
+        if row["provenance"] == "ai_generated":
+            missing = connection.execute("SELECT 1 FROM note_blocks b WHERE b.note_id=? AND NOT EXISTS (SELECT 1 FROM note_block_source_links l WHERE l.note_block_id=b.id AND l.status='valid')", (note_id,)).fetchone()
+            if missing is not None:
+                raise ValueError("study_note_confirm_source_invalid")
+        now = utc_now()
+        connection.execute("UPDATE notes SET status='confirmed',confirmed_at=?,updated_at=? WHERE id=? AND project_id=?", (now,now,note_id,project_id))
+    return _note_public(connection, project_id=project_id, note_id=note_id)
+
+
+def transition_note(connection: sqlite3.Connection, *, project_id: str, note_id: str, target: str) -> dict[str, object]:
+    if target == "confirmed":
+        return confirm_note(connection, project_id=project_id, note_id=note_id)
+    with connection:
+        row = _note_row(connection, project_id=project_id, note_id=note_id)
+        if row is None:
+            raise ValueError("study_note_not_found")
+        allowed = {"rejected": {"draft"}, "archived": {"draft", "confirmed", "rejected"}}
+        if target not in allowed or row["status"] not in allowed[target]:
+            raise ValueError("study_note_invalid_state")
+        now = utc_now()
+        connection.execute("UPDATE notes SET status=?,archived_at=?,updated_at=? WHERE id=? AND project_id=?", (target, now if target == "archived" else None, now, note_id, project_id))
+    return _note_public(connection, project_id=project_id, note_id=note_id)
+
+
+def _refresh_note_source_links(connection: sqlite3.Connection, *, project_id: str,
+                               note_id: str | None = None, material_id: str | None = None) -> int:
+    where = ["project_id=?"]; params: list[object] = [project_id]
+    if note_id is not None:
+        where.append("note_id=?"); params.append(note_id)
+    if material_id is not None:
+        where.append("material_id=?"); params.append(material_id)
+    rows = connection.execute("SELECT * FROM note_block_source_links WHERE " + " AND ".join(where), params).fetchall()
+    changed = 0
+    for row in rows:
+        material = connection.execute("SELECT project_id,deleted_at FROM materials WHERE id=?", (row["material_id"],)).fetchone()
+        if material is None:
+            status = "source_unavailable"
+        elif material["deleted_at"] is not None:
+            status = "source_deleted"
+        else:
+            status = _study_source_status(connection, project_id=project_id, material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"], strict=False)
+        changed += connection.execute("UPDATE note_block_source_links SET status=?,updated_at=? WHERE id=? AND status!=?", (status,utc_now(),row["id"],status)).rowcount
+    return changed
+
+
+def refresh_note_source_links(connection: sqlite3.Connection, *, project_id: str, note_id: str | None = None,
+                              material_id: str | None = None) -> int:
+    with connection:
+        return _refresh_note_source_links(connection, project_id=project_id, note_id=note_id, material_id=material_id)
+
+
+def archive_note(connection: sqlite3.Connection, *, project_id: str, note_id: str) -> dict[str, object]:
+    return transition_note(connection, project_id=project_id, note_id=note_id, target="archived")
+
+
+# Explicit aliases keep the domain surface readable to later API/workflow tasks.
+get_study_rhythm = get_rhythm_settings
+set_study_rhythm = save_rhythm_settings
+get_rhythm_summary = rhythm_summary
+create_study_rhythm_allocation = create_rhythm_allocation
+update_study_rhythm_allocation = update_rhythm_allocation
+delete_study_rhythm_allocation = delete_rhythm_allocation
 
 
 def material_state(connection: sqlite3.Connection, material_id: str) -> str:
@@ -1738,6 +2427,10 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
             (material_id,),
         )
         _refresh_study_source_links_for_material(connection, material_id)
+        connection.execute(
+            "UPDATE note_block_source_links SET status = 'source_unavailable', updated_at = ? WHERE material_id = ?",
+            (utc_now(), material_id),
+        )
         connection.execute(
             "UPDATE module_source_links SET status = 'source_unavailable', updated_at = ? WHERE material_id = ?",
             (utc_now(), material_id),

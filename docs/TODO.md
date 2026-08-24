@@ -203,15 +203,15 @@ revision → chunks → retrieval → citations → Q&A
 
 > 当前状态：`planned`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`docs/phase9b/`](phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
 >
-> 当前子任务状态：9B-0 已形成 `planned/audit-draft`，9B-1 已形成 `planned/contract-frozen`，9B-2 已形成 `implemented/backend-pass`；审计、正式契约和 schema 边界见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。正式 schema 已为 v10；尚未实现或验收 9B repository/domain、API、UI、source lifecycle、导出、backup/restore artifact 或正式用户路径。
+> 当前子任务状态：9B-0 已形成 `planned/audit-draft`，9B-1 已形成 `planned/contract-frozen`，9B-2 与 9B-3 已形成 `implemented/backend-pass`；审计、正式契约和 schema 边界见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。正式 schema 已为 v10；9B-3 仅实现 repository/domain transaction 基础，API、UI、generation workflow、导出和 restore artifact 仍未验收。
 
 - [x] 9B-0：完成现状审计、S1/S2 范围冻结和风险记录；状态为 `planned/audit-draft`，产出见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。
 - [x] 9B-1：冻结 S1/S2 实体关系、cadence/timezone/workload、note/block/module/citation 关系、状态机、不变量、source lifecycle、AI draft、错误码、API resource、导出和 backup/restore non-repair 边界；状态为 `planned/contract-frozen`，不代表实现完成。
 - [x] 9B-2：通过连续 v10 `phase9b_material_learning_schema` migration 增加 note/block/module-link/source-tombstone 与 rhythm persistence schema，并覆盖 new-db、v9 upgrade、幂等、failure rollback、history/user_version 和 backup schema-version；状态为 `implemented/backend-pass`，不代表 9B repository/domain、API/UI、source lifecycle 或 restore artifact 验收。
-- [ ] 明确学习节奏和资料笔记的最小用户目标，不直接复制前代 `KnowledgeModule` 实现。
-- [ ] 基于正式 revision/chunk/retrieval/citation 重新实现资料笔记/知识模块。
-- [ ] 计划 item 与材料 revision、citation、source unavailable 生命周期联动。
-- [ ] 分别完成 S1、S2 的 API、状态、浏览器路径和恢复/导出验收。
+- [x] 9B-3：实现共用 repository/domain transaction：note/block/module link、server-side citation source link validation、source status refresh、rhythm settings/allocation 与 deterministic summary；focused `backend/tests/test_phase9b_domain.py` 通过，状态为 `implemented/backend-pass`。
+- [ ] 9B-4：在 9B-3 基础上完成 S2 资料笔记、知识模块和 deterministic fake-provider draft workflow。
+- [ ] 9B-5：在 9B-3 基础上完成 S1 学习节奏工作流和计划视图。
+- [ ] 9B-6 至 9B-9：分别完成 API、Chromium workspace、source lifecycle/backup-restore artifact 和完整收口验收。
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
