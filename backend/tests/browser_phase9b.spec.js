@@ -37,8 +37,8 @@ async function createActivePlan(page) {
   await page.locator('#plan-goal-title').fill('节奏目标'); await page.locator('#plan-goal-create').click();
   await page.locator('#plan-title').fill('节奏计划'); await page.locator('#plan-create').click();
   await page.locator('#plan-item-title').fill('阅读材料'); await page.locator('#plan-item-add').click();
-  await page.locator('#plan-confirm').click(); await page.locator('#plan-activate').click();
-  await expect(page.locator('#plan-detail')).toContainText('状态：active');
+  await page.locator('#plan-confirm').click(); await expect(page.locator('#plan-status')).toHaveText('计划草稿已确认');
+  await page.locator('#plan-activate').click(); await expect(page.locator('#plan-detail')).toContainText('状态：active');
 }
 
 test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}); server = startServer(); await ready(); });

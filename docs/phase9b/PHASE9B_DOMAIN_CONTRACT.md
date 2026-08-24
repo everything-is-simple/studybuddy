@@ -1,8 +1,8 @@
 # Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`；9B-7 `browser-pass`。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`；9B-7 `browser-pass`；9B-8 `scoped-gates-pass` / `restore-gates-pass`。
 >
-> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow，9B-6 完成 S1/S2 最小安全 API，9B-7 完成 S1/S2 最小 Chromium workspace。9B 的 restore artifact acceptance 与完整正式用户路径仍未实现。
+> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow，9B-6 完成 S1/S2 最小安全 API，9B-7 完成 S1/S2 最小 Chromium workspace，9B-8 完成 source lifecycle 与 backup/restore non-repair gates。9B 的完整正式用户路径与最终 closeout 仍未实现。
 >
 > 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是完整功能证据；不得因本文出现表名、路径或错误码而宣称任何未通过后续 gate 的 Phase 9B 功能已经存在。
 
@@ -476,6 +476,6 @@ Gate B is satisfied by this document only when downstream reviewers can determin
 
 **Accurate status:**
 
-> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-6 are `implemented/backend-pass`; 9B-7 is `browser-pass`: the existing safe-DOM workspace now uses the accepted API for S1 rhythm settings/allocations/summary/progress and S2 user/AI cited notes, explicit module organization, edit protection, transitions, source refresh and bounded exports. Its isolated local Chromium spec covers reload, keyboard, 390x844, busy duplicate click, provider-not-configured, malformed/network failure and unavailable citations. S1 still does not write progress outside the existing explicit progress action, auto-replan or schedule work. Restore artifact acceptance, real-provider generation, system screen-reader evidence and a formal complete user path remain unimplemented; this is not Phase 9B completed or real-pass.
+> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-6 are `implemented/backend-pass`; 9B-7 is `browser-pass`; 9B-8 is `scoped-gates-pass` / `restore-gates-pass`. Its focused evidence verifies retained note/module/source identity and rhythm/progress history through delete/restore/purge/new revision, including `valid`/`source_deleted`/`stale`/`source_unavailable`; positive promotion only follows explicit source refresh. Backup→verify→new empty target restore preserves v10 notes/blocks/module links/source tombstones/rhythm/allocations/operation/progress history. Restore acceptance reads v10 state but neither calls provider/index/refresh nor repairs/promotes a source status. S1 still does not auto-replan or schedule work. Real-provider generation, system screen-reader evidence and final closeout remain unimplemented; this is not Phase 9B completed or real-pass.
 
-Next task: **9B-8 source lifecycle and backup/restore**. It must extend lifecycle/restore evidence without expanding scheduler, worker or user scope.
+Next task: **9B-9 acceptance closeout**. It must consolidate only verified gates and create desensitized evidence without expanding product scope.
