@@ -218,9 +218,21 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
-- [ ] 将 Phase 8 exercise/card 产物接入限时练习、错题和冲刺目标。
-- [ ] 实现 attempt、deterministic grading、人工复核、错题状态和历史不可覆盖。
-- [ ] 分别完成 S3、S4、S5 的用户路径、失败边界、citation/source lifecycle 和浏览器验收。
+> 当前状态：`planned`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
+
+- [ ] 9C-0：现状审计与范围冻结；盘点 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 与 9D/Phase 10 non-goals。
+- [ ] 9C-1：正式领域契约与状态机；冻结 session、attempt、grading/review、mistake、weak-point、cram、时间和隐私边界。
+- [ ] 9C-2：通过连续 migration 增加最小 S3/S4/S5 schema，完成 new-db、upgrade、rollback、history/user_version 和 backup version 测试。
+- [ ] 9C-3：实现 repository/domain transaction；attempt/review append-only、投影可重算、服务端计时、source/citation 和 privacy contract。
+- [ ] 9C-4：实现 S3 限时练习 session、快照、提交、deterministic grading、超时、结果和失败边界。
+- [ ] 9C-5：实现 S4 错题改错、重做、weak-point、短答人工复核和反馈历史；不覆盖旧 attempt。
+- [ ] 9C-6：实现 S5 期末冲刺目标、模拟 session、选题快照、结果反馈；不自动改计划或启动 scheduler。
+- [ ] 9C-7：实现 S3/S4/S5 最小安全 API、输入边界、错误、幂等、隐私和导出 contract。
+- [ ] 9C-8：实现最小 Chromium workspace，覆盖 happy/failure/expired/duplicate/reload/narrow/keyboard/privacy 路径。
+- [ ] 9C-9：完成 source lifecycle、citation status、backup/verify/restore non-repair 与历史保留验收。
+- [ ] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口。
+
+完成声明仅限 deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore；不包含真实 Provider、scheduler/worker、OCR/ASR、Phase 9D 或全局 production `real-pass`。
 
 ### Phase 9D：扩展学习服务（S6/S7，条件性）
 
