@@ -85,6 +85,8 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "source lifecycle refresh" in contract
     assert "9A-4 implemented/backend-pass" in contract
     assert (ROOT / "backend" / "tests" / "test_phase9a_api.py").is_file()
+    assert "9A-5 browser-pass" in contract
+    assert (ROOT / "backend" / "tests" / "browser_phase9a.spec.js").is_file()
     assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()
 
 

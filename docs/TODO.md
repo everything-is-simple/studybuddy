@@ -189,7 +189,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9A-2：通过连续 v9 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 new-db/v8-upgrade/rollback/幂等和 backup/restore schema-history 测试；见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `implemented/backend-pass`，repository/API/UI/source lifecycle 仍未实现。
 - [x] 9A-3：实现 repository/domain 事务、DAG 依赖校验、append-only progress、状态投影、source identity validation、source lifecycle refresh 和用户编辑保护；focused `backend/tests/test_phase9a_domain.py` 8 passed，full backend 通过。状态为 `implemented/backend-pass`，API/UI/9A closeout 仍未实现。
 - [x] 9A-4：实现最小 goal/module/plan/item/dependency/progress/source API、project scope、输入边界和稳定错误 contract；`backend/tests/test_phase9a_api.py` 4 passed，full backend 通过。状态为 `implemented/backend-pass`，UI/Chromium/9A closeout 仍未实现。
-- [ ] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace。
+- [x] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace，并覆盖 dependency cycle failure、500/retry、390x844、keyboard 和 reload recovery；`backend/tests/browser_phase9a.spec.js` 2 passed。状态为 `browser-pass`，不代表 real-pass 或 9A completed。
 - [ ] 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的 source lifecycle 集成。
 - [ ] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收。
 - [ ] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。
