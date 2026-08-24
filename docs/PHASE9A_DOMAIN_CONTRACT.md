@@ -180,9 +180,9 @@
 - 外部 vector DB、历史材料自动索引、真实 Provider plan generation 作为 9A 完成前置；
 - 复杂推荐、评分、教师/家长视图和国际化。
 
-### 4.3 不变量候选
+### 4.3 正式不变量
 
-以下候选不变量必须在 9A-1 变成正式 contract 或明确延期：
+以下不变量由 9A-1 冻结，9A-2 及后续实现必须逐项测试：
 
 - 所有 9A 对象按 `project_id` 隔离，客户端不能跨 project 读取或修改；
 - source link 只保存 identity/受限 metadata，不复制正文；
@@ -195,43 +195,162 @@
 - 所有 migration history、`user_version` 和 backup manifest schema version 一致；
 - 错误和日志不泄露路径、SQL、正文、secret、raw provider response 或 traceback。
 
-## 5. 候选实体关系（待 9A-1 冻结）
+## 5. 正式实体关系（9A-1 已冻结）
 
-一个保守候选关系如下，不是最终 schema：
+以下关系是 9A-1 冻结的领域关系，具体 SQLite DDL 留给 9A-2；不得将本节直接解释为已实现 schema：
 
 ```text
 project
   ├── learning_goals
-  │     └── study_plans (可能一对多；是否允许无 goal 待定)
-  ├── knowledge_modules (可复用；是否直接挂 goal 待定)
+  │     └── study_plans (一对多；每个 plan 必须绑定一个 goal)
+  ├── knowledge_modules (project 内独立可复用；不直接挂 goal)
   └── study_plans
         ├── study_plan_items
-        │     ├── optional module reference
-        │     ├── optional deck/exercise_set reference
-        │     └── source links (revision/chunk/span/citation identity)
-        ├── dependencies (DAG)
-        └── progress_events
+        │     ├── optional reusable module reference
+        │     ├── optional deck/exercise_set reference（仅引用已存在对象）
+        │     └── optional source links (revision/chunk/span/citation identity)
+        ├── dependencies (same-plan DAG)
+        └── progress_events (append-only facts + atomic item projection)
 ```
 
-待决问题：
+9A-1 决策：
 
-1. goal 与 plan 是一对多还是多对多？一个 plan 是否必须绑定 goal？
-2. module 是否独立于 goal，并允许被多个 plan/item 复用？
-3. source link 绑定 module、plan、item，还是允许多层但只保留一种 canonical link？
-4. item 是否允许没有 source，尤其是用户自定义计划项？
-5. dependency 是否只允许同一 plan 内？是否只允许 DAG？
-6. active plan 遇到 unavailable source 是阻止激活还是允许激活并显示 warning？
-7. progress event 支持哪些事件：started、completed、skipped、reopened、cancelled？是否允许撤销完成？
-8. `paused`、`completed`、`archived` 是否全部属于 9A，还是先只做 draft/confirmed/active？
-9. 是否支持 due date/timezone；若支持，是否只保存 UTC instant，不支持 recurrence？
-10. 9A 是否支持 fake-provider 生成 plan draft，还是只实现用户手工 draft，把 AI re-plan 留到后续？
-11. 是否需要新 `ai_operations.operation_type`，以及 operation 与 plan draft 的原子关系？
-12. 删除 goal/module/plan/item 采用 archive、soft delete、禁止删除还是有限制的 cascade？
-13. 是否需要保存 summary snapshot，还是每次从 append-only event 计算？
+1. goal 与 plan 为一对多；每个 study plan 必须绑定一个同 project 的 learning goal。一个 goal 可以有多个 draft/confirmed/active/archived plan，但同一时间是否允许多个 active plan 留给实现约束；9A 默认允许。
+2. knowledge module 独立属于 project，不直接绑定 goal；可被多个 plan item 复用。module archive 后不能新挂载，但既有 plan item 保留并显示 archived module。
+3. source link 只绑定 knowledge module 或 study plan item，不绑定 goal/plan 本身；同一对象可有多个 link。module link 表达知识模块证据，item link 表达执行项证据，避免 plan 级重复和多态外键。
+4. item 允许没有 source，支持用户自定义学习项；AI/资料约束不是 9A 激活前置。若存在 source link，必须指向 current/可验证 revision identity；无 source 不伪造 citation。
+5. dependency 只允许同一 plan 内的两个不同 item，强制 DAG；拒绝自依赖、重复边、跨 plan、跨 project、归档/不存在 item 和任何会形成环的新增边。
+6. active plan 允许存在 source_deleted/source_unavailable/stale link 并激活；激活/详情返回 source warning 和 item source status。不可用 source 不会自动 repair、重新解析或伪造正文；是否能开始该 item 由后续 workflow 决定，不在 9A 阻止计划激活。
+7. 9A 只支持 `started`、`completed`、`skipped`、`reopened` 四类 progress event；不支持 cancelled。completed/skipped 可通过 reopened 产生新的事实回到 in_progress，历史事件永不修改或删除；只有 active plan 的 item 可产生事件。
+8. plan 状态纳入 `draft → confirmed → active`，并支持 `active → paused/completed/archived`、`paused → active/completed/archived`、`confirmed → draft/active/archived`、`draft/confirmed → archived`。item 使用 `pending/in_progress/completed/skipped/archived` 投影。confirmed 不是 active；只有 active/paused plan 可按 contract 继续处理，completed/archived 是终态（除非未来独立迁移）。
+9. 9A 不实现 due date、time zone、recurrence、提醒或 scheduler。所有审计时间统一保存 UTC ISO-8601；不把客户端本地日期伪装成截止时间。日期计划需求延期到后续阶段单独设计。
+10. 9A 不实现 AI plan generation 或 fake-provider plan draft。9A 只实现用户创建/编辑 draft；真实 Provider、fake Provider、自动 re-plan 和 prompt/operation contract 延期，不新增 ai_operations 类型。
+11. 不需要新的 `ai_operations.operation_type`。如果未来加入 AI plan draft，必须另立契约并保证只创建新 draft、不覆盖 confirmed/active/completed/user-edited 内容。
+12. 9A 业务对象不做物理 delete。goal/module/plan 使用 archive；draft plan/item 可在事务内移除未确认 item，但已有 progress 或被 dependency 引用的 item 不直接删除。active/confirmed/completed plan 不能物理删除；所有历史 progress 保留。
+13. 不保存可独立修改的 summary snapshot。summary 从当前 item projection 与 append-only progress facts 在读取/明确重算时计算；event append 与 item projection 必须同一事务，失败整体 rollback。
 
-这些问题必须在 9A-1 解决，未解决前不得开始 9A-2 migration。
+以上 13 项问题已由 9A-1 决策。9A-2 可以据此提出 schema/DLL；若实现发现需要改变本契约，必须先提交契约修订，不能在 migration 中隐式改变语义。
 
-## 6. 9B/9C/9D 边界
+## 6. 正式字段与生命周期契约
+
+### 6.1 统一字段约定
+
+所有 9A 表必须保留 `id`、`project_id`（progress event 和 source link 通过所属对象间接归属 project，但推荐直接保留以便 scope 查询）、`created_at`；可变对象使用 `updated_at`；archiveable 对象使用 `archived_at`。ID 使用当前系统的带领域前缀 UUID4 hex，例如 `goal_...`、`module_...`、`plan_...`、`plan_item_...`、`plan_dependency_...`、`progress_...`、`plan_source_...`、`module_source_...`。
+
+时间字段统一使用 UTC timezone-aware ISO-8601 字符串；9A 不接受客户端任意 timezone 作为业务计算输入，不实现 due date、recurrence 或 scheduler。用户输入的 title/description/item content 必须使用服务端长度和空白校验；source identity 不能由客户端自由填写后直接落库。
+
+### 6.2 Entity contract
+
+| Entity | 正式最小字段语义 | 生命周期/保护 |
+|---|---|---|
+| Learning Goal | `id`, `project_id`, `title`, `description`, `status`, `created_at`, `updated_at`, `archived_at` | `active`/`archived`；不物理删除；archive 后不能创建新 plan 绑定，但历史 plan 保留 |
+| Knowledge Module | `id`, `project_id`, `title`, `description`, `status`, `created_at`, `updated_at`, `archived_at` | `active`/`archived`；可被多个 item 复用；archive 后不能新挂载，历史引用保留 |
+| Study Plan | `id`, `project_id`, `goal_id`, `title`, `description`, `status`, `user_edited`, `created_at`, `updated_at`, `confirmed_at`, `activated_at`, `completed_at`, `archived_at` | draft 可编辑；confirmed/active 不被重生成覆盖；active 可 pause/complete/archive；历史保留 |
+| Study Plan Item | `id`, `plan_id`, `project_id`, `module_id?`, `deck_id?`, `exercise_set_id?`, `title`, `description`, `position`, `status`, `user_edited`, `created_at`, `updated_at`, `completed_at`, `archived_at` | draft/confirmed 可编辑；active item 通过 progress event 产生 projection；有历史/依赖时不物理删除 |
+| Dependency | `id`, `plan_id`, `project_id`, `predecessor_item_id`, `successor_item_id`, `created_at` | append/delete edge；同 plan、不同 item、无重复、无环 |
+| Progress Event | `id`, `plan_id`, `item_id`, `project_id`, `event_type`, `created_at`, `metadata`（受限 JSON） | append-only；不 update/delete；event 写入与 item projection 同事务 |
+| Source Link | `id`, `project_id`, `owner_type`（仅 module/item 的独立表或等价受限枚举）、`owner_id`, `material_id`, `revision_id`, `extraction_id?`, `chunk_id?`, `span_id?`, `citation_key?`, `status`, `created_at`, `updated_at` | identity link；状态由服务端刷新，不信任客户端 status；不保存正文/quote |
+
+`deck_id`/`exercise_set_id` 只能引用同一 project 已存在的 Phase 8 容器；9A 不改变 Cards/Exercises 状态或 attempt 语义。若 SQLite 外键不能安全表达跨表 project 一致性，必须在 repository transaction 中验证并测试。
+
+### 6.3 状态枚举与转移
+
+**Goal：** `active → archived`；archived 为终态。新建 goal 为 active。Goal archive 后不能绑定新 plan，但不级联 archive 既有 plan。
+
+**Module：** `active → archived`；archived 为终态。新建 module 为 active。Module archive 后不能新挂载，但历史 item 保留。
+
+**Plan：** 新建为 `draft`。允许转移：
+
+```text
+draft → confirmed | archived
+confirmed → draft | active | archived
+active → paused | completed | archived
+paused → active | completed | archived
+completed → archived
+archived → terminal
+```
+
+`confirmed → draft` 仅允许显式用户编辑动作，且必须重新确认；confirmed/active/completed 不允许普通 patch 静默改变结构。active/paused/completed/archived 的 plan 不能物理删除。
+
+**Item projection：** 新建 draft plan item 为 `pending`；计划激活后仍为 `pending`。允许：
+
+```text
+pending → in_progress | completed | skipped | archived
+in_progress → completed | skipped | reopened | archived
+completed → reopened | archived
+skipped → reopened | archived
+reopened → in_progress | completed | skipped | archived
+archived → terminal
+```
+
+`started` 事件将 pending/reopened 投影为 in_progress；`completed`、`skipped`、`reopened` 分别更新 projection。item 只有其 plan 为 active 时才接受 progress event；paused/completed/archived plan 拒绝新的 event。
+
+**Progress event：** 只允许 `started`、`completed`、`skipped`、`reopened`。不支持取消事件；撤销完成使用新的 reopened 事实，不修改历史 completed event。重复请求若没有显式幂等 contract，不得假定事件自然去重；实现必须通过 event ID 或请求幂等策略决定并测试。
+
+### 6.4 Source lifecycle
+
+Source link 的服务端状态只能从实际 source 关系计算：
+
+| 条件 | link status | 是否可定位 |
+|---|---|---|
+| material active、revision current、chunk/span identity 一致且可验证 | `valid` | 是 |
+| material soft-deleted | `source_deleted` | 否 |
+| material purged 或历史 material identity 已不存在 | `source_unavailable` | 否 |
+| material active 但 revision 非 current、chunk stale/missing 或 identity 不一致 | `stale` | 否 |
+| 客户端提供不存在/伪造 citation key 或无法验证的 relation | reject，不落库 | 否 |
+
+Delete、restore、purge、new extraction/new revision、re-index 不得复制 source text，不得自动解析或调用 Provider。restore 只使 material lifecycle 恢复；link 是否回到 valid 必须由显式 link refresh/read-time validation 依据 current source contract 判断，不能由 startup/restore 自动 repair。purge 保留 module/item/plan/progress 历史和 link 记录，但 link 变为 `source_unavailable`，不得恢复 material 名称、正文或可点击位置。
+
+Active plan 允许上述非 valid link，并返回 warning；9A 不把 source availability 当作计划激活前置。具体学习 item 是否可执行属于后续 workflow。
+
+### 6.5 Progress summary
+
+summary 是只读派生响应，不是独立可编辑事实。至少返回：`item_count`、各 item status count、`completed_count`、`skipped_count`、`in_progress_count`、`pending_count`、`completion_ratio`、`last_event_at` 和 source warning count。分母为未 archived 的 plan items；若没有可计数 item，ratio 为 `0.0`，不得除零。
+
+每次 progress event 必须在同一个 SQLite transaction 内：校验 plan/item 状态 → 插入 append-only event → 更新 item projection → commit。任一步失败全部 rollback。summary 可通过查询 event/projection 重算；不允许用户直接写入 summary 快照。
+
+## 7. 正式错误码与 API resource 草案
+
+以下是 9A-1 冻结的稳定错误码初稿，9A-4 只能使用这些语义或在契约修订后增加：
+
+| 错误码 | 语义 |
+|---|---|
+| `learning_goal_not_found` | goal 不存在或不属于当前 project |
+| `learning_goal_archived` | goal 已 archive，不能执行要求 active 的动作 |
+| `knowledge_module_not_found` | module 不存在或不属于当前 project |
+| `knowledge_module_archived` | module 已 archive，不能新挂载 |
+| `study_plan_not_found` | plan 不存在或不属于当前 project |
+| `study_plan_item_not_found` | item 不存在或不属于当前 project/plan |
+| `study_plan_invalid_state` | plan 状态转移非法 |
+| `study_plan_item_invalid_state` | item 状态或操作不允许 |
+| `study_plan_confirm_required` | 需要先确认 draft |
+| `study_plan_goal_invalid` | goal 不存在、跨 project 或不可绑定 |
+| `study_plan_dependency_invalid` | dependency 输入非法、跨 plan、重复或归档对象 |
+| `study_plan_dependency_cycle` | 新 dependency 会形成环 |
+| `study_progress_invalid_event` | event type、plan/item 状态或 payload 非法 |
+| `study_progress_event_duplicate` | 显式相同事件请求重复提交 |
+| `study_source_invalid` | source revision/chunk/span/citation 不能验证 |
+| `study_source_deleted` | source 已 soft-delete |
+| `study_source_unavailable` | source 已 purge 或不可恢复 |
+| `study_source_stale` | source link 指向非 current 或不一致 revision |
+| `study_plan_edit_not_allowed` | confirmed/active/completed/user-protected 内容不可静默编辑 |
+| `study_plan_item_edit_not_allowed` | item 已受保护或不属于可编辑状态 |
+| `study_plan_conflict` | SQLite/状态并发导致写入冲突 |
+| `study_plan_persist_failed` | 安全的持久化失败响应 |
+
+API resource 只冻结资源边界，不在 9A-1 实现：
+
+- goals：list/create/detail/patch/archive；客户端不能提交 project_id；
+- modules：list/create/detail/patch/archive；source links 只接受经服务端验证的 source identity；
+- plans：list/create draft/detail/patch/confirm/activate/pause/complete/archive；detail 返回 items、dependency、progress summary 和受限 source status；
+- items：在 draft plan 下 create/patch/reorder/archive；confirmed/active 后只允许 contract 规定的受限操作；
+- dependencies：在 plan 下 add/remove；服务端验证 same-plan DAG；
+- progress：在 active plan item 下 append event；读取 event history 和只读 summary；
+- source：读取 module/item source link 状态和安全定位 metadata；不返回 stored_path 或正文。
+
+9A 不实现提醒、推送、due-date scheduler、recurrence、自动 re-plan、AI plan generation、取消任务、后台任务或跨用户 API。
+
+## 8. 9B/9C/9D 边界
 
 - 9B 可以复用 9A 的 KnowledgeModule、source link 和 plan item，但必须单独设计资料笔记/学习节奏 API、UI、状态和 evidence。
 - 9C 可以复用 9A 对 deck/exercise set 的引用以及 Phase 8 attempt/grading，但限时、错题和冲刺仍是独立 domain，不在 9A 添加专用表或 scheduler。
@@ -240,19 +359,23 @@ project
 
 ## 7. 9A-0 验收与下一步
 
-### 已完成的 9A-0 审计输出
+### 已完成的 9A-0/9A-1 输出
 
 - 当前 migration version、history 和 rollback 机制已定位；
 - repository 事务边界和 ID/time/project 约定已定位；
 - material revision/citation、Cards/Exercises source lifecycle 已定位；
 - backup/restore 全 SQLite snapshot 与 non-repair 边界已定位；
 - main.py 路由、内嵌 UI、测试 fixture 和 browser 运行方式已定位；
-- 9A 纳入范围、明确排除、候选不变量、关系候选和待决问题已记录。
+- 9A 纳入范围、明确排除、正式不变量、正式关系和 9A-1 决策已记录。
 
-### 9A-0 的准确状态
+### 9A-0/9A-1 的准确状态
 
-`Phase 9A-0 planned/audit-draft`：审计和范围冻结文档已形成；没有实现学习目标、知识模块、计划、计划项、依赖或进度能力；没有新增 migration、业务表、API 或 UI。当前 schema 仍为 v8；9A-1 未冻结正式领域契约，9A-2 之前不得实现 v9 migration。
+`Phase 9A-0 completed as planned/audit-draft`：代码审计、范围和边界已形成。
+
+`Phase 9A-1 completed as planned/contract-frozen`：正式实体关系、字段语义、状态机、不变量、progress、source lifecycle、错误码、API resource 边界和 deferred decisions 已冻结。
+
+这两个任务都没有实现学习目标、知识模块、计划、计划项、依赖或进度能力；没有新增 migration、业务表、API 或 UI。当前 schema 仍为 v8。该文档不是实现证据，9A-2 才能开始提出 v9 schema，且必须严格遵循本契约。
 
 ### 下一步
 
-进入 9A-1 前，产品/领域决策至少需要确认第 5 节的关系、状态、progress、source link、日期和 AI draft 问题。9A-1 只冻结契约，不实现 schema；契约冻结后才进入 9A-2。
+进入 9A-2：只实现 migration/schema 和 migration tests。9A-2 不实现 repository、API 或 UI；若 schema 需要改变本契约，先停止并提交契约修订。
