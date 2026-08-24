@@ -1,10 +1,10 @@
 # Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`；9B-7 `browser-pass`；9B-8 `scoped-gates-pass` / `restore-gates-pass`。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`；9B-7 `browser-pass`；9B-8 `scoped-gates-pass` / `restore-gates-pass`；9B-9 已完成限定范围内 `completed` closeout。最终脱敏证据见 [`../PHASE9B_ACCEPTANCE_EVIDENCE.md`](../PHASE9B_ACCEPTANCE_EVIDENCE.md)。
 >
-> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow，9B-6 完成 S1/S2 最小安全 API，9B-7 完成 S1/S2 最小 Chromium workspace，9B-8 完成 source lifecycle 与 backup/restore non-repair gates。9B 的完整正式用户路径与最终 closeout 仍未实现。
+> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow，9B-6 完成 S1/S2 最小安全 API，9B-7 完成 S1/S2 最小 Chromium workspace，9B-8 完成 source lifecycle 与 backup/restore non-repair gates，9B-9 已完成限定范围内的完整 Gate A-I closeout。最终证据见 `../PHASE9B_ACCEPTANCE_EVIDENCE.md`。
 >
-> 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是完整功能证据；不得因本文出现表名、路径或错误码而宣称任何未通过后续 gate 的 Phase 9B 功能已经存在。
+> 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是单独的功能证据；最终 Gate A-I 证据见 `../PHASE9B_ACCEPTANCE_EVIDENCE.md`，不得因本文出现表名、路径或错误码而扩大 Phase 9B 的限定完成范围。
 
 ## 1. 审计基线与已验证复用能力
 
@@ -476,6 +476,6 @@ Gate B is satisfied by this document only when downstream reviewers can determin
 
 **Accurate status:**
 
-> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-6 are `implemented/backend-pass`; 9B-7 is `browser-pass`; 9B-8 is `scoped-gates-pass` / `restore-gates-pass`. Its focused evidence verifies retained note/module/source identity and rhythm/progress history through delete/restore/purge/new revision, including `valid`/`source_deleted`/`stale`/`source_unavailable`; positive promotion only follows explicit source refresh. Backup→verify→new empty target restore preserves v10 notes/blocks/module links/source tombstones/rhythm/allocations/operation/progress history. Restore acceptance reads v10 state but neither calls provider/index/refresh nor repairs/promotes a source status. S1 still does not auto-replan or schedule work. Real-provider generation, system screen-reader evidence and final closeout remain unimplemented; this is not Phase 9B completed or real-pass.
+> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-6 are `implemented/backend-pass`; 9B-7 is `browser-pass`; 9B-8 is `scoped-gates-pass` / `restore-gates-pass`; 9B-9 has completed the scoped Gate A-I acceptance closeout. Its evidence verifies retained note/module/source identity and rhythm/progress history through delete/restore/purge/new revision, including `valid`/`source_deleted`/`stale`/`source_unavailable`; positive promotion only follows explicit source refresh. Backup→verify→new empty target restore preserves v10 notes/blocks/module links/source tombstones/rhythm/allocations/operation/progress history. Restore acceptance reads v10 state but neither calls provider/index/refresh nor repairs/promotes a source status. S1 still does not auto-replan or schedule work. The scoped completion statement does not cover Phase 9C/9D, real-provider generation, human review, scheduler/worker, system screen-reader evidence or global production real-pass.
 
-Next task: **9B-9 acceptance closeout**. It must consolidate only verified gates and create desensitized evidence without expanding product scope.
+Next task: implement and separately contract Phase 9C/9D work; do not expand the closed 9B scope.
