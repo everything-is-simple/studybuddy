@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-状态：architecture plus Phase 4–7 implementation 和 Phase 8 completed（deterministic fake-provider scope）；material revision、deterministic chunks、lexical/vector/hybrid retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。Phase 8 的 schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace 和 backup/restore closeout 已完成；证据见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。Phase 9A 当前仅有 `planned/audit-draft` 的代码审计与范围文档（[`PHASE9A_DOMAIN_CONTRACT.md`](PHASE9A_DOMAIN_CONTRACT.md)），学习目标、知识模块、学习计划、进度事件及其 schema/API/UI 尚未实现。人工简答复核、真实 Provider generation 和后续学习工作流仍按主路线图推进。
+状态：architecture plus Phase 4–7 implementation 和 Phase 8 completed（deterministic fake-provider scope）；material revision、deterministic chunks、lexical/vector/hybrid retrieval、retrieval persistence、context assembly with citation contract、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation navigation 和浏览器验收已实现。Phase 8 的 schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace 和 backup/restore closeout 已完成；证据见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。Phase 9A 当前已完成 `planned/audit-draft` 的 9A-0 代码审计和 `planned/contract-frozen` 的 9A-1 正式领域契约/状态机冻结（[`PHASE9A_DOMAIN_CONTRACT.md`](PHASE9A_DOMAIN_CONTRACT.md)），学习目标、知识模块、学习计划、进度事件及其 schema/API/UI 尚未实现。人工简答复核、真实 Provider generation 和后续学习工作流仍按主路线图推进。
 
 ## 1. 范围与原则
 

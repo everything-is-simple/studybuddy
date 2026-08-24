@@ -151,7 +151,7 @@ Phase 8.1–8.6 已收口：v7/v8 migration、Cards/Exercises backend、fake-pro
 
 ### 当前阶段：Phase 9A-0 审计收口与 9A-1 契约准备
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，Phase 8.6 fake-provider closeout 已完成；Phase 9A 当前仅完成 9A-0 的代码审计与范围冻结文档，正式学习领域/计划能力仍未实现，下一步是 9A-1 正式契约与状态机冻结。既有 Provider adapter 范围仍为：
+Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，Phase 8.6 fake-provider closeout 已完成；Phase 9A 当前已完成 9A-0 代码审计/范围冻结和 9A-1 正式领域契约/状态机冻结，但正式学习领域/计划能力仍未实现，下一步是 9A-2 migration/schema。既有 Provider adapter 范围仍为：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；
