@@ -110,32 +110,41 @@ class FakeLLMProvider:
             raise ProviderError("provider_invalid_request")
         fingerprint = hashlib.sha256((question + "\x1f" + "\x1f".join(citation_keys)).encode("utf-8")).hexdigest()[:12]
         if request.generation_kind:
-            if request.generation_kind not in {"card", "exercise"} or not 1 <= request.generation_count <= 10:
+            if request.generation_kind not in {"card", "exercise", "note"} or not 1 <= request.generation_count <= 10:
+                raise ProviderError("provider_invalid_request")
+            if request.generation_kind == "note" and request.generation_count != 1:
                 raise ProviderError("provider_invalid_request")
             if request.generation_kind == "exercise" and request.exercise_type not in {"multiple_choice", "true_false", "short_answer"}:
                 raise ProviderError("provider_invalid_request")
             if not citation_keys or not snippets:
                 raise ProviderError("provider_invalid_request")
-            items: list[dict[str, object]] = []
-            for index in range(request.generation_count):
-                key, snippet = citation_keys[index % len(citation_keys)], snippets[index % len(snippets)]
-                if request.generation_kind == "card":
-                    items.append({"front": f"What does the source say about {question}?", "back": snippet,
-                                  "explanation": "Generated from retrieved source context.", "tags": ["generated"],
-                                  "citations": [key]})
-                elif request.exercise_type == "multiple_choice":
-                    items.append({"exercise_type": "multiple_choice", "prompt": f"Which statement is supported about {question}?",
-                                  "options": [snippet, "The source provides no support."], "answer_key": 0,
-                                  "explanation": "The first option is grounded in the cited context.", "citations": [key]})
-                elif request.exercise_type == "true_false":
-                    items.append({"exercise_type": "true_false", "prompt": f"True or false: {snippet}",
-                                  "options": [], "answer_key": True,
-                                  "explanation": "The statement is grounded in the cited context.", "citations": [key]})
-                else:
-                    items.append({"exercise_type": "short_answer", "prompt": f"Explain the source finding about {question}.",
-                                  "options": [], "answer_key": snippet,
-                                  "explanation": "Compare the response with the cited context.", "citations": [key]})
-            answer = json.dumps({"items": items}, ensure_ascii=False, separators=(",", ":"))
+            if request.generation_kind == "note":
+                blocks = [
+                    {"block_kind": "heading", "content": f"Notes on {question}", "citation_keys": [citation_keys[0]]},
+                    {"block_kind": "text", "content": f"The retrieved material contains evidence relevant to {question}.", "citation_keys": [citation_keys[0]]},
+                ]
+                answer = json.dumps({"title": f"Notes on {question}", "blocks": blocks}, ensure_ascii=False, separators=(",", ":"))
+            else:
+                items: list[dict[str, object]] = []
+                for index in range(request.generation_count):
+                    key, snippet = citation_keys[index % len(citation_keys)], snippets[index % len(snippets)]
+                    if request.generation_kind == "card":
+                        items.append({"front": f"What does the source say about {question}?", "back": snippet,
+                                      "explanation": "Generated from retrieved source context.", "tags": ["generated"],
+                                      "citations": [key]})
+                    elif request.exercise_type == "multiple_choice":
+                        items.append({"exercise_type": "multiple_choice", "prompt": f"Which statement is supported about {question}?",
+                                      "options": [snippet, "The source provides no support."], "answer_key": 0,
+                                      "explanation": "The first option is grounded in the cited context.", "citations": [key]})
+                    elif request.exercise_type == "true_false":
+                        items.append({"exercise_type": "true_false", "prompt": f"True or false: {snippet}",
+                                      "options": [], "answer_key": True,
+                                      "explanation": "The statement is grounded in the cited context.", "citations": [key]})
+                    else:
+                        items.append({"exercise_type": "short_answer", "prompt": f"Explain the source finding about {question}.",
+                                      "options": [], "answer_key": snippet,
+                                      "explanation": "Compare the response with the cited context.", "citations": [key]})
+                answer = json.dumps({"items": items}, ensure_ascii=False, separators=(",", ":"))
         elif snippets:
             cited = " ".join(f"[{key}]" for key in citation_keys)
             answer = f"Fake answer {fingerprint}: {snippets[0]} {cited}".strip()
