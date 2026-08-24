@@ -1,8 +1,8 @@
-# Phase 9A 领域契约与现状审计（9A-0 初稿）
+# Phase 9A 领域契约与现状审计（9A-0/9A-1 冻结版）
 
-> 状态：`planned` / 9A-0 audit draft。
+> 状态：`planned`；9A-0 `audit-draft` 与 9A-1 `contract-frozen` 已完成。
 >
-> 本文只记录当前正式代码审计、Phase 9A 的边界和待冻结问题。本文不是 migration、API、repository 或 UI 的实现证据；在 9A-1 之前，候选模型和决策问题仍可调整。
+> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。本文不是 migration、API、repository 或 UI 的实现证据；当前 schema 仍为 v8，正式实现从 9A-2 migration gate 开始。
 >
 > 审计基线：commit `c083975`，审计日期：2026-08-30。
 
@@ -18,23 +18,23 @@
 - 当前 UI 是 `backend/app/main.py` 中生成的内嵌 HTML/JavaScript 单页，不是独立前端工程。Materials、Q&A、Cards/Exercises 共用页面导航、状态区和 workspace 风格。
 - 当前没有学习目标、知识模块、study plan/item、dependency 或 progress event 表、repository、API 或 UI。Phase 9A 必须从正式 contract 开始，不能把历史版本实现当作已存在能力。
 
-## 2. 9A 术语候选
+## 2. 9A 正式术语
 
-以下是 9A-1 需要冻结的候选 glossary：
+以下 glossary 已由 9A-1 冻结；“未实现”描述的是代码状态，不是术语仍待决策：
 
 | 术语 | 当前候选含义 | 当前状态 |
 |---|---|---|
-| Learning Goal | 用户希望达成的学习方向或结果，可作为一个或多个计划的上层目标 | 候选，未实现 |
-| Knowledge Module | 可复用的学习主题/知识单元，保存结构化标题和描述，并可关联正式 source revision/citation | 候选，未实现 |
-| Study Plan | 一组有序学习项的用户计划，候选生命周期为 draft → confirmed/active → paused/completed/archived | 候选，未实现 |
-| Study Plan Item | 计划中的一个可跟踪学习项，可关联 module、revision/citation、deck 或 exercise set | 候选，未实现 |
-| Dependency | 计划项之间的 prerequisite 关系 | 候选，未实现 |
-| Progress Event | 描述某项进度事实的 append-only 记录 | 候选，未实现 |
-| Progress Summary | 从 progress event 和当前计划项状态计算出的展示摘要 | 候选，未实现 |
-| Source Link | 计划对象到 material revision/chunk/span/citation 的安全引用关系，不复制正文 | 候选，未实现 |
+| Learning Goal | 用户希望达成的学习方向或结果，可作为一个或多个计划的上层目标 | 正式契约，未实现 |
+| Knowledge Module | 可复用的学习主题/知识单元，保存结构化标题和描述，并可关联正式 source revision/citation | 正式契约，未实现 |
+| Study Plan | 一组有序学习项的用户计划，生命周期为 draft → confirmed → active，并支持 paused/completed/archived | 正式契约，未实现 |
+| Study Plan Item | 计划中的一个可跟踪学习项，可关联 module、revision/citation、deck 或 exercise set | 正式契约，未实现 |
+| Dependency | 同一 plan 内计划项之间的 prerequisite DAG 关系 | 正式契约，未实现 |
+| Progress Event | 描述某项进度事实的 append-only 记录，事件类型为 started/completed/skipped/reopened | 正式契约，未实现 |
+| Progress Summary | 从 progress event 和当前计划项状态计算出的只读展示摘要 | 正式契约，未实现 |
+| Source Link | module/item 到 material revision/chunk/span/citation 的安全引用关系，不复制正文 | 正式契约，未实现 |
 | User-edited | 用户对 draft 或 item 内容做过显式修改的保护标记 | 需与领域状态一起冻结 |
 
-这些词不表示前代 `KnowledgeModule`、历史 study plan 或其它参考项目已被正式系统吸收。
+这些词的正式定义不表示前代 `KnowledgeModule`、历史 study plan 或其它参考项目已被正式系统吸收；正式代码仍未实现。
 
 ## 3. 当前实现审计
 
@@ -166,7 +166,7 @@
 6. active/deleted/purged/stale/unavailable source 的安全展示和状态传播；
 7. 单进程 SQLite backend、API、最小 Chromium workspace、backup/restore 验证。
 
-具体字段、状态、是否纳入 pause/archive/complete、AI draft 以及 source link 层级必须在 9A-1 冻结。
+具体字段、状态、pause/archive/complete、AI draft 和 source link 层级已在 9A-1 冻结，详见第 5–7 节。
 
 ### 4.2 明确排除
 
@@ -187,7 +187,7 @@
 - 所有 9A 对象按 `project_id` 隔离，客户端不能跨 project 读取或修改；
 - source link 只保存 identity/受限 metadata，不复制正文；
 - plan/item 的状态转移由服务端校验，非法转移不会部分写入；
-- dependency 必须拒绝自依赖和环依赖；若允许跨 plan，必须验证同 project 和生命周期；
+- dependency 只允许同一 plan 内，必须拒绝自依赖、重复边和环依赖；
 - progress history append-only，summary 可以从事件和当前 item 事实重算；
 - confirmed、active、completed 或 user-edited 内容不得被重新生成静默覆盖；
 - source purge 保留用户计划和进度历史，但 source link 只能显示 unavailable，不能伪造可定位来源；
@@ -357,7 +357,7 @@ API resource 只冻结资源边界，不在 9A-1 实现：
 - 9D 在需求、隐私、保留策略、真实组件证据和运维成本评审通过前不立项；9A 不预留 OCR/ASR/report 业务表。
 - 9A 完成不代表以上任何子阶段实现，也不代表 Phase 9 完成。
 
-## 7. 9A-0 验收与下一步
+## 9. 9A-0/9A-1 验收与下一步
 
 ### 已完成的 9A-0/9A-1 输出
 
