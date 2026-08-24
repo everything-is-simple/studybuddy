@@ -4,7 +4,7 @@
 >
 > 本文只记录当前正式代码审计、Phase 9A 的边界和待冻结问题。本文不是 migration、API、repository 或 UI 的实现证据；在 9A-1 之前，候选模型和决策问题仍可调整。
 >
-> 审计基线：commit `c86b160`，审计日期：2026-08-30。
+> 审计基线：commit `c083975`，审计日期：2026-08-30。
 
 ## 1. 审计结论摘要
 
@@ -55,7 +55,7 @@
   8. `phase8_exercise_provenance`
 - `migrate()` 使用 `BEGIN IMMEDIATE`，逐个执行 migration 并插入 history；最后设置 `PRAGMA user_version` 并 commit。`MigrationError` 或 SQLite/OSError 会 rollback。
 - `_baseline_complete()` 只允许已知且完整的当前基础对象通过；未知 future version、history mismatch、缺失 required object 不会被启动自动修复。
-- 当前新 Phase 9A 应新增 v9 或后续连续版本，不应修改 v1–v8 history，也不应在连接初始化时 ad-hoc 建表。
+- 当前新 Phase 9A 若进入 schema 实现，应新增 v9 或后续连续版本，不应修改 v1–v8 history，也不应在连接初始化时 ad-hoc 建表；当前仍停留在 9A-0 审计，不得提前改动 `CURRENT_SCHEMA_VERSION`。
 
 **现有 migration 测试：** `backend/tests/test_migrations.py`
 
@@ -251,7 +251,7 @@ project
 
 ### 9A-0 的准确状态
 
-`Phase 9A-0 planned/audit-draft`：审计和范围冻结文档已形成；没有实现学习目标、知识模块、计划、计划项、依赖或进度能力；没有新增 migration、业务表、API 或 UI。
+`Phase 9A-0 planned/audit-draft`：审计和范围冻结文档已形成；没有实现学习目标、知识模块、计划、计划项、依赖或进度能力；没有新增 migration、业务表、API 或 UI。当前 schema 仍为 v8；9A-1 未冻结正式领域契约，9A-2 之前不得实现 v9 migration。
 
 ### 下一步
 
