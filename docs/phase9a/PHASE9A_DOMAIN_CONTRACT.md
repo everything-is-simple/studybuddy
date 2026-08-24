@@ -383,7 +383,7 @@ The source-link tables are intentionally separate rather than a polymorphic owne
 
 SQLite v9 enforces lifecycle enum membership, `user_edited` boolean values, non-negative item position, dependency self-edge rejection, unique item positions, unique dependency edges, unique source citation key per owner, source-link status membership and foreign-key existence where identities remain available.
 
-9A-3 must enforce transactionally and test: same-project ownership across every optional reference; same-plan dependency endpoints; full DAG cycle detection; plan/item transition graph; goal/module archive action restrictions; append-only operation policy; active-plan-only progress events; item projection from events; source identity/citation validation; source lifecycle refresh; title/description/metadata size and JSON validation; duplicate-progress idempotency policy; and user-edit/confirmed/completed protection. SQLite CHECK/foreign keys alone cannot prove these cross-row or temporal rules.
+9A-3 must enforce transactionally and test: same-project ownership across every optional reference; same-plan dependency endpoints; full DAG cycle detection; plan/item transition graph; goal/module archive action restrictions; append-only operation policy; active-plan-only progress events; item projection from events; source identity/citation validation; source lifecycle refresh; title/description/metadata size and JSON validation; duplicate-progress idempotency policy; and user-edit/confirmed/completed protection. These repository/domain rules are implemented and covered by `backend/tests/test_phase9a_domain.py`; SQLite CHECK/foreign keys alone cannot prove the cross-row or temporal rules.
 
 ### 9.3 v9 migration transaction and test evidence
 
@@ -399,9 +399,9 @@ Focused migration coverage in `backend/tests/test_migrations.py` verifies:
 
 No migration writes plan/goal/module data, creates runtime tables, repairs source links or changes existing Phase 8 data.
 
-## 10. 9A-0/9A-1/9A-2 验收与下一步
+## 10. 9A-0/9A-1/9A-2/9A-3 验收与下一步
 
-### 已完成的 9A-0/9A-1/9A-2 输出
+### 已完成的 9A-0/9A-1/9A-2/9A-3 输出
 
 - 当前 migration version、history 和 rollback 机制已定位；
 - repository 事务边界和 ID/time/project 约定已定位；
@@ -410,7 +410,9 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 - main.py 路由、内嵌 UI、测试 fixture 和 browser 运行方式已定位；
 - 9A 纳入范围、明确排除、正式不变量、正式关系和 9A-1 决策已记录；
 - v9 `phase9a_learning_plan_schema` 已通过 migration runner 创建八张 9A 表及约束/索引；
-- 新库、v8→v9、重复运行、v9 failure rollback、backup/restore schema history 已有 focused backend coverage。
+- 新库、v8→v9、重复运行、v9 failure rollback、backup/restore schema history 已有 focused backend coverage；
+- repository/domain 已实现 goal/module archive 与编辑、plan draft/confirm/active、item 编辑/归档、同 plan DAG dependency、append-only progress/projection/summary、source identity validation 和材料 lifecycle refresh；
+- `backend/tests/test_phase9a_domain.py` 覆盖状态转移、cycle、progress rollback/replay、cross-project rejection、completed protection、source stale/unavailable 和 archive boundary。
 
 ### 9A-0/9A-1/9A-2 的准确状态
 
@@ -420,8 +422,10 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 
 `Phase 9A-2 implemented/backend-pass`：v9 migration/schema、new-db/v8-upgrade/idempotency/failure-rollback 和 backup/restore schema-history tests 已通过。
 
-9A-2 不代表学习目标、知识模块、计划、计划项、依赖或进度的可用领域能力已经完成：repository/domain、API、UI、source lifecycle integration、9A artifact backup/restore lifecycle evidence 和 Chromium acceptance 尚未实现。当前 schema 为 v9；startup/read/backup/restore 不创建 plan data、不 repair source link、不生成内容。
+9A-2 不代表学习目标、知识模块、计划、计划项、依赖或进度的完整可用用户路径已经完成：API、UI、source lifecycle 的完整 API contract、9A artifact backup/restore lifecycle evidence 和 Chromium acceptance 尚未实现。当前 schema 为 v9；startup/read/backup/restore 不创建 plan data、不 repair source link、不生成内容。
+
+`Phase 9A-3 implemented/backend-pass`：repository/domain transaction、DAG cycle detection、append-only progress、状态投影、跨表/project 验证、用户编辑保护和 source lifecycle refresh 已通过 focused domain tests，并通过完整 backend regression。该状态不代表 API/UI 或 Phase 9A completed。
 
 ### 下一步
 
-进入 9A-3：实现 repository/domain transaction、DAG cycle detection、append-only progress、状态投影、跨表/project 验证与用户编辑保护。9A-3 不实现 HTTP API 或 UI；若发现 schema 需要改变本契约，先停止并提交契约修订。
+进入 9A-4：将已通过 repository/domain 测试的能力暴露为最小 API，保持稳定错误、输入边界、project scope 和隐私 contract；不实现完整 UI。

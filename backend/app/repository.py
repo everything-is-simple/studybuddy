@@ -371,6 +371,7 @@ def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite
             return None
         _refresh_exercise_citations_for_material(connection, material_id)
         _refresh_card_citations_for_material(connection, material_id)
+        _refresh_study_source_links_for_material(connection, material_id)
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, "
@@ -992,6 +993,653 @@ def submit_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, 
     return {"id": attempt_id, "exercise_id": exercise_id, "score": score, "is_correct": correct, "grading_status": grading}
 
 
+# Phase 9A domain repository. These functions own SQLite transactions and
+# leave HTTP serialization to the later API task.
+STUDY_TEXT_MAX = 4000
+STUDY_DESCRIPTION_MAX = 10000
+STUDY_METADATA_MAX = 10000
+STUDY_GOAL_PREFIX = "goal_"
+STUDY_MODULE_PREFIX = "module_"
+STUDY_PLAN_PREFIX = "plan_"
+STUDY_ITEM_PREFIX = "plan_item_"
+STUDY_DEPENDENCY_PREFIX = "plan_dependency_"
+STUDY_PROGRESS_PREFIX = "progress_"
+STUDY_SOURCE_PREFIX = "study_source_"
+STUDY_PLAN_STATUSES = {"draft", "confirmed", "active", "paused", "completed", "archived"}
+STUDY_ITEM_STATUSES = {"pending", "in_progress", "completed", "skipped", "archived"}
+STUDY_PROGRESS_EVENTS = {"started", "completed", "skipped", "reopened"}
+STUDY_SOURCE_STATUSES = {"valid", "source_deleted", "source_unavailable", "stale"}
+
+
+def _study_text(value: object, *, code: str, maximum: int, allow_empty: bool = False) -> str:
+    if not isinstance(value, str) or len(value) > maximum:
+        raise ValueError(code)
+    result = value.strip()
+    if not allow_empty and not result:
+        raise ValueError(code)
+    return result
+
+
+def _study_description(value: object, *, code: str = "study_plan_invalid_payload") -> str:
+    return _study_text(value, code=code, maximum=STUDY_DESCRIPTION_MAX, allow_empty=True)
+
+
+def _study_project_exists(connection: sqlite3.Connection, project_id: str) -> bool:
+    return connection.execute("SELECT 1 FROM projects WHERE id = ?", (project_id,)).fetchone() is not None
+
+
+def _study_goal_row(connection: sqlite3.Connection, *, project_id: str, goal_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM learning_goals WHERE id = ? AND project_id = ?", (goal_id, project_id)
+    ).fetchone()
+
+
+def _study_module_row(connection: sqlite3.Connection, *, project_id: str, module_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM knowledge_modules WHERE id = ? AND project_id = ?", (module_id, project_id)
+    ).fetchone()
+
+
+def create_learning_goal(connection: sqlite3.Connection, *, project_id: str, title: object,
+                         description: object = "") -> dict[str, object]:
+    title_value = _study_text(title, code="study_goal_invalid_payload", maximum=STUDY_TEXT_MAX)
+    description_value = _study_description(description, code="study_goal_invalid_payload")
+    if not _study_project_exists(connection, project_id):
+        raise ValueError("project_not_found")
+    goal_id = f"{STUDY_GOAL_PREFIX}{uuid.uuid4().hex}"
+    now = utc_now()
+    with connection:
+        connection.execute(
+            "INSERT INTO learning_goals (id,project_id,title,description,status,created_at,updated_at,archived_at) "
+            "VALUES (?,?,?,?,?,?,?,NULL)",
+            (goal_id, project_id, title_value, description_value, "active", now, now),
+        )
+    return dict(_study_goal_row(connection, project_id=project_id, goal_id=goal_id))
+
+
+def list_learning_goals(connection: sqlite3.Connection, *, project_id: str,
+                        include_archived: bool = False) -> list[dict[str, object]]:
+    where = "project_id = ?" if include_archived else "project_id = ? AND status = 'active'"
+    return [dict(row) for row in connection.execute(
+        "SELECT * FROM learning_goals WHERE " + where + " ORDER BY updated_at DESC, id DESC", (project_id,)
+    ).fetchall()]
+
+
+def get_learning_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: str) -> dict[str, object] | None:
+    row = _study_goal_row(connection, project_id=project_id, goal_id=goal_id)
+    return dict(row) if row is not None else None
+
+
+def archive_learning_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: str) -> dict[str, object]:
+    now = utc_now()
+    with connection:
+        row = _study_goal_row(connection, project_id=project_id, goal_id=goal_id)
+        if row is None:
+            raise ValueError("learning_goal_not_found")
+        if row["status"] == "archived":
+            return dict(row)
+        connection.execute(
+            "UPDATE learning_goals SET status='archived', archived_at=?, updated_at=? WHERE id=? AND project_id=?",
+            (now, now, goal_id, project_id),
+        )
+    return dict(_study_goal_row(connection, project_id=project_id, goal_id=goal_id))
+
+
+def update_learning_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: str,
+                         title: object | None = None, description: object | None = None) -> dict[str, object]:
+    with connection:
+        row = _study_goal_row(connection, project_id=project_id, goal_id=goal_id)
+        if row is None:
+            raise ValueError("learning_goal_not_found")
+        if row["status"] == "archived":
+            raise ValueError("learning_goal_archived")
+        next_title = str(row["title"]) if title is None else _study_text(title, code="study_goal_invalid_payload", maximum=STUDY_TEXT_MAX)
+        next_description = str(row["description"]) if description is None else _study_description(description, code="study_goal_invalid_payload")
+        connection.execute(
+            "UPDATE learning_goals SET title=?,description=?,updated_at=? WHERE id=? AND project_id=?",
+            (next_title, next_description, utc_now(), goal_id, project_id),
+        )
+    return dict(_study_goal_row(connection, project_id=project_id, goal_id=goal_id))
+
+
+def create_knowledge_module(connection: sqlite3.Connection, *, project_id: str, title: object,
+                            description: object = "") -> dict[str, object]:
+    title_value = _study_text(title, code="study_module_invalid_payload", maximum=STUDY_TEXT_MAX)
+    description_value = _study_description(description, code="study_module_invalid_payload")
+    if not _study_project_exists(connection, project_id):
+        raise ValueError("project_not_found")
+    module_id = f"{STUDY_MODULE_PREFIX}{uuid.uuid4().hex}"
+    now = utc_now()
+    with connection:
+        connection.execute(
+            "INSERT INTO knowledge_modules (id,project_id,title,description,status,created_at,updated_at,archived_at) "
+            "VALUES (?,?,?,?,?,?,?,NULL)",
+            (module_id, project_id, title_value, description_value, "active", now, now),
+        )
+    return dict(_study_module_row(connection, project_id=project_id, module_id=module_id))
+
+
+def list_knowledge_modules(connection: sqlite3.Connection, *, project_id: str,
+                           include_archived: bool = False) -> list[dict[str, object]]:
+    where = "project_id = ?" if include_archived else "project_id = ? AND status = 'active'"
+    return [dict(row) for row in connection.execute(
+        "SELECT * FROM knowledge_modules WHERE " + where + " ORDER BY updated_at DESC, id DESC", (project_id,)
+    ).fetchall()]
+
+
+def get_knowledge_module(connection: sqlite3.Connection, *, project_id: str, module_id: str) -> dict[str, object] | None:
+    row = _study_module_row(connection, project_id=project_id, module_id=module_id)
+    return dict(row) if row is not None else None
+
+
+def update_knowledge_module(connection: sqlite3.Connection, *, project_id: str, module_id: str,
+                            title: object | None = None, description: object | None = None) -> dict[str, object]:
+    with connection:
+        row = _study_module_row(connection, project_id=project_id, module_id=module_id)
+        if row is None:
+            raise ValueError("knowledge_module_not_found")
+        if row["status"] == "archived":
+            raise ValueError("knowledge_module_archived")
+        next_title = str(row["title"]) if title is None else _study_text(title, code="study_module_invalid_payload", maximum=STUDY_TEXT_MAX)
+        next_description = str(row["description"]) if description is None else _study_description(description, code="study_module_invalid_payload")
+        connection.execute(
+            "UPDATE knowledge_modules SET title=?,description=?,updated_at=? WHERE id=? AND project_id=?",
+            (next_title, next_description, utc_now(), module_id, project_id),
+        )
+    return dict(_study_module_row(connection, project_id=project_id, module_id=module_id))
+
+
+def archive_knowledge_module(connection: sqlite3.Connection, *, project_id: str, module_id: str) -> dict[str, object]:
+    now = utc_now()
+    with connection:
+        row = _study_module_row(connection, project_id=project_id, module_id=module_id)
+        if row is None:
+            raise ValueError("knowledge_module_not_found")
+        if row["status"] == "archived":
+            return dict(row)
+        connection.execute(
+            "UPDATE knowledge_modules SET status='archived', archived_at=?, updated_at=? WHERE id=? AND project_id=?",
+            (now, now, module_id, project_id),
+        )
+    return dict(_study_module_row(connection, project_id=project_id, module_id=module_id))
+
+
+def _study_plan_row(connection: sqlite3.Connection, *, project_id: str, plan_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM study_plans WHERE id = ? AND project_id = ?", (plan_id, project_id)
+    ).fetchone()
+
+
+def _study_plan_items(connection: sqlite3.Connection, *, plan_id: str, project_id: str) -> list[dict[str, object]]:
+    return [dict(row) for row in connection.execute(
+        "SELECT * FROM study_plan_items WHERE plan_id=? AND project_id=? ORDER BY position,id",
+        (plan_id, project_id),
+    ).fetchall()]
+
+
+def _study_dependencies(connection: sqlite3.Connection, *, plan_id: str, project_id: str) -> list[dict[str, object]]:
+    return [dict(row) for row in connection.execute(
+        "SELECT * FROM study_plan_dependencies WHERE plan_id=? AND project_id=? ORDER BY created_at,id",
+        (plan_id, project_id),
+    ).fetchall()]
+
+
+def _study_source_links(connection: sqlite3.Connection, *, plan_id: str, project_id: str) -> list[dict[str, object]]:
+    return [dict(row) for row in connection.execute(
+        "SELECT l.* FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
+        "WHERE i.plan_id=? AND l.project_id=? ORDER BY l.created_at,l.id", (plan_id, project_id)
+    ).fetchall()]
+
+
+def study_progress_summary(connection: sqlite3.Connection, *, plan_id: str, project_id: str) -> dict[str, object]:
+    rows = connection.execute(
+        "SELECT status, COUNT(*) AS count FROM study_plan_items WHERE plan_id=? AND project_id=? "
+        "GROUP BY status", (plan_id, project_id)
+    ).fetchall()
+    counts = {status: int(row["count"]) for status, row in ((str(row["status"]), row) for row in rows)}
+    item_count = sum(count for status, count in counts.items() if status != "archived")
+    completed = counts.get("completed", 0)
+    last_event = connection.execute(
+        "SELECT created_at FROM study_progress_events WHERE plan_id=? AND project_id=? ORDER BY created_at DESC,id DESC LIMIT 1",
+        (plan_id, project_id),
+    ).fetchone()
+    warnings = connection.execute(
+        "SELECT COUNT(*) FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
+        "WHERE i.plan_id=? AND l.project_id=? AND l.status != 'valid'", (plan_id, project_id)
+    ).fetchone()[0]
+    return {
+        "item_count": item_count,
+        "completed_count": completed,
+        "skipped_count": counts.get("skipped", 0),
+        "in_progress_count": counts.get("in_progress", 0),
+        "pending_count": counts.get("pending", 0),
+        "archived_count": counts.get("archived", 0),
+        "completion_ratio": (completed / item_count) if item_count else 0.0,
+        "last_event_at": last_event[0] if last_event else None,
+        "source_warning_count": int(warnings),
+    }
+
+
+def _study_plan_public(connection: sqlite3.Connection, *, project_id: str, plan_id: str) -> dict[str, object]:
+    row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    if row is None:
+        raise ValueError("study_plan_not_found")
+    return {
+        **dict(row),
+        "items": _study_plan_items(connection, plan_id=plan_id, project_id=project_id),
+        "dependencies": _study_dependencies(connection, plan_id=plan_id, project_id=project_id),
+        "source_links": _study_source_links(connection, plan_id=plan_id, project_id=project_id),
+        "progress": study_progress_summary(connection, plan_id=plan_id, project_id=project_id),
+    }
+
+
+def create_study_plan(connection: sqlite3.Connection, *, project_id: str, goal_id: str,
+                      title: object, description: object = "") -> dict[str, object]:
+    title_value = _study_text(title, code="study_plan_invalid_payload", maximum=STUDY_TEXT_MAX)
+    description_value = _study_description(description)
+    goal = _study_goal_row(connection, project_id=project_id, goal_id=goal_id)
+    if goal is None:
+        raise ValueError("study_plan_goal_invalid")
+    if goal["status"] != "active":
+        raise ValueError("learning_goal_archived")
+    plan_id = f"{STUDY_PLAN_PREFIX}{uuid.uuid4().hex}"
+    now = utc_now()
+    with connection:
+        connection.execute(
+            "INSERT INTO study_plans (id,project_id,goal_id,title,description,status,user_edited,created_at,updated_at,"
+            "confirmed_at,activated_at,completed_at,archived_at) VALUES (?,?,?,?,?,'draft',0,?,?,NULL,NULL,NULL,NULL)",
+            (plan_id, project_id, goal_id, title_value, description_value, now, now),
+        )
+    return _study_plan_public(connection, project_id=project_id, plan_id=plan_id)
+
+
+def list_study_plans(connection: sqlite3.Connection, *, project_id: str,
+                      include_archived: bool = False) -> list[dict[str, object]]:
+    where = "project_id=?" if include_archived else "project_id=? AND status!='archived'"
+    rows = connection.execute("SELECT id FROM study_plans WHERE " + where + " ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()
+    return [_study_plan_public(connection, project_id=project_id, plan_id=str(row[0])) for row in rows]
+
+
+def get_study_plan(connection: sqlite3.Connection, *, project_id: str, plan_id: str) -> dict[str, object] | None:
+    row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    return _study_plan_public(connection, project_id=project_id, plan_id=plan_id) if row is not None else None
+
+
+def _study_plan_for_edit(connection: sqlite3.Connection, *, project_id: str, plan_id: str) -> sqlite3.Row:
+    row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    if row is None:
+        raise ValueError("study_plan_not_found")
+    if row["status"] not in {"draft", "confirmed"}:
+        raise ValueError("study_plan_edit_not_allowed")
+    return row
+
+
+def update_study_plan(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                      title: object | None = None, description: object | None = None) -> dict[str, object]:
+    now = utc_now()
+    with connection:
+        row = _study_plan_for_edit(connection, project_id=project_id, plan_id=plan_id)
+        title_value = str(row["title"]) if title is None else _study_text(title, code="study_plan_invalid_payload", maximum=STUDY_TEXT_MAX)
+        description_value = str(row["description"]) if description is None else _study_description(description)
+        next_status = "draft" if row["status"] == "confirmed" else row["status"]
+        connection.execute(
+            "UPDATE study_plans SET title=?,description=?,status=?,user_edited=1,updated_at=?,confirmed_at=? WHERE id=? AND project_id=?",
+            (title_value, description_value, next_status, now, None if next_status == "draft" else row["confirmed_at"], plan_id, project_id),
+        )
+    return _study_plan_public(connection, project_id=project_id, plan_id=plan_id)
+
+
+def transition_study_plan(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                          target: str) -> dict[str, object]:
+    allowed = {
+        "draft": {"confirmed", "archived"}, "confirmed": {"draft", "active", "archived"},
+        "active": {"paused", "completed", "archived"}, "paused": {"active", "completed", "archived"},
+        "completed": {"archived"}, "archived": set(),
+    }
+    now = utc_now()
+    with connection:
+        row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+        if row is None:
+            raise ValueError("study_plan_not_found")
+        if target not in allowed.get(str(row["status"]), set()):
+            raise ValueError("study_plan_invalid_state")
+        if target == "active" and row["status"] != "confirmed":
+            raise ValueError("study_plan_confirm_required")
+        confirmed_at = now if target == "confirmed" else row["confirmed_at"]
+        activated_at = now if target == "active" else row["activated_at"]
+        completed_at = now if target == "completed" else row["completed_at"]
+        archived_at = now if target == "archived" else row["archived_at"]
+        connection.execute(
+            "UPDATE study_plans SET status=?,confirmed_at=?,activated_at=?,completed_at=?,archived_at=?,updated_at=? WHERE id=? AND project_id=?",
+            (target, confirmed_at, activated_at, completed_at, archived_at, now, plan_id, project_id),
+        )
+    return _study_plan_public(connection, project_id=project_id, plan_id=plan_id)
+
+
+def _study_item_row(connection: sqlite3.Connection, *, project_id: str, plan_id: str, item_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM study_plan_items WHERE id=? AND project_id=? AND plan_id=?", (item_id, project_id, plan_id)
+    ).fetchone()
+
+
+def _study_item_edit_plan(connection: sqlite3.Connection, *, project_id: str, plan_id: str) -> sqlite3.Row:
+    row = _study_plan_for_edit(connection, project_id=project_id, plan_id=plan_id)
+    if row["status"] == "confirmed":
+        now = utc_now()
+        connection.execute("UPDATE study_plans SET status='draft',confirmed_at=NULL,updated_at=? WHERE id=?", (now, plan_id))
+        row = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    return row
+
+
+def _study_optional_reference(connection: sqlite3.Connection, *, table: str, value: str | None,
+                              project_id: str, archived_allowed: bool = False) -> None:
+    if value is None:
+        return
+    row = connection.execute(f"SELECT project_id,status FROM {table} WHERE id=?", (value,)).fetchone()
+    if row is None or row["project_id"] != project_id or (not archived_allowed and row["status"] != "active"):
+        raise ValueError("study_plan_item_invalid_payload")
+
+
+def create_study_plan_item(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                           title: object, description: object = "", position: int | None = None,
+                           module_id: str | None = None, deck_id: str | None = None,
+                           exercise_set_id: str | None = None) -> dict[str, object]:
+    title_value = _study_text(title, code="study_plan_item_invalid_payload", maximum=STUDY_TEXT_MAX)
+    description_value = _study_description(description)
+    with connection:
+        plan = _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        _study_optional_reference(connection, table="knowledge_modules", value=module_id, project_id=project_id)
+        _study_optional_reference(connection, table="study_decks", value=deck_id, project_id=project_id)
+        _study_optional_reference(connection, table="exercise_sets", value=exercise_set_id, project_id=project_id)
+        max_position = connection.execute("SELECT COALESCE(MAX(position), -1) FROM study_plan_items WHERE plan_id=?", (plan_id,)).fetchone()[0]
+        item_position = max_position + 1 if position is None else position
+        if not isinstance(item_position, int) or item_position < 0:
+            raise ValueError("study_plan_item_invalid_payload")
+        item_id = f"{STUDY_ITEM_PREFIX}{uuid.uuid4().hex}"
+        now = utc_now()
+        try:
+            connection.execute(
+                "INSERT INTO study_plan_items (id,plan_id,project_id,module_id,deck_id,exercise_set_id,title,description,position,status,user_edited,created_at,updated_at,completed_at,archived_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,'pending',1,?,?,NULL,NULL)",
+                (item_id, plan_id, project_id, module_id, deck_id, exercise_set_id, title_value, description_value, item_position, now, now),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_plan_item_invalid_payload") from exc
+    return dict(_study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id))
+
+
+def update_study_plan_item(connection: sqlite3.Connection, *, project_id: str, plan_id: str, item_id: str,
+                           title: object | None = None, description: object | None = None,
+                           position: int | None = None, module_id: str | None = None,
+                           deck_id: str | None = None, exercise_set_id: str | None = None) -> dict[str, object]:
+    with connection:
+        row = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id)
+        if row is None:
+            raise ValueError("study_plan_item_not_found")
+        self_status = _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        if row["status"] in {"completed", "skipped", "archived"}:
+            raise ValueError("study_plan_item_edit_not_allowed")
+        _study_optional_reference(connection, table="knowledge_modules", value=module_id, project_id=project_id)
+        _study_optional_reference(connection, table="study_decks", value=deck_id, project_id=project_id)
+        _study_optional_reference(connection, table="exercise_sets", value=exercise_set_id, project_id=project_id)
+        next_position = row["position"] if position is None else position
+        if not isinstance(next_position, int) or next_position < 0:
+            raise ValueError("study_plan_item_invalid_payload")
+        connection.execute(
+            "UPDATE study_plan_items SET title=?,description=?,position=?,module_id=?,deck_id=?,exercise_set_id=?,user_edited=1,updated_at=? WHERE id=? AND plan_id=? AND project_id=?",
+            (str(row["title"]) if title is None else _study_text(title, code="study_plan_item_invalid_payload", maximum=STUDY_TEXT_MAX),
+             str(row["description"]) if description is None else _study_description(description), next_position,
+             row["module_id"] if module_id is None else module_id, row["deck_id"] if deck_id is None else deck_id,
+             row["exercise_set_id"] if exercise_set_id is None else exercise_set_id, utc_now(), item_id, plan_id, project_id),
+        )
+    return dict(_study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id))
+
+
+def archive_study_plan_item(connection: sqlite3.Connection, *, project_id: str, plan_id: str, item_id: str) -> dict[str, object]:
+    with connection:
+        row = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id)
+        if row is None:
+            raise ValueError("study_plan_item_not_found")
+        _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        if row["status"] == "archived":
+            return dict(row)
+        if connection.execute("SELECT 1 FROM study_progress_events WHERE item_id=?", (item_id,)).fetchone() is not None:
+            raise ValueError("study_plan_item_edit_not_allowed")
+        now = utc_now()
+        connection.execute("UPDATE study_plan_items SET status='archived',archived_at=?,updated_at=? WHERE id=?", (now, now, item_id))
+    return dict(_study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id))
+
+
+def _study_dependency_cycle(connection: sqlite3.Connection, *, plan_id: str, predecessor: str, successor: str) -> bool:
+    graph: dict[str, list[str]] = {}
+    for row in connection.execute("SELECT predecessor_item_id,successor_item_id FROM study_plan_dependencies WHERE plan_id=?", (plan_id,)).fetchall():
+        graph.setdefault(str(row[0]), []).append(str(row[1]))
+    graph.setdefault(predecessor, []).append(successor)
+    stack = [successor]
+    seen: set[str] = set()
+    while stack:
+        current = stack.pop()
+        if current == predecessor:
+            return True
+        if current in seen:
+            continue
+        seen.add(current)
+        stack.extend(graph.get(current, []))
+    return False
+
+
+def add_study_plan_dependency(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                              predecessor_item_id: str, successor_item_id: str) -> dict[str, object]:
+    with connection:
+        plan = _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        left = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=predecessor_item_id)
+        right = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=successor_item_id)
+        if left is None or right is None or left["status"] == "archived" or right["status"] == "archived":
+            raise ValueError("study_plan_dependency_invalid")
+        if _study_dependency_cycle(connection, plan_id=plan_id, predecessor=predecessor_item_id, successor=successor_item_id):
+            raise ValueError("study_plan_dependency_cycle")
+        dependency_id = f"{STUDY_DEPENDENCY_PREFIX}{uuid.uuid4().hex}"
+        try:
+            connection.execute(
+                "INSERT INTO study_plan_dependencies (id,plan_id,project_id,predecessor_item_id,successor_item_id,created_at) VALUES (?,?,?,?,?,?)",
+                (dependency_id, plan_id, project_id, predecessor_item_id, successor_item_id, utc_now()),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_plan_dependency_invalid") from exc
+    return dict(connection.execute("SELECT * FROM study_plan_dependencies WHERE id=?", (dependency_id,)).fetchone())
+
+
+def remove_study_plan_dependency(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                                 dependency_id: str) -> bool:
+    with connection:
+        _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        cursor = connection.execute("DELETE FROM study_plan_dependencies WHERE id=? AND plan_id=? AND project_id=?", (dependency_id, plan_id, project_id))
+    if cursor.rowcount == 0:
+        raise ValueError("study_plan_dependency_invalid")
+    return True
+
+
+def append_study_progress_event(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                                item_id: str, event_type: str, metadata: object | None = None,
+                                event_id: str | None = None) -> dict[str, object]:
+    if event_type not in STUDY_PROGRESS_EVENTS:
+        raise ValueError("study_progress_invalid_event")
+    if metadata is None:
+        metadata = {}
+    if not isinstance(metadata, dict) or len(json.dumps(metadata, ensure_ascii=False)) > STUDY_METADATA_MAX:
+        raise ValueError("study_progress_invalid_event")
+    with connection:
+        plan = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+        item = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id)
+        if plan is None or item is None:
+            raise ValueError("study_plan_item_not_found")
+        if plan["status"] != "active" or item["status"] == "archived":
+            raise ValueError("study_progress_invalid_event")
+        if event_id is not None:
+            existing = connection.execute("SELECT * FROM study_progress_events WHERE id=?", (event_id,)).fetchone()
+            if existing is not None:
+                if existing["plan_id"] == plan_id and existing["item_id"] == item_id and existing["event_type"] == event_type:
+                    return dict(existing)
+                raise ValueError("study_progress_event_duplicate")
+        progress_id = event_id or f"{STUDY_PROGRESS_PREFIX}{uuid.uuid4().hex}"
+        next_status = {"started": "in_progress", "completed": "completed", "skipped": "skipped", "reopened": "in_progress"}[event_type]
+        completed_at = utc_now() if event_type == "completed" else None
+        now = utc_now()
+        connection.execute(
+            "INSERT INTO study_progress_events (id,plan_id,item_id,project_id,event_type,metadata_json,created_at) VALUES (?,?,?,?,?,?,?)",
+            (progress_id, plan_id, item_id, project_id, event_type, json.dumps(metadata, ensure_ascii=False, separators=(",", ":")), now),
+        )
+        connection.execute("UPDATE study_plan_items SET status=?,completed_at=?,updated_at=? WHERE id=? AND plan_id=?", (next_status, completed_at, now, item_id, plan_id))
+    return dict(connection.execute("SELECT * FROM study_progress_events WHERE id=?", (progress_id,)).fetchone())
+
+
+def list_study_progress_events(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                               item_id: str | None = None) -> list[dict[str, object]]:
+    params: list[object] = [project_id, plan_id]
+    where = "project_id=? AND plan_id=?"
+    if item_id is not None:
+        where += " AND item_id=?"
+        params.append(item_id)
+    rows = connection.execute("SELECT * FROM study_progress_events WHERE " + where + " ORDER BY created_at,id", params).fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["metadata"] = json.loads(str(item.pop("metadata_json")))
+        result.append(item)
+    return result
+
+
+def _study_source_status(connection: sqlite3.Connection, *, material_id: str | None, revision_id: str | None,
+                         extraction_id: str | None, chunk_id: str | None, span_id: str | None,
+                         citation_key: str | None) -> str:
+    if not material_id or not revision_id or not chunk_id:
+        raise ValueError("study_source_invalid")
+    material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
+    if material is None:
+        return "source_unavailable"
+    if material["deleted_at"] is not None:
+        return "source_deleted"
+    chunk = connection.execute(
+        "SELECT c.revision_id,c.extraction_id,c.status,r.is_current FROM chunks c JOIN material_revisions r ON r.id=c.revision_id "
+        "WHERE c.id=? AND c.material_id=?", (chunk_id, material_id)
+    ).fetchone()
+    if chunk is None or chunk["revision_id"] != revision_id or (extraction_id is not None and chunk["extraction_id"] != extraction_id):
+        return "stale"
+    if chunk["status"] != "ready" or not chunk["is_current"]:
+        return "stale"
+    if span_id is not None and connection.execute("SELECT 1 FROM chunk_spans WHERE chunk_id=? AND span_id=?", (chunk_id, span_id)).fetchone() is None:
+        raise ValueError("study_source_invalid")
+    if citation_key is not None:
+        validation = validate_citation_key(connection, citation_key)
+        if validation is None or validation.get("chunk_id") != chunk_id:
+            raise ValueError("study_source_invalid")
+    return "valid"
+
+
+def _study_source_payload(connection: sqlite3.Connection, *, project_id: str, payload: dict[str, object],
+                          owner_type: str) -> tuple[object, ...]:
+    required = ("material_id", "revision_id", "chunk_id")
+    if any(not isinstance(payload.get(key), str) or not str(payload[key]) for key in required):
+        raise ValueError("study_source_invalid")
+    material_id = str(payload["material_id"]); revision_id = str(payload["revision_id"]); chunk_id = str(payload["chunk_id"])
+    extraction_id = payload.get("extraction_id"); span_id = payload.get("span_id"); citation_key = payload.get("citation_key")
+    for value in (extraction_id, span_id, citation_key):
+        if value is not None and (not isinstance(value, str) or len(value) > 200):
+            raise ValueError("study_source_invalid")
+    status = _study_source_status(connection, material_id=material_id, revision_id=revision_id,
+                                  extraction_id=extraction_id, chunk_id=chunk_id, span_id=span_id,
+                                  citation_key=citation_key)
+    if status != "valid":
+        raise ValueError("study_source_invalid")
+    prefix = "module_source" if owner_type == "module" else "plan_item_source"
+    return (f"{prefix}_{uuid.uuid4().hex}", project_id, material_id, revision_id, extraction_id, chunk_id,
+            span_id, citation_key, status, utc_now(), utc_now())
+
+
+def create_module_source_link(connection: sqlite3.Connection, *, project_id: str, module_id: str,
+                              payload: dict[str, object]) -> dict[str, object]:
+    with connection:
+        module = _study_module_row(connection, project_id=project_id, module_id=module_id)
+        if module is None:
+            raise ValueError("knowledge_module_not_found")
+        if module["status"] != "active":
+            raise ValueError("knowledge_module_archived")
+        row = _study_source_payload(connection, project_id=project_id, payload=payload, owner_type="module")
+        link_id = row[0]
+        try:
+            connection.execute("INSERT INTO module_source_links (id,project_id,module_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (link_id, project_id, module_id, *row[2:]))
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_source_invalid") from exc
+    return dict(connection.execute("SELECT * FROM module_source_links WHERE id=?", (link_id,)).fetchone())
+
+
+def create_plan_item_source_link(connection: sqlite3.Connection, *, project_id: str, plan_id: str, item_id: str,
+                                 payload: dict[str, object]) -> dict[str, object]:
+    with connection:
+        item = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id)
+        if item is None:
+            raise ValueError("study_plan_item_not_found")
+        _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        row = _study_source_payload(connection, project_id=project_id, payload=payload, owner_type="item")
+        link_id = row[0]
+        try:
+            connection.execute("INSERT INTO plan_item_source_links (id,project_id,plan_item_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (link_id, project_id, item_id, *row[2:]))
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("study_source_invalid") from exc
+    return dict(connection.execute("SELECT * FROM plan_item_source_links WHERE id=?", (link_id,)).fetchone())
+
+
+def _refresh_study_source_links_for_material(connection: sqlite3.Connection, material_id: str) -> None:
+    for table, owner in (("module_source_links", "module_id"), ("plan_item_source_links", "plan_item_id")):
+        rows = connection.execute(
+            f"SELECT id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key FROM {table} WHERE material_id=?", (material_id,)
+        ).fetchall()
+        for row in rows:
+            status = "source_deleted" if connection.execute("SELECT deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()["deleted_at"] is not None else _study_source_status(connection, material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"])
+            connection.execute(f"UPDATE {table} SET status=?,updated_at=? WHERE id=?", (status, utc_now(), row["id"]))
+
+
+def refresh_study_source_links(connection: sqlite3.Connection, *, project_id: str, plan_id: str | None = None) -> int:
+    with connection:
+        changed = 0
+        for table in ("module_source_links", "plan_item_source_links"):
+            if table == "plan_item_source_links" and plan_id is not None:
+                rows = connection.execute(
+                    "SELECT l.id,l.material_id,l.revision_id,l.extraction_id,l.chunk_id,l.span_id,l.citation_key "
+                    "FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id "
+                    "WHERE l.project_id=? AND i.plan_id=?", (project_id, plan_id)
+                ).fetchall()
+            elif table == "module_source_links" and plan_id is not None:
+                rows = connection.execute(
+                    "SELECT l.id,l.material_id,l.revision_id,l.extraction_id,l.chunk_id,l.span_id,l.citation_key "
+                    "FROM module_source_links l JOIN study_plan_items i ON i.module_id=l.module_id "
+                    "WHERE l.project_id=? AND i.plan_id=?", (project_id, plan_id)
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    f"SELECT id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key FROM {table} WHERE project_id=?",
+                    (project_id,),
+                ).fetchall()
+            for row in rows:
+                material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (row["material_id"],)).fetchone()
+                status = "source_unavailable" if material is None else "source_deleted" if material["deleted_at"] is not None else _study_source_status(connection, material_id=row["material_id"], revision_id=row["revision_id"], extraction_id=row["extraction_id"], chunk_id=row["chunk_id"], span_id=row["span_id"], citation_key=row["citation_key"])
+                changed += connection.execute(f"UPDATE {table} SET status=?,updated_at=? WHERE id=? AND status!=?", (status, utc_now(), row["id"], status)).rowcount
+    return changed
+
+
+def get_study_source_links(connection: sqlite3.Connection, *, project_id: str, plan_id: str | None = None,
+                           module_id: str | None = None, item_id: str | None = None) -> list[dict[str, object]]:
+    if module_id is not None:
+        return [dict(row) for row in connection.execute("SELECT * FROM module_source_links WHERE project_id=? AND module_id=? ORDER BY created_at,id", (project_id, module_id)).fetchall()]
+    query = "SELECT l.* FROM plan_item_source_links l JOIN study_plan_items i ON i.id=l.plan_item_id WHERE l.project_id=?"
+    params: list[object] = [project_id]
+    if plan_id is not None:
+        query += " AND i.plan_id=?"; params.append(plan_id)
+    if item_id is not None:
+        query += " AND l.plan_item_id=?"; params.append(item_id)
+    return [dict(row) for row in connection.execute(query + " ORDER BY l.created_at,l.id", params).fetchall()]
+
+
 def material_state(connection: sqlite3.Connection, material_id: str) -> str:
     row = connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (material_id,)).fetchone()
     if row is None:
@@ -1054,6 +1702,15 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
         connection.execute(
             "UPDATE card_citations SET status = 'source_unavailable' WHERE material_id = ?",
             (material_id,),
+        )
+        _refresh_study_source_links_for_material(connection, material_id)
+        connection.execute(
+            "UPDATE module_source_links SET status = 'source_unavailable', updated_at = ? WHERE material_id = ?",
+            (utc_now(), material_id),
+        )
+        connection.execute(
+            "UPDATE plan_item_source_links SET status = 'source_unavailable', updated_at = ? WHERE material_id = ?",
+            (utc_now(), material_id),
         )
         connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
         chunk_ids = [str(value[0]) for value in connection.execute(
@@ -1184,6 +1841,7 @@ def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bo
         if cursor.rowcount == 1:
             _refresh_exercise_citations_for_material(connection, material_id)
             _refresh_card_citations_for_material(connection, material_id)
+            _refresh_study_source_links_for_material(connection, material_id)
     return cursor.rowcount == 1
 
 
@@ -1193,7 +1851,7 @@ def _sha256_text(text: str) -> str:
 
 def _revision_payload(connection: sqlite3.Connection, material_id: str, extraction_id: str) -> sqlite3.Row | None:
     return connection.execute(
-        "SELECT m.id AS material_id, m.source_sha256, e.id AS extraction_id, e.parser_id, "
+        "SELECT m.id AS material_id, m.project_id, m.source_sha256, e.id AS extraction_id, e.parser_id, "
         "e.parser_version, e.text, e.status FROM materials m JOIN extractions e "
         "ON e.material_id = m.id WHERE m.id = ? AND e.id = ?",
         (material_id, extraction_id),
@@ -1262,6 +1920,7 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
         ).fetchone()[0]
         if existing:
             _sync_chunk_search_for_revision(connection, str(revision["id"]))
+            _refresh_study_source_links_for_material(connection, material_id)
             return revision
         old_chunk_ids = [str(value[0]) for value in connection.execute(
             "SELECT id FROM chunks WHERE revision_id = ?", (revision["id"],)
@@ -1291,6 +1950,7 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
                 [(chunk_id, span_id, start, end) for span_id, start, end in draft.span_overlaps],
             )
         _sync_chunk_search_for_revision(connection, str(revision["id"]))
+        _refresh_study_source_links_for_material(connection, material_id)
         return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
 
 
