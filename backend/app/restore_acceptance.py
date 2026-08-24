@@ -93,7 +93,8 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
     required_tables = (
         "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
         "study_plan_dependencies", "study_progress_events", "module_source_links",
-        "plan_item_source_links",
+        "plan_item_source_links", "notes", "note_blocks", "note_module_links",
+        "note_block_source_links", "rhythm_settings", "rhythm_allocations",
     )
     placeholders = ",".join("?" for _ in required_tables)
     present = {
@@ -153,19 +154,48 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
     invalid_valid_links = connection.execute(
         "SELECT COUNT(*) FROM ("
         "SELECT status,material_id FROM module_source_links "
-        "UNION ALL SELECT status,material_id FROM plan_item_source_links"
+        "UNION ALL SELECT status,material_id FROM plan_item_source_links "
+        "UNION ALL SELECT status,material_id FROM note_block_source_links"
         ") WHERE status='valid' AND material_id IS NULL"
     ).fetchone()[0]
     if invalid_valid_links:
         raise AcceptanceError("acceptance_study_source_invalid")
+    invalid_note_blocks = connection.execute(
+        "SELECT COUNT(*) FROM notes n WHERE NOT EXISTS (SELECT 1 FROM note_blocks b WHERE b.note_id=n.id)"
+    ).fetchone()[0]
+    if invalid_note_blocks:
+        raise AcceptanceError("acceptance_note_blocks_missing")
+    invalid_rhythm = connection.execute(
+        "SELECT COUNT(*) FROM rhythm_allocations a LEFT JOIN rhythm_settings s ON s.plan_id=a.plan_id "
+        "WHERE s.plan_id IS NULL"
+    ).fetchone()[0]
+    if invalid_rhythm:
+        raise AcceptanceError("acceptance_rhythm_settings_missing")
+    note_statuses = {
+        str(row[0]): int(row[1]) for row in connection.execute(
+            "SELECT status,COUNT(*) FROM notes GROUP BY status ORDER BY status"
+        ).fetchall()
+    }
+    note_source_statuses = {
+        str(row[0]): int(row[1]) for row in connection.execute(
+            "SELECT status,COUNT(*) FROM note_block_source_links GROUP BY status ORDER BY status"
+        ).fetchall()
+    }
     return {
         "status": "passed",
         "counts": counts,
         "plan_statuses": plan_statuses,
         "source_statuses": source_statuses,
+        "note_statuses": note_statuses,
+        "note_source_statuses": note_source_statuses,
+        "rhythm_settings_count": counts["rhythm_settings"],
+        "rhythm_allocations_count": counts["rhythm_allocations"],
         "summary_plan_count": len(summary_rows),
         "user_edited_count": int(connection.execute(
             "SELECT COUNT(*) FROM study_plans WHERE user_edited=1"
+        ).fetchone()[0]),
+        "note_user_edited_count": int(connection.execute(
+            "SELECT COUNT(*) FROM notes WHERE user_edited=1"
         ).fetchone()[0]),
     }
 

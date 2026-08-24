@@ -64,13 +64,13 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
 - Phase 7 已按 Mistral 精确配置范围收口；Phase 8 已按 deterministic fake-provider、Chromium 与 backup/restore 精确范围收口，证据见 `PHASE8_ACCEPTANCE_EVIDENCE.md`。
-- Phase 9A-0 至 9A-8 已在明确的单进程 SQLite/backend/API/local Chromium scoped gates 内完成；9A-8 acceptance evidence 见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。Phase 9B-2（v10 schema）、9B-3（共用 domain transaction）、9B-4（S2 deterministic fake-provider note workflow）、9B-5（S1 synchronous rhythm workflow）与 9B-6（S1/S2 最小安全 API）已到 `implemented/backend-pass`；9B-7（S1/S2 最小 Chromium workspace）已到 `browser-pass`；9B-8 至 9B-9、Phase 9C/9D 和完整学习产品能力仍未完成。
+- Phase 9A-0 至 9A-8 已在明确的单进程 SQLite/backend/API/local Chromium scoped gates 内完成；9A-8 acceptance evidence 见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。Phase 9B-2（v10 schema）、9B-3（共用 domain transaction）、9B-4（S2 deterministic fake-provider note workflow）、9B-5（S1 synchronous rhythm workflow）与 9B-6（S1/S2 最小安全 API）已到 `implemented/backend-pass`；9B-7（S1/S2 最小 Chromium workspace）已到 `browser-pass`；9B-8（source lifecycle/backup-restore）已到 `scoped-gates-pass`/`restore-gates-pass`；9B-9、Phase 9C/9D 和完整学习产品能力仍未完成。
 - 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
 - Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
 ## 五、下一步准备
 
-Phase 7、Phase 8 fake-provider closeout 和 Phase 9A 限定范围 acceptance 已完成；Phase 9B-2 至 9B-6 已进入 `implemented/backend-pass`，9B-7 Chromium workspace 已到 `browser-pass`；下一步是 9B-8 source lifecycle/backup-restore artifact。9B–9D 必须保持独立范围、契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
+Phase 7、Phase 8 fake-provider closeout 和 Phase 9A 限定范围 acceptance 已完成；Phase 9B-2 至 9B-6 已进入 `implemented/backend-pass`，9B-7 Chromium workspace 已到 `browser-pass`，9B-8 source lifecycle/backup-restore artifact 已通过 scoped/restore gates；下一步是 9B-9 acceptance closeout。9B–9D 必须保持独立范围、契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序
