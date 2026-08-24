@@ -1,6 +1,6 @@
 # 本地环境目录地图与治理
 
-> 更新：2026-08-30（Phase 9A-7 restore gate 后）
+> 更新：2026-08-30（Phase 9A acceptance closeout 后）
 >
 > 本文记录 StudyBuddy 全部本地目录的职责、远端、Git 状态和相互关系，作为系统治理的单一事实来源之一。目录本身不含密钥；`H:\pi-references` 等含密钥目录只标注用途，不记录任何凭据内容。
 
@@ -16,7 +16,7 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 
 | 目录 | 职责 | 远端 | Git 状态 |
 |---|---|---|---|
-| `H:\studybuddy` | **正式系统**：源码 `backend/app/`、测试 `backend/tests/`、核心设计 `docs/`、系统治理 `AGENTS.md` | `everything-is-simple/studybuddy` | clean（仅未跟踪会话产物） |
+| `H:\studybuddy` | **正式系统**：源码 `backend/app/`、测试 `backend/tests/`、核心设计 `docs/`、系统治理 `AGENTS.md` | `everything-is-simple/studybuddy` | 以 `git status --short` 的实时结果为准；不把会话临时状态写作持久事实 |
 | `H:\studybuddy-composer` | **实验工厂**：系统组件、测试配件、功能保证的独立 smoke 验证 | `everything-is-simple/studybuddy-composer` | clean |
 | `H:\studybuddy-integration` | **集成工厂**：把 Composer 验证通过的组件组合装配并测试 | `everything-is-simple/studybuddy-integration` | clean |
 | `H:\studybuddy-test` | **测试目录**：所有系统的测试 fixture、运行记录和验收 artifact | `everything-is-simple/studybuddy-test` | clean |
@@ -64,13 +64,13 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
 - Phase 7 已按 Mistral 精确配置范围收口；Phase 8 已按 deterministic fake-provider、Chromium 与 backup/restore 精确范围收口，证据见 `PHASE8_ACCEPTANCE_EVIDENCE.md`。
-- Phase 9A-0 至 9A-7 已在明确的单进程 SQLite/backend/API/local Chromium scoped gates 内形成实现与证据；9A-7 backup/restore `restore-gates-pass` 已通过；9A-8 closeout 和完整计划产品能力仍未完成。
+- Phase 9A-0 至 9A-8 已在明确的单进程 SQLite/backend/API/local Chromium scoped gates 内完成；9A-8 acceptance evidence 见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`；Phase 9B–9D 和完整学习产品能力仍未完成。
 - 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
 - Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
 ## 五、下一步准备
 
-Phase 7 与 Phase 8 fake-provider closeout 已完成，9A-6 source lifecycle scoped gate 已通过，9A-7 backup/restore `restore-gates-pass` 已通过；下一步是 9A-8 closeout。9B–9D 仍不得提前推进，不能跳过各自独立契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
+Phase 7、Phase 8 fake-provider closeout 和 Phase 9A 限定范围 acceptance 已完成；下一步是 Phase 9B 的独立契约与资料学习工作流。9B–9D 必须保持独立范围、契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序

@@ -14,10 +14,11 @@
 - `DECISIONS.md`：架构和产品决策记录。
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构与已实现的 Phase 4–7、Phase 8 fake-provider 范围；不是完整学习产品完成声明。
 - [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)：Phase 8 fake-provider backend/Chromium/backup-restore 收口证据与限制。
-- [`phase9a/`](phase9a/)：Phase 9A 总规划 prompt、共用上下文、9A-0 至 9A-8 子任务 prompts、执行顺序和验收门槛；仅为 planned，不代表实现完成。
-- [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)：9A-0/9A-1 契约、9A-2 v9 schema、9A-3 repository/domain、9A-4 API、9A-5 browser-pass、9A-6 scoped-gates-pass 和 9A-7 restore-gates-pass 收口记录；9A-6 尚未 closeout，9A-8 尚未完成。
+- [`phase9a/`](phase9a/)：Phase 9A 总规划 prompt、共用上下文、9A-0 至 9A-8 子任务 prompts、执行顺序和验收门槛；prompt 目录不是实现证据，Phase 9A 完成证据见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。
+- [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)：9A-0/9A-1 契约、9A-2 v9 schema、9A-3 repository/domain、9A-4 API、9A-5 browser-pass、9A-6 scoped-gates-pass、9A-7 restore-gates-pass 和 9A-8 closeout 记录。
 - [`PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)：9A-6 source lifecycle 的脱敏 evidence 草案、测试结果和剩余限制。
 - [`PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](PHASE9A_BACKUP_RESTORE_EVIDENCE.md)：9A-7 backup/verify/restore/non-repair 的脱敏 evidence 和限制。
+- [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)：Phase 9A 最终 acceptance、全量回归、用户路径、范围和未验证边界。
 - [`PROVIDER_CAPABILITY_MATRIX.md`](PROVIDER_CAPABILITY_MATRIX.md)：Phase 5 各 OpenAI-compatible Provider 的独立证据矩阵和 opt-in 验收命令。
 - [`AI_PROVIDER_SETUP.md`](AI_PROVIDER_SETUP.md)：StudyBuddy Provider 配置边界、密钥安全规则和三次 API acceptance runner。
 - [`AGNES_PROVIDER_RUNBOOK.md`](AGNES_PROVIDER_RUNBOOK.md)：Agnes AI-Hub 独立本地 launcher、smoke gate 和运维边界。

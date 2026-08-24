@@ -67,13 +67,18 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     todo = read("TODO.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
     architecture = read("ai-learning-architecture.md")
+    decisions = read("DECISIONS.md")
     migration_doc = read("MIGRATIONS.md")
     contract = read("phase9a/PHASE9A_DOMAIN_CONTRACT.md")
+    acceptance = read("PHASE9A_ACCEPTANCE_EVIDENCE.md")
     runner = (ROOT / "backend" / "app" / "migrations" / "runner.py").read_text(encoding="utf-8")
 
     for document in (roadmap, status, todo, progress, architecture):
-        assert "9A-2" in document
         assert "v9" in document
+    for document in (roadmap, todo, contract):
+        assert "9A-2" in document
+    assert "Phase 9A" in status
+    assert "v9" in status
     assert "phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
     assert "Current schema version: **9**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
@@ -87,16 +92,24 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert (ROOT / "backend" / "tests" / "test_phase9a_api.py").is_file()
     assert "9A-5 browser-pass" in contract
     assert "9A-6 `scoped-gates-pass`" in contract
+    assert "9A-7 `restore-gates-pass`" in contract
+    assert "9A-8 `completed`" in contract
     assert "272 passed, 2 skipped" in status
     assert "272 passed, 2 skipped" in progress
     assert "3 passed" in status
     assert "3 passed" in progress
     assert "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md" in status
     assert "PHASE9A_BACKUP_RESTORE_EVIDENCE.md" in status
+    for document in (roadmap, status, todo, progress, architecture, decisions, contract):
+        assert "PHASE9A_ACCEPTANCE_EVIDENCE.md" in document
+    assert "Phase 9A completed" in acceptance
+    assert "272 passed, 2 skipped" in acceptance
+    assert "3 passed" in acceptance
+    assert "Phase 9B–9D" in acceptance
     assert "focused backend `16 passed`" in contract
     assert "full backend `272 passed, 2 skipped`" in contract
     assert "Phase 9A Chromium `3 passed`" in contract
-    assert "9A-7 `restore-gates-pass`" in contract
+    assert "Phase 9A completed" in contract
     assert (ROOT / "backend" / "tests" / "browser_phase9a.spec.js").is_file()
     assert "Phase 9A" in roadmap and "browser-pass" in roadmap
     assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()

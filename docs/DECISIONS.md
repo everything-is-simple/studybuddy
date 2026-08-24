@@ -49,7 +49,7 @@
 - DeepSeek `deepseek-chat` and Agnes `agnes-ai-hub` / `agnes-2.5-flash` real Provider evidence remains scoped to exact provider/model/gateway configurations. A real Provider UI path is `not_verified` unless its explicit target, model, gateway and secret-backed runtime gate actually ran; fake/mock results never become real-pass.
 - No P6-E API, business table or migration is required. Existing generation/context checks are the cancellation boundary: synchronous Provider requests are not cancelled, stale responses are ignored.
 - Governance source of truth is split deliberately: `PHASE_ROADMAP.md` defines sequence and completion criteria, `STATUS.md` records evidence state, `TODO.md` is the executable checklist, and `P6E_ACCEPTANCE_EVIDENCE.md` records redacted P6-E gates. Contradictory claims in other documents must be corrected to these sources.
-- P6-E exact real Provider UI evidence for DeepSeek `deepseek-chat` and Agnes `agnes-2.5-flash` has passed under explicit target/model/gateway gates. Phase 7 subsequently closed for the documented Mistral configuration; Phase 8 is closed for its fake-provider Cards/Exercises contract. Real Provider generation, complete learning-plan product capabilities beyond Phase 9A core, workers, multi-user and cloud capabilities remain later work; Phase 9A core is only accepted in its explicit scoped gates.
+- P6-E exact real Provider UI evidence for DeepSeek `deepseek-chat` and Agnes `agnes-2.5-flash` has passed under explicit target/model/gateway gates. Phase 7 subsequently closed for the documented Mistral configuration; Phase 8 is closed for its fake-provider Cards/Exercises contract; Phase 9A is completed only in its deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore scope. Real Provider generation, Phase 9B–9D workflows, workers, multi-user and cloud capabilities remain later work.
 
 ## 2026-08-25: project progress and priority boundary
 
@@ -102,7 +102,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance，v9 创建 Phase 9A 学习计划核心表。Phase 7 已按 Mistral 精确配置完成；Phase 8 的 fake-provider citation-safe generation、Chromium workspace 和 backup/restore closeout 已完成；Phase 9A-0 至 9A-7 已在明确的 backend/API/local Chromium/restore scoped gates 内实现，9A-8 closeout、完整计划产品能力仍未实现。
+- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance，v9 创建 Phase 9A 学习计划核心表。Phase 7 已按 Mistral 精确配置完成；Phase 8 的 fake-provider citation-safe generation、Chromium workspace 和 backup/restore closeout 已完成；Phase 9A-0 至 9A-8 已在明确的 backend/API/local Chromium/restore scoped gates 内完成，最终范围和限制见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。完整学习计划产品能力仍按 9B–9D 推进。
 
 ## 2026-08-19: four-directory boundary
 
@@ -127,7 +127,7 @@
 - I1 migration/schema versioning、I2 backup/restore operator 闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成。
 - I4 中 Windows ACL/只读目录、真实磁盘满或配额、S4 更高压力规模、peak memory、断电、网络盘、硬件/文件系统损坏等项保持 `not_verified`，并已明确作为 v1 运行边界接受；这些项目不阻塞基础设施 v1 收口，也不得标记为已通过。
 - 自此可以正式宣告 StudyBuddy **本地单进程文件材料基础设施 v1 基本完工**，并作为 AI MVP 的数据基础。
-- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、Mistral 精确配置范围的 Phase 7，以及 Phase 8 fake-provider closeout 均已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前优先级是 Phase 9A 的独立领域契约与计划核心；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
+- 当前项目 Phase 4 的可信 Q&A 用户闭环、Phase 5 adapter/精确 Provider smoke、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、Mistral 精确配置范围的 Phase 7、Phase 8 fake-provider closeout 以及 Phase 9A 限定范围 closeout 均已按对应 evidence 收口；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI gate 也已通过。当前优先级是 Phase 9B 的独立领域契约与资料学习工作流；Phase 4/6 已完成的 history/multi-material/citation navigation 不应重新列为待办。
 
 ## 2026-08-25: local environment governance map
 

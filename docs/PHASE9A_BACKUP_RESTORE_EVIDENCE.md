@@ -1,6 +1,6 @@
 # Phase 9A Backup / Restore Evidence
 
-> 状态：`restore-gates-pass`。9A-7 backup/verify/restore 与 non-repair gate 已通过；9A-8 完整 acceptance/documentation closeout 尚未完成，因此不得把 Phase 9A 写成 `completed`。
+> 状态：`restore-gates-pass`。9A-7 backup/verify/restore 与 non-repair gate 已通过，并已纳入 Phase 9A 最终 acceptance closeout。
 >
 > 本文是脱敏 evidence，不包含数据库、backup 文件、原文件、Provider key、私有路径或测试运行输出。
 
@@ -60,6 +60,6 @@ Result: `272 passed, 2 skipped`. The two skipped tests are default-off real Prov
 
 ## Remaining Limitations
 
-- 9A-8 full acceptance/documentation closeout remains pending.
+- 9A-8 acceptance/documentation closeout 已通过；Phase 9A 的最终范围和限制见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。
 - Real power-loss, disk corruption, hardware/filesystem failure, disk-full, network filesystem, ACL and multi-process/multi-instance restore behavior remain `not_verified`.
 - This gate is for the supported local single-process, single-instance SQLite deployment boundary only.
