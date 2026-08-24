@@ -203,7 +203,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 当前状态：`planned`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`docs/phase9b/`](phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
 >
-> 当前子任务状态：9B-0 已形成 `planned/audit-draft`，9B-1 已形成 `planned/contract-frozen`，9B-2 至 9B-5 已形成 `implemented/backend-pass`；审计、正式契约和 schema 边界见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。正式 schema 已为 v10；9B-5 仅完成 S1 同步 repository/domain 节奏工作流与确定性 summary，API、UI、导出和 restore artifact 仍未验收。
+> 当前子任务状态：9B-0 已形成 `planned/audit-draft`，9B-1 已形成 `planned/contract-frozen`，9B-2 至 9B-6 已形成 `implemented/backend-pass`；审计、正式契约和 schema 边界见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。正式 schema 已为 v10；9B-6 已完成 S1/S2 最小安全 HTTP API，但 UI、browser-pass、导出完整验收和 restore artifact 仍未验收。
 
 - [x] 9B-0：完成现状审计、S1/S2 范围冻结和风险记录；状态为 `planned/audit-draft`，产出见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。
 - [x] 9B-1：冻结 S1/S2 实体关系、cadence/timezone/workload、note/block/module/citation 关系、状态机、不变量、source lifecycle、AI draft、错误码、API resource、导出和 backup/restore non-repair 边界；状态为 `planned/contract-frozen`，不代表实现完成。
@@ -211,7 +211,8 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9B-3：实现共用 repository/domain transaction：note/block/module link、server-side citation source link validation、source status refresh、rhythm settings/allocation 与 deterministic summary；focused `backend/tests/test_phase9b_domain.py` 通过，状态为 `implemented/backend-pass`。
 - [x] 9B-4：在 9B-3 基础上完成 S2 资料笔记、知识模块和 deterministic fake-provider draft backend workflow；覆盖检索/context/citation 复验、idempotency/retry、失败 rollback、source stale 和用户状态保护；状态为 `implemented/backend-pass`。
 - [x] 9B-5：在 9B-3 基础上完成 S1 学习节奏 backend workflow：daily/weekly IANA timezone settings、local-date allocation 的创建/移动/删除和重复/超限保护、确定性 timeline/load/progress/source-warning summary、completed/terminal plan 保护、rollback/SQLite lock 后 retry；不写 progress、不自动重排或启动 scheduler。focused `backend/tests/test_phase9b_rhythm.py` 与 9B regressions 通过，状态为 `implemented/backend-pass`；API/UI/export/restore artifact 另由后续任务验收。
-- [ ] 9B-6 至 9B-9：分别完成 API、Chromium workspace、source lifecycle/backup-restore artifact 和完整收口验收。
+- [x] 9B-6：实现 S1/S2 最小安全 FastAPI：rhythm settings/summary/allocation、notes/blocks/modules/source links、draft generation、confirm/reject/archive、source refresh、bounded JSON/Markdown export；服务端注入 project scope，复用 domain contract，覆盖安全错误、citation/source lifecycle、provider failure、idempotency 和隐私边界。focused `backend/tests/test_phase9b_api.py` 与完整 backend 通过，状态为 `implemented/backend-pass`；不代表 browser-pass 或 Phase 9B completed。
+- [ ] 9B-7 至 9B-9：分别完成 Chromium workspace、source lifecycle/backup-restore artifact 和完整收口验收。
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 

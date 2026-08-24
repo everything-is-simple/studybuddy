@@ -1,8 +1,8 @@
 # Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5 `implemented/backend-pass`。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`。
 >
-> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow。9B 的 HTTP API、UI、export、restore artifact acceptance 与正式用户路径仍未实现。
+> 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow，9B-6 完成 S1/S2 最小安全 API。9B 的 UI、browser-pass、restore artifact acceptance 与正式用户路径仍未实现。
 >
 > 本文冻结 S1 学习节奏和 S2 资料笔记的语义，供 9B-2 至 9B-9 实现和验收使用。它不是完整功能证据；不得因本文出现表名、路径或错误码而宣称任何未通过后续 gate 的 Phase 9B 功能已经存在。
 
@@ -476,6 +476,6 @@ Gate B is satisfied by this document only when downstream reviewers can determin
 
 **Accurate status:**
 
-> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-5 are `implemented/backend-pass`: v10 persistence, shared domain transactions, the S2 deterministic fake-provider note draft workflow, and the S1 explicit synchronous rhythm workflow have focused tests. S1 uses daily/weekly IANA-timezone settings and local-date workload allocation, deterministic load/progress/source-warning summary, completed/terminal protection and rollback/SQLite-lock retry; it does not write progress, auto-replan or schedule work. HTTP API, UI, export, restore artifact acceptance and a formal user path remain unimplemented; this is not Phase 9B completed or real-pass.
+> Phase 9B-1 remains `planned/contract-frozen`: S1/S2 entity relations, cadence/timezone/workload rules, note/block/module/citation provenance, state transitions, invariants, fake-provider draft semantics, lifecycle mapping, API/export draft and backup/restore non-repair boundaries are frozen. 9B-2 through 9B-6 are `implemented/backend-pass`: v10 persistence, shared domain transactions, the S2 deterministic fake-provider note draft workflow, the S1 explicit synchronous rhythm workflow and the minimal safe S1/S2 API have focused tests. S1 uses daily/weekly IANA-timezone settings and local-date workload allocation, deterministic load/progress/source-warning summary, completed/terminal protection and rollback/SQLite-lock retry; it does not write progress, auto-replan or schedule work. The API injects server project scope, maps safe 400/404/409/500 errors, bounds exports, validates citations server-side, and preserves provider/source failure privacy. UI/browser-pass, restore artifact acceptance and a formal user path remain unimplemented; this is not Phase 9B completed or real-pass.
 
-Next task: **9B-6 API contract**. It must expose only the already accepted S1/S2 domain contract without expanding scheduler, export or restore scope.
+Next task: **9B-7 Chromium workspace**. It must use the API contract without expanding scheduler, worker or restore scope.

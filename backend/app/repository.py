@@ -2115,6 +2115,46 @@ def update_note(connection: sqlite3.Connection, *, project_id: str, note_id: str
     return _note_public(connection, project_id=project_id, note_id=note_id)
 
 
+def update_note_content(connection: sqlite3.Connection, *, project_id: str, note_id: str,
+                        title: object | None = None, blocks: object | None = None) -> dict[str, object]:
+    """Atomically patch note title and ordered blocks when both are supplied."""
+    if title is None and blocks is None:
+        raise ValueError("study_note_invalid_payload")
+    values = _note_validate_blocks(blocks) if blocks is not None else None
+    title_value = None if title is None else _study_text(title, code="study_note_invalid_payload", maximum=NOTE_MAX_TITLE)
+    with connection:
+        row = _note_row(connection, project_id=project_id, note_id=note_id)
+        if row is None:
+            raise ValueError("study_note_not_found")
+        if row["status"] != "draft":
+            raise ValueError("study_note_edit_not_allowed")
+        now = utc_now()
+        if values is not None:
+            expected_provenance = "ai_generated" if row["provenance"] == "ai_generated" else "user_created"
+            existing = connection.execute(
+                "SELECT id FROM note_blocks WHERE note_id=? AND project_id=? ORDER BY position,id", (note_id, project_id)
+            ).fetchall()
+            common = min(len(existing), len(values))
+            for position in range(common):
+                kind, content, _ = values[position]
+                connection.execute(
+                    "UPDATE note_blocks SET position=?,block_kind=?,content=?,provenance=?,updated_at=? WHERE id=? AND note_id=?",
+                    (position, kind, content, expected_provenance, now, existing[position]["id"], note_id),
+                )
+            for old in existing[common:]:
+                connection.execute("DELETE FROM note_blocks WHERE id=? AND note_id=?", (old["id"], note_id))
+            for position, (kind, content, block_provenance) in enumerate(values[common:], start=common):
+                connection.execute(
+                    "INSERT INTO note_blocks (id,note_id,project_id,position,block_kind,content,provenance,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (f"note_block_{uuid.uuid4().hex}", note_id, project_id, position, kind, content, expected_provenance, now, now),
+                )
+        connection.execute(
+            "UPDATE notes SET title=COALESCE(?,title),user_edited=1,updated_at=? WHERE id=? AND project_id=?",
+            (title_value, now, note_id, project_id),
+        )
+    return _note_public(connection, project_id=project_id, note_id=note_id)
+
+
 def update_note_blocks(connection: sqlite3.Connection, *, project_id: str, note_id: str,
                        blocks: object) -> dict[str, object]:
     values = _note_validate_blocks(blocks)
