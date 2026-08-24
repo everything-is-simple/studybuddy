@@ -21,8 +21,8 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 9
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 9
+        assert assert_schema_version(connection) == 10
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 10
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
                              "material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -32,7 +32,8 @@ def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
                              "exercise_sets", "exercises", "exercise_citations", "exercise_attempts",
                              "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
                              "study_plan_dependencies", "study_progress_events", "module_source_links",
-                             "plan_item_source_links"}
+                             "plan_item_source_links", "notes", "note_blocks", "note_module_links",
+                             "note_block_source_links", "rhythm_settings", "rhythm_allocations"}
         virtual_tables = {row[0] for row in connection.execute(
             "SELECT name FROM sqlite_master WHERE sql LIKE 'CREATE VIRTUAL TABLE%'"
         )}
@@ -68,6 +69,41 @@ def test_phase9a_schema_has_required_tables_constraints_and_indexes(tmp_path: Pa
             connection.execute("INSERT INTO study_progress_events VALUES ('event_1','plan_1','item_1','project_9a','cancelled','{}','now')")
 
 
+def test_phase9b_schema_has_required_tables_constraints_and_indexes(tmp_path: Path):
+    database = tmp_path / "studybuddy.sqlite3"
+    with connect(database) as connection:
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {
+            "notes", "note_blocks", "note_module_links", "note_block_source_links",
+            "rhythm_settings", "rhythm_allocations",
+        }.issubset(tables)
+        indexes = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='index'")}
+        assert {
+            "notes_project_status_idx", "note_blocks_note_position_idx", "note_module_links_project_idx",
+            "note_block_source_links_source_idx", "note_block_source_links_block_idx",
+            "rhythm_settings_project_plan_idx", "rhythm_allocations_plan_date_idx",
+            "rhythm_allocations_item_date_idx",
+        }.issubset(indexes)
+        connection.execute("INSERT INTO projects VALUES ('project_9b', '9B', 'now')")
+        connection.execute("INSERT INTO learning_goals VALUES ('goal_1','project_9b','Goal','','active','now','now',NULL)")
+        connection.execute("INSERT INTO study_plans VALUES ('plan_1','project_9b','goal_1','Plan','','draft',0,'now','now',NULL,NULL,NULL,NULL)")
+        connection.execute("INSERT INTO study_plan_items VALUES ('item_1','plan_1','project_9b',NULL,NULL,NULL,'Item','',0,'pending',0,'now','now',NULL,NULL)")
+        connection.execute("INSERT INTO notes VALUES ('note_1','project_9b','User note','draft','user_created',0,NULL,'now','now',NULL,NULL)")
+        connection.execute("INSERT INTO note_blocks VALUES ('block_1','note_1','project_9b',0,'text','Body','user_created','now','now')")
+        connection.execute("INSERT INTO rhythm_settings VALUES ('rhythm_1','project_9b','plan_1','daily','UTC','2026-01-01',0,'now','now')")
+        connection.execute("INSERT INTO rhythm_allocations VALUES ('allocation_1','project_9b','plan_1','item_1','2026-01-01',30,'now','now')")
+        connection.execute("INSERT INTO note_block_source_links VALUES ('link_1','project_9b','note_1','block_1','purged_material','purged_revision','purged_extraction','purged_chunk',NULL,'ctx-deadbeef-deadbeef','source_unavailable','now','now')")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO notes VALUES ('note_bad','project_9b','Bad','draft','user_created',0,'operation_x','now','now',NULL,NULL)")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO note_blocks VALUES ('block_bad','note_1','project_9b',0,'html','Body','user_created','now','now')")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO rhythm_settings VALUES ('rhythm_bad','project_9b','plan_1','monthly','UTC','2026-01-01',0,'now','now')")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO rhythm_allocations VALUES ('allocation_bad','project_9b','plan_1','item_1','2026-01-01',0,'now','now')")
+        assert connection.execute("SELECT material_id FROM note_block_source_links WHERE id='link_1'").fetchone()[0] == "purged_material"
+
+
 def test_v8_database_upgrades_to_phase9a_v9_once(monkeypatch, tmp_path: Path):
     from app.migrations import runner
 
@@ -79,7 +115,7 @@ def test_v8_database_upgrades_to_phase9a_v9_once(monkeypatch, tmp_path: Path):
         assert assert_schema_version(connection) == 8
         assert connection.execute("SELECT name FROM sqlite_master WHERE name='learning_goals'").fetchone() is None
     monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 9)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:9])
     with connect(database) as connection:
         assert assert_schema_version(connection) == 9
         row = connection.execute("SELECT version, name FROM schema_migrations WHERE version=9").fetchone()
@@ -87,6 +123,28 @@ def test_v8_database_upgrades_to_phase9a_v9_once(monkeypatch, tmp_path: Path):
         assert connection.execute("SELECT name FROM sqlite_master WHERE name='study_progress_events'").fetchone() is not None
     with connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=9").fetchone()[0] == 1
+
+
+def test_v9_database_upgrades_to_phase9b_v10_once(monkeypatch, tmp_path: Path):
+    from app.migrations import runner
+
+    database = tmp_path / "studybuddy.sqlite3"
+    migrations = runner._MIGRATIONS
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 9)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:9])
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 9
+        assert connection.execute("SELECT name FROM sqlite_master WHERE name='notes'").fetchone() is None
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 10)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 10
+        assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=10").fetchone()) == (
+            10, "phase9b_material_learning_schema",
+        )
+        assert connection.execute("SELECT name FROM sqlite_master WHERE name='notes'").fetchone() is not None
+    with connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=10").fetchone()[0] == 1
 
 
 def test_phase9a_migration_failure_rolls_back_v9_to_existing_v8(monkeypatch, tmp_path: Path):
@@ -116,6 +174,37 @@ def test_phase9a_migration_failure_rolls_back_v9_to_existing_v8(monkeypatch, tmp
     assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 8
     assert connection.execute("SELECT 1 FROM schema_migrations WHERE version=9").fetchone() is None
     assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+    connection.close()
+
+
+def test_phase9b_migration_failure_rolls_back_v10_to_existing_v9(monkeypatch, tmp_path: Path):
+    from app.migrations import runner
+
+    database = tmp_path / "studybuddy.sqlite3"
+    migrations = runner._MIGRATIONS
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 9)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:9])
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 9
+
+    original = runner._migration_v10
+
+    def broken(connection: sqlite3.Connection) -> None:
+        original(connection)
+        raise sqlite3.OperationalError("private")
+
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 10)
+    monkeypatch.setattr(runner, "_MIGRATIONS", tuple(
+        (version, name, broken if version == 10 else function)
+        for version, name, function in migrations
+    ))
+    connection = sqlite3.connect(database)
+    with pytest.raises(MigrationError, match="database_migration_failed"):
+        migrate(connection)
+    assert connection.execute("SELECT name FROM sqlite_master WHERE name='notes'").fetchone() is None
+    assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 9
+    assert connection.execute("SELECT 1 FROM schema_migrations WHERE version=10").fetchone() is None
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
     connection.close()
 
 
@@ -152,9 +241,11 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 9
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 10
         assert connection.execute("SELECT provider_request_id, total_tokens, finish_reason, idempotency_key, retrieval_run_id FROM ai_operations").description is not None
         assert connection.execute("SELECT id, goal_id, status, user_edited FROM study_plans").description is not None
+        assert connection.execute("SELECT id, provenance, generation_operation_id FROM notes").description is not None
+        assert connection.execute("SELECT id, cadence, target_minutes FROM rhythm_settings").description is not None
         assert connection.execute("SELECT COUNT(*) FROM material_search").fetchone()[0] == 1
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -195,7 +286,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 9
+    assert manifest["database"]["schema_version"] == 10
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))
