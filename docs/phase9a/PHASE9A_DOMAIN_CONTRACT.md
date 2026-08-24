@@ -2,14 +2,14 @@
 
 > 状态：`planned`；9A-0 `audit-draft` 与 9A-1 `contract-frozen` 已完成。
 >
-> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。本文不是 migration、API、repository 或 UI 的实现证据；当前 schema 仍为 v8，正式实现从 9A-2 migration gate 开始。
+> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 已实现 v9 schema migration；repository/domain、API、UI 与 source lifecycle 仍不是本文件或 v9 schema 的实现证据。
 >
 > 审计基线：commit `c083975`，审计日期：2026-08-30。
 
 ## 1. 审计结论摘要
 
-- 当前正式 schema version 是 **8**；`schema_migrations` 与 `PRAGMA user_version` 必须一致。
-- migration 没有拆成独立 migration 文件，而是集中在 `backend/app/migrations/runner.py` 的 `_MIGRATIONS` tuple 中，当前 1–8 连续注册。
+- 当前正式 schema version 是 **9**；`schema_migrations` 与 `PRAGMA user_version` 必须一致。
+- migration 没有拆成独立 migration 文件，而是集中在 `backend/app/migrations/runner.py` 的 `_MIGRATIONS` tuple 中，当前 1–9 连续注册。
 - 业务 repository 也集中在 `backend/app/repository.py`；大多数单个写操作使用 `with connection:`，由 SQLite connection context 提交或 rollback。部分需要跨阶段的 AI 流程会显式 `commit()` 后再进行 Provider I/O，再执行最终写入。
 - 当前身份边界是 `project_id`，默认值为 `default`；没有 `user_id`、认证或授权模型。9A 应沿用 `project_id` 隔离，不提前设计多用户权限。
 - 当前 source of truth 是 `projects`、`materials`、`extractions`、`text_spans`。`material_revisions`、`chunks`、retrieval、citations、AI operations 和 Cards/Exercises 是派生数据或用户状态。
@@ -42,9 +42,9 @@
 
 **源码：** `backend/app/migrations/runner.py`
 
-- `CURRENT_SCHEMA_VERSION = 8`（第 9 行）。
+- `CURRENT_SCHEMA_VERSION = 9`（第 9 行）。
 - `HISTORY_TABLE = "schema_migrations"`（第 10 行）。
-- `_MIGRATIONS`（约第 455–465 行）注册：
+- `_MIGRATIONS`（约第 600 行）注册连续 history：
   1. `canonical_material_schema`
   2. `ai_phase0_schema`
   3. `phase5_provider_metadata`
@@ -53,9 +53,10 @@
   6. `search_index_schema_contract`
   7. `phase8_cards_exercises_schema`
   8. `phase8_exercise_provenance`
+  9. `phase9a_learning_plan_schema`
 - `migrate()` 使用 `BEGIN IMMEDIATE`，逐个执行 migration 并插入 history；最后设置 `PRAGMA user_version` 并 commit。`MigrationError` 或 SQLite/OSError 会 rollback。
 - `_baseline_complete()` 只允许已知且完整的当前基础对象通过；未知 future version、history mismatch、缺失 required object 不会被启动自动修复。
-- 当前新 Phase 9A 若进入 schema 实现，应新增 v9 或后续连续版本，不应修改 v1–v8 history，也不应在连接初始化时 ad-hoc 建表；当前仍停留在 9A-0 审计，不得提前改动 `CURRENT_SCHEMA_VERSION`。
+- 9A-2 已以连续 v9 新增计划 schema；后续变更必须继续追加连续 migration，不得修改 v1–v9 history，也不应在连接初始化时 ad-hoc 建表。
 
 **现有 migration 测试：** `backend/tests/test_migrations.py`
 
@@ -357,25 +358,70 @@ API resource 只冻结资源边界，不在 9A-1 实现：
 - 9D 在需求、隐私、保留策略、真实组件证据和运维成本评审通过前不立项；9A 不预留 OCR/ASR/report 业务表。
 - 9A 完成不代表以上任何子阶段实现，也不代表 Phase 9 完成。
 
-## 9. 9A-0/9A-1 验收与下一步
+## 9. 9A-2 schema implementation record
 
-### 已完成的 9A-0/9A-1 输出
+### 9.1 Migration decision
+
+9A-2 implements one consecutive migration: **v9 `phase9a_learning_plan_schema`** in `backend/app/migrations/runner.py`. It creates only the 9A persistence contract and indexes; it does not add repository/domain operations, FastAPI routes, UI, AI generation, scheduler, worker or automatic lifecycle refresh.
+
+| Table | Ownership and schema boundary |
+|---|---|
+| `learning_goals` | project-scoped active/archived goal; plans reference it with `ON DELETE RESTRICT` |
+| `knowledge_modules` | project-scoped active/archived reusable module |
+| `study_plans` | project-scoped plan, required goal, plan lifecycle and user-edited/timestamp fields |
+| `study_plan_items` | project-scoped item with optional module/deck/exercise-set links and stable per-plan `position` |
+| `study_plan_dependencies` | same-plan edge storage with self-edge CHECK and unique edge constraint |
+| `study_progress_events` | append-only event storage with frozen event-type CHECK |
+| `module_source_links` | module-specific source identity links and lifecycle status |
+| `plan_item_source_links` | plan-item-specific source identity links and lifecycle status |
+
+The source-link tables are intentionally separate rather than a polymorphic owner table: SQLite can enforce an owner foreign key without trigger-based polymorphism. Source material/revision/extraction/chunk foreign keys use `ON DELETE SET NULL`, preserving historical link rows on purge; 9A-6 must persist `source_unavailable` before/with lifecycle cleanup and must not infer valid source from a null identity.
+
+`study_plan_items` uses `UNIQUE(plan_id, position)`. It references module/deck/exercise-set with `ON DELETE SET NULL`; this protects historical plan items from future physical deletion of those referenced artifacts. Dependency endpoints use `ON DELETE RESTRICT` to prevent accidental removal of an item that remains part of a graph or progress history. Parent plan/project deletion cascades only as a database/project teardown boundary, not as a user-facing 9A delete workflow.
+
+### 9.2 Schema-enforced versus repository-enforced constraints
+
+SQLite v9 enforces lifecycle enum membership, `user_edited` boolean values, non-negative item position, dependency self-edge rejection, unique item positions, unique dependency edges, unique source citation key per owner, source-link status membership and foreign-key existence where identities remain available.
+
+9A-3 must enforce transactionally and test: same-project ownership across every optional reference; same-plan dependency endpoints; full DAG cycle detection; plan/item transition graph; goal/module archive action restrictions; append-only operation policy; active-plan-only progress events; item projection from events; source identity/citation validation; source lifecycle refresh; title/description/metadata size and JSON validation; duplicate-progress idempotency policy; and user-edit/confirmed/completed protection. SQLite CHECK/foreign keys alone cannot prove these cross-row or temporal rules.
+
+### 9.3 v9 migration transaction and test evidence
+
+`_migration_v9()` executes each DDL statement through `connection.execute()` rather than `executescript()`: Python sqlite `executescript()` can commit a pending transaction before executing, which would violate the runner's v9 rollback boundary. This preserves `migrate()`'s `BEGIN IMMEDIATE` atomicity for an upgrade from v8.
+
+Focused migration coverage in `backend/tests/test_migrations.py` verifies:
+
+- clean database initializes at v9 with all eight 9A tables;
+- required v9 indexes and representative CHECK constraints exist;
+- a v8 database upgrades once to v9 and repeated open does not duplicate history;
+- an injected v9 failure rolls an existing v8 database back to v8 with no v9 table/history/user-version residue;
+- backup manifest and restore history preserve v9 in `backend/tests/test_backup_restore.py`.
+
+No migration writes plan/goal/module data, creates runtime tables, repairs source links or changes existing Phase 8 data.
+
+## 10. 9A-0/9A-1/9A-2 验收与下一步
+
+### 已完成的 9A-0/9A-1/9A-2 输出
 
 - 当前 migration version、history 和 rollback 机制已定位；
 - repository 事务边界和 ID/time/project 约定已定位；
 - material revision/citation、Cards/Exercises source lifecycle 已定位；
 - backup/restore 全 SQLite snapshot 与 non-repair 边界已定位；
 - main.py 路由、内嵌 UI、测试 fixture 和 browser 运行方式已定位；
-- 9A 纳入范围、明确排除、正式不变量、正式关系和 9A-1 决策已记录。
+- 9A 纳入范围、明确排除、正式不变量、正式关系和 9A-1 决策已记录；
+- v9 `phase9a_learning_plan_schema` 已通过 migration runner 创建八张 9A 表及约束/索引；
+- 新库、v8→v9、重复运行、v9 failure rollback、backup/restore schema history 已有 focused backend coverage。
 
-### 9A-0/9A-1 的准确状态
+### 9A-0/9A-1/9A-2 的准确状态
 
 `Phase 9A-0 completed as planned/audit-draft`：代码审计、范围和边界已形成。
 
 `Phase 9A-1 completed as planned/contract-frozen`：正式实体关系、字段语义、状态机、不变量、progress、source lifecycle、错误码、API resource 边界和 deferred decisions 已冻结。
 
-这两个任务都没有实现学习目标、知识模块、计划、计划项、依赖或进度能力；没有新增 migration、业务表、API 或 UI。当前 schema 仍为 v8。该文档不是实现证据，9A-2 才能开始提出 v9 schema，且必须严格遵循本契约。
+`Phase 9A-2 implemented/backend-pass`：v9 migration/schema、new-db/v8-upgrade/idempotency/failure-rollback 和 backup/restore schema-history tests 已通过。
+
+9A-2 不代表学习目标、知识模块、计划、计划项、依赖或进度的可用领域能力已经完成：repository/domain、API、UI、source lifecycle integration、9A artifact backup/restore lifecycle evidence 和 Chromium acceptance 尚未实现。当前 schema 为 v9；startup/read/backup/restore 不创建 plan data、不 repair source link、不生成内容。
 
 ### 下一步
 
-进入 9A-2：只实现 migration/schema 和 migration tests。9A-2 不实现 repository、API 或 UI；若 schema 需要改变本契约，先停止并提交契约修订。
+进入 9A-3：实现 repository/domain transaction、DAG cycle detection、append-only progress、状态投影、跨表/project 验证与用户编辑保护。9A-3 不实现 HTTP API 或 UI；若发现 schema 需要改变本契约，先停止并提交契约修订。

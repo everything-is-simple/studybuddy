@@ -184,9 +184,9 @@ revision → chunks → retrieval → citations → Q&A
 
 > 充分上下文、总规划 prompt、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`phase9a/`](phase9a/)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
 
-- [x] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结；初稿见 [`PHASE9A_DOMAIN_CONTRACT.md`](PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/audit-draft`，不代表领域能力实现。
-- [x] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机；正式契约见 [`PHASE9A_DOMAIN_CONTRACT.md`](PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/contract-frozen`，不代表 schema/API/UI 实现。
-- [ ] 9A-2：通过连续 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 rollback/幂等测试。
+- [x] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结；初稿见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/audit-draft`，不代表领域能力实现。
+- [x] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机；正式契约见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/contract-frozen`，不代表 schema/API/UI 实现。
+- [x] 9A-2：通过连续 v9 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 new-db/v8-upgrade/rollback/幂等和 backup/restore schema-history 测试；见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `implemented/backend-pass`，repository/API/UI/source lifecycle 仍未实现。
 - [ ] 9A-3：实现 repository/domain 事务、DAG 依赖校验、append-only progress 和用户编辑保护。
 - [ ] 9A-4：实现最小计划核心 API、输入边界、稳定错误和生命周期 contract。
 - [ ] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace。
@@ -196,7 +196,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 下方为旧版 Phase 9A 概括性条目；详细可执行拆分以 9A-0 至 9A-8 为唯一口径，避免重复清单产生状态漂移。
 >
-> 9A-0 已完成 `planned/audit-draft` 审计文档，9A-1 已完成 `planned/contract-frozen` 正式领域契约和状态机；正式 migration、代码、测试、API、UI 和 evidence 仍未完成。
+> 9A-0 已完成 `planned/audit-draft` 审计文档，9A-1 已完成 `planned/contract-frozen` 正式领域契约和状态机，9A-2 已完成 `implemented/backend-pass` v9 schema/migration；repository/domain、API、UI、source lifecycle 与 9A closeout evidence 仍未完成。
 
 
 ### Phase 9B：资料学习工作流（S1/S2）

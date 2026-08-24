@@ -21,19 +21,102 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 8
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 8
+        assert assert_schema_version(connection) == 9
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 9
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
                              "material_revisions", "chunks", "chunk_spans", "embeddings",
                              "retrieval_runs", "retrieval_hits", "qa_citations",
                              "ai_operations", "qa_threads", "qa_messages", "qa_answers",
                              "study_decks", "study_cards", "card_citations", "card_reviews",
-                             "exercise_sets", "exercises", "exercise_citations", "exercise_attempts"}
+                             "exercise_sets", "exercises", "exercise_citations", "exercise_attempts",
+                             "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
+                             "study_plan_dependencies", "study_progress_events", "module_source_links",
+                             "plan_item_source_links"}
         virtual_tables = {row[0] for row in connection.execute(
             "SELECT name FROM sqlite_master WHERE sql LIKE 'CREATE VIRTUAL TABLE%'"
         )}
         assert {"material_search", "chunks_search"}.issubset(virtual_tables)
+
+
+def test_phase9a_schema_has_required_tables_constraints_and_indexes(tmp_path: Path):
+    database = tmp_path / "studybuddy.sqlite3"
+    with connect(database) as connection:
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {
+            "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
+            "study_plan_dependencies", "study_progress_events", "module_source_links",
+            "plan_item_source_links",
+        }.issubset(tables)
+        indexes = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='index'")}
+        assert {
+            "learning_goals_project_status_idx", "knowledge_modules_project_status_idx",
+            "study_plans_project_status_idx", "study_plans_goal_status_idx",
+            "study_plan_items_plan_position_idx", "study_plan_dependencies_successor_idx",
+            "study_progress_events_item_time_idx", "module_source_links_source_idx",
+            "plan_item_source_links_source_idx",
+        }.issubset(indexes)
+        connection.execute("INSERT INTO projects VALUES ('project_9a', '9A', '2026-01-01T00:00:00+00:00')")
+        connection.execute("INSERT INTO learning_goals VALUES ('goal_1','project_9a','Goal','','active','now','now',NULL)")
+        connection.execute("INSERT INTO study_plans VALUES ('plan_1','project_9a','goal_1','Plan','','draft',0,'now','now',NULL,NULL,NULL,NULL)")
+        connection.execute("INSERT INTO study_plan_items VALUES ('item_1','plan_1','project_9a',NULL,NULL,NULL,'Item','',0,'pending',0,'now','now',NULL,NULL)")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO study_plans VALUES ('plan_bad','project_9a','goal_1','Bad','','invalid',0,'now','now',NULL,NULL,NULL,NULL)")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO study_plan_dependencies VALUES ('dep_1','plan_1','project_9a','item_1','item_1','now')")
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("INSERT INTO study_progress_events VALUES ('event_1','plan_1','item_1','project_9a','cancelled','{}','now')")
+
+
+def test_v8_database_upgrades_to_phase9a_v9_once(monkeypatch, tmp_path: Path):
+    from app.migrations import runner
+
+    database = tmp_path / "studybuddy.sqlite3"
+    migrations = runner._MIGRATIONS
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 8)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:8])
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 8
+        assert connection.execute("SELECT name FROM sqlite_master WHERE name='learning_goals'").fetchone() is None
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 9)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 9
+        row = connection.execute("SELECT version, name FROM schema_migrations WHERE version=9").fetchone()
+        assert tuple(row) == (9, "phase9a_learning_plan_schema")
+        assert connection.execute("SELECT name FROM sqlite_master WHERE name='study_progress_events'").fetchone() is not None
+    with connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=9").fetchone()[0] == 1
+
+
+def test_phase9a_migration_failure_rolls_back_v9_to_existing_v8(monkeypatch, tmp_path: Path):
+    from app.migrations import runner
+
+    database = tmp_path / "studybuddy.sqlite3"
+    migrations = runner._MIGRATIONS
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 8)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:8])
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 8
+
+    original = runner._migration_v9
+    def broken(connection: sqlite3.Connection) -> None:
+        original(connection)
+        raise sqlite3.OperationalError("private")
+
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 9)
+    monkeypatch.setattr(runner, "_MIGRATIONS", tuple(
+        (version, name, broken if version == 9 else function)
+        for version, name, function in migrations
+    ))
+    connection = sqlite3.connect(database)
+    with pytest.raises(MigrationError, match="database_migration_failed"):
+        migrate(connection)
+    assert connection.execute("SELECT name FROM sqlite_master WHERE name='learning_goals'").fetchone() is None
+    assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 8
+    assert connection.execute("SELECT 1 FROM schema_migrations WHERE version=9").fetchone() is None
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+    connection.close()
 
 
 def test_missing_search_schema_is_not_repaired_at_runtime(tmp_path: Path):
@@ -69,8 +152,9 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 8
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 9
         assert connection.execute("SELECT provider_request_id, total_tokens, finish_reason, idempotency_key, retrieval_run_id FROM ai_operations").description is not None
+        assert connection.execute("SELECT id, goal_id, status, user_edited FROM study_plans").description is not None
         assert connection.execute("SELECT COUNT(*) FROM material_search").fetchone()[0] == 1
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -111,7 +195,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 8
+    assert manifest["database"]["schema_version"] == 9
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))

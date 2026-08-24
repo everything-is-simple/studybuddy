@@ -61,6 +61,29 @@ def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
     assert not (DOCS / "phase8").exists()
 
 
+def test_phase9a_contract_migration_and_status_are_consistent():
+    roadmap = read("PHASE_ROADMAP.md")
+    status = read("STATUS.md")
+    todo = read("TODO.md")
+    progress = read("PROJECT_PROGRESS_REPORT.md")
+    architecture = read("ai-learning-architecture.md")
+    migration_doc = read("MIGRATIONS.md")
+    contract = read("phase9a/PHASE9A_DOMAIN_CONTRACT.md")
+    runner = (ROOT / "backend" / "app" / "migrations" / "runner.py").read_text(encoding="utf-8")
+
+    for document in (roadmap, status, todo, progress, architecture):
+        assert "9A-2" in document
+        assert "v9" in document
+    assert "phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
+    assert "Current schema version: **9**." in migration_doc
+    assert "9 | phase9a_learning_plan_schema" in migration_doc
+    assert "CURRENT_SCHEMA_VERSION = 9" in runner
+    assert '(9, "phase9a_learning_plan_schema", _migration_v9)' in runner
+    assert "implemented/backend-pass" in contract
+    assert "repository/domain、API、UI、source lifecycle integration" in contract
+    assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()
+
+
 def test_roadmap_orders_deferred_learning_after_phase6():
     roadmap = read("PHASE_ROADMAP.md")
     assert roadmap.index("Phase 6：AI MVP 产品化与整体验收") < roadmap.index("### Phase 7：Embedding 与 Hybrid Retrieval")
