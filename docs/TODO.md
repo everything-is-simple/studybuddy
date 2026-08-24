@@ -196,7 +196,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 下方为旧版 Phase 9A 概括性条目；详细可执行拆分以 9A-0 至 9A-8 为唯一口径，避免重复清单产生状态漂移。
 >
-> 9A-0 当前仅完成 `planned/audit-draft` 审计文档；正式领域契约、migration、代码、测试、API、UI 和 evidence 均未完成。
+> 9A-0 已完成 `planned/audit-draft` 审计文档，9A-1 已完成 `planned/contract-frozen` 正式领域契约和状态机；正式 migration、代码、测试、API、UI 和 evidence 仍未完成。
 
 
 ### Phase 9B：资料学习工作流（S1/S2）
