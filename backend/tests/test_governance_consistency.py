@@ -117,6 +117,35 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert not (DOCS / "PHASE9A_DOMAIN_CONTRACT.md").exists()
 
 
+def test_phase9b_closeout_and_current_regression_are_consistent():
+    roadmap = read("PHASE_ROADMAP.md")
+    status = read("STATUS.md")
+    todo = read("TODO.md")
+    progress = read("PROJECT_PROGRESS_REPORT.md")
+    architecture = read("ARCHITECTURE.md")
+    contract = read("phase9b/PHASE9B_DOMAIN_CONTRACT.md")
+    evidence = read("PHASE9B_ACCEPTANCE_EVIDENCE.md")
+    decisions = read("DECISIONS.md")
+    governance = read("CODE_TEST_GOVERNANCE.md")
+
+    for document in (roadmap, status, todo, progress, architecture, contract, decisions):
+        assert "PHASE9B_ACCEPTANCE_EVIDENCE.md" in document
+    for document in (roadmap, status, todo, progress, contract, evidence):
+        assert "299 passed, 2 skipped" in document
+    for document in (status, todo, progress, evidence):
+        assert "45 passed" in document
+    assert "9B-9" in roadmap and "Gate A-I" in roadmap
+    assert "9B-9" in todo and "completed" in todo
+    assert "9B-9" in contract and "completed" in contract
+    assert "Phase 9B 已在 deterministic fake-provider" in evidence
+    assert "Phase 9C/9D" in evidence
+    assert "real Provider generation" in evidence
+    assert "scheduler/worker" in evidence
+    assert "299 passed, 2 skipped" in governance
+    assert "Phase 9B" in governance
+    assert "真实 Provider" in governance
+
+
 def test_roadmap_orders_deferred_learning_after_phase6():
     roadmap = read("PHASE_ROADMAP.md")
     assert roadmap.index("Phase 6：AI MVP 产品化与整体验收") < roadmap.index("### Phase 7：Embedding 与 Hybrid Retrieval")
