@@ -194,11 +194,10 @@ revision → chunks → retrieval → citations → Q&A
 - [ ] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收。
 - [ ] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。
 
-- [ ] 冻结 learning goal、knowledge module、study plan/item、dependency、progress event 的正式领域契约。
-- [ ] 通过 migration 增加计划、目标、进度事件和 source revision/citation 关联；禁止运行时建表。
-- [ ] 实现 draft → confirm → active 生命周期、用户编辑保护、source unavailable 和删除/恢复边界。
-- [ ] 实现最小计划创建、确认、查看、完成记录和重算失败路径。
-- [ ] 完成 repository/API/失败边界/Chromium/backup-restore 验收后，才能宣称 9A completed。
+> 下方为旧版 Phase 9A 概括性条目；详细可执行拆分以 9A-0 至 9A-8 为唯一口径，避免重复清单产生状态漂移。
+>
+> 9A-0 当前仅完成 `planned/audit-draft` 审计文档；正式领域契约、migration、代码、测试、API、UI 和 evidence 均未完成。
+
 
 ### Phase 9B：资料学习工作流（S1/S2）
 
