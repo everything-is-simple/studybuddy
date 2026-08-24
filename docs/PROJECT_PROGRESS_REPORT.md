@@ -1,6 +1,6 @@
 # StudyBuddy 项目进度报告
 
-> 更新日期：2026-08-30（Phase 9A-7 restore gate 后）
+> 更新日期：2026-08-30（Phase 9A acceptance closeout 后）
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
 
@@ -149,9 +149,9 @@ Phase 8.1–8.6 已收口：v7/v8 migration、Cards/Exercises backend、fake-pro
    - 已完成 S0–S3 合成 TXT 容量/耗时基线与 40-cycle 生命周期 smoke。
    - ACL、真实资源耗尽、S4、peak memory、断电/网络盘/硬件损坏已明确记录为 `not_verified`，并作为 v1 运行边界接受。
 
-### 当前阶段：Phase 9A-7 restore gate 已通过，等待 9A-8
+### 当前阶段：Phase 9A 已在限定范围内完成，下一阶段为 Phase 9B
 
-Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，Phase 8.6 fake-provider closeout 已完成；Phase 9A 已完成 9A-0 代码审计/范围冻结、9A-1 正式领域契约/状态机冻结、9A-2 v9 schema migration/new-db/v8-upgrade/rollback/backup schema-history backend gate、9A-3 repository/domain backend gate、9A-4 最小 API/backend gate、9A-5 本地 Chromium workspace gate、9A-6 source lifecycle scoped backend/browser gate，以及 9A-7 backup/verify/restore non-repair gate。goal/module/plan/item/dependency/progress/source identity 的事务规则、source refresh、project scope、稳定错误、输入边界、delete/restore/purge/re-index 状态传播、progress 保留、隐私、backup/restore history 和 non-repair contract 已通过各自 scoped gates；当前 full backend 为 `272 passed, 2 skipped`，Phase 9A Chromium 为 `3 passed`，脱敏 evidence 见 `PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md` 和 `PHASE9A_BACKUP_RESTORE_EVIDENCE.md`。9A-6 尚未作最终 closeout，9A-8 acceptance evidence 仍未实现，下一步是 9A-8。既有 Provider adapter 范围仍为：
+当前正式 schema 为 v9。Phase 4 的 deterministic fake provider Q&A 闭环、Phase 5 adapter/配置/错误边界、Phase 6 P6-A–P6-E fake/default/UI 产品化验收、以及 Mistral 精确配置范围的 Phase 7 已完成；DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的 P6-E 精确真实 UI evidence 也已通过。尚未达到多 Provider 通用 real-pass，Phase 8.6 fake-provider closeout 已完成；Phase 9A 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成。完整 backend 为 `272 passed, 2 skipped`，Phase 9A Chromium 为 `3 passed`，Phase 8 Chromium 为 `3 passed`，frontend failure contract 为 `6 passed`；最终脱敏 evidence 见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。Phase 9A 完成不包含 Phase 9B–9D、真实 Provider plan generation、worker、多用户或全局 production `real-pass`。既有 Provider adapter 范围仍为：
 
 - 通用 OpenAI-compatible LLMProvider adapter 与 registry；
 - 环境变量配置、URL 校验、API key 内存隔离、timeout、prompt/output limits；

@@ -1,6 +1,6 @@
 # Phase 9A Source Lifecycle Evidence Draft
 
-> 状态：`scoped-gates-pass`。9A-6 的 backend/browser scoped gates 已通过；9A-7 restore-gates-pass 也已通过，但 9A-6 尚未 closeout、9A-8 acceptance closeout 尚未完成，因此不得将 Phase 9A 写成最终 completed。
+> 状态：`scoped-gates-pass`。9A-6 的 backend/browser scoped gates 已通过，并已纳入 Phase 9A 最终 acceptance closeout；最终范围和限制见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。
 >
 > 本文只记录脱敏的可复现结果，不包含数据库、原文件、正文、Provider key、路径或浏览器运行 artifact。
 
@@ -57,6 +57,5 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File \
 
 ## Remaining Limitations
 
-- 9A-7 backup/verify/restore history closeout 已通过；后续 9A-8 仍需统一全量 evidence 和最终文档收口。
-- 9A-8 尚未完成全量 evidence、STATUS/TODO/ROADMAP 最终收口，因此本草案不能作为 Phase 9A completed 声明。
+- 9A-7 backup/verify/restore history gate 与 9A-8 全量 evidence、STATUS/TODO/ROADMAP 最终收口均已通过；本文件保留为 9A-6 scoped evidence，最终声明见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。
 - 不覆盖真实 Provider、后台任务、多进程、多实例、真实断电或生产容量边界。

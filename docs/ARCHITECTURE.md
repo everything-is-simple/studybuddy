@@ -1,6 +1,6 @@
 # StudyBuddy Architecture Boundary
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 已完成，当前下一业务阶段是 Phase 9A 学习领域与计划核心。多进程、多用户和云同步仍不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 与 Phase 9A 限定范围 acceptance 均已完成，下一业务阶段是 Phase 9B。多进程、多用户和云同步仍不在支持范围。
 
 ## Evolution boundary
 
@@ -51,4 +51,4 @@ material revision
 → cards / exercises
 ```
 
-Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 已在 deterministic fake-provider 范围收口：schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace、三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading、short-answer `pending_review`，以及 backup → verify → 新空目录 restore 均有证据。generation 要求显式已索引的 single-material scope，经 retrieval/context/provider 结构化内存校验和服务端 citation 重验后才原子保存 draft/operation；restore/startup 不自动生成、repair、rebuild 或提升 unavailable citation。详细范围见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。真实 Provider generation evidence、系统级辅助技术/极端内容、人工简答复核、完整学习计划产品能力、worker 和多用户能力仍须按路线图逐阶段实现；Phase 9A 的计划核心、source lifecycle 和 backup/restore 仅在明确的单进程 SQLite/backend/API/local Chromium scope 内实现，9A-7 restore gate 已通过，9A-6 尚未 closeout、9A-8 仍未完成；这些 evidence 不等于全局 `real-pass`。
+Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 已在 deterministic fake-provider 范围收口：schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace、三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading、short-answer `pending_review`，以及 backup → verify → 新空目录 restore 均有证据。generation 要求显式已索引的 single-material scope，经 retrieval/context/provider 结构化内存校验和服务端 citation 重验后才原子保存 draft/operation；restore/startup 不自动生成、repair、rebuild 或提升 unavailable citation。详细范围见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。真实 Provider generation evidence、系统级辅助技术/极端内容、人工简答复核、完整学习计划产品能力、worker 和多用户能力仍须按路线图逐阶段实现；Phase 9A 的计划核心、source lifecycle 和 backup/restore 已在明确的单进程 SQLite/backend/API/local Chromium scope 内完成；该完成声明记录于 `PHASE9A_ACCEPTANCE_EVIDENCE.md`，不等于 Phase 9B–9D、Phase 9 全部完成或全局 `real-pass`。
