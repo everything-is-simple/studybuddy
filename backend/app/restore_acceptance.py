@@ -89,6 +89,87 @@ def _check_database(data_root: Path) -> tuple[sqlite3.Connection, dict[str, Any]
         raise AcceptanceError("acceptance_database_invalid") from None
 
 
+def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
+    required_tables = (
+        "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
+        "study_plan_dependencies", "study_progress_events", "module_source_links",
+        "plan_item_source_links",
+    )
+    placeholders = ",".join("?" for _ in required_tables)
+    present = {
+        str(row[0]) for row in connection.execute(
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name IN ({placeholders})",
+            required_tables,
+        ).fetchall()
+    }
+    if present != set(required_tables):
+        raise AcceptanceError("acceptance_study_schema_missing")
+
+    counts = {
+        table: int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+        for table in required_tables
+    }
+    plan_statuses = {
+        str(row[0]): int(row[1])
+        for row in connection.execute(
+            "SELECT status, COUNT(*) FROM study_plans GROUP BY status ORDER BY status"
+        ).fetchall()
+    }
+    source_statuses = {
+        str(row[0]): int(row[1])
+        for row in connection.execute(
+            "SELECT status, COUNT(*) FROM ("
+            "SELECT status FROM module_source_links "
+            "UNION ALL SELECT status FROM plan_item_source_links"
+            ") GROUP BY status ORDER BY status"
+        ).fetchall()
+    }
+    summary_rows = connection.execute(
+        "SELECT p.id, "
+        "SUM(CASE WHEN i.status != 'archived' THEN 1 ELSE 0 END) AS item_count, "
+        "SUM(CASE WHEN i.status = 'completed' THEN 1 ELSE 0 END) AS completed_count, "
+        "SUM(CASE WHEN i.status = 'skipped' THEN 1 ELSE 0 END) AS skipped_count, "
+        "SUM(CASE WHEN i.status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count, "
+        "SUM(CASE WHEN i.status = 'pending' THEN 1 ELSE 0 END) AS pending_count "
+        "FROM study_plans p LEFT JOIN study_plan_items i ON i.plan_id = p.id "
+        "GROUP BY p.id"
+    ).fetchall()
+    projection = {"pending": "pending", "started": "in_progress", "reopened": "in_progress", "completed": "completed", "skipped": "skipped"}
+    item_rows = connection.execute(
+        "SELECT i.id, i.status, e.event_type FROM study_plan_items i "
+        "LEFT JOIN study_progress_events e ON e.id = ("
+        "SELECT e2.id FROM study_progress_events e2 WHERE e2.item_id=i.id "
+        "ORDER BY e2.created_at DESC, e2.id DESC LIMIT 1"
+        ") ORDER BY i.id"
+    ).fetchall()
+    for row in item_rows:
+        expected_status = projection.get(str(row[2]), "pending") if row[2] is not None else "pending"
+        if str(row[1]) != "archived" and str(row[1]) != expected_status:
+            raise AcceptanceError("acceptance_study_projection_invalid")
+    for row in summary_rows:
+        values = [int(row[index] or 0) for index in range(1, 6)]
+        if any(value < 0 for value in values) or values[0] != sum(values[1:]):
+            raise AcceptanceError("acceptance_study_summary_invalid")
+    invalid_valid_links = connection.execute(
+        "SELECT COUNT(*) FROM ("
+        "SELECT status,material_id FROM module_source_links "
+        "UNION ALL SELECT status,material_id FROM plan_item_source_links"
+        ") WHERE status='valid' AND material_id IS NULL"
+    ).fetchone()[0]
+    if invalid_valid_links:
+        raise AcceptanceError("acceptance_study_source_invalid")
+    return {
+        "status": "passed",
+        "counts": counts,
+        "plan_statuses": plan_statuses,
+        "source_statuses": source_statuses,
+        "summary_plan_count": len(summary_rows),
+        "user_edited_count": int(connection.execute(
+            "SELECT COUNT(*) FROM study_plans WHERE user_edited=1"
+        ).fetchone()[0]),
+    }
+
+
 def _offline(data_root: Path) -> dict[str, Any]:
     connection, metadata = _check_database(data_root)
     checks: dict[str, Any] = {
@@ -101,6 +182,7 @@ def _offline(data_root: Path) -> dict[str, Any]:
         "integrity": {"status": "passed"},
         "foreign_keys": {"status": "passed"},
         "schema_history": {"status": "passed", "count": metadata["history_count"]},
+        "study": _study_checks(connection),
     }
     try:
         active = connection.execute(

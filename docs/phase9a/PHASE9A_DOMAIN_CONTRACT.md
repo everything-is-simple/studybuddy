@@ -1,8 +1,8 @@
-# Phase 9A 领域契约与现状审计（9A-0 至 9A-6 记录）
+# Phase 9A 领域契约与现状审计（9A-0 至 9A-7 记录）
 
-> 状态：9A-0 `audit-draft`、9A-1 `contract-frozen`、9A-2/9A-3/9A-4 `implemented/backend-pass`、9A-5 `browser-pass`、9A-6 `scoped-gates-pass`；9A-6 尚未 closeout，9A-7/9A-8 未完成。
+> 状态：9A-0 `audit-draft`、9A-1 `contract-frozen`、9A-2/9A-3/9A-4 `implemented/backend-pass`、9A-5 `browser-pass`、9A-6 `scoped-gates-pass`、9A-7 `restore-gates-pass`；9A-6 尚未 closeout，9A-8 未完成。
 >
-> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 至 9A-6 已形成 schema、repository/domain、API、source lifecycle 和本地 Chromium workspace 的 scoped evidence；9A-6 尚未 closeout，9A-7 backup/restore closeout、9A-8 acceptance 尚未完成。
+> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 至 9A-7 已形成 schema、repository/domain、API、source lifecycle、backup/restore 和本地 Chromium workspace 的 scoped evidence；9A-6 尚未 closeout，9A-8 acceptance 尚未完成。
 >
 > 审计基线：commit `c083975`，审计日期：2026-08-30。
 
@@ -399,7 +399,7 @@ Focused migration coverage in `backend/tests/test_migrations.py` verifies:
 
 No migration writes plan/goal/module data, creates runtime tables, repairs source links or changes existing Phase 8 data.
 
-## 10. 9A-0/9A-1/9A-2/9A-3/9A-4/9A-5 验收与下一步
+## 10. 9A-0 至 9A-7 验收与下一步
 
 ### 已完成的 9A-0/9A-1/9A-2/9A-3/9A-4/9A-5 输出
 
@@ -434,6 +434,8 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 
 `Phase 9A-6 scoped-gates-pass`：材料 delete/restore/purge/re-index 已与 9A source links 接入；restore 保持 source status，显式 refresh 才重算；purge 保留 plan/progress/link 历史并固定 unavailable；active plan 在 source warning 下保持 active；module/item link、progress projection 和 source privacy 已覆盖。focused backend `16 passed`、full backend `270 passed, 2 skipped`、Phase 9A Chromium `3 passed`，脱敏草案见 `docs/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`。9A-6 尚未作最终 closeout，不能写成 Phase 9A completed。
 
+`Phase 9A-7 restore-gates-pass`：现有 SQLite Online Backup、manifest、schema history 和新空 data root restore 已覆盖全部 9A 表。新增 restore acceptance 验证 plan status、item projection、dependency、append-only progress、summary、user-edited 和 valid/stale/source_unavailable link 状态；restore 会重定位恢复目标的 material stored path，但不生成业务对象、不重建派生数据、不调用 Provider、不 repair source lifecycle。focused backup/restore `13 passed`、full backend `272 passed, 2 skipped`，脱敏 evidence 见 `docs/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`。
+
 ### 下一步
 
-进入 9A-7 backup/restore closeout；不扩展到 9B/9C/9D。
+进入 9A-8 acceptance/documentation closeout；不扩展到 9B/9C/9D。
