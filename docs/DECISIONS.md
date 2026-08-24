@@ -102,7 +102,7 @@
 - 所有 AI 生成操作预留 `ai_operations` 状态、input fingerprint、source revision、prompt/policy/provider/model metadata；第一阶段可同步执行但不自动引入 worker。
 - citation 使用独立可验证记录，模型不能自行创造 citation；source 删除/purge 后历史 artifact 可保留，但 citation 标记 `source_unavailable`。
 - AI 生成卡片、练习、计划必须先是 draft，用户确认/编辑后才 ready/active；重新生成不得静默覆盖用户状态。
-- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance。Phase 7 已按 Mistral 精确配置完成；Phase 8 的 fake-provider citation-safe generation、Chromium workspace 和 backup/restore closeout 已完成。真实 Provider generation evidence、Plans 等后续业务逻辑仍未实现。
+- migration v3/v4 分别补充 Provider metadata 与 Q&A idempotency，v5 补充 embedding identity/status/payload contract，v7 创建 Cards/Exercises 表，v8 补充 exercise provenance，v9 创建 Phase 9A 学习计划核心表。Phase 7 已按 Mistral 精确配置完成；Phase 8 的 fake-provider citation-safe generation、Chromium workspace 和 backup/restore closeout 已完成；Phase 9A-0 至 9A-6 已在明确的 backend/API/local Chromium scoped gates 内实现，9A-7 backup/restore 与 9A-8 closeout、完整计划产品能力仍未实现。
 
 ## 2026-08-19: four-directory boundary
 

@@ -1,6 +1,6 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-27
+> 更新：2026-08-30（Phase 9A-6 scoped gates 后）
 > 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **55%–60%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
@@ -190,13 +190,13 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9A-3：实现 repository/domain 事务、DAG 依赖校验、append-only progress、状态投影、source identity validation、source lifecycle refresh 和用户编辑保护；focused `backend/tests/test_phase9a_domain.py` 8 passed，full backend 通过。状态为 `implemented/backend-pass`，API/UI 另由 9A-4/9A-5 验收。
 - [x] 9A-4：实现最小 goal/module/plan/item/dependency/progress/source API、project scope、输入边界和稳定错误 contract；`backend/tests/test_phase9a_api.py` 4 passed，full backend 通过。状态为 `implemented/backend-pass`，UI/Chromium 另由 9A-5 验收，source lifecycle/backup closeout 仍未完成。
 - [x] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace，并覆盖 dependency cycle failure、500/retry、390x844、keyboard 和 reload recovery；`backend/tests/browser_phase9a.spec.js` 2 passed。状态为 `browser-pass`，不代表 real-pass 或 9A completed。
-- [ ] 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的 source lifecycle 集成。
+- [ ] 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的 source lifecycle 集成；scoped backend/browser gates 已通过（focused `16 passed`、full backend `270 passed, 2 skipped`、Phase 9A Chromium `3 passed`），证据草案见 [`PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)，待 9A-7/9A-8 closeout 后再最终收口。
 - [ ] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收。
 - [ ] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。
 
 > 下方为旧版 Phase 9A 概括性条目；详细可执行拆分以 9A-0 至 9A-8 为唯一口径，避免重复清单产生状态漂移。
 >
-> 9A-0 已完成 `planned/audit-draft`，9A-1 已完成 `planned/contract-frozen`，9A-2/9A-3/9A-4 已完成 `implemented/backend-pass`，9A-5 已完成 `browser-pass`。当前 full backend 为 `261 passed, 7 skipped`，Phase 9A Chromium 为 `2 passed`。9A-6 source lifecycle、9A-7 backup/restore closeout、9A-8 全量证据收口仍未完成。
+> 9A-0 已完成 `planned/audit-draft`，9A-1 已完成 `planned/contract-frozen`，9A-2/9A-3/9A-4 已完成 `implemented/backend-pass`，9A-5 已完成 `browser-pass`，9A-6 scoped backend/browser gates 已通过但尚未 closeout。当前 full backend 为 `270 passed, 2 skipped`，Phase 9A Chromium 为 `3 passed`。9A-7 backup/restore closeout、9A-8 全量证据收口仍未完成。
 
 
 ### Phase 9B：资料学习工作流（S1/S2）

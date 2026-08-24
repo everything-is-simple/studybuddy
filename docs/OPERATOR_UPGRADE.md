@@ -14,7 +14,7 @@
 9 | phase9a_learning_plan_schema
 ```
 
-v9 增加 Phase 9A 的 goals、knowledge modules、study plans/items、dependencies、progress events 和 source-link schema。应用不会在导入或启动时自动创建学习计划数据、自动 repair source links、调用真实 provider 或启动后台任务。9A repository/domain、API 和本地 Chromium workspace 已有 scoped gate；完整 source lifecycle、backup/restore artifact closeout 和 Phase 9A acceptance 仍按路线图推进。
+v9 增加 Phase 9A 的 goals、knowledge modules、study plans/items、dependencies、progress events 和 source-link schema。应用不会在导入或启动时自动创建学习计划数据、自动 repair source links、调用真实 provider 或启动后台任务。9A repository/domain、API、本地 Chromium workspace 和 source lifecycle 已有 scoped gate；9A-6 尚未 closeout，backup/restore artifact closeout 和 Phase 9A acceptance 仍按路线图推进。
 
 支持的部署前提是单进程、单实例、单一 `data_root`、本地存储。升级期间不得让多个
 StudyBuddy 进程或其他 SQLite writer 使用同一个数据库。

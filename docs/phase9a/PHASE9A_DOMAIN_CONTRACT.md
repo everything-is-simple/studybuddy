@@ -1,8 +1,8 @@
-# Phase 9A 领域契约与现状审计（9A-0 至 9A-5 记录）
+# Phase 9A 领域契约与现状审计（9A-0 至 9A-6 记录）
 
-> 状态：9A-0 `audit-draft`、9A-1 `contract-frozen`、9A-2/9A-3/9A-4 `implemented/backend-pass`、9A-5 `browser-pass`。
+> 状态：9A-0 `audit-draft`、9A-1 `contract-frozen`、9A-2/9A-3/9A-4 `implemented/backend-pass`、9A-5 `browser-pass`、9A-6 `scoped-gates-pass`；9A-6 尚未 closeout，9A-7/9A-8 未完成。
 >
-> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 至 9A-5 已形成 schema、repository/domain、API 和本地 Chromium workspace 的 scoped evidence；9A-6 source lifecycle、9A-7 backup/restore closeout、9A-8 acceptance 尚未完成。
+> 本文记录当前正式代码审计、Phase 9A 的边界以及已冻结的领域契约。9A-2 至 9A-6 已形成 schema、repository/domain、API、source lifecycle 和本地 Chromium workspace 的 scoped evidence；9A-6 尚未 closeout，9A-7 backup/restore closeout、9A-8 acceptance 尚未完成。
 >
 > 审计基线：commit `c083975`，审计日期：2026-08-30。
 
@@ -16,7 +16,7 @@
 - 当前 Cards/Exercises 已有独立 citation 表和 source lifecycle refresh 逻辑，可作为 9A source-link contract 的参考；不应直接把 `card_citations` 或 `exercise_citations` 复用为计划领域表。
 - backup 通过 SQLite Online Backup API 快照数据库，因此新增 SQLite 表天然进入数据库备份；manifest 当前记录 database hash、integrity、foreign-key、schema version 和 originals 引用，未逐表列举业务对象。
 - 当前 UI 是 `backend/app/main.py` 中生成的内嵌 HTML/JavaScript 单页，不是独立前端工程。Materials、Q&A、Cards/Exercises 共用页面导航、状态区和 workspace 风格。
-- 9A 当前已有学习目标、知识模块、study plan/item、dependency、progress repository、API 和本地 Chromium workspace 的 scoped implementation；完整 source lifecycle、artifact backup/restore 和 Phase 9A closeout 仍未完成。不能把历史版本实现当作正式系统证据。
+- 9A 当前已有学习目标、知识模块、study plan/item、dependency、progress repository、API、source lifecycle 和本地 Chromium workspace 的 scoped implementation；artifact backup/restore 和 Phase 9A closeout 仍未完成。不能把历史版本实现当作正式系统证据。
 
 ## 2. 9A 正式术语
 
@@ -432,6 +432,8 @@ No migration writes plan/goal/module data, creates runtime tables, repairs sourc
 
 `Phase 9A-5 browser-pass`：内嵌计划 workspace 已覆盖 goal → module → draft plan → items → dependency/cycle failure → confirm → active → item progress → summary → reload recovery，以及 500/retry、390x844、keyboard 和安全错误显示；证据为 `backend/tests/browser_phase9a.spec.js` 的本地 Chromium 路径。该状态不代表 real-pass 或 Phase 9A completed。
 
+`Phase 9A-6 scoped-gates-pass`：材料 delete/restore/purge/re-index 已与 9A source links 接入；restore 保持 source status，显式 refresh 才重算；purge 保留 plan/progress/link 历史并固定 unavailable；active plan 在 source warning 下保持 active；module/item link、progress projection 和 source privacy 已覆盖。focused backend `16 passed`、full backend `270 passed, 2 skipped`、Phase 9A Chromium `3 passed`，脱敏草案见 `docs/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`。9A-6 尚未作最终 closeout，不能写成 Phase 9A completed。
+
 ### 下一步
 
-进入 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的完整 source lifecycle API/UI 集成，并补充 source lifecycle 专项 evidence；不扩展到 9B/9C/9D。
+进入 9A-7 backup/restore closeout；不扩展到 9B/9C/9D。

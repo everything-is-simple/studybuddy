@@ -94,6 +94,53 @@ test('Phase 9A plan workspace completes draft, dependency, activation, progress 
   expect(errors).toEqual([]);
 });
 
+test('Phase 9A source lifecycle refresh is explicit and safe', async ({page}) => {
+  await page.goto(BASE);
+  const upload = await page.request.post(`${BASE}/api/materials`, {
+    multipart: {file: {name: 'lifecycle.txt', mimeType: 'text/plain', buffer: Buffer.from('Lifecycle browser source text.')}},
+  });
+  expect(upload.ok()).toBe(true);
+  const material = await upload.json();
+  const indexed = await page.request.post(`${BASE}/api/materials/${material.material_id}/ai-index`);
+  expect(indexed.ok()).toBe(true);
+  const retrieval = await page.request.post(`${BASE}/api/retrieval`, {
+    data: {query: 'Lifecycle browser source', material_ids: [material.material_id], mode: 'lexical'},
+  });
+  expect(retrieval.ok()).toBe(true);
+  const hit = (await retrieval.json()).hits[0];
+  expect(hit).toBeTruthy();
+  const goal = await (await page.request.post(`${BASE}/api/study/goals`, {data: {title: 'Browser lifecycle goal'}})).json();
+  const module = await (await page.request.post(`${BASE}/api/study/modules`, {data: {title: 'Browser lifecycle module'}})).json();
+  const plan = await (await page.request.post(`${BASE}/api/study/plans`, {data: {goal_id: goal.id, title: 'Browser lifecycle plan'}})).json();
+  const item = await (await page.request.post(`${BASE}/api/study/plans/${plan.id}/items`, {data: {title: 'Read lifecycle source', module_id: module.id}})).json();
+  const link = await page.request.post(`${BASE}/api/study/modules/${module.id}/sources`, {data: {material_id: material.material_id, revision_id: hit.revision_id, chunk_id: hit.chunk_id}});
+  expect(link.ok()).toBe(true);
+  await page.request.post(`${BASE}/api/study/plans/${plan.id}/confirm`);
+  await page.request.post(`${BASE}/api/study/plans/${plan.id}/activate`);
+  await page.request.post(`${BASE}/api/study/plans/${plan.id}/items/${item.id}/progress`, {data: {event_type: 'completed'}});
+  await page.request.delete(`${BASE}/api/materials/${material.material_id}`);
+  await expect.poll(async () => (await (await page.request.get(`${BASE}/api/study/sources?plan_id=${plan.id}`)).json())[0].status).toBe('source_deleted');
+  const restored = await page.request.post(`${BASE}/api/materials/${material.material_id}/restore`);
+  expect(restored.ok()).toBe(true);
+  expect((await (await page.request.get(`${BASE}/api/study/sources?plan_id=${plan.id}`)).json())[0].status).toBe('source_deleted');
+  await page.request.post(`${BASE}/api/study/sources/refresh`);
+  expect((await (await page.request.get(`${BASE}/api/study/sources?plan_id=${plan.id}`)).json())[0].status).toBe('valid');
+  await page.request.delete(`${BASE}/api/materials/${material.material_id}`);
+  await page.request.post(`${BASE}/api/materials/${material.material_id}/purge`);
+  await page.request.post(`${BASE}/api/study/sources/refresh`);
+  expect((await (await page.request.get(`${BASE}/api/study/sources?plan_id=${plan.id}`)).json())[0].status).toBe('source_unavailable');
+  const detail = await (await page.request.get(`${BASE}/api/study/plans/${plan.id}`)).json();
+  expect(detail.status).toBe('active');
+  expect(detail.progress.completed_count).toBe(1);
+  expect(detail.progress.source_warning_count).toBe(1);
+  await page.getByRole('link', {name: '学习计划'}).click();
+  await page.locator('#plan-list button').filter({hasText: 'Browser lifecycle plan'}).click();
+  await expect(page.locator('#plan-detail')).toContainText('来源：source_unavailable');
+  await expect(page.locator('#plan-detail')).toContainText('进度：1/1');
+  await expect(page.locator('body')).not.toContainText('stored_path');
+  await expect(page.locator('body')).not.toContainText('Lifecycle browser source text.');
+});
+
 test('Phase 9A plan workspace handles safe failure, retry, keyboard and narrow viewport', async ({page}) => {
   await page.goto(BASE);
   await page.getByRole('link', {name: '学习计划'}).click();
