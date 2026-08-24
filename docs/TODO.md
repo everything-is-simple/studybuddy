@@ -201,6 +201,8 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9B：资料学习工作流（S1/S2）
 
+> 当前状态：`planned`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`docs/phase9b/`](phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
+
 - [ ] 明确学习节奏和资料笔记的最小用户目标，不直接复制前代 `KnowledgeModule` 实现。
 - [ ] 基于正式 revision/chunk/retrieval/citation 重新实现资料笔记/知识模块。
 - [ ] 计划 item 与材料 revision、citation、source unavailable 生命周期联动。

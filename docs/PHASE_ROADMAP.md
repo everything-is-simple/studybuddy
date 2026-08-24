@@ -190,7 +190,7 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 Phase 9 原先同时承载学习计划和 S1–S7 七个业务子系统，范围过宽，无法用一个统一的完成标准、数据模型、用户路径或验收周期证明完成。Phase 9 现在是一个路线族，必须按以下独立 gate 顺序推进；每个子阶段都要单独更新代码、migration、测试、浏览器路径、artifact、状态和文档。
 
 - **Phase 9A：学习领域基础与计划核心**：状态为 `completed`，范围限定为 deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore。9A-0 `planned/audit-draft`、9A-1 `planned/contract-frozen`、9A-2/9A-3/9A-4 `implemented/backend-pass`、9A-5 `browser-pass`、9A-6 `scoped-gates-pass`、9A-7 `restore-gates-pass` 和 9A-8 closeout 均已形成证据。v9 schema、repository/domain transactions、DAG、append-only progress/projection、source identity validation、最小 API、稳定错误、输入边界、本地 Chromium 计划 workspace、delete/restore/purge/re-index source lifecycle 和 backup/verify/restore non-repair 已通过各自 scoped gates。该完成声明不包含 Phase 9B–9D、Phase 9 全部能力或全局 production `real-pass`；最终证据见 [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)。充分上下文、总规划、子任务切分和逐任务执行 prompts 见 [`phase9a/`](phase9a/)。
-- **Phase 9B：资料学习工作流（S1/S2）**：学习节奏、资料笔记/知识模块用户路径。必须先复用已验证的 revision/chunk/retrieval/citation，不得把历史版本的 `KnowledgeModule` 设计直接视为正式实现。
+- **Phase 9B：资料学习工作流（S1/S2）**：当前为 `planned`，已建立正式 prompt 包 [`phase9b/`](phase9b/)，包含总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和 gates。实施时必须先复用已验证的 revision/chunk/retrieval/citation，不得把历史版本的 `KnowledgeModule` 设计直接视为正式实现；prompt 包不是实现证据。
 - **Phase 9C：练习与反馈工作流（S3/S4/S5）**：限时练习、错题改错、期末冲刺。依赖 Phase 8 的 exercise/card 生命周期、attempt 历史和确定性评分边界；每个子系统仍需独立验收。
 - **Phase 9D：扩展学习服务（S6/S7，条件性范围）**：家长报告、课堂采集/OCR/ASR。只有在用户需求、隐私边界、真实组件证据和运维成本明确后才立项；不因历史版本存在就自动纳入正式范围。
 
