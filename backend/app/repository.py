@@ -1686,6 +1686,20 @@ PHASE9D_TRANSCRIPT_MAX_SEGMENTS = 1000
 PHASE9D_TRANSCRIPT_MAX_TEXT = 200000
 PHASE9D_REPORT_CONTENT_VERSION = "phase9d_report_v1"
 PHASE9D_REPORT_KINDS = {"daily", "weekly", "monthly", "exam_alert"}
+PHASE9D_REPORT_EXPORT_FORMATS = {"json", "markdown"}
+PHASE9D_REPORT_PAYLOAD_FIELDS = {
+    "period": {"report_kind", "period_start", "period_end", "timezone", "generated_at"},
+    "plan": {"active_goal_count", "active_plan_count", "planned_item_count", "completed_item_count",
+             "started_item_count", "skipped_item_count", "planned_minutes_total"},
+    "rhythm": {"allocated_day_count", "allocated_minutes_total", "unallocated_eligible_item_count", "overload_day_count"},
+    "practice": {"practice_session_count", "cram_session_count", "attempt_count", "deterministic_correct_count",
+                 "deterministic_incorrect_count", "pending_review_count", "completed_session_count"},
+    "feedback": {"open_mistake_count", "in_review_count", "fixed_count", "reopened_count", "archived_count", "weak_point_count"},
+    "source_quality": {"valid_source_count", "stale_count", "source_deleted_count", "source_unavailable_count",
+                       "uncertain_transcript_segment_count"},
+    "quality_flags": {"has_pending_review", "has_source_warnings", "has_uncertain_capture"},
+    "exam_alert": {"days_remaining_bucket", "is_imminent"},
+}
 PHASE9D_CAPTURE_ASSET_TYPES = {
     "audio": {"audio/wav", "audio/mpeg", "audio/mp4"},
     "image": {"image/png", "image/jpeg", "image/webp"},
@@ -2499,7 +2513,60 @@ def _phase9d_rows_in_period(rows: list[sqlite3.Row], field: str,
     return [row for row in rows if _phase9d_in_period(row[field], start_utc, end_utc)]
 
 
+def _phase9d_validate_safe_payload(payload: object) -> dict[str, object]:
+    if not isinstance(payload, dict) or set(payload) != set(PHASE9D_REPORT_PAYLOAD_FIELDS):
+        raise ValueError("report_redaction_violation")
+    numeric_fields = {
+        field for section, fields in PHASE9D_REPORT_PAYLOAD_FIELDS.items()
+        if section not in {"period", "quality_flags", "exam_alert"}
+        for field in fields
+    }
+    boolean_fields = set(PHASE9D_REPORT_PAYLOAD_FIELDS["quality_flags"]) | {"is_imminent"}
+    for section, allowed in PHASE9D_REPORT_PAYLOAD_FIELDS.items():
+        value = payload.get(section)
+        if not isinstance(value, dict) or set(value) != allowed:
+            raise ValueError("report_redaction_violation")
+        for field, item in value.items():
+            if field == "days_remaining_bucket":
+                if item is not None and item not in {"0-3", "4-7", "8-14", "15+"}:
+                    raise ValueError("report_redaction_violation")
+            elif field == "generated_at":
+                if not isinstance(item, str) or not item:
+                    raise ValueError("report_redaction_violation")
+                try:
+                    generated = datetime.fromisoformat(item.replace("Z", "+00:00"))
+                except ValueError:
+                    raise ValueError("report_redaction_violation") from None
+                if generated.tzinfo is None:
+                    raise ValueError("report_redaction_violation")
+            elif field in {"report_kind", "period_start", "period_end", "timezone"}:
+                if not isinstance(item, str) or not item:
+                    raise ValueError("report_redaction_violation")
+            elif field in boolean_fields:
+                if not isinstance(item, bool):
+                    raise ValueError("report_redaction_violation")
+            elif field in numeric_fields:
+                if not isinstance(item, int) or isinstance(item, bool) or item < 0:
+                    raise ValueError("report_redaction_violation")
+            else:
+                raise ValueError("report_redaction_violation")
+    period = payload["period"]
+    if not isinstance(period.get("report_kind"), str) or period["report_kind"] not in PHASE9D_REPORT_KINDS:
+        raise ValueError("report_redaction_violation")
+    try:
+        ZoneInfo(str(period["timezone"]))
+        start_date = date.fromisoformat(str(period["period_start"]))
+        end_date = date.fromisoformat(str(period["period_end"]))
+    except (ValueError, ZoneInfoNotFoundError):
+        raise ValueError("report_redaction_violation") from None
+    if (start_date.isoformat() != period["period_start"] or
+            end_date.isoformat() != period["period_end"] or start_date >= end_date):
+        raise ValueError("report_redaction_violation")
+    return payload
+
+
 def _phase9d_safe_markdown(payload: dict[str, object]) -> str:
+    _phase9d_validate_safe_payload(payload)
     sections = ["# Study Report", "", f"Kind: {payload['period']['report_kind']}",
                 f"Period: {payload['period']['period_start']} to {payload['period']['period_end']}",
                 f"Timezone: {payload['period']['timezone']}"]
@@ -2566,8 +2633,11 @@ def build_report_projection(connection: sqlite3.Connection, *, project_id: str,
             f"SELECT id,status,updated_at FROM {table} WHERE project_id=?", (project_id,)
         ).fetchall()), "updated_at", start_utc, end_utc))
     source_rows.extend(_phase9d_rows_in_period(list(connection.execute(
-        "SELECT id,COALESCE(source_status,'source_unavailable') AS status,updated_at "
-        "FROM capture_sessions WHERE project_id=? AND material_id IS NOT NULL", (project_id,)
+        "SELECT c.id,CASE WHEN m.id IS NULL THEN 'source_unavailable' "
+        "WHEN m.deleted_at IS NOT NULL THEN 'source_deleted' "
+        "ELSE COALESCE(c.source_status,'source_unavailable') END AS status,c.updated_at "
+        "FROM capture_sessions c LEFT JOIN materials m ON m.id=c.material_id "
+        "WHERE c.project_id=? AND c.material_id IS NOT NULL", (project_id,)
     ).fetchall()), "updated_at", start_utc, end_utc))
     uncertain_segments = _phase9d_rows_in_period(list(connection.execute(
         "SELECT id,created_at FROM transcript_segments WHERE project_id=? AND quality='uncertain'", (project_id,)
@@ -2666,6 +2736,7 @@ def build_report_projection(connection: sqlite3.Connection, *, project_id: str,
         {"version": PHASE9D_REPORT_CONTENT_VERSION, "payload": basis, "facts": fact_identity},
         sort_keys=True, separators=(",", ":"), ensure_ascii=True,
     )
+    _phase9d_validate_safe_payload(payload)
     return {"safe_payload": payload, "markdown_content": _phase9d_safe_markdown(payload),
             "aggregation_fingerprint": hashlib.sha256(fingerprint_source.encode("utf-8")).hexdigest(),
             "content_version": PHASE9D_REPORT_CONTENT_VERSION}
@@ -2673,7 +2744,7 @@ def build_report_projection(connection: sqlite3.Connection, *, project_id: str,
 
 def _phase9d_report_public(row: sqlite3.Row, *, replay: bool = False) -> dict[str, object]:
     try:
-        payload = json.loads(str(row["safe_payload_json"]))
+        payload = _phase9d_validate_safe_payload(json.loads(str(row["safe_payload_json"])))
     except (TypeError, ValueError, json.JSONDecodeError):
         raise ValueError("report_redaction_violation") from None
     return {
@@ -2685,6 +2756,24 @@ def _phase9d_report_public(row: sqlite3.Row, *, replay: bool = False) -> dict[st
         "created_at": row["created_at"], "updated_at": row["updated_at"],
         "ready_at": row["ready_at"], "archived_at": row["archived_at"], "replay": replay,
     }
+
+
+def export_report_snapshot(connection: sqlite3.Connection, *, project_id: str,
+                           report_id: str, format_name: object = "json") -> tuple[str, str]:
+    if not isinstance(format_name, str) or format_name not in PHASE9D_REPORT_EXPORT_FORMATS:
+        raise ValueError("report_redaction_violation")
+    report = get_report_snapshot(connection, project_id=project_id, report_id=report_id)
+    if report is None:
+        raise ValueError("report_not_found")
+    if report["status"] != "ready":
+        raise ValueError("report_invalid_state")
+    payload = _phase9d_validate_safe_payload(report["safe_payload"])
+    if format_name == "json":
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")), "application/json"
+    markdown = str(report["markdown_content"])
+    if not markdown or "stored_path" in markdown or "answer_key" in markdown or "answer_json" in markdown:
+        raise ValueError("report_redaction_violation")
+    return markdown, "text/markdown"
 
 
 def create_report_snapshot(connection: sqlite3.Connection, *, project_id: str,
