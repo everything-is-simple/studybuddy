@@ -16,6 +16,7 @@ Phase 9D 引入两个前序阶段刻意回避的高风险元素：真实外部 O
 - `00_COMMON_CONTEXT.md`：每个子任务都必须附带使用的项目基线、治理约束和 Phase 9D non-goals。
 - `00_MASTER_PLAN_PROMPT.md`：只做立项评审、审计、契约决策、子任务拆分和验收规划的总体 prompt。
 - `9D-0_立项评审_现状审计与范围冻结.md`：立项 go/no-go、审计 Phase 8/9A/9B/9C 实际能力、冻结 S6/S7 边界。
+- `PHASE9D_AUDIT_AND_SCOPE.md`：9D-0 审计与立项评审产物，含 Gate A 结论（**部分立项**：立项 S7/S6 本地可重复范围与 dry-run 交付，暂缓真实 OCR/ASR 与真实外发）、风险登记和 9D-1 未决问题；状态为 `planned/audit-draft`，不是实现证据。
 - `9D-1_正式领域契约与状态机.md`：冻结采集/转写/接入、报告/脱敏、交付/授权/审计的关系和状态机。
 - `9D-2_Migration_与_schema.md`：实现连续 migration、约束、升级/回滚和 schema 测试。
 - `9D-3_Repository_与_domain_transaction.md`：共享领域事务、投影、幂等、脱敏和 append-only 保护。
