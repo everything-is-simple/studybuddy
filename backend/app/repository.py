@@ -1186,6 +1186,16 @@ def get_cram_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: s
     return dict(row) if row is not None else None
 
 
+def list_cram_goals(connection: sqlite3.Connection, *, project_id: str,
+                    include_archived: bool = False) -> list[dict[str, object]]:
+    query = "SELECT * FROM cram_goals WHERE project_id=?"
+    params: list[object] = [project_id]
+    if not include_archived:
+        query += " AND status!='archived'"
+    rows = connection.execute(query + " ORDER BY updated_at DESC,id DESC", params).fetchall()
+    return [dict(row) for row in rows]
+
+
 def transition_cram_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: str, target: str) -> dict[str, object]:
     allowed = {"active": {"draft"}, "completed": {"active"}, "archived": {"draft", "active", "completed"}}
     with connection:
@@ -1198,8 +1208,58 @@ def transition_cram_goal(connection: sqlite3.Connection, *, project_id: str, goa
             raise ValueError("cram_goal_not_ready")
         now = utc_now()
         connection.execute("UPDATE cram_goals SET status=?,updated_at=?,completed_at=?,archived_at=? WHERE id=?",
-                           (target, now, now if target == "completed" else row["completed_at"], now if target == "archived" else row["archived_at"], goal_id))
+                           (target, now, now if target == "completed" else row["completed_at"],
+                            now if target == "archived" else row["archived_at"], goal_id))
     return get_cram_goal(connection, project_id=project_id, goal_id=goal_id) or {}
+
+
+def create_cram_session(connection: sqlite3.Connection, *, project_id: str, goal_id: str,
+                        title: object, exercise_ids: list[str], duration_seconds: object = 600,
+                        timezone_name: object = "UTC", local_date: object = "1970-01-01") -> dict[str, object]:
+    """Create an explicit S5 session while reusing the S3 facts and grading."""
+    goal = connection.execute(
+        "SELECT * FROM cram_goals WHERE id=? AND project_id=?", (goal_id, project_id)
+    ).fetchone()
+    if goal is None:
+        raise ValueError("cram_goal_not_found")
+    if goal["status"] != "active":
+        raise ValueError("cram_goal_invalid_state")
+    if not isinstance(exercise_ids, list) or not exercise_ids or len(exercise_ids) > PHASE9C_SESSION_MAX_ITEMS:
+        raise ValueError("cram_selection_invalid")
+    if len(exercise_ids) > int(goal["target_exercise_count"]):
+        raise ValueError("cram_selection_invalid")
+    return create_practice_session(
+        connection, project_id=project_id, title=title, exercise_ids=exercise_ids,
+        duration_seconds=duration_seconds, timezone_name=timezone_name,
+        local_date=local_date, session_kind="cram", cram_goal_id=goal_id,
+    )
+
+
+def get_cram_result(connection: sqlite3.Connection, *, project_id: str,
+                    goal_id: str, session_id: str) -> dict[str, object] | None:
+    goal = get_cram_goal(connection, project_id=project_id, goal_id=goal_id)
+    if goal is None:
+        return None
+    session = get_practice_session(connection, project_id=project_id, session_id=session_id)
+    if session is None or session["session_kind"] != "cram" or session["cram_goal_id"] != goal_id:
+        raise ValueError("cram_session_scope_conflict")
+    result = get_practice_result(connection, project_id=project_id, session_id=session_id)
+    item_ids = [str(item["id"]) for item in session["items"]]
+    if item_ids:
+        marks = connection.execute(
+            "SELECT COUNT(*) FROM mistake_occurrences o JOIN exercise_attempts a ON a.id=o.attempt_id "
+            "WHERE a.session_item_id IN ({})".format(",".join("?" for _ in item_ids)), item_ids
+        ).fetchone()[0]
+    else:
+        marks = 0
+    exercise_ids = {str(item["exercise_id"]) for item in session["items"]}
+    weak_points = [point for point in list_weak_points(connection, project_id=project_id)
+                   if str(point["exercise_id"]) in exercise_ids]
+    return {"goal": {key: goal[key] for key in (
+        "id", "project_id", "title", "target_date", "timezone", "target_exercise_count", "status",
+    )}, "session": result["session"], "summary": {
+        **result["summary"], "mistake_count": int(marks), "weak_points": weak_points,
+    }}
 
 
 def create_practice_session(connection: sqlite3.Connection, *, project_id: str, title: object,

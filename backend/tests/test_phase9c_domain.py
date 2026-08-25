@@ -15,6 +15,7 @@ from app.repository import (
     archive_practice_session,
     connect,
     create_cram_goal,
+    create_cram_session,
     create_exercise,
     create_exercise_set,
     create_practice_session,
@@ -24,6 +25,7 @@ from app.repository import (
     index_material_revision,
     list_practice_sessions,
     get_mistake_case,
+    list_cram_goals,
     list_mistake_cases,
     list_weak_points,
     mark_mistake_from_attempt,
@@ -34,6 +36,7 @@ from app.repository import (
     submit_practice_session_item,
     transition_cram_goal,
     purge_material,
+    get_cram_result,
 )
 
 
@@ -247,6 +250,51 @@ def test_session_input_and_terminal_state_boundaries(tmp_path: Path):
         assert archived["status"] == "archived"
         with pytest.raises(ValueError, match="practice_session_invalid_state"):
             start_practice_session(connection, project_id="project_9c", session_id=str(session["id"]))
+
+
+def test_s5_cram_goal_session_result_and_completion_boundary(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        exercise = _exercise(connection, kind="multiple_choice")
+        goal = create_cram_goal(connection, project_id="project_9c", title="Exam", target_date="2026-06-01", target_exercise_count=1)
+        assert goal["status"] == "draft"
+        with pytest.raises(ValueError, match="cram_goal_invalid_state"):
+            create_cram_session(connection, project_id="project_9c", goal_id=str(goal["id"]), title="Cram", exercise_ids=[str(exercise["id"])])
+        transition_cram_goal(connection, project_id="project_9c", goal_id=str(goal["id"]), target="active")
+        cram = create_cram_session(connection, project_id="project_9c", goal_id=str(goal["id"]), title="Cram", exercise_ids=[str(exercise["id"])], duration_seconds=60)
+        assert cram["session_kind"] == "cram" and cram["cram_goal_id"] == goal["id"]
+        start_practice_session(connection, project_id="project_9c", session_id=str(cram["id"]))
+        submit_practice_session_item(connection, project_id="project_9c", session_id=str(cram["id"]), item_id=str(cram["items"][0]["id"]), answer=0)
+        finish_practice_session(connection, project_id="project_9c", session_id=str(cram["id"]))
+        result = get_cram_result(connection, project_id="project_9c", goal_id=str(goal["id"]), session_id=str(cram["id"]))
+        assert result["summary"]["scored_count"] == 1 and result["summary"]["mistake_count"] == 1
+        assert "answer_key_json" not in result["session"]
+        completed = transition_cram_goal(connection, project_id="project_9c", goal_id=str(goal["id"]), target="completed")
+        assert completed["status"] == "completed"
+        assert connection.execute("SELECT COUNT(*) FROM study_progress_events").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM rhythm_allocations").fetchone()[0] == 0
+        assert len(list_cram_goals(connection, project_id="project_9c")) == 1
+
+
+def test_s5_cram_selection_scope_and_rollback(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        other = "project_other"
+        _seed_project(connection, other)
+        exercise = _exercise(connection)
+        goal = create_cram_goal(connection, project_id="project_9c", title="Exam", target_date="2026-06-01", target_exercise_count=1)
+        transition_cram_goal(connection, project_id="project_9c", goal_id=str(goal["id"]), target="active")
+        with pytest.raises(ValueError, match="cram_selection_invalid"):
+            create_cram_session(connection, project_id="project_9c", goal_id=str(goal["id"]), title="Empty", exercise_ids=[])
+        with pytest.raises(ValueError, match="cram_selection_invalid"):
+            create_cram_session(connection, project_id="project_9c", goal_id=str(goal["id"]), title="Too many", exercise_ids=[str(exercise["id"]), str(exercise["id"])])
+        with pytest.raises(ValueError, match="cram_goal_not_found"):
+            create_cram_session(connection, project_id=other, goal_id=str(goal["id"]), title="Wrong", exercise_ids=[str(exercise["id"])])
+        connection.execute("CREATE TRIGGER fail_cram_item BEFORE INSERT ON practice_session_items BEGIN SELECT RAISE(ABORT, 'private'); END")
+        with pytest.raises(sqlite3.IntegrityError):
+            create_cram_session(connection, project_id="project_9c", goal_id=str(goal["id"]), title="Rollback", exercise_ids=[str(exercise["id"])])
+        connection.execute("DROP TRIGGER fail_cram_item")
+        assert connection.execute("SELECT COUNT(*) FROM practice_sessions WHERE cram_goal_id=?", (goal["id"],)).fetchone()[0] == 0
 
 
 def test_project_and_state_boundaries_and_cram_does_not_touch_plan(tmp_path: Path):
