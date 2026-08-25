@@ -24,7 +24,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 - Migrations are consecutive, recorded, idempotent, and run inside `BEGIN IMMEDIATE`.
 - Schema DDL, migration-history insertion, and `PRAGMA user_version` are committed atomically.
 - v11 adds the Phase 9C session/item snapshots, attempt linkage metadata, review/mistake/feedback facts, and cram-goal persistence schema. Domain validation and projections remain outside the migration.
-- v12 adds the Phase 9D capture-session, transcript draft/segment, report snapshot, delivery-attempt, and capture-linked operation persistence schema. Domain validation, OCR/ASR execution, report aggregation, and delivery behavior remain outside the migration.
+- v12 adds the Phase 9D capture-session, transcript draft/segment, report snapshot, delivery-attempt, and capture-linked operation persistence schema. 9D-3 shared domain behavior and 9D-4 deterministic fake/loopback capture/transcription backend now sit above this migration; S2 confirmed ingestion, report aggregation, delivery behavior, API/UI and restore acceptance remain outside the completed migration/domain subset.
 - A failure rolls back; the service never becomes ready with a half-upgraded schema.
 - Migration history and `PRAGMA user_version` are never edited manually.
 - There is no automatic down migration. Preserve the failed database and restore a verified backup into a new empty target when recovery is required.
