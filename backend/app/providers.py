@@ -87,6 +87,67 @@ class LLMProvider(Protocol):
         ...
 
 
+@dataclass(frozen=True)
+class CaptureTranscriptionRequest:
+    """In-memory S7 input; raw asset bytes never cross the persistence boundary."""
+
+    asset_kind: str
+    media_type: str
+    content_sha256: str
+    content: bytes
+
+
+@dataclass(frozen=True)
+class CaptureTranscriptionResult:
+    segments: list[dict[str, object]]
+    language: str | None = None
+
+
+class CaptureProviderError(Exception):
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+class CaptureTranscriptionProvider(Protocol):
+    provider_id: str
+    model_id: str
+
+    def transcribe(self, request: CaptureTranscriptionRequest) -> CaptureTranscriptionResult:
+        ...
+
+
+class DeterministicFakeCaptureProvider:
+    """Repeatable fake OCR/ASR output, not an accuracy claim."""
+
+    provider_id = "fake"
+    model_id = "fake-capture-v1"
+
+    def transcribe(self, request: CaptureTranscriptionRequest) -> CaptureTranscriptionResult:
+        if request.asset_kind not in {"audio", "image"} or not request.content:
+            raise CaptureProviderError("transcription_failed")
+        digest = hashlib.sha256(request.content).hexdigest()
+        label = "audio" if request.asset_kind == "audio" else "image"
+        return CaptureTranscriptionResult(
+            language="en",
+            segments=[
+                {"text": f"Deterministic {label} capture {digest[:12]}", "confidence": 0.94},
+                {"text": f"Review marker {digest[12:20]}", "confidence": 0.62},
+            ],
+        )
+
+
+class LoopbackCaptureProvider(DeterministicFakeCaptureProvider):
+    """Deterministic local loopback profile; it performs no network I/O."""
+
+    provider_id = "loopback"
+    model_id = "loopback-capture-v1"
+
+
+# Short aliases keep the capture surface discoverable for later API/provider gates.
+FakeCaptureProvider = DeterministicFakeCaptureProvider
+
+
 class FakeLLMProvider:
     provider_id = FAKE_PROVIDER_ID
     model_id = FAKE_MODEL_ID
@@ -523,6 +584,17 @@ class ProviderRegistry:
         if any(value for value in (self.provider_id, self.model_id, self.base_url, self._api_key)):
             raise ProviderError("provider_invalid_config")
         raise ProviderError(PROVIDER_NOT_CONFIGURED)
+
+    def capture_provider(self) -> CaptureTranscriptionProvider:
+        if self.provider_id in {FAKE_PROVIDER_ID, None, ""}:
+            if self.model_id not in (None, "", DeterministicFakeCaptureProvider.model_id):
+                raise ProviderError("transcription_provider_not_configured")
+            return DeterministicFakeCaptureProvider()
+        if self.provider_id == "loopback":
+            if self.model_id not in (None, "", LoopbackCaptureProvider.model_id):
+                raise ProviderError("transcription_provider_not_configured")
+            return LoopbackCaptureProvider()
+        raise ProviderError("transcription_provider_not_configured")
 
     def embedding_provider(self, *, model_revision: str = "1", base_url: str | None = None, api_key: str | None = None,
                            timeout_seconds: float = 30.0,
