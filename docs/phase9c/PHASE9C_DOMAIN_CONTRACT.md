@@ -678,6 +678,6 @@ Weak point 作为实时 projection 读时可以计算，但读取不得写 cache
 
 准确状态：
 
-> **Phase 9C-1：`planned/contract-frozen`。** S3/S4/S5 正式实体关系、状态机、不变量、时间/评分/复核/重做/冲刺语义和隐私边界已冻结；9C-2 已完成 v11 migration/schema，9C-3 已完成共享 repository/domain transaction，9C-4 已完成 S3 PracticeRunner backend workflow，均为 `implemented/backend-pass`。API、UI、S4/S5 独立 workflow、lifecycle/restore 和最终 acceptance 仍未完成，不代表 Phase 9C completed。
+> **Phase 9C-1：`planned/contract-frozen`。** S3/S4/S5 正式实体关系、状态机、不变量、时间/评分/复核/重做/冲刺语义和隐私边界已冻结；9C-2 已完成 v11 migration/schema，9C-3 已完成共享 repository/domain transaction，9C-4 已完成 S3 PracticeRunner backend workflow，9C-5 已完成 S4 ErrorFixer backend workflow，均为 `implemented/backend-pass`。API、UI、S5 独立 workflow、lifecycle/restore 和最终 acceptance 仍未完成，不代表 Phase 9C completed。
 
-下一任务：**9C-5 S4 错题改错与人工复核**。在已有 attempt/review/mistake shared domain 上完成 S4 backend workflow，不顺手扩大至 S5/API/UI 或 Phase 9C closeout。
+下一任务：**9C-6 S5 期末冲刺工作流**。复用既有 S3 session、S4 feedback/mistake 和 9A plan references 完成 cram goal/session backend workflow，不顺手扩大至 API/UI 或 Phase 9C closeout。
