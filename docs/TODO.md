@@ -1,6 +1,6 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 9C acceptance closeout 后）
+> 更新：2026-08-30（Phase 9C acceptance closeout、当前 backend 全测复核后）
 > 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **55%–60%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
@@ -35,7 +35,7 @@
 - [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
 - [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`320 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
 
 **状态：时间盒验收完成（v1）。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`，并已明确记入 v1 运行边界。
 
@@ -191,7 +191,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9A-4：实现最小 goal/module/plan/item/dependency/progress/source API、project scope、输入边界和稳定错误 contract；`backend/tests/test_phase9a_api.py` 4 passed，full backend 通过。状态为 `implemented/backend-pass`，UI/Chromium 另由 9A-5 验收，source lifecycle/backup closeout 仍未完成。
 - [x] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace，并覆盖 dependency cycle failure、500/retry、390x844、keyboard 和 reload recovery；`backend/tests/browser_phase9a.spec.js` 2 passed。状态为 `browser-pass`，不代表 real-pass 或 9A completed。
 - [x] 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的 source lifecycle 集成；scoped backend/browser gates 通过（focused `16 passed`、full backend `270 passed, 2 skipped`、Phase 9A Chromium `3 passed`），并在 9A-8 closeout 中纳入最终 evidence。
-- [x] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收；`backend/tests/test_phase9a_backup_restore.py` 与既有 backup/restore/restore-acceptance tests 通过，focused `13 passed`，full backend `272 passed, 2 skipped`。状态为 `restore-gates-pass`。证据见 [`PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](PHASE9A_BACKUP_RESTORE_EVIDENCE.md)。
+- [x] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收；`backend/tests/test_phase9a_backup_restore.py` 与既有 backup/restore/restore-acceptance tests 通过，focused `13 passed`，full backend `272 passed, 2 skipped`。状态为 `restore-gates-pass`。证据见 [`prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md)。
 - [x] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。状态为 `completed`，准确范围和未验证边界见 [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)。
 
 > 下方为旧版 Phase 9A 概括性条目；详细可执行拆分以 9A-0 至 9A-8 为唯一口径，避免重复清单产生状态漂移。

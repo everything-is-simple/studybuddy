@@ -1,13 +1,13 @@
 # StudyBuddy Phase 路线图与进度报告
 
-> 更新：2026-08-30（Phase 9A acceptance closeout 后）
+> 更新：2026-08-30（Phase 9C acceptance closeout、当前 backend 全测复核后）
 > 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `TODO.md` 为准。
 >
 > `real-pass` 只表示有真实用户路径和验收证据的局部能力通过，**不代表整个 StudyBuddy 已达到全局生产级 real-pass**。
 
 ## 基础设施真实状态
 
-基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)。
+基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`prompts/INFRASTRUCTURE_CLOSEOUT.md`](prompts/INFRASTRUCTURE_CLOSEOUT.md)。
 
 ## 总体进度
 
@@ -161,7 +161,7 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 
 **状态：completed（精确配置范围）。7.1–7.7 fake/backend 主体、专项 backup/restore、synthetic benchmark、retrieval mode Chromium UI、indexing lease/失败重试/恢复专项，以及 Mistral `mistral-embed` 外部真实 embedding acceptance 均已完成。该 completed 结论仅适用于明确的 provider/model/gateway 配置，不代表通用多 Provider 或全局生产级 real-pass。**
 
-- 已完成：审计 `embeddings`、retrieval run/hit、chunking、migration 和 backup/restore 边界；冻结 embedding identity、status/stale、lexical/vector/hybrid/fallback 语义，以及连续 v5 migration 要求。正式记录见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)。
+- 已完成：审计 `embeddings`、retrieval run/hit、chunking、migration 和 backup/restore 边界；冻结 embedding identity、status/stale、lexical/vector/hybrid/fallback 语义，以及连续 v5 migration 要求。正式记录见 [`prompts/PHASE7_1_AUDIT_AND_CONTRACT.md`](prompts/PHASE7_1_AUDIT_AND_CONTRACT.md)。
 - 已实现：v5 embedding schema migration、非 NULL model revision、status CHECK/updated_at/完整 identity 唯一约束；版本化离线 deterministic fake embedding、独立 registry、embedding 环境配置、canonical identity/stale 判定、f32 little-endian codec、显式增量 indexing、显式 material rebuild/retry、只读 verify 报告、vector cosine API 最小路径和安全 capabilities 扩展。
 - 已实现：Q&A 显式 lexical/vector/hybrid mode、hybrid fallback、retrieval policy/operation/answer linkage、replay metadata 和 citation-safe context path；不新增 migration，复用 v5 embedding 与现有 Q&A/citation schema。
 - 已完成：embedding/retrieval/Q&A metadata backup/restore 专项、损坏 payload/lifecycle 验收、102/1,002 chunks synthetic benchmark、完整 backend regression。

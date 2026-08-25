@@ -8,6 +8,7 @@
 - `DECISIONS.md`：架构与产品决策历史记录
 - `HISTORICAL_SCENARIO_REVIEW.md`：祖宗版本与前辈版本核心场景回顾
 - `INFRASTRUCTURE_CLOSEOUT.md`：I1–I4 基础设施收尾记录（内容已并入 `TODO.md` 与 `STATUS.md`）
+- `evidence/`：已完成阶段的辅助 evidence；正式 acceptance 仍以 `docs/PHASE*_ACCEPTANCE_EVIDENCE.md` 为准。
 - `LOCAL_ENVIRONMENT_MAP.md`：本地目录与远端映射（环境信息，非产品事实）
 - `OPERATOR_UPGRADE.md`：operator 升级 runbook（已由 `docs/MIGRATIONS.md` 吸收）
 - `P6E_ACCEPTANCE_EVIDENCE.md`：Phase 6 P6-E 精确真实 Provider UI 路径证据（详细 evidence 已并入 `docs/PHASE8_ACCEPTANCE_EVIDENCE.md` 及 `docs/PHASE9X_ACCEPTANCE_EVIDENCE.md`）

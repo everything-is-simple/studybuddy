@@ -12,7 +12,8 @@ StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地
 
 ### 2.1 分层与所有权
 
-- API、生命周期、HTTP 安全错误和启动顺序归 `backend/app/main.py` 及其边界模块负责。
+- API、生命周期、HTTP 安全错误和启动顺序归 `backend/app/main.py` 及其边界模块负责；Web 入口为 `create_app`，ASGI 默认对象为 `app`。
+- operator CLI 的唯一模块入口为 `backend/app/__main__.py`，委托 `backend/app/cli.py:main`；备份、校验、恢复和 schema 查询均保持显式调用。
 - SQLite 连接、查询、事务、业务持久化和一致性归 `backend/app/repository.py` 负责。
 - schema 变化只能通过 `backend/app/migrations/runner.py` 的连续 migration 完成。
 - 原文件路径、hash 校验、临时文件和 containment 归 `backend/app/storage.py` 负责。
@@ -49,6 +50,8 @@ powershell -NoProfile -File .\backend\scripts\test-backend.ps1
 ```text
 C:\miniconda\py310\python.exe -m pytest backend/tests/ -q
 ```
+
+Bash/Cygwin 等价路径为 `/cygdrive/c/miniconda/py310/python -m pytest backend/tests/ -q`。
 
 浏览器门禁必须串行执行，并通过统一入口指定 spec：
 
@@ -95,6 +98,7 @@ Phase 9B closeout 的当前脱敏回归基线为：focused Gate A-I `59 passed`�
 
 - `README.md`：入口和简明当前定位，不复制完整状态表。
 - `docs/STATUS.md`：能力状态、证据索引和已知运行限制；是实现状态的权威来源。
+- `docs/` 根目录只保留核心入口、设计、治理、状态、路线、TODO 和正式 acceptance；规划、历史、运行手册和辅助 evidence 统一放在 `docs/prompts/`，其中辅助 evidence 放在 `docs/prompts/evidence/`。
 - `docs/TODO.md`：唯一可勾选的执行清单；完成项必须关联代码、测试、文档和证据。
 - `docs/PHASE_ROADMAP.md`：长期阶段、依赖和执行顺序，不作为测试结果记录。
 - `docs/PROJECT_PROGRESS_REPORT.md`：面向项目汇报的当前事实摘要，不能产生与 STATUS 冲突的新状态。

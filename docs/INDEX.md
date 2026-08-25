@@ -21,8 +21,8 @@
 
 - [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)：Cards / Exercises 限定范围验收。
 - [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)：学习领域与计划核心验收。
-- [`PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)：9A source lifecycle 证据。
-- [`PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](PHASE9A_BACKUP_RESTORE_EVIDENCE.md)：9A backup / restore 证据。
+- [`prompts/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](prompts/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)：9A source lifecycle 辅助证据。
+- [`prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md)：9A backup / restore 辅助证据。
 - [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)：S1/S2 工作流验收。
 - [`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md)：S3/S4/S5 工作流验收。
 
@@ -37,4 +37,4 @@
 
 - 根目录只保留 `README.md`、`AGENTS.md` 与项目元数据；活跃文档位于 `docs/`。
 - `STATUS.md`、`TODO.md` 与 `PHASE_ROADMAP.md` 分别负责状态、执行清单与长期顺序；发生冲突时先修正这些事实源。
-- 非核心过程资料只放在 `docs/prompts/`，不要在根目录或 `docs/` 再复制一份。
+- `docs/` 根目录只保留核心入口、设计、治理、状态、路线、TODO 和正式 acceptance；非核心过程资料、历史决策、规划 prompt 和辅助 evidence 只放在 `docs/prompts/`（辅助 evidence 置于 `docs/prompts/evidence/`），不要再复制到 `docs/` 根目录。

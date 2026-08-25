@@ -104,7 +104,7 @@ chunk_spans(chunk_id TEXT, span_id TEXT, overlap_start INTEGER, overlap_end INTE
 
 ## 6. Embedding 与 retrieval
 
-正式实现已支持 SQLite FTS5 lexical retrieval、显式 embedding indexing、vector cosine retrieval、deterministic hybrid RRF 和明确 fallback policy。embedding identity、f32 payload codec、ready/stale lifecycle、indexing lease 与 retry 的正式契约见 [`PHASE7_1_AUDIT_AND_CONTRACT.md`](PHASE7_1_AUDIT_AND_CONTRACT.md)；外部 real-pass 仅限 [`PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md) 所记录的 Mistral 精确配置。
+正式实现已支持 SQLite FTS5 lexical retrieval、显式 embedding indexing、vector cosine retrieval、deterministic hybrid RRF 和明确 fallback policy。embedding identity、f32 payload codec、ready/stale lifecycle、indexing lease 与 retry 的正式契约见 [`prompts/PHASE7_1_AUDIT_AND_CONTRACT.md`](prompts/PHASE7_1_AUDIT_AND_CONTRACT.md)；外部 real-pass 仅限 [`prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md) 所记录的 Mistral 精确配置。
 
 明确决策：第一阶段不引入外部 vector DB。先使用 SQLite FTS5 的 chunk lexical index，原因是当前单进程/SQLite/backup 模型简单且可完全恢复。未来 embedding 可以先落 SQLite（压缩 binary payload 或独立 embedding blob 文件但必须纳入 manifest）；规模确实需要时再引入外部 ANN，并要求独立 index manifest/rebuild 命令，不能形成隐式状态。
 

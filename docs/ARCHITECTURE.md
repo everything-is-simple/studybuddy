@@ -1,5 +1,7 @@
 # StudyBuddy Architecture Boundary
 
+> 核心运行入口：`backend/app/main.py:create_app`（FastAPI 应用工厂）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。业务持久化只能经 `backend/app/repository.py`，schema 只能经 `backend/app/migrations/runner.py`，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
+
 > 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 与 Phase 9A 限定范围 acceptance 均已完成。Phase 9B 已在明确限定范围内完成：9B-2（v10 schema）、9B-3（共用 repository/domain transaction）、9B-4（S2 deterministic fake-provider note workflow）、9B-5（S1 synchronous rhythm workflow）与 9B-6（S1/S2 最小安全 API）已到 `implemented/backend-pass`，9B-7（S1/S2 最小 Chromium workspace）已到 `browser-pass`，9B-8（source lifecycle/backup-restore）已到 `scoped-gates-pass`/`restore-gates-pass`，9B-9 已完成 closeout；最终证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。多进程、多用户和云同步仍不在支持范围。
 
 ## Evolution boundary
