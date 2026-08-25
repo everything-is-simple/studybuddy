@@ -218,7 +218,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
-> 当前状态：整体 `planned`；9C-0/9C-1 已完成，9C-2/9C-3/9C-4/9C-5/9C-6/9C-7 为 `implemented/backend-pass`，9C-8 为 `browser-pass`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
+> 当前状态：整体 `planned`；9C-0/9C-1 已完成，9C-2/9C-3/9C-4/9C-5/9C-6/9C-7 为 `implemented/backend-pass`，9C-8 为 `browser-pass`，9C-9 为 `scoped-gates-pass`/`restore-gates-pass`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
 
 - [ ] 9C-0：现状审计与范围冻结；盘点 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 与 9D/Phase 10 non-goals。
 - [ ] 9C-1：正式领域契约与状态机；冻结 session、attempt、grading/review、mistake、weak-point、cram、时间和隐私边界。
@@ -229,7 +229,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9C-6：完成 S5 ExamCrammer backend：cram goal 生命周期、显式 cram session/题目快照、S3 attempt/grading/result 复用、mistake/weak-point summary、selection/project/target/date 边界、privacy、plan/progress/rhythm 不变更和 rollback；focused `15 passed`、相关 focused `46 passed`、完整 backend `314 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 API/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-7：完成 S3/S4/S5 最小安全 FastAPI API：practice session、attempt submit/review、mistake/weak-point、cram goal/session/result、server project scope、稳定 400/404/409/422/500 错误、Idempotency-Key、privacy 和生命周期边界；focused `3 passed`、相关 focused `32 passed`、完整 backend `317 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 Chromium/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-8：完成最小 Chromium workspace：S3 session/start/submit/finish/result、S4 mistake/feedback/redo、S5 cram goal/session/result、reload、duplicate/idempotency、500/network retry、default-provider safe failure、keyboard/focus、390x844 overflow 和 privacy DOM；focused Chromium `3 passed`，相关 UI failure `9 passed`。状态为 `browser-pass`，不代表 real-pass、9C lifecycle/restore gates 或 Phase 9C completed。
-- [ ] 9C-9：完成 source lifecycle、citation status、backup/verify/restore non-repair 与历史保留验收。
+- [x] 9C-9：完成 S3/S4/S5 source lifecycle 与 backup/verify/新空目录 restore non-repair：v11 表/历史事实、session/item linkage、attempt/review/mistake/feedback/cram status 保留，delete/restore/purge/re-index source status 安全降级；专项 `14 passed`、完整 backend `320 passed, 2 skipped`。状态为 `scoped-gates-pass`/`restore-gates-pass`，不代表 9C-10 closeout 或 Phase 9C completed。
 - [ ] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口。
 
 完成声明仅限 deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore；不包含真实 Provider、scheduler/worker、OCR/ASR、Phase 9D 或全局 production `real-pass`。
