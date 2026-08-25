@@ -1252,6 +1252,40 @@ def get_practice_session(connection: sqlite3.Connection, *, project_id: str, ses
         return _phase9c_session_public(connection, row)
 
 
+def list_practice_sessions(connection: sqlite3.Connection, *, project_id: str,
+                           status: str | None = None) -> list[dict[str, object]]:
+    params: list[object] = [project_id]
+    query = "SELECT * FROM practice_sessions WHERE project_id=?"
+    if status is not None:
+        if status not in PHASE9C_SESSION_STATUSES:
+            raise ValueError("practice_invalid_payload")
+        query += " AND status=?"
+        params.append(status)
+    rows = connection.execute(query + " ORDER BY created_at DESC,id DESC", params).fetchall()
+    result: list[dict[str, object]] = []
+    for row in rows:
+        if row["status"] == "active":
+            with connection:
+                now_text, now = _phase9c_iso_now()
+                row = _phase9c_expire_if_needed(connection, row, now, now_text)
+        result.append(_phase9c_session_public(connection, row))
+    return result
+
+
+def get_practice_result(connection: sqlite3.Connection, *, project_id: str,
+                        session_id: str) -> dict[str, object] | None:
+    session = get_practice_session(connection, project_id=project_id, session_id=session_id)
+    if session is None:
+        return None
+    summary = dict(session["summary"])
+    scored_count = int(summary["scored_count"])
+    summary["score_ratio"] = (float(summary["score_total"]) / scored_count) if scored_count else None
+    return {"session": {key: session[key] for key in (
+        "id", "project_id", "session_kind", "status", "title", "duration_seconds",
+        "timezone", "local_date", "started_at", "deadline_at", "finished_at",
+    )}, "summary": summary}
+
+
 def start_practice_session(connection: sqlite3.Connection, *, project_id: str, session_id: str) -> dict[str, object]:
     with connection:
         row = connection.execute("SELECT * FROM practice_sessions WHERE id=? AND project_id=?", (session_id, project_id)).fetchone()
@@ -1304,19 +1338,21 @@ def submit_practice_session_item(connection: sqlite3.Connection, *, project_id: 
                 connection.commit()
                 raise ValueError("practice_session_expired")
             raise ValueError("practice_session_invalid_state")
+        if submission_key is not None:
+            submission_key = _phase9c_text(submission_key, code="practice_invalid_submission", maximum=200)
+            duplicate = connection.execute("SELECT * FROM exercise_attempts WHERE session_id=? AND submission_key=?", (session_id, submission_key)).fetchone()
+            if duplicate is not None:
+                if duplicate["answer_json"] != json.dumps(answer, ensure_ascii=False):
+                    raise ValueError("practice_submission_idempotency_mismatch")
+                return {"id": duplicate["id"], "exercise_id": duplicate["exercise_id"], "session_id": session_id,
+                        "session_item_id": duplicate["session_item_id"], "score": duplicate["score"],
+                        "is_correct": None if duplicate["is_correct"] is None else bool(duplicate["is_correct"]),
+                        "grading_status": duplicate["grading_status"], "submitted_at": duplicate["submitted_at"], "replay": True}
         existing = connection.execute("SELECT * FROM exercise_attempts WHERE session_item_id=?", (item_id,)).fetchone()
         if existing is not None:
             return {"id": existing["id"], "exercise_id": existing["exercise_id"], "session_id": session_id,
                     "session_item_id": item_id, "score": existing["score"], "is_correct": None if existing["is_correct"] is None else bool(existing["is_correct"]),
                     "grading_status": existing["grading_status"], "submitted_at": existing["submitted_at"], "replay": True}
-        if submission_key is not None:
-            submission_key = _phase9c_text(submission_key, code="practice_invalid_submission", maximum=200)
-            duplicate = connection.execute("SELECT * FROM exercise_attempts WHERE session_id=? AND submission_key=?", (session_id, submission_key)).fetchone()
-            if duplicate is not None:
-                return {"id": duplicate["id"], "exercise_id": duplicate["exercise_id"], "session_id": session_id,
-                        "session_item_id": duplicate["session_item_id"], "score": duplicate["score"],
-                        "is_correct": None if duplicate["is_correct"] is None else bool(duplicate["is_correct"]),
-                        "grading_status": duplicate["grading_status"], "submitted_at": duplicate["submitted_at"], "replay": True}
         expected = json.loads(item["answer_key_json"])
         correct = score = None
         grading = "pending_review"
@@ -1353,6 +1389,8 @@ def finish_practice_session(connection: sqlite3.Connection, *, project_id: str, 
             raise ValueError("practice_session_not_found")
         now_text, now = _phase9c_iso_now()
         row = _phase9c_expire_if_needed(connection, row, now, now_text)
+        if row["status"] == "expired":
+            return _phase9c_session_public(connection, row)
         if row["status"] != "active":
             raise ValueError("practice_session_invalid_state")
         connection.execute("UPDATE practice_sessions SET status='finished',finished_at=?,updated_at=? WHERE id=?", (now_text, now_text, session_id))

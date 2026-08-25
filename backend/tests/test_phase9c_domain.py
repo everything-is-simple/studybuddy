@@ -18,8 +18,11 @@ from app.repository import (
     create_exercise,
     create_exercise_set,
     create_practice_session,
+    finish_practice_session,
+    get_practice_result,
     get_practice_session,
     index_material_revision,
+    list_practice_sessions,
     list_mistake_cases,
     list_weak_points,
     review_exercise_attempt,
@@ -86,8 +89,47 @@ def test_session_snapshot_and_privacy_for_deterministic_submission(tmp_path: Pat
         assert "answer_json" not in result and "answer_key" not in result
         replay = submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(item["id"]), answer=1)
         assert replay["id"] == result["id"] and replay["replay"] is True
+        keyed = _active_session(connection, str(exercise["id"]))
+        keyed_item = keyed["items"][0]
+        first_keyed = submit_practice_session_item(connection, project_id="project_9c", session_id=str(keyed["id"]), item_id=str(keyed_item["id"]), answer=0, submission_key="key-2")
+        with pytest.raises(ValueError, match="practice_submission_idempotency_mismatch"):
+            submit_practice_session_item(connection, project_id="project_9c", session_id=str(keyed["id"]), item_id=str(keyed_item["id"]), answer=1, submission_key="key-2")
+        second_keyed = submit_practice_session_item(connection, project_id="project_9c", session_id=str(keyed["id"]), item_id=str(keyed_item["id"]), answer=0, submission_key="key-2")
+        assert first_keyed["id"] == second_keyed["id"] and second_keyed["replay"] is True
+        result_summary = get_practice_result(connection, project_id="project_9c", session_id=str(session["id"]))
+        assert result_summary["summary"]["score_ratio"] == 0.0
+        assert "answer_key_json" not in result_summary["session"]
+        assert len(list_practice_sessions(connection, project_id="project_9c", status="active")) == 2
         assert len(list_mistake_cases(connection, project_id="project_9c")) == 1
-        assert list_weak_points(connection, project_id="project_9c")[0]["occurrence_count"] == 1
+        assert list_weak_points(connection, project_id="project_9c")[0]["occurrence_count"] == 2
+
+
+def test_s3_all_question_types_finish_and_result_summary(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        multiple = _exercise(connection, kind="multiple_choice")
+        session = _active_session(connection, str(multiple["id"]))
+        item = session["items"][0]
+        submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(item["id"]), answer=1)
+        finished = finish_practice_session(connection, project_id="project_9c", session_id=str(session["id"]))
+        assert finished["status"] == "finished"
+        with pytest.raises(ValueError, match="practice_session_invalid_state"):
+            submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(item["id"]), answer=0)
+
+        true_false = _exercise(connection, kind="true_false")
+        tf_session = _active_session(connection, str(true_false["id"]))
+        tf_item = tf_session["items"][0]
+        tf_result = submit_practice_session_item(connection, project_id="project_9c", session_id=str(tf_session["id"]), item_id=str(tf_item["id"]), answer=True)
+        assert tf_result["grading_status"] == "deterministic" and tf_result["is_correct"] is True
+
+        short_answer = _exercise(connection, kind="short_answer")
+        sa_session = _active_session(connection, str(short_answer["id"]))
+        sa_item = sa_session["items"][0]
+        sa_result = submit_practice_session_item(connection, project_id="project_9c", session_id=str(sa_session["id"]), item_id=str(sa_item["id"]), answer="response")
+        assert sa_result["grading_status"] == "pending_review" and sa_result["score"] is None
+        summary = get_practice_result(connection, project_id="project_9c", session_id=str(sa_session["id"]))
+        assert summary["summary"]["pending_review_count"] == 1
+        assert summary["summary"]["scored_count"] == 0
 
 
 def test_short_answer_requires_explicit_review_and_feedback(tmp_path: Path):
@@ -160,6 +202,7 @@ def test_expired_session_rejects_submit_and_read_reclaims_status(tmp_path: Path)
         with pytest.raises(ValueError, match="practice_session_expired"):
             submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(item["id"]), answer=True)
         assert get_practice_session(connection, project_id="project_9c", session_id=str(session["id"]))["status"] == "expired"
+        assert get_practice_result(connection, project_id="project_9c", session_id=str(session["id"]))["summary"]["unanswered_count"] == 1
 
 
 def test_session_source_lifecycle_retains_history_without_source_text(tmp_path: Path):
