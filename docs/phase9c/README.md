@@ -1,6 +1,6 @@
 # Phase 9C Prompt 包：练习与反馈工作流（S3/S4/S5）
 
-本目录保存 Phase 9C 的总体规划、共用上下文、逐子任务执行 prompt、推荐执行顺序和验收门禁。Phase 9C 整体仍为 `planned`：9C-2/9C-3/9C-4/9C-5 已分别达到 `implemented/backend-pass`，但 prompt、契约草案或历史项目类似功能本身不是实现证据，且不得标记 Phase 9C completed。
+本目录保存 Phase 9C 的总体规划、共用上下文、逐子任务执行 prompt、推荐执行顺序和验收门禁。Phase 9C 整体仍为 `planned`：9C-2/9C-3/9C-4/9C-5/9C-6 已分别达到 `implemented/backend-pass`，但 prompt、契约草案或历史项目类似功能本身不是实现证据，且不得标记 Phase 9C completed。
 
 ## 目标范围
 
@@ -20,7 +20,7 @@
 - `9C-3_Repository_与_domain_transaction.md`：共享领域事务、投影、幂等、隐私和 append-only 保护；已达到 `implemented/backend-pass`。
 - `9C-4_S3_限时练习工作流.md`：S3 session/计时/提交/评分/结果 backend 闭环；已达到 `implemented/backend-pass`。
 - `9C-5_S4_错题改错与人工复核.md`：S4 错题、改错、重做、短答人工复核和历史 backend 闭环；已达到 `implemented/backend-pass`。
-- `9C-6_S5_期末冲刺工作流.md`：实现 S5 冲刺目标、模拟练习和结果反馈闭环。
+- `9C-6_S5_期末冲刺工作流.md`：S5 冲刺目标、模拟练习和结果反馈 backend 闭环；已达到 `implemented/backend-pass`。
 - `9C-7_API_contract.md`：实现 S3/S4/S5 安全 API 和隐私边界。
 - `9C-8_最小工作区_UI.md`：实现最小 Chromium workspace 与失败/窄屏/键盘/reload 路径。
 - `9C-9_Source_lifecycle_与_backup_restore.md`：验证 citation/source lifecycle、backup/restore 和 non-repair。
