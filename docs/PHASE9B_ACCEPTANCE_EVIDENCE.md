@@ -92,7 +92,7 @@ The default-disabled real-provider spec was also checked separately:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File H:\studybuddy\backend\scripts\test-browser.ps1 -Spec browser_p6e_real_provider.spec.js
 ```
 
-Result: `2 skipped`. Its DeepSeek and Agnes tests require explicit provider/model/base URL/key gates and are not Phase 9B acceptance criteria. Separate P6-E provider evidence is maintained by `docs/P6E_ACCEPTANCE_EVIDENCE.md`.
+Result: `2 skipped`. Its DeepSeek and Agnes tests require explicit provider/model/base URL/key gates and are not Phase 9B acceptance criteria. Separate P6-E provider evidence is maintained by `docs/prompts/P6E_ACCEPTANCE_EVIDENCE.md`.
 
 ### Artifact and cleanup boundary
 
@@ -106,8 +106,8 @@ Result: `2 skipped`. Its DeepSeek and Agnes tests require explicit provider/mode
 
 | Gate | Result | Evidence |
 |---|---|---|
-| A. Audit and scope | **passed** | `docs/phase9b/00_COMMON_CONTEXT.md`, `PHASE9B_DOMAIN_CONTRACT.md`, and the explicit S3–S7/scheduler/worker/provider non-goals |
-| B. Domain contract | **passed** | `docs/phase9b/PHASE9B_DOMAIN_CONTRACT.md`; S1/S2 ownership, state transitions, citation/source lifecycle, export and restore boundaries are frozen |
+| A. Audit and scope | **passed** | `prompts/phase9b/00_COMMON_CONTEXT.md`, `PHASE9B_DOMAIN_CONTRACT.md`, and the explicit S3–S7/scheduler/worker/provider non-goals |
+| B. Domain contract | **passed** | `prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md`; S1/S2 ownership, state transitions, citation/source lifecycle, export and restore boundaries are frozen |
 | C. Migration/database | **passed** | `backend/app/migrations/runner.py` v10; `test_migrations.py`; schema/history/user_version/rollback and backup schema-version assertions in the focused run |
 | D. Domain transactions | **passed** | `test_phase9b_domain.py`, `test_phase9b_notes.py`, `test_phase9b_rhythm.py`; ownership, limits, state protection, citation validation, rollback and deterministic summary |
 | E. S2 workflow | **passed** | `test_phase9b_notes.py`, `test_phase9b_api.py`, `browser_phase9b.spec.js`; user/AI drafts, module organization, edit protection, transitions, source refresh and bounded export |

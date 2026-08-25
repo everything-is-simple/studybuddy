@@ -26,7 +26,7 @@ Gate 状态：
 
 | Gate | Result | Evidence |
 |---|---|---|
-| A Contract | pass | `docs/phase9a/PHASE9A_DOMAIN_CONTRACT.md` |
+| A Contract | pass | `prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md` |
 | B Database | pass | v9 migration、history、rollback、idempotency tests |
 | C Domain | pass | `test_phase9a_domain.py` |
 | D API | pass | `test_phase9a_api.py` |

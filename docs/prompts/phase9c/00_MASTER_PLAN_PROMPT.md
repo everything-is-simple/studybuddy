@@ -35,5 +35,5 @@ Phase 9C 目标：
 - 不把 prompt、fake-provider、局部 backend/browser pass 当 Phase 9C completed；
 - 完成声明必须限定在 deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore 实际通过的范围。
 
-输出中文规划，目标是可直接转成 docs/phase9c/ prompt 包、TODO、migration、测试和逐 commit 执行计划；只做规划，不改文件。
+输出中文规划，目标是可直接转成 docs/prompts/phase9c/ prompt 包、TODO、migration、测试和逐 commit 执行计划；只做规划，不改文件。
 ```

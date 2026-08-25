@@ -30,5 +30,5 @@ Phase 9B 目标是形成两条可验收的正式用户路径：
 - 不把 prompt、设计、fake-provider 或局部 browser pass 当成 Phase 9B completed；
 - Phase 9B 完成声明只能限定在实际通过的 fake-provider / local single-process / SQLite / Chromium / backup-restore 范围。
 
-输出一份中文规划，可直接转化为 docs/phase9b/ 下的 prompt 包、TODO、migration、测试和逐 commit 实施计划。输出只做规划，不修改文件。
+输出一份中文规划，可直接转化为 docs/prompts/phase9b/ 下的 prompt 包、TODO、migration、测试和逐 commit 实施计划。输出只做规划，不修改文件。
 ```

@@ -8,7 +8,7 @@
 
 ## 1. 审计范围与方法
 
-本次按 `docs/phase9c/9C-0_现状审计与范围冻结.md` 执行，检查了：
+本次按 `docs/prompts/phase9c/9C-0_现状审计与范围冻结.md` 执行，检查了：
 
 - `backend/app/migrations/runner.py`：当前 schema、migration history、baseline completeness、transaction/rollback boundary；
 - `backend/app/repository.py`：Phase 8 exercise/card、attempt/review、AI generation、Phase 9A plan/progress/source link、Phase 9B note/rhythm/source refresh、material lifecycle；
@@ -17,7 +17,7 @@
 - Phase 8、9A、9B 的 focused backend tests 与 Chromium specs；
 - `docs/PHASE_ROADMAP.md`、`STATUS.md`、`TODO.md`、`PROJECT_PROGRESS_REPORT.md`、`ai-learning-architecture.md`、`MIGRATIONS.md`、`BACKUP_RESTORE.md`、`CODE_TEST_GOVERNANCE.md`。
 
-审计不把 `docs/HISTORICAL_SCENARIO_REVIEW.md` 或 Composer/Integration/前代项目视为正式实现证据；它们最多提供产品需求线索。
+审计不把 `docs/prompts/HISTORICAL_SCENARIO_REVIEW.md` 或 Composer/Integration/前代项目视为正式实现证据；它们最多提供产品需求线索。
 
 ## 2. 当前事实基线
 
@@ -443,7 +443,7 @@ Cards 当前只有 append-only review，不足以直接成为 S3 scored attempt�
 
 ### 当前工作树与本任务变更
 
-- 本 9C-0 任务新增：`docs/phase9c/PHASE9C_AUDIT_AND_SCOPE.md`；
+- 本 9C-0 任务新增：`docs/prompts/phase9c/PHASE9C_AUDIT_AND_SCOPE.md`；
 - 未修改 `backend/app/`、`backend/tests/`、migration、README、STATUS、TODO；
 - 仓库中此前已有的 Phase 9C prompt 包及其它未提交文档变更不属于本次 9C-0 审计实现；
 - 未生成数据库、上传原件、provider artifact、secret 或测试输出。
