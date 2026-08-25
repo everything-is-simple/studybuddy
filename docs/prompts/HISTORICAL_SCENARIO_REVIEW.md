@@ -181,7 +181,7 @@ AssessmentAttempt + StudyTask + StudyEvent -> ParentReport（脱敏聚合）
 
 ## 六、关联文档
 
-- 正式系统路线图：[`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)
-- AI 架构设计：[`ai-learning-architecture.md`](ai-learning-architecture.md)
+- 正式系统路线图：[`PHASE_ROADMAP.md`](../PHASE_ROADMAP.md)
+- AI 架构设计：[`ai-learning-architecture.md`](../ai-learning-architecture.md)
 - 本地环境目录：[`LOCAL_ENVIRONMENT_MAP.md`](LOCAL_ENVIRONMENT_MAP.md)
 - 设计决策：[`DECISIONS.md`](DECISIONS.md)

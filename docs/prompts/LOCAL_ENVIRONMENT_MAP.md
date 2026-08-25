@@ -82,10 +82,10 @@ Phase 7、Phase 8 fake-provider closeout、Phase 9A 限定范围 acceptance 和 
 
 ## 六、关联文档
 
-- 项目入口：[`README.md`](../README.md)
-- Agent 指令：[`AGENTS.md`](../AGENTS.md)
+- 项目入口：[`README.md`](../../README.md)
+- Agent 指令：[`AGENTS.md`](../../AGENTS.md)
 - 基础设施状态：[`INFRASTRUCTURE_CLOSEOUT.md`](INFRASTRUCTURE_CLOSEOUT.md)
-- 阶段路线图：[`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)
-- 当前状态：[`STATUS.md`](STATUS.md)
-- 执行清单：[`TODO.md`](TODO.md)
+- 阶段路线图：[`PHASE_ROADMAP.md`](../PHASE_ROADMAP.md)
+- 当前状态：[`STATUS.md`](../STATUS.md)
+- 执行清单：[`TODO.md`](../TODO.md)
 - 设计决策：[`DECISIONS.md`](DECISIONS.md)

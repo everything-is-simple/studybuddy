@@ -168,7 +168,7 @@ Phase 4 已负责 fake Provider 下 Q&A 的完整可验收用户路径。P6-A–
 - 已完成：独立 OpenAI-compatible embedding adapter、环境配置、secret 隔离、`/embeddings` 请求契约、稳定 HTTP/timeout/schema/vector/response-size 错误映射；loopback protocol tests 已通过，但不等于外部真实 Provider real-pass。
 - 已完成：retrieval mode UI/Chromium final acceptance，覆盖 lexical/vector/hybrid、hybrid lexical fallback、vector 不自动 fallback 和安全错误显示。
 - 已完成：indexing lease、`embedding_index` operation 审计、stale lease reclaim、失败错误码保留和显式 retry_count/retry 路径；仍是同步单进程流程，不宣称后台 worker、cancel 或跨进程恢复。
-- 已完成：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确外部真实 embedding gate；直接请求返回 1024 维向量，隔离 StudyBuddy data root 的 indexing 写入 `ready`，vector retrieval 返回 `succeeded`，provider/model/retrieval/index operation 审计一致。证据见 [`PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md)。
+- 已完成：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确外部真实 embedding gate；直接请求返回 1024 维向量，隔离 StudyBuddy data root 的 indexing 写入 `ready`，vector retrieval 返回 `succeeded`，provider/model/retrieval/index operation 审计一致。证据见 [`prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md)。
 - 未通过的候选不替代 Mistral gate：Agnes `agnes-2.5-flash` 返回 `embedding_provider_protocol_error`，ARK `deepseek-v4-flash` 返回 `embedding_provider_invalid_config`，MiniMax `embo-01` 返回 `embedding_schema_mismatch`，NVIDIA `nvidia/nv-embedqa-e5-v5` 返回 `embedding_provider_protocol_error`。
 - Phase 7 completed 仅表示上述精确配置范围；不宣称其它 embedding model、通用多 Provider、配额/质量/可用性或全局生产级 real-pass。
 - 规模充分前不引入外部 vector database。

@@ -1,6 +1,6 @@
 # Phase 9B 资料学习工作流：审计、正式领域契约与状态机
 
-> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`；9B-7 `browser-pass`；9B-8 `scoped-gates-pass` / `restore-gates-pass`；9B-9 已完成限定范围内 `completed` closeout。最终脱敏证据见 [`../PHASE9B_ACCEPTANCE_EVIDENCE.md`](../PHASE9B_ACCEPTANCE_EVIDENCE.md)。
+> 状态：9B-0 `planned/audit-draft`；9B-1 `planned/contract-frozen`；9B-2、9B-3、9B-4、9B-5、9B-6 `implemented/backend-pass`；9B-7 `browser-pass`；9B-8 `scoped-gates-pass` / `restore-gates-pass`；9B-9 已完成限定范围内 `completed` closeout。最终脱敏证据见 [`../../PHASE9B_ACCEPTANCE_EVIDENCE.md`](../../PHASE9B_ACCEPTANCE_EVIDENCE.md)。
 >
 > 审计基线：2026-08-30；9B-2 前的稳定实现基线为 schema **v9**、Phase 9A closeout。当前 schema 为 **v10**：9B-2 加入 persistence schema，9B-3 完成共用 repository/domain transaction，9B-4 完成 S2 deterministic fake-provider note draft workflow，9B-5 完成 S1 同步节奏 settings/allocation/summary workflow，9B-6 完成 S1/S2 最小安全 API，9B-7 完成 S1/S2 最小 Chromium workspace，9B-8 完成 source lifecycle 与 backup/restore non-repair gates，9B-9 已完成限定范围内的完整 Gate A-I closeout。最终证据见 `../PHASE9B_ACCEPTANCE_EVIDENCE.md`。
 >

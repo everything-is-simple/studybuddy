@@ -52,4 +52,4 @@ C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
 
 ## 运维边界
 
-备份保留/轮换、权限、外部 scheduler、恢复演练和失败隔离见 [`BACKUP_OPERATIONS.md`](BACKUP_OPERATIONS.md) 与 [`RESTORE_DRILL.md`](RESTORE_DRILL.md)。不要把 backup 输出放在 live data root 内，也不要在服务运行时覆盖 live data。
+备份保留/轮换、权限、外部 scheduler、恢复演练和失败隔离见 [`prompts/BACKUP_OPERATIONS.md`](prompts/BACKUP_OPERATIONS.md) 与 [`prompts/RESTORE_DRILL.md`](prompts/RESTORE_DRILL.md)。不要把 backup 输出放在 live data root 内，也不要在服务运行时覆盖 live data。

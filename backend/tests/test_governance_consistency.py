@@ -1,4 +1,6 @@
+import re
 from pathlib import Path
+from urllib.parse import unquote
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -189,7 +191,63 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         assert entry in gitignore
     for name in ("STATUS.md", "TODO.md", "PHASE_ROADMAP.md", "CODE_TEST_GOVERNANCE.md"):
         assert name in read("INDEX.md")
+
+    allowed_core_docs = {
+        "ARCHITECTURE.md",
+        "BACKUP_RESTORE.md",
+        "CODE_TEST_GOVERNANCE.md",
+        "INDEX.md",
+        "MIGRATIONS.md",
+        "PHASE8_ACCEPTANCE_EVIDENCE.md",
+        "PHASE9A_ACCEPTANCE_EVIDENCE.md",
+        "PHASE9B_ACCEPTANCE_EVIDENCE.md",
+        "PHASE9C_ACCEPTANCE_EVIDENCE.md",
+        "PHASE_ROADMAP.md",
+        "PROJECT_PROGRESS_REPORT.md",
+        "STATUS.md",
+        "TODO.md",
+        "ai-learning-architecture.md",
+    }
+    assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
+    assert (DOCS / "prompts" / "README.md").is_file()
     assert (DOCS / "prompts" / "evidence" / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").is_file()
     assert (DOCS / "prompts" / "evidence" / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").is_file()
     assert not (DOCS / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").exists()
     assert not (DOCS / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").exists()
+
+
+def test_markdown_relative_links_resolve_after_document_moves():
+    markdown_files = [ROOT / "README.md", ROOT / "AGENTS.md", *DOCS.rglob("*.md")]
+    link_pattern = re.compile(r"\[[^]]*\]\(([^)]+)\)")
+    broken: list[str] = []
+
+    for document in markdown_files:
+        for target in link_pattern.findall(document.read_text(encoding="utf-8")):
+            if not target or target.startswith(("http:", "https:", "mailto:", "#")):
+                continue
+            relative_target = unquote(target.split("#", 1)[0])
+            if not (document.parent / relative_target).resolve().exists():
+                broken.append(f"{document.relative_to(ROOT)} -> {target}")
+
+    assert not broken, "Broken Markdown links:\n" + "\n".join(broken)
+
+
+def test_core_design_tracks_current_phase_and_moved_document_links():
+    architecture = read("ARCHITECTURE.md")
+    ai_architecture = read("ai-learning-architecture.md")
+    backup = read("BACKUP_RESTORE.md")
+    migrations = read("MIGRATIONS.md")
+    roadmap = read("PHASE_ROADMAP.md")
+    progress = read("PROJECT_PROGRESS_REPORT.md")
+
+    for document in (architecture, ai_architecture, progress):
+        assert "Phase 9C" in document
+        assert "PHASE9C_ACCEPTANCE_EVIDENCE.md" in document
+    assert "Phase 9C/9D 学习能力" not in architecture
+    assert "后续 Phase 9C/9D 学习工作流" not in ai_architecture
+    assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in architecture
+    assert "prompts/BACKUP_OPERATIONS.md" in backup
+    assert "prompts/RESTORE_DRILL.md" in backup
+    assert "prompts/OPERATOR_UPGRADE.md" in migrations
+    assert "prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md" in roadmap
+    assert "prompts/DECISIONS.md" in progress

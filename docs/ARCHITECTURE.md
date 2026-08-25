@@ -2,7 +2,7 @@
 
 > 核心运行入口：`backend/app/main.py:create_app`（FastAPI 应用工厂）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。业务持久化只能经 `backend/app/repository.py`，schema 只能经 `backend/app/migrations/runner.py`，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 fake-provider closeout 与 Phase 9A 限定范围 acceptance 均已完成。Phase 9B 已在明确限定范围内完成：9B-2（v10 schema）、9B-3（共用 repository/domain transaction）、9B-4（S2 deterministic fake-provider note workflow）、9B-5（S1 synchronous rhythm workflow）与 9B-6（S1/S2 最小安全 API）已到 `implemented/backend-pass`，9B-7（S1/S2 最小 Chromium workspace）已到 `browser-pass`，9B-8（source lifecycle/backup-restore）已到 `scoped-gates-pass`/`restore-gates-pass`，9B-9 已完成 closeout；最终证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。多进程、多用户和云同步仍不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8 与 Phase 9A/9B/9C 均已在各自 deterministic fake-provider、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v11；Phase 9C 最终证据见 [`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md)。Phase 9D、真实 Provider generation、scheduler/worker、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。
 
 ## Evolution boundary
 
@@ -42,7 +42,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 ## AI boundary
 
-AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 通用 OpenAI-compatible adapter、配置隔离、稳定错误映射、响应限制、mock 验证和脱敏三次 API acceptance runner 已实现；Phase 6 P6-A–P6-E 已完成对应 fake/default/UI 产品化验收，P6-E evidence 见 [`P6E_ACCEPTANCE_EVIDENCE.md`](P6E_ACCEPTANCE_EVIDENCE.md)。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的既有 adapter/API/UI synthetic smoke 以及本轮 P6-E real UI path 已分别通过精确 gate；其它 Provider/model 仍按精确 gate 记录为 `not_verified`。依赖顺序固定为:
+AI 当前处于 staged implementation 阶段。当前项目 Phase 4 已完成 revision/chunk/retrieval/context/citation、deterministic fake provider、同步 Q&A API/persistence、Q&A history、多材料范围、citation 详情/定位和完整浏览器验收；Phase 5 通用 OpenAI-compatible adapter、配置隔离、稳定错误映射、响应限制、mock 验证和脱敏三次 API acceptance runner 已实现；Phase 6 P6-A–P6-E 已完成对应 fake/default/UI 产品化验收，P6-E evidence 见 [`prompts/P6E_ACCEPTANCE_EVIDENCE.md`](prompts/P6E_ACCEPTANCE_EVIDENCE.md)。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 的既有 adapter/API/UI synthetic smoke 以及本轮 P6-E real UI path 已分别通过精确 gate；其它 Provider/model 仍按精确 gate 记录为 `not_verified`。依赖顺序固定为:
 
 ```text
 material revision
@@ -53,4 +53,4 @@ material revision
 → cards / exercises
 ```
 
-Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 已在 deterministic fake-provider 范围收口：schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace、三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading、short-answer `pending_review`，以及 backup → verify → 新空目录 restore 均有证据。generation 要求显式已索引的 single-material scope，经 retrieval/context/provider 结构化内存校验和服务端 citation 重验后才原子保存 draft/operation；restore/startup 不自动生成、repair、rebuild 或提升 unavailable citation。详细范围见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。真实 Provider generation evidence（除已单独记录的精确 P6-E 路径外）、系统级辅助技术/极端内容、人工简答复核、Phase 9C/9D 学习能力、worker 和多用户能力仍须按路线图逐阶段实现；Phase 9A 与 Phase 9B 的各自限定范围完成声明分别记录于 `PHASE9A_ACCEPTANCE_EVIDENCE.md` 与 `PHASE9B_ACCEPTANCE_EVIDENCE.md`，不等于 Phase 9 全部完成或全局 `real-pass`。
+Phase 4 采用 SQLite FTS5 lexical retrieval first、deterministic fake provider 和可验证 citation；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 已在 deterministic fake-provider 范围收口：schema、Cards/Exercises lifecycle、citation-safe draft generation、workspace、三种冻结题型、draft/ready/rejected/archived、append-only attempts、可验证 citation/source lifecycle、MC/TF deterministic grading、short-answer `pending_review`，以及 backup → verify → 新空目录 restore 均有证据。generation 要求显式已索引的 single-material scope，经 retrieval/context/provider 结构化内存校验和服务端 citation 重验后才原子保存 draft/operation；restore/startup 不自动生成、repair、rebuild 或提升 unavailable citation。详细范围见 [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。Phase 9A/9B/9C 的限定范围完成声明分别记录于 `PHASE9A_ACCEPTANCE_EVIDENCE.md`、`PHASE9B_ACCEPTANCE_EVIDENCE.md` 与 `PHASE9C_ACCEPTANCE_EVIDENCE.md`。真实 Provider generation evidence（除单独记录的精确 P6-E 路径外）、系统级辅助技术/极端内容、人工简答复核、Phase 9D、worker 和多用户能力仍须按路线图逐阶段实现；当前证据不等于 Phase 9 全部完成或全局 `real-pass`。
