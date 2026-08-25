@@ -6,7 +6,7 @@
 
 | Area | Status | Evidence |
 |---|---|---|
-| Current backend regression baseline | 320 passed, 2 skipped | `/cygdrive/c/miniconda/py310/python -m pytest backend/tests/`; 2 skips are opt-in real-provider smoke |
+| Current backend regression baseline | 322 passed, 2 skipped | `/cygdrive/c/miniconda/py310/python -m pytest backend/tests/`; 2 skips are opt-in real-provider smoke |
 | Formal file parser Adapter | implemented / local real-pass | `backend/app/adapters/file_parsers/` and test artifacts |
 | Formal file import | real-pass | `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json` |
 | Batch and folder import | real-pass | formal multi-file/folder artifacts |

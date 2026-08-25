@@ -35,7 +35,7 @@
 - [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
 - [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`320 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`322 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
 
 **状态：时间盒验收完成（v1）。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`，并已明确记入 v1 运行边界。
 

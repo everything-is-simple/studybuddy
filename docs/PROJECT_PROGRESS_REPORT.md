@@ -1,6 +1,6 @@
 # StudyBuddy 项目进度报告
 
-> 更新日期：2026-08-30（Phase 9A acceptance closeout 后）
+> 更新日期：2026-08-30（Phase 9C acceptance closeout 与当前 backend 全测复核后）
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
 
@@ -164,7 +164,7 @@ Phase 8.1–8.6 已收口：v7/v8 migration、Cards/Exercises backend、fake-pro
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8.6 fake-provider closeout 已完成；当前按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 从 9A 开始，再按 9B–9D、10 顺序推进，不在当前阶段并行承诺。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 与 Phase 9A/9B/9C 已在各自限定范围内完成；当前按 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 仅在独立立项和契约通过后推进条件性的 Phase 9D，再进入 Phase 10，不并行承诺未验收能力。
 
 ### 与祖宗/前两代版本的治理结论
 
@@ -203,5 +203,5 @@ Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不�
 - 项目入口说明：[`README.md`](../README.md)
 - 架构边界：[`ARCHITECTURE.md`](ARCHITECTURE.md)
 - AI/学习架构：[`ai-learning-architecture.md`](ai-learning-architecture.md)
-- 设计决策：[`DECISIONS.md`](DECISIONS.md)
+- 历史设计决策：[`prompts/DECISIONS.md`](prompts/DECISIONS.md)
 - 备份恢复操作：[`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)

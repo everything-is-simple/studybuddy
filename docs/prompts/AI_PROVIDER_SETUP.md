@@ -8,7 +8,7 @@ The generic adapter applies the common `/chat/completions` contract. It does not
 
 ## Configure StudyBuddy
 
-Use [.env.example](../.env.example) only as a redacted template. Set the values in the process environment or an untracked local `.env` file. Configure provider ID, model ID, base URL and API key as a matching set supplied by the selected provider.
+Use [.env.example](../../.env.example) only as a redacted template. Set the values in the process environment or an untracked local `.env` file. Configure provider ID, model ID, base URL and API key as a matching set supplied by the selected provider.
 
 PowerShell example:
 

@@ -38,4 +38,4 @@ The command validates; it does not migrate or repair.
 
 ## Upgrade and recovery
 
-Use [`OPERATOR_UPGRADE.md`](OPERATOR_UPGRADE.md) for the stop, backup, verify, upgrade, acceptance, and failure-recovery procedure. Backup/restore version checks are described in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md).
+Use [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) for the stop, backup, verify, upgrade, acceptance, and failure-recovery procedure. Backup/restore version checks are described in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md).

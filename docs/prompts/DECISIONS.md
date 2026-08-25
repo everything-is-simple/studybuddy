@@ -11,7 +11,7 @@
 ## 2026-08-28: Phase 8.6 fake-provider closeout boundary
 
 - Phase 8 is completed only for its deterministic fake-provider, local single-process SQLite, Chromium and explicit backup/restore scope. `backend/tests/test_phase8_closeout.py` proves preservation of Cards/Exercises artifacts, citations, reviews, attempts and generation operations across backup → verify → restore into a new empty root.
-- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md).
+- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](../PHASE8_ACCEPTANCE_EVIDENCE.md).
 - This decision does not establish real Provider generation, human short-answer review, system-level accessibility, extreme-content behavior, worker support, multi-process support, or global product `real-pass`.
 
 ## 2026-08-28: Phase 8.5 Cards / Exercises workspace boundary
@@ -58,7 +58,7 @@
 - 当前项目 Phase 4 的 AI 最小闭环已完成：material revision/chunk → SQLite FTS5 retrieval → citation → deterministic fake provider → Q&A/history/multi-material/citation navigation。下一产品优先级是 Phase 5 真实 Provider 接入。
 - I1 migration/schema versioning 是 AI Phase 4 的硬前置，现已满足；Cards / Exercises 仍必须等待可信 revision/chunk/retrieval/citation/Q&A 链路。
 - S1–S7、卡片、练习、学习计划、OCR、ASR、后台队列、多用户、云同步和多进程支持继续分阶段推进，不在同一阶段并行承诺。
-- 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 为准；进度总报告以 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md) 为汇总入口；具体执行勾选项以 [`TODO.md`](TODO.md) 为准。
+- 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](../PHASE_ROADMAP.md) 为准；进度总报告以 [`PROJECT_PROGRESS_REPORT.md`](../PROJECT_PROGRESS_REPORT.md) 为汇总入口；具体执行勾选项以 [`TODO.md`](../TODO.md) 为准。
 
 ## 2026-08-25: minimal observability boundary
 

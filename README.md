@@ -2,7 +2,7 @@
 
 ## 当前入口与状态
 
-StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v11；Phase 9A/9B/9C 已在 deterministic fake-provider、Chromium、backup/restore 的明确范围内完成，但系统仍不是全局 production `real-pass`。当前后端回归基线为 **320 passed, 2 skipped**（真实 Provider smoke 默认跳过）。
+StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v11；Phase 9A/9B/9C 已在 deterministic fake-provider、Chromium、backup/restore 的明确范围内完成，但系统仍不是全局 production `real-pass`。当前后端回归基线为 **322 passed, 2 skipped**（真实 Provider smoke 默认跳过）。
 
 - 运行 API：`/cygdrive/c/miniconda/py310/python -m uvicorn backend.app.main:app --reload`；应用工厂为 `backend.app.main:create_app`。
 - 运行 operator CLI：`/cygdrive/c/miniconda/py310/python -m backend.app`（入口实现：`backend/app/__main__.py` → `backend/app/cli.py`）；备份、校验、恢复和 schema 查询必须显式调用。
