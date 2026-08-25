@@ -1662,6 +1662,737 @@ def list_weak_points(connection: sqlite3.Connection, *, project_id: str) -> list
     return [dict(row) for row in rows]
 
 
+# Phase 9D shared extended-learning domain transactions. Provider execution,
+# transcript confirmation, delivery execution, HTTP and UI remain in later gates.
+PHASE9D_TRANSCRIPTION_OPERATION = "class_capture_transcription"
+PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD = 0.70
+PHASE9D_TRANSCRIPT_MAX_SEGMENTS = 1000
+PHASE9D_TRANSCRIPT_MAX_TEXT = 200000
+PHASE9D_REPORT_CONTENT_VERSION = "phase9d_report_v1"
+PHASE9D_REPORT_KINDS = {"daily", "weekly", "monthly", "exam_alert"}
+PHASE9D_CAPTURE_ASSET_TYPES = {
+    "audio": {"audio/wav", "audio/mpeg", "audio/mp4"},
+    "image": {"image/png", "image/jpeg", "image/webp"},
+}
+PHASE9D_DELIVERY_CHANNELS = {"smtp", "feishu"}
+PHASE9D_DELIVERY_MODES = {"off", "dry_run", "live"}
+PHASE9D_SOURCE_STATUSES = {"valid", "source_deleted", "source_unavailable", "stale"}
+PHASE9D_TRANSCRIPTION_ERROR_CODES = {
+    "transcription_failed", "transcription_provider_not_configured", "provider_timeout",
+    "provider_unavailable", "capture_source_unavailable", "transcript_empty_or_invalid",
+}
+
+
+def _phase9d_text(value: object, *, code: str, maximum: int,
+                   allow_empty: bool = False) -> str:
+    if not isinstance(value, str) or len(value) > maximum or any(ord(char) < 32 and char not in "\n\t" for char in value):
+        raise ValueError(code)
+    result = value.strip()
+    if not result and not allow_empty:
+        raise ValueError(code)
+    return result
+
+
+def _phase9d_idempotency_key(value: object | None) -> str | None:
+    if value is None:
+        return None
+    return _phase9d_text(value, code="invalid_idempotency_key", maximum=200)
+
+
+def _phase9d_capture_source_status(connection: sqlite3.Connection, row: sqlite3.Row) -> str | None:
+    material_id = row["material_id"]
+    if material_id is None:
+        return None
+    material = connection.execute(
+        "SELECT project_id,deleted_at FROM materials WHERE id=?", (material_id,)
+    ).fetchone()
+    if material is None or material["project_id"] != row["project_id"]:
+        return "source_unavailable"
+    if material["deleted_at"] is not None:
+        return "source_deleted"
+    persisted = row["source_status"]
+    if persisted in {"source_deleted", "source_unavailable", "stale"}:
+        return str(persisted)
+    return "valid"
+
+
+def _phase9d_transcript_public(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
+    segments = [dict(segment) for segment in connection.execute(
+        "SELECT id,ordinal,text,confidence,quality,created_at,updated_at FROM transcript_segments "
+        "WHERE draft_id=? AND project_id=? ORDER BY ordinal,id", (row["id"], row["project_id"])
+    ).fetchall()]
+    return {
+        "id": row["id"], "capture_session_id": row["capture_session_id"],
+        "operation_id": row["operation_id"], "status": row["status"], "text": row["text"],
+        "language": row["language"], "quality_status": row["quality_status"],
+        "edited_by_user": bool(row["edited_by_user"]), "created_at": row["created_at"],
+        "updated_at": row["updated_at"], "segments": segments,
+    }
+
+
+def _phase9d_operation_public(row: sqlite3.Row, *, replay: bool = False) -> dict[str, object]:
+    return {
+        "id": row["id"], "operation_type": row["operation_type"], "status": row["status"],
+        "capture_session_id": row["capture_session_id"], "provider_id": row["provider_id"],
+        "model_id": row["model_id"], "retry_count": int(row["retry_count"]),
+        "error_code": row["error_code"], "output_artifact_id": row["output_artifact_id"],
+        "created_at": row["created_at"], "started_at": row["started_at"],
+        "finished_at": row["finished_at"], "replay": replay,
+    }
+
+
+def _phase9d_capture_public(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
+    drafts = [_phase9d_transcript_public(connection, draft) for draft in connection.execute(
+        "SELECT * FROM transcript_drafts WHERE capture_session_id=? AND project_id=? "
+        "ORDER BY created_at,id", (row["id"], row["project_id"])
+    ).fetchall()]
+    operations = [_phase9d_operation_public(operation) for operation in connection.execute(
+        "SELECT * FROM ai_operations WHERE capture_session_id=? AND project_id=? "
+        "AND operation_type=? ORDER BY created_at,id",
+        (row["id"], row["project_id"], PHASE9D_TRANSCRIPTION_OPERATION),
+    ).fetchall()]
+    return {
+        "id": row["id"], "project_id": row["project_id"], "status": row["status"],
+        "asset_kind": row["asset_kind"], "material_id": row["material_id"],
+        "original_name": row["original_name"], "media_type": row["media_type"],
+        "source_status": _phase9d_capture_source_status(connection, row),
+        "created_at": row["created_at"], "updated_at": row["updated_at"],
+        "confirmed_at": row["confirmed_at"], "rejected_at": row["rejected_at"],
+        "archived_at": row["archived_at"], "transcript_drafts": drafts,
+        "transcription_operations": operations,
+    }
+
+
+def create_capture_session(connection: sqlite3.Connection, *, project_id: str,
+                           asset_kind: object, original_name: object, media_type: object,
+                           material_id: str | None = None) -> dict[str, object]:
+    if asset_kind not in PHASE9D_CAPTURE_ASSET_TYPES:
+        raise ValueError("capture_asset_type_not_supported")
+    name = _phase9d_text(original_name, code="capture_invalid_payload", maximum=255)
+    if Path(name).name != name or "/" in name or "\\" in name:
+        raise ValueError("capture_invalid_payload")
+    media = _phase9d_text(media_type, code="capture_asset_type_not_supported", maximum=100)
+    if media not in PHASE9D_CAPTURE_ASSET_TYPES[str(asset_kind)]:
+        raise ValueError("capture_asset_type_not_supported")
+    capture_id, now = f"capture_session_{uuid.uuid4().hex}", utc_now()
+    with connection:
+        if not _study_project_exists(connection, project_id):
+            raise ValueError("project_scope_violation")
+        source_status = None
+        status = "draft"
+        if material_id is not None:
+            material = connection.execute(
+                "SELECT project_id,original_name,media_type,deleted_at FROM materials WHERE id=?", (material_id,)
+            ).fetchone()
+            if material is None:
+                raise ValueError("capture_source_unavailable")
+            if material["project_id"] != project_id:
+                raise ValueError("project_scope_violation")
+            if material["deleted_at"] is not None:
+                raise ValueError("capture_source_unavailable")
+            if material["media_type"] not in PHASE9D_CAPTURE_ASSET_TYPES[str(asset_kind)]:
+                raise ValueError("capture_asset_type_not_supported")
+            name, media = str(material["original_name"]), str(material["media_type"])
+            source_status, status = "valid", "uploaded"
+        try:
+            connection.execute(
+                "INSERT INTO capture_sessions (id,project_id,status,asset_kind,material_id,original_name,media_type,"
+                "source_status,created_at,updated_at,confirmed_at,rejected_at,archived_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL)",
+                (capture_id, project_id, status, asset_kind, material_id, name, media,
+                 source_status, now, now),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("capture_invalid_state") from exc
+    return get_capture_session(connection, project_id=project_id, capture_session_id=capture_id) or {}
+
+
+def get_capture_session(connection: sqlite3.Connection, *, project_id: str,
+                        capture_session_id: str) -> dict[str, object] | None:
+    row = connection.execute(
+        "SELECT * FROM capture_sessions WHERE id=? AND project_id=?", (capture_session_id, project_id)
+    ).fetchone()
+    return _phase9d_capture_public(connection, row) if row is not None else None
+
+
+def list_capture_sessions(connection: sqlite3.Connection, *, project_id: str,
+                          include_archived: bool = False) -> list[dict[str, object]]:
+    clause = "" if include_archived else " AND status!='archived'"
+    rows = connection.execute(
+        "SELECT * FROM capture_sessions WHERE project_id=?" + clause + " ORDER BY updated_at DESC,id DESC",
+        (project_id,),
+    ).fetchall()
+    return [_phase9d_capture_public(connection, row) for row in rows]
+
+
+def _phase9d_transcription_fingerprint(*, capture_session_id: str, material_id: str,
+                                       input_fingerprint: str) -> str:
+    return hashlib.sha256(
+        f"{PHASE9D_TRANSCRIPTION_OPERATION}\x1f{capture_session_id}\x1f{material_id}\x1f{input_fingerprint}".encode("utf-8")
+    ).hexdigest()
+
+
+def create_transcription_operation(connection: sqlite3.Connection, *, project_id: str,
+                                   capture_session_id: str, input_fingerprint: object,
+                                   idempotency_key: object | None = None,
+                                   provider_id: object = "fake", model_id: object = "fake-capture-v1") -> dict[str, object]:
+    source_fingerprint = _phase9d_text(input_fingerprint, code="transcription_not_ready", maximum=64)
+    if len(source_fingerprint) != 64 or any(char not in "0123456789abcdef" for char in source_fingerprint.lower()):
+        raise ValueError("transcription_not_ready")
+    key = _phase9d_idempotency_key(idempotency_key)
+    provider = _phase9d_text(provider_id, code="transcription_provider_not_configured", maximum=100)
+    model = _phase9d_text(model_id, code="transcription_provider_not_configured", maximum=200)
+    if provider not in {"fake", "loopback"}:
+        raise ValueError("transcription_provider_not_configured")
+    with connection:
+        capture = connection.execute(
+            "SELECT * FROM capture_sessions WHERE id=? AND project_id=?", (capture_session_id, project_id)
+        ).fetchone()
+        if capture is None:
+            raise ValueError("capture_not_found")
+        if capture["material_id"] is None:
+            raise ValueError("capture_source_unavailable")
+        fingerprint = _phase9d_transcription_fingerprint(
+            capture_session_id=capture_session_id, material_id=str(capture["material_id"]),
+            input_fingerprint=source_fingerprint.lower(),
+        )
+        if key is not None:
+            existing = connection.execute(
+                "SELECT * FROM ai_operations WHERE project_id=? AND idempotency_key=?", (project_id, key)
+            ).fetchone()
+            if existing is not None:
+                if (existing["operation_type"] != PHASE9D_TRANSCRIPTION_OPERATION or
+                        existing["capture_session_id"] != capture_session_id or
+                        existing["input_fingerprint"] != fingerprint):
+                    raise ValueError("transcription_idempotency_mismatch")
+                if existing["status"] not in {"failed", "cancelled", "stale"}:
+                    return _phase9d_operation_public(existing, replay=True)
+                connection.execute(
+                    "UPDATE ai_operations SET idempotency_key=NULL WHERE id=? AND status IN ('failed','cancelled','stale')",
+                    (existing["id"],),
+                )
+        if capture["status"] not in {"uploaded", "failed", "rejected"}:
+            raise ValueError("capture_invalid_state")
+        source_status = _phase9d_capture_source_status(connection, capture)
+        if source_status != "valid":
+            raise ValueError("capture_source_unavailable")
+        retry_count = int(connection.execute(
+            "SELECT COUNT(*) FROM ai_operations WHERE project_id=? AND capture_session_id=? AND operation_type=?",
+            (project_id, capture_session_id, PHASE9D_TRANSCRIPTION_OPERATION),
+        ).fetchone()[0])
+        current_revision = connection.execute(
+            "SELECT id FROM material_revisions WHERE material_id=? AND is_current=1 ORDER BY created_at DESC LIMIT 1",
+            (capture["material_id"],),
+        ).fetchone()
+        operation_id, now = f"transcription_{uuid.uuid4().hex}", utc_now()
+        connection.execute(
+            "INSERT INTO ai_operations (id,operation_type,status,project_id,material_id,input_fingerprint,source_revision,"
+            "provider_id,model_id,retry_count,created_at,started_at,idempotency_key,capture_session_id) "
+            "VALUES (?,?, 'running',?,?,?,?,?,?,?, ?,?,?,?)",
+            (operation_id, PHASE9D_TRANSCRIPTION_OPERATION, project_id, capture["material_id"], fingerprint,
+             current_revision["id"] if current_revision is not None else None, provider, model,
+             retry_count, now, now, key, capture_session_id),
+        )
+        connection.execute(
+            "UPDATE capture_sessions SET status='transcribing',source_status='valid',updated_at=? "
+            "WHERE id=? AND project_id=?", (now, capture_session_id, project_id)
+        )
+        operation = connection.execute("SELECT * FROM ai_operations WHERE id=?", (operation_id,)).fetchone()
+        return _phase9d_operation_public(operation)
+
+
+def get_transcription_operation(connection: sqlite3.Connection, *, project_id: str,
+                                operation_id: str) -> dict[str, object] | None:
+    row = connection.execute(
+        "SELECT * FROM ai_operations WHERE id=? AND project_id=? AND operation_type=?",
+        (operation_id, project_id, PHASE9D_TRANSCRIPTION_OPERATION),
+    ).fetchone()
+    return _phase9d_operation_public(row) if row is not None else None
+
+
+def list_transcription_operations(connection: sqlite3.Connection, *, project_id: str,
+                                  capture_session_id: str) -> list[dict[str, object]]:
+    rows = connection.execute(
+        "SELECT * FROM ai_operations WHERE project_id=? AND capture_session_id=? AND operation_type=? "
+        "ORDER BY created_at,id", (project_id, capture_session_id, PHASE9D_TRANSCRIPTION_OPERATION),
+    ).fetchall()
+    return [_phase9d_operation_public(row) for row in rows]
+
+
+def _phase9d_segment_values(segments: object) -> tuple[list[tuple[str, float, str]], str, str]:
+    if not isinstance(segments, list) or not 1 <= len(segments) <= PHASE9D_TRANSCRIPT_MAX_SEGMENTS:
+        raise ValueError("transcript_empty_or_invalid")
+    values: list[tuple[str, float, str]] = []
+    for segment in segments:
+        if not isinstance(segment, dict):
+            raise ValueError("transcript_empty_or_invalid")
+        text = _phase9d_text(segment.get("text"), code="transcript_empty_or_invalid", maximum=20000)
+        confidence = segment.get("confidence")
+        if (not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or
+                not 0.0 <= float(confidence) <= 1.0):
+            raise ValueError("transcript_empty_or_invalid")
+        quality = "clear" if float(confidence) >= PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD else "uncertain"
+        values.append((text, float(confidence), quality))
+    full_text = "\n".join(value[0] for value in values)
+    if len(full_text) > PHASE9D_TRANSCRIPT_MAX_TEXT:
+        raise ValueError("payload_too_large")
+    quality_status = "uncertain" if any(value[2] == "uncertain" for value in values) else "clear"
+    return values, full_text, quality_status
+
+
+def complete_transcription_operation(connection: sqlite3.Connection, *, project_id: str,
+                                     operation_id: str, segments: object,
+                                     language: object | None = None) -> dict[str, object]:
+    values, full_text, quality_status = _phase9d_segment_values(segments)
+    language_value = None if language is None else _phase9d_text(
+        language, code="transcript_empty_or_invalid", maximum=32
+    )
+    with connection:
+        operation = connection.execute(
+            "SELECT * FROM ai_operations WHERE id=? AND project_id=? AND operation_type=?",
+            (operation_id, project_id, PHASE9D_TRANSCRIPTION_OPERATION),
+        ).fetchone()
+        if operation is None:
+            raise ValueError("transcription_not_ready")
+        if operation["status"] == "succeeded" and operation["output_artifact_id"] is not None:
+            existing = connection.execute(
+                "SELECT * FROM transcript_drafts WHERE id=? AND project_id=?",
+                (operation["output_artifact_id"], project_id),
+            ).fetchone()
+            if existing is None:
+                raise ValueError("transcription_failed")
+            return {"draft": _phase9d_transcript_public(connection, existing),
+                    "operation": _phase9d_operation_public(operation, replay=True), "replay": True}
+        if operation["status"] != "running":
+            raise ValueError("transcription_not_ready")
+        capture = connection.execute(
+            "SELECT * FROM capture_sessions WHERE id=? AND project_id=?",
+            (operation["capture_session_id"], project_id),
+        ).fetchone()
+        if capture is None or capture["status"] != "transcribing":
+            raise ValueError("capture_invalid_state")
+        if _phase9d_capture_source_status(connection, capture) != "valid":
+            raise ValueError("capture_source_unavailable")
+        draft_id, now = f"transcript_{uuid.uuid4().hex}", utc_now()
+        connection.execute(
+            "INSERT INTO transcript_drafts (id,project_id,capture_session_id,operation_id,status,text,language,"
+            "quality_status,edited_by_user,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,?,?)",
+            (draft_id, project_id, capture["id"], operation_id, "draft", full_text,
+             language_value, quality_status, now, now),
+        )
+        connection.executemany(
+            "INSERT INTO transcript_segments (id,draft_id,project_id,ordinal,text,confidence,quality,created_at,updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            [(f"transcript_segment_{uuid.uuid4().hex}", draft_id, project_id, ordinal,
+              text, confidence, quality, now, now)
+             for ordinal, (text, confidence, quality) in enumerate(values)],
+        )
+        connection.execute(
+            "UPDATE ai_operations SET status='succeeded',output_artifact_id=?,finished_at=? "
+            "WHERE id=? AND status='running'", (draft_id, now, operation_id)
+        )
+        connection.execute(
+            "UPDATE capture_sessions SET status='review_required',updated_at=? "
+            "WHERE id=? AND project_id=? AND status='transcribing'",
+            (now, capture["id"], project_id),
+        )
+        draft = connection.execute("SELECT * FROM transcript_drafts WHERE id=?", (draft_id,)).fetchone()
+        finished = connection.execute("SELECT * FROM ai_operations WHERE id=?", (operation_id,)).fetchone()
+        return {"draft": _phase9d_transcript_public(connection, draft),
+                "operation": _phase9d_operation_public(finished), "replay": False}
+
+
+def fail_transcription_operation(connection: sqlite3.Connection, *, project_id: str,
+                                 operation_id: str, error_code: object = "transcription_failed") -> dict[str, object]:
+    error = _phase9d_text(error_code, code="transcription_failed", maximum=100)
+    if error not in PHASE9D_TRANSCRIPTION_ERROR_CODES:
+        raise ValueError("transcription_failed")
+    with connection:
+        operation = connection.execute(
+            "SELECT * FROM ai_operations WHERE id=? AND project_id=? AND operation_type=?",
+            (operation_id, project_id, PHASE9D_TRANSCRIPTION_OPERATION),
+        ).fetchone()
+        if operation is None:
+            raise ValueError("transcription_not_ready")
+        if operation["status"] == "failed":
+            return _phase9d_operation_public(operation, replay=True)
+        if operation["status"] != "running":
+            raise ValueError("transcription_not_ready")
+        now = utc_now()
+        connection.execute(
+            "UPDATE ai_operations SET status='failed',error_code=?,finished_at=? WHERE id=? AND status='running'",
+            (error, now, operation_id),
+        )
+        connection.execute(
+            "UPDATE capture_sessions SET status='failed',updated_at=? "
+            "WHERE id=? AND project_id=? AND status='transcribing'",
+            (now, operation["capture_session_id"], project_id),
+        )
+        result = connection.execute("SELECT * FROM ai_operations WHERE id=?", (operation_id,)).fetchone()
+        return _phase9d_operation_public(result)
+
+
+def _phase9d_report_period(report_kind: object, timezone_name: object,
+                           period_start: object, period_end: object) -> tuple[str, str, str, ZoneInfo, datetime, datetime]:
+    if report_kind not in PHASE9D_REPORT_KINDS:
+        raise ValueError("report_invalid_kind")
+    timezone_value = _phase9d_text(timezone_name, code="report_invalid_period", maximum=100)
+    try:
+        zone = ZoneInfo(timezone_value)
+        start_date = date.fromisoformat(_phase9d_text(period_start, code="report_invalid_period", maximum=10))
+        end_date = date.fromisoformat(_phase9d_text(period_end, code="report_invalid_period", maximum=10))
+    except (ValueError, ZoneInfoNotFoundError):
+        raise ValueError("report_invalid_period") from None
+    if start_date.isoformat() != period_start or end_date.isoformat() != period_end or start_date >= end_date:
+        raise ValueError("report_invalid_period")
+    start_utc = datetime.combine(start_date, datetime.min.time(), zone).astimezone(timezone.utc)
+    end_utc = datetime.combine(end_date, datetime.min.time(), zone).astimezone(timezone.utc)
+    return str(report_kind), timezone_value, start_date.isoformat(), zone, start_utc, end_utc
+
+
+def _phase9d_in_period(value: object, start_utc: datetime, end_utc: datetime) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00" if value.endswith("Z") else value)
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        return False
+    normalized = parsed.astimezone(timezone.utc)
+    return start_utc <= normalized < end_utc
+
+
+def _phase9d_rows_in_period(rows: list[sqlite3.Row], field: str,
+                            start_utc: datetime, end_utc: datetime) -> list[sqlite3.Row]:
+    return [row for row in rows if _phase9d_in_period(row[field], start_utc, end_utc)]
+
+
+def _phase9d_safe_markdown(payload: dict[str, object]) -> str:
+    sections = ["# Study Report", "", f"Kind: {payload['period']['report_kind']}",
+                f"Period: {payload['period']['period_start']} to {payload['period']['period_end']}",
+                f"Timezone: {payload['period']['timezone']}"]
+    for key in ("plan", "rhythm", "practice", "feedback", "source_quality", "quality_flags"):
+        sections.extend(["", f"## {key.replace('_', ' ').title()}"])
+        for field, value in payload[key].items():
+            sections.append(f"- {field}: {str(value).lower() if isinstance(value, bool) else value}")
+    if payload["period"]["report_kind"] == "exam_alert":
+        sections.extend(["", "## Exam Alert"])
+        for field, value in payload["exam_alert"].items():
+            sections.append(f"- {field}: {str(value).lower() if isinstance(value, bool) else value}")
+    return "\n".join(sections) + "\n"
+
+
+def build_report_projection(connection: sqlite3.Connection, *, project_id: str,
+                            report_kind: object, timezone_name: object,
+                            period_start: object, period_end: object) -> dict[str, object]:
+    kind, timezone_value, start_value, _zone, start_utc, end_utc = _phase9d_report_period(
+        report_kind, timezone_name, period_start, period_end
+    )
+    end_value = date.fromisoformat(str(period_end)).isoformat()
+    if not _study_project_exists(connection, project_id):
+        raise ValueError("project_scope_violation")
+
+    goals = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,status,updated_at FROM learning_goals WHERE project_id=?", (project_id,)
+    ).fetchall()), "updated_at", start_utc, end_utc)
+    plans = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,status,updated_at FROM study_plans WHERE project_id=?", (project_id,)
+    ).fetchall()), "updated_at", start_utc, end_utc)
+    items = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,status,updated_at FROM study_plan_items WHERE project_id=?", (project_id,)
+    ).fetchall()), "updated_at", start_utc, end_utc)
+
+    allocations = [row for row in connection.execute(
+        "SELECT a.id,a.plan_id,a.item_id,a.local_date,a.planned_minutes,s.cadence,s.target_minutes "
+        "FROM rhythm_allocations a LEFT JOIN rhythm_settings s ON s.plan_id=a.plan_id AND s.project_id=a.project_id "
+        "WHERE a.project_id=?", (project_id,)
+    ).fetchall() if start_value <= str(row["local_date"]) < end_value]
+    allocation_item_ids = {str(row["item_id"]) for row in allocations}
+    daily_totals: dict[tuple[str, str], int] = {}
+    daily_targets: dict[tuple[str, str], int] = {}
+    for row in allocations:
+        key = (str(row["plan_id"]), str(row["local_date"]))
+        daily_totals[key] = daily_totals.get(key, 0) + int(row["planned_minutes"])
+        if row["cadence"] == "daily" and row["target_minutes"] is not None:
+            daily_targets[key] = int(row["target_minutes"])
+
+    sessions = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,session_kind,status,created_at FROM practice_sessions WHERE project_id=?", (project_id,)
+    ).fetchall()), "created_at", start_utc, end_utc)
+    attempts = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT a.id,a.grading_status,a.is_correct,a.submitted_at FROM exercise_attempts a "
+        "JOIN exercises e ON e.id=a.exercise_id WHERE e.project_id=?", (project_id,)
+    ).fetchall()), "submitted_at", start_utc, end_utc)
+    cases = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,exercise_id,exercise_revision_fingerprint,status,updated_at FROM mistake_cases WHERE project_id=?",
+        (project_id,),
+    ).fetchall()), "updated_at", start_utc, end_utc)
+
+    source_rows: list[sqlite3.Row] = []
+    for table in ("module_source_links", "plan_item_source_links", "note_block_source_links"):
+        source_rows.extend(_phase9d_rows_in_period(list(connection.execute(
+            f"SELECT id,status,updated_at FROM {table} WHERE project_id=?", (project_id,)
+        ).fetchall()), "updated_at", start_utc, end_utc))
+    source_rows.extend(_phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,COALESCE(source_status,'source_unavailable') AS status,updated_at "
+        "FROM capture_sessions WHERE project_id=? AND material_id IS NOT NULL", (project_id,)
+    ).fetchall()), "updated_at", start_utc, end_utc))
+    uncertain_segments = _phase9d_rows_in_period(list(connection.execute(
+        "SELECT id,created_at FROM transcript_segments WHERE project_id=? AND quality='uncertain'", (project_id,)
+    ).fetchall()), "created_at", start_utc, end_utc)
+
+    active_cram_targets = []
+    for row in connection.execute(
+        "SELECT id,target_date FROM cram_goals WHERE project_id=? AND status='active'", (project_id,)
+    ).fetchall():
+        try:
+            days = (date.fromisoformat(str(row["target_date"])) - date.fromisoformat(start_value)).days
+        except ValueError:
+            continue
+        if days >= 0:
+            active_cram_targets.append((days, str(row["id"])))
+    active_cram_targets.sort()
+    nearest_days = active_cram_targets[0][0] if active_cram_targets else None
+    if nearest_days is None:
+        days_bucket = None
+    elif nearest_days <= 3:
+        days_bucket = "0-3"
+    elif nearest_days <= 7:
+        days_bucket = "4-7"
+    elif nearest_days <= 14:
+        days_bucket = "8-14"
+    else:
+        days_bucket = "15+"
+
+    item_counts = {status: sum(row["status"] == status for row in items)
+                   for status in ("pending", "in_progress", "completed", "skipped")}
+    case_counts = {status: sum(row["status"] == status for row in cases)
+                   for status in ("open", "in_review", "fixed", "reopened", "archived")}
+    source_counts = {status: sum(row["status"] == status for row in source_rows)
+                     for status in PHASE9D_SOURCE_STATUSES}
+    deterministic = [row for row in attempts if row["grading_status"] == "deterministic"]
+    planned_minutes = sum(int(row["planned_minutes"]) for row in allocations)
+    payload: dict[str, object] = {
+        "period": {"report_kind": kind, "period_start": start_value, "period_end": end_value,
+                   "timezone": timezone_value, "generated_at": utc_now()},
+        "plan": {"active_goal_count": sum(row["status"] == "active" for row in goals),
+                 "active_plan_count": sum(row["status"] == "active" for row in plans),
+                 "planned_item_count": sum(row["status"] != "archived" for row in items),
+                 "completed_item_count": item_counts["completed"],
+                 "started_item_count": item_counts["in_progress"],
+                 "skipped_item_count": item_counts["skipped"],
+                 "planned_minutes_total": planned_minutes},
+        "rhythm": {"allocated_day_count": len({str(row["local_date"]) for row in allocations}),
+                   "allocated_minutes_total": planned_minutes,
+                   "unallocated_eligible_item_count": sum(
+                       row["status"] != "archived" and str(row["id"]) not in allocation_item_ids for row in items
+                   ),
+                   "overload_day_count": sum(total > daily_targets[key] for key, total in daily_totals.items()
+                                             if key in daily_targets)},
+        "practice": {"practice_session_count": sum(row["session_kind"] == "practice" for row in sessions),
+                     "cram_session_count": sum(row["session_kind"] == "cram" for row in sessions),
+                     "attempt_count": len(attempts),
+                     "deterministic_correct_count": sum(row["is_correct"] == 1 for row in deterministic),
+                     "deterministic_incorrect_count": sum(row["is_correct"] == 0 for row in deterministic),
+                     "pending_review_count": sum(row["grading_status"] == "pending_review" for row in attempts),
+                     "completed_session_count": sum(row["status"] in {"finished", "expired"} for row in sessions)},
+        "feedback": {"open_mistake_count": case_counts["open"],
+                     "in_review_count": case_counts["in_review"], "fixed_count": case_counts["fixed"],
+                     "reopened_count": case_counts["reopened"], "archived_count": case_counts["archived"],
+                     "weak_point_count": len({(str(row["exercise_id"]), str(row["exercise_revision_fingerprint"]))
+                                              for row in cases if row["status"] != "archived"})},
+        "source_quality": {"valid_source_count": source_counts["valid"],
+                           "stale_count": source_counts["stale"],
+                           "source_deleted_count": source_counts["source_deleted"],
+                           "source_unavailable_count": source_counts["source_unavailable"],
+                           "uncertain_transcript_segment_count": len(uncertain_segments)},
+        "exam_alert": {"days_remaining_bucket": days_bucket,
+                       "is_imminent": nearest_days is not None and nearest_days <= 7},
+    }
+    payload["quality_flags"] = {
+        "has_pending_review": payload["practice"]["pending_review_count"] > 0,
+        "has_source_warnings": sum(source_counts[status] for status in ("stale", "source_deleted", "source_unavailable")) > 0,
+        "has_uncertain_capture": len(uncertain_segments) > 0,
+    }
+    basis = json.loads(json.dumps(payload))
+    basis["period"].pop("generated_at", None)
+    fact_identity = {
+        "goals": [(row["id"], row["status"], row["updated_at"]) for row in goals],
+        "plans": [(row["id"], row["status"], row["updated_at"]) for row in plans],
+        "items": [(row["id"], row["status"], row["updated_at"]) for row in items],
+        "allocations": [(row["id"], row["local_date"], row["planned_minutes"]) for row in allocations],
+        "sessions": [(row["id"], row["status"], row["created_at"]) for row in sessions],
+        "attempts": [(row["id"], row["grading_status"], row["is_correct"], row["submitted_at"]) for row in attempts],
+        "cases": [(row["id"], row["status"], row["updated_at"]) for row in cases],
+        "sources": [(row["id"], row["status"], row["updated_at"]) for row in source_rows],
+        "uncertain_segments": [(row["id"], row["created_at"]) for row in uncertain_segments],
+        "cram_targets": active_cram_targets,
+    }
+    for identities in fact_identity.values():
+        identities.sort(key=lambda identity: tuple("" if value is None else str(value) for value in identity))
+    fingerprint_source = json.dumps(
+        {"version": PHASE9D_REPORT_CONTENT_VERSION, "payload": basis, "facts": fact_identity},
+        sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+    )
+    return {"safe_payload": payload, "markdown_content": _phase9d_safe_markdown(payload),
+            "aggregation_fingerprint": hashlib.sha256(fingerprint_source.encode("utf-8")).hexdigest(),
+            "content_version": PHASE9D_REPORT_CONTENT_VERSION}
+
+
+def _phase9d_report_public(row: sqlite3.Row, *, replay: bool = False) -> dict[str, object]:
+    try:
+        payload = json.loads(str(row["safe_payload_json"]))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        raise ValueError("report_redaction_violation") from None
+    return {
+        "id": row["id"], "project_id": row["project_id"], "report_kind": row["report_kind"],
+        "timezone": row["timezone"], "period_start": row["period_start"],
+        "period_end": row["period_end"], "status": row["status"],
+        "content_version": row["content_version"], "safe_payload": payload,
+        "markdown_content": row["markdown_content"], "error_code": row["error_code"],
+        "created_at": row["created_at"], "updated_at": row["updated_at"],
+        "ready_at": row["ready_at"], "archived_at": row["archived_at"], "replay": replay,
+    }
+
+
+def create_report_snapshot(connection: sqlite3.Connection, *, project_id: str,
+                           report_kind: object, timezone_name: object,
+                           period_start: object, period_end: object) -> dict[str, object]:
+    with connection:
+        projection = build_report_projection(
+            connection, project_id=project_id, report_kind=report_kind,
+            timezone_name=timezone_name, period_start=period_start, period_end=period_end,
+        )
+        period = projection["safe_payload"]["period"]
+        existing = connection.execute(
+            "SELECT * FROM report_snapshots WHERE project_id=? AND report_kind=? AND period_start=? "
+            "AND period_end=? AND content_version=? AND aggregation_fingerprint=?",
+            (project_id, period["report_kind"], period["period_start"], period["period_end"],
+             projection["content_version"], projection["aggregation_fingerprint"]),
+        ).fetchone()
+        if existing is not None:
+            return _phase9d_report_public(existing, replay=True)
+        report_id, now = f"report_{uuid.uuid4().hex}", utc_now()
+        safe_json = json.dumps(
+            projection["safe_payload"], sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        )
+        connection.execute(
+            "INSERT INTO report_snapshots (id,project_id,report_kind,timezone,period_start,period_end,status,"
+            "content_version,aggregation_fingerprint,safe_payload_json,markdown_content,error_code,created_at,"
+            "updated_at,ready_at,archived_at) VALUES (?,?,?,?,?,?,'ready',?,?,?,?,NULL,?,?,?,NULL)",
+            (report_id, project_id, period["report_kind"], period["timezone"], period["period_start"],
+             period["period_end"], projection["content_version"], projection["aggregation_fingerprint"], safe_json,
+             projection["markdown_content"], now, now, now),
+        )
+        row = connection.execute("SELECT * FROM report_snapshots WHERE id=?", (report_id,)).fetchone()
+        return _phase9d_report_public(row)
+
+
+def get_report_snapshot(connection: sqlite3.Connection, *, project_id: str,
+                        report_id: str) -> dict[str, object] | None:
+    row = connection.execute(
+        "SELECT * FROM report_snapshots WHERE id=? AND project_id=?", (report_id, project_id)
+    ).fetchone()
+    return _phase9d_report_public(row) if row is not None else None
+
+
+def list_report_snapshots(connection: sqlite3.Connection, *, project_id: str,
+                          include_archived: bool = False) -> list[dict[str, object]]:
+    clause = "" if include_archived else " AND status!='archived'"
+    rows = connection.execute(
+        "SELECT * FROM report_snapshots WHERE project_id=?" + clause + " ORDER BY created_at DESC,id DESC",
+        (project_id,),
+    ).fetchall()
+    return [_phase9d_report_public(row) for row in rows]
+
+
+def _phase9d_target_label(value: object) -> str:
+    label = _phase9d_text(value, code="delivery_target_not_allowed", maximum=100)
+    if any(not (char.isascii() and (char.isalnum() or char in "._-")) for char in label):
+        raise ValueError("delivery_target_not_allowed")
+    return label
+
+
+def _phase9d_delivery_public(row: sqlite3.Row, *, replay: bool = False) -> dict[str, object]:
+    return {
+        "id": row["id"], "report_id": row["report_id"], "channel": row["channel"],
+        "mode": row["mode"], "target_label": row["target_label"], "status": row["status"],
+        "error_code": row["error_code"], "retry_of": row["retry_of"],
+        "created_at": row["created_at"], "finished_at": row["finished_at"], "replay": replay,
+    }
+
+
+def record_report_delivery_attempt(connection: sqlite3.Connection, *, project_id: str,
+                                   report_id: str, channel: object, mode: object,
+                                   target_label: object, idempotency_key: object | None = None,
+                                   retry_of: str | None = None) -> dict[str, object]:
+    if channel not in PHASE9D_DELIVERY_CHANNELS:
+        raise ValueError("delivery_target_not_allowed")
+    if mode not in PHASE9D_DELIVERY_MODES:
+        raise ValueError("delivery_failed")
+    label = _phase9d_target_label(target_label)
+    key = _phase9d_idempotency_key(idempotency_key)
+    key_fingerprint = hashlib.sha256(f"{project_id}\x1f{key}".encode("utf-8")).hexdigest() if key else None
+    with connection:
+        report = connection.execute(
+            "SELECT * FROM report_snapshots WHERE id=? AND project_id=?", (report_id, project_id)
+        ).fetchone()
+        if report is None:
+            raise ValueError("report_not_found")
+        if report["status"] != "ready":
+            raise ValueError("report_invalid_state")
+        content_fingerprint = hashlib.sha256(
+            f"{report['content_version']}\x1f{report['safe_payload_json']}".encode("utf-8")
+        ).hexdigest()
+        if key_fingerprint is not None:
+            existing = connection.execute(
+                "SELECT * FROM report_delivery_attempts WHERE project_id=? AND report_id=? AND channel=? "
+                "AND idempotency_key_fingerprint=? ORDER BY created_at,id LIMIT 1",
+                (project_id, report_id, channel, key_fingerprint),
+            ).fetchone()
+            if existing is not None:
+                if (existing["mode"] != mode or existing["target_label"] != label or
+                        existing["content_fingerprint"] != content_fingerprint):
+                    raise ValueError("delivery_idempotency_mismatch")
+                return _phase9d_delivery_public(existing, replay=True)
+        if retry_of is not None:
+            previous = connection.execute(
+                "SELECT id FROM report_delivery_attempts WHERE id=? AND project_id=? AND report_id=?",
+                (retry_of, project_id, report_id),
+            ).fetchone()
+            if previous is None:
+                raise ValueError("delivery_failed")
+        status, error_code = {
+            "off": ("blocked", "delivery_disabled"),
+            "dry_run": ("dry_run", None),
+            "live": ("blocked", "delivery_live_not_approved"),
+        }[str(mode)]
+        attempt_id, now = f"delivery_attempt_{uuid.uuid4().hex}", utc_now()
+        connection.execute(
+            "INSERT INTO report_delivery_attempts (id,project_id,report_id,channel,mode,target_label,"
+            "content_fingerprint,idempotency_key_fingerprint,status,error_code,retry_of,created_at,finished_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (attempt_id, project_id, report_id, channel, mode, label, content_fingerprint,
+             key_fingerprint, status, error_code, retry_of, now, now),
+        )
+        row = connection.execute("SELECT * FROM report_delivery_attempts WHERE id=?", (attempt_id,)).fetchone()
+        return _phase9d_delivery_public(row)
+
+
+def list_report_delivery_attempts(connection: sqlite3.Connection, *, project_id: str,
+                                  report_id: str) -> list[dict[str, object]]:
+    if connection.execute(
+        "SELECT 1 FROM report_snapshots WHERE id=? AND project_id=?", (report_id, project_id)
+    ).fetchone() is None:
+        raise ValueError("report_not_found")
+    rows = connection.execute(
+        "SELECT * FROM report_delivery_attempts WHERE project_id=? AND report_id=? ORDER BY created_at,id",
+        (project_id, report_id),
+    ).fetchall()
+    return [_phase9d_delivery_public(row) for row in rows]
+
+
 # Phase 9A domain repository. These functions own SQLite transactions and
 # leave HTTP serialization to the later API task.
 STUDY_TEXT_MAX = 4000
@@ -3434,6 +4165,10 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
         _refresh_study_source_links_for_material(connection, material_id)
         _refresh_phase9c_session_sources_for_material(connection, material_id)
         connection.execute(
+            "UPDATE capture_sessions SET source_status='source_unavailable',updated_at=? WHERE material_id=?",
+            (utc_now(), material_id),
+        )
+        connection.execute(
             "UPDATE note_block_source_links SET status = 'source_unavailable', updated_at = ? WHERE material_id = ?",
             (utc_now(), material_id),
         )
@@ -3577,6 +4312,10 @@ def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bo
             _refresh_card_citations_for_material(connection, material_id)
             _refresh_study_source_links_for_material(connection, material_id)
             _refresh_phase9c_session_sources_for_material(connection, material_id)
+            connection.execute(
+                "UPDATE capture_sessions SET source_status='source_deleted',updated_at=? WHERE material_id=?",
+                (deleted_at, material_id),
+            )
     return cursor.rowcount == 1
 
 
