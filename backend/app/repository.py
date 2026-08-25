@@ -42,7 +42,10 @@ QA_OPERATION_LEASE_SECONDS = 300
 def _ensure_search_index(connection: sqlite3.Connection) -> None:
     existing = {row[0] for row in connection.execute("SELECT material_id FROM material_search")}
     rows = connection.execute(
-        "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id"
+        "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE e.id = COALESCE((SELECT r.extraction_id FROM material_revisions r "
+        "WHERE r.material_id=m.id AND r.is_current=1 ORDER BY r.created_at DESC,r.id DESC LIMIT 1), "
+        "(SELECT e2.id FROM extractions e2 WHERE e2.material_id=m.id ORDER BY e2.created_at DESC,e2.id DESC LIMIT 1))"
     ).fetchall()
     source_ids = {row[0] for row in rows}
     for material_id in existing - source_ids:
@@ -61,7 +64,10 @@ def _insert_search_row(connection: sqlite3.Connection, material_id: str, origina
 def _replace_search_row(connection: sqlite3.Connection, material_id: str) -> None:
     connection.execute("DELETE FROM material_search WHERE material_id = ?", (material_id,))
     row = connection.execute(
-        "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id WHERE m.id = ?",
+        "SELECT m.id, m.original_name, e.text FROM materials m JOIN extractions e ON e.material_id = m.id "
+        "WHERE m.id = ? AND e.id = COALESCE((SELECT r.extraction_id FROM material_revisions r "
+        "WHERE r.material_id=m.id AND r.is_current=1 ORDER BY r.created_at DESC,r.id DESC LIMIT 1), "
+        "(SELECT e2.id FROM extractions e2 WHERE e2.material_id=m.id ORDER BY e2.created_at DESC,e2.id DESC LIMIT 1))",
         (material_id,),
     ).fetchone()
     if row is not None:
@@ -224,7 +230,9 @@ def _search_rows(connection: sqlite3.Connection, status: str | None, query: str,
         "SELECT m.id, m.original_name, m.source_sha256, m.media_type, e.status, e.error_code, e.created_at, m.updated_at, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, e.text AS search_text "
         "FROM materials m JOIN extractions e ON e.material_id = m.id "
-        "WHERE m.deleted_at IS NULL"
+        "WHERE m.deleted_at IS NULL AND e.id = COALESCE((SELECT r.extraction_id FROM material_revisions r "
+        "WHERE r.material_id=m.id AND r.is_current=1 ORDER BY r.created_at DESC,r.id DESC LIMIT 1), "
+        "(SELECT e2.id FROM extractions e2 WHERE e2.material_id=m.id ORDER BY e2.created_at DESC,e2.id DESC LIMIT 1))"
     )
     params: list[str] = []
     if status is not None:
@@ -255,7 +263,9 @@ def _search_count(connection: sqlite3.Connection, status: str | None, query: str
         return 0
     query_sql = (
         "SELECT COUNT(*) FROM materials m JOIN extractions e ON e.material_id = m.id "
-        "WHERE m.deleted_at IS NULL"
+        "WHERE m.deleted_at IS NULL AND e.id = COALESCE((SELECT r.extraction_id FROM material_revisions r "
+        "WHERE r.material_id=m.id AND r.is_current=1 ORDER BY r.created_at DESC,r.id DESC LIMIT 1), "
+        "(SELECT e2.id FROM extractions e2 WHERE e2.material_id=m.id ORDER BY e2.created_at DESC,e2.id DESC LIMIT 1))"
     )
     params: list[str] = []
     if status is not None:
@@ -1686,6 +1696,8 @@ PHASE9D_CAPTURE_SUFFIXES = {
 }
 PHASE9D_CAPTURE_PARSER_ID = "class_capture_original"
 PHASE9D_CAPTURE_PARSER_VERSION = "1"
+PHASE9D_TRANSCRIPT_PARSER_ID = "class_capture_transcript"
+PHASE9D_TRANSCRIPT_PARSER_VERSION = "s2_v1"
 PHASE9D_DELIVERY_CHANNELS = {"smtp", "feishu"}
 PHASE9D_DELIVERY_MODES = {"off", "dry_run", "live"}
 PHASE9D_SOURCE_STATUSES = {"valid", "source_deleted", "source_unavailable", "stale"}
@@ -2231,6 +2243,194 @@ def complete_transcription_operation(connection: sqlite3.Connection, *, project_
         finished = connection.execute("SELECT * FROM ai_operations WHERE id=?", (operation_id,)).fetchone()
         return {"draft": _phase9d_transcript_public(connection, draft),
                 "operation": _phase9d_operation_public(finished), "replay": False}
+
+
+def edit_transcript_draft(connection: sqlite3.Connection, *, project_id: str,
+                          capture_session_id: str, draft_id: str, text: object) -> dict[str, object]:
+    """Apply an explicit user edit; provider output can never mutate this path."""
+    with connection:
+        capture = connection.execute(
+            "SELECT * FROM capture_sessions WHERE id=? AND project_id=?", (capture_session_id, project_id)
+        ).fetchone()
+        if capture is None:
+            raise ValueError("capture_not_found")
+        draft = connection.execute(
+            "SELECT * FROM transcript_drafts WHERE id=? AND capture_session_id=? AND project_id=?",
+            (draft_id, capture_session_id, project_id),
+        ).fetchone()
+        if draft is None:
+            raise ValueError("transcript_not_found")
+        if capture["status"] != "review_required" or draft["status"] != "draft":
+            raise ValueError("transcript_user_edit_protected")
+        edited_text = _phase9d_text(text, code="transcript_empty_or_invalid", maximum=PHASE9D_TRANSCRIPT_MAX_TEXT)
+        now = utc_now()
+        edited_segments = [line.strip() for line in edited_text.splitlines() if line.strip()]
+        if not edited_segments:
+            edited_segments = [edited_text]
+        existing_segments = connection.execute(
+            "SELECT ordinal,confidence,quality FROM transcript_segments WHERE draft_id=? ORDER BY ordinal,id",
+            (draft_id,),
+        ).fetchall()
+        connection.execute("DELETE FROM transcript_segments WHERE draft_id=?", (draft_id,))
+        connection.executemany(
+            "INSERT INTO transcript_segments (id,draft_id,project_id,ordinal,text,confidence,quality,created_at,updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            [(f"transcript_segment_{uuid.uuid4().hex}", draft_id, project_id, ordinal,
+              segment_text,
+              float(existing_segments[ordinal]["confidence"]) if ordinal < len(existing_segments) else 1.0,
+              str(existing_segments[ordinal]["quality"]) if ordinal < len(existing_segments) else "clear",
+              now, now)
+             for ordinal, segment_text in enumerate(edited_segments)],
+        )
+        connection.execute(
+            "UPDATE transcript_drafts SET text=?,quality_status=?,edited_by_user=1,updated_at=? WHERE id=?",
+            (edited_text, "uncertain" if any(
+                str(existing_segments[index]["quality"]) == "uncertain"
+                for index in range(min(len(existing_segments), len(edited_segments)))
+            ) else "clear", now, draft_id),
+        )
+        updated = connection.execute("SELECT * FROM transcript_drafts WHERE id=?", (draft_id,)).fetchone()
+    return _phase9d_transcript_public(connection, updated)
+
+
+def _phase9d_confirmed_revision_public(connection: sqlite3.Connection, *, project_id: str,
+                                       material_id: str, revision_id: str) -> dict[str, object]:
+    chunks = connection.execute(
+        "SELECT id,revision_id,extraction_id,chunk_index,start_offset,end_offset,text,status "
+        "FROM chunks WHERE project_id=? AND material_id=? AND revision_id=? ORDER BY chunk_index,id",
+        (project_id, material_id, revision_id),
+    ).fetchall()
+    citations = []
+    for chunk in chunks:
+        key = _citation_key(material_id, str(chunk["id"]))
+        validation = validate_citation_key(connection, key)
+        citation_valid = bool(
+            validation and validation.get("status") == "valid"
+            and validation.get("material_id") == material_id
+            and validation.get("chunk_id") == chunk["id"]
+            and validation.get("revision_id") == revision_id
+        )
+        citations.append({
+            "citation_key": key,
+            "material_id": material_id,
+            "revision_id": revision_id,
+            "extraction_id": chunk["extraction_id"],
+            "chunk_id": chunk["id"],
+            "span_ids": [str(value[0]) for value in connection.execute(
+                "SELECT span_id FROM chunk_spans WHERE chunk_id=? ORDER BY span_id", (chunk["id"],)
+            ).fetchall()],
+            "status": "valid" if citation_valid else "source_unavailable",
+        })
+    if not chunks or any(item["status"] != "valid" for item in citations):
+        raise ValueError("transcript_citation_invalid")
+    return {"id": revision_id, "material_id": material_id, "extraction_id": chunks[0]["extraction_id"] if chunks else None,
+            "chunks": [dict(chunk) for chunk in chunks], "citations": citations}
+
+
+def confirm_transcript_draft(connection: sqlite3.Connection, *, project_id: str,
+                             capture_session_id: str, draft_id: str) -> dict[str, object]:
+    """Confirm one reviewed draft into the capture material's next S2 revision."""
+    with connection:
+        capture = connection.execute(
+            "SELECT * FROM capture_sessions WHERE id=? AND project_id=?", (capture_session_id, project_id)
+        ).fetchone()
+        if capture is None:
+            raise ValueError("capture_not_found")
+        draft = connection.execute(
+            "SELECT * FROM transcript_drafts WHERE id=? AND capture_session_id=? AND project_id=?",
+            (draft_id, capture_session_id, project_id),
+        ).fetchone()
+        if draft is None:
+            raise ValueError("transcript_not_found")
+        if capture["status"] == "confirmed" and draft["status"] == "confirmed":
+            revision = connection.execute(
+                "SELECT id FROM material_revisions WHERE material_id=? AND parser_id=? AND is_current=1 "
+                "ORDER BY created_at DESC,id DESC LIMIT 1", (capture["material_id"], PHASE9D_TRANSCRIPT_PARSER_ID)
+            ).fetchone()
+            if revision is None:
+                raise ValueError("transcript_citation_invalid")
+            return {"capture": _phase9d_capture_public(connection, capture), "draft": _phase9d_transcript_public(connection, draft),
+                    "revision": _phase9d_confirmed_revision_public(connection, project_id=project_id,
+                                                                    material_id=str(capture["material_id"]), revision_id=str(revision["id"])),
+                    "replay": True}
+        if capture["status"] != "review_required" or draft["status"] != "draft":
+            raise ValueError("capture_invalid_state")
+        if capture["material_id"] is None or _phase9d_capture_source_status(connection, capture) != "valid":
+            raise ValueError("capture_source_unavailable")
+        text = _phase9d_text(draft["text"], code="transcript_empty_or_invalid", maximum=PHASE9D_TRANSCRIPT_MAX_TEXT)
+        segments = connection.execute(
+            "SELECT ordinal,text FROM transcript_segments WHERE draft_id=? ORDER BY ordinal,id", (draft_id,)
+        ).fetchall()
+        if not segments:
+            raise ValueError("transcript_empty_or_invalid")
+        now = utc_now()
+        extraction_id = f"extraction_{uuid.uuid4().hex}"
+        connection.execute(
+            "INSERT INTO extractions (id,material_id,parser_id,parser_version,status,text,warnings_json,created_at,error_code) "
+            "VALUES (?,?,?,?,?,?,?,?,NULL)",
+            (extraction_id, capture["material_id"], PHASE9D_TRANSCRIPT_PARSER_ID,
+             PHASE9D_TRANSCRIPT_PARSER_VERSION, "success", text, "[]", now),
+        )
+        connection.executemany(
+            "INSERT INTO text_spans (id,extraction_id,ordinal,span_kind,label,text) VALUES (?,?,?,?,?,?)",
+            [(f"span_{uuid.uuid4().hex}", extraction_id, int(segment["ordinal"]) + 1, "document",
+              f"transcript-segment-{int(segment['ordinal']) + 1}", str(segment["text"])) for segment in segments],
+        )
+        revision = _index_material_revision_in_transaction(
+            connection, str(capture["material_id"]), extraction_id,
+        )
+        revision_id = str(revision["id"])
+        connection.execute(
+            "UPDATE transcript_drafts SET status='confirmed',updated_at=? WHERE id=? AND status='draft'",
+            (now, draft_id),
+        )
+        connection.execute(
+            "UPDATE capture_sessions SET status='confirmed',confirmed_at=?,updated_at=? "
+            "WHERE id=? AND project_id=? AND status='review_required'",
+            (now, now, capture_session_id, project_id),
+        )
+        connection.execute(
+            "UPDATE ai_operations SET source_revision=? WHERE id=? AND project_id=?",
+            (revision_id, draft["operation_id"], project_id),
+        )
+        updated_capture = connection.execute("SELECT * FROM capture_sessions WHERE id=?", (capture_session_id,)).fetchone()
+        updated_draft = connection.execute("SELECT * FROM transcript_drafts WHERE id=?", (draft_id,)).fetchone()
+        _replace_search_row(connection, str(capture["material_id"]))
+        revision_public = _phase9d_confirmed_revision_public(
+            connection, project_id=project_id, material_id=str(capture["material_id"]), revision_id=revision_id,
+        )
+        return {"capture": _phase9d_capture_public(connection, updated_capture),
+                "draft": _phase9d_transcript_public(connection, updated_draft),
+                "revision": revision_public, "replay": False}
+
+
+def reject_transcript_draft(connection: sqlite3.Connection, *, project_id: str,
+                            capture_session_id: str, draft_id: str) -> dict[str, object]:
+    with connection:
+        capture = connection.execute(
+            "SELECT * FROM capture_sessions WHERE id=? AND project_id=?", (capture_session_id, project_id)
+        ).fetchone()
+        if capture is None:
+            raise ValueError("capture_not_found")
+        draft = connection.execute(
+            "SELECT * FROM transcript_drafts WHERE id=? AND capture_session_id=? AND project_id=?",
+            (draft_id, capture_session_id, project_id),
+        ).fetchone()
+        if draft is None:
+            raise ValueError("transcript_not_found")
+        if capture["status"] != "review_required" or draft["status"] != "draft":
+            raise ValueError("capture_invalid_state")
+        now = utc_now()
+        connection.execute("UPDATE transcript_drafts SET status='rejected',updated_at=? WHERE id=?", (now, draft_id))
+        connection.execute(
+            "UPDATE capture_sessions SET status='rejected',rejected_at=?,updated_at=? WHERE id=? AND project_id=?",
+            (now, now, capture_session_id, project_id),
+        )
+        return {"capture": _phase9d_capture_public(connection, connection.execute(
+            "SELECT * FROM capture_sessions WHERE id=?", (capture_session_id,)
+        ).fetchone()), "draft": _phase9d_transcript_public(connection, connection.execute(
+            "SELECT * FROM transcript_drafts WHERE id=?", (draft_id,)
+        ).fetchone())}
 
 
 def fail_transcription_operation(connection: sqlite3.Connection, *, project_id: str,
@@ -4608,56 +4808,64 @@ def create_or_get_revision(connection: sqlite3.Connection, material_id: str,
     return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision_id,)).fetchone()
 
 
-def index_material_revision(connection: sqlite3.Connection, material_id: str,
-                            extraction_id: str, *, chunk_size: int = 800,
-                            overlap: int = 80) -> sqlite3.Row:
+def _index_material_revision_in_transaction(connection: sqlite3.Connection, material_id: str,
+                                            extraction_id: str, *, chunk_size: int = 800,
+                                            overlap: int = 80) -> sqlite3.Row:
     row = _revision_payload(connection, material_id, extraction_id)
     if row is None:
         raise ValueError("material_extraction_mismatch")
     if connection.execute("SELECT deleted_at FROM materials WHERE id = ?", (material_id,)).fetchone()[0] is not None:
         raise ValueError("source_deleted")
-    with connection:
-        revision = create_or_get_revision(connection, material_id, extraction_id)
-        _refresh_exercise_citations_for_material(connection, material_id)
-        _refresh_card_citations_for_material(connection, material_id)
-        _refresh_phase9c_session_sources_for_material(connection, material_id)
-        existing = connection.execute(
-            "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
-        ).fetchone()[0]
-        if existing:
-            _sync_chunk_search_for_revision(connection, str(revision["id"]))
-            _refresh_study_source_links_for_material(connection, material_id)
-            return revision
-        old_chunk_ids = [str(value[0]) for value in connection.execute(
-            "SELECT id FROM chunks WHERE revision_id = ?", (revision["id"],)
-        ).fetchall()]
-        _delete_chunk_search_rows(connection, old_chunk_ids)
-        connection.execute("DELETE FROM chunks WHERE revision_id = ?", (revision["id"],))
-        spans = [SourceSpan(str(span["id"]), int(span["ordinal"]), str(span["span_kind"]),
-                            str(span["label"]), str(span["text"]))
-                 for span in connection.execute(
-                     "SELECT id, ordinal, span_kind, label, text FROM text_spans "
-                     "WHERE extraction_id = ? ORDER BY ordinal, id", (extraction_id,)).fetchall()]
-        drafts = chunk_text(str(row["text"]), spans, chunk_size=chunk_size, overlap=overlap,
-                            strategy=CHUNKING_STRATEGY, version=CHUNKING_VERSION)
-        for draft in drafts:
-            chunk_id = f"chunk_{uuid.uuid4().hex}"
-            connection.execute(
-                "INSERT INTO chunks (id, project_id, material_id, revision_id, extraction_id, chunk_index, text, "
-                "normalized_text, start_offset, end_offset, token_count_estimate, overlap_before, overlap_after, "
-                "strategy, chunking_version, status, error_code, created_at, superseded_at) "
-                "VALUES (?, (SELECT project_id FROM materials WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ready', NULL, ?, NULL)",
-                (chunk_id, material_id, material_id, revision["id"], extraction_id, draft.chunk_index, draft.text,
-                 draft.normalized_text, draft.start_offset, draft.end_offset, draft.token_count_estimate,
-                 draft.overlap_before, draft.overlap_after, CHUNKING_STRATEGY, CHUNKING_VERSION, utc_now()),
-            )
-            connection.executemany(
-                "INSERT INTO chunk_spans (chunk_id, span_id, overlap_start, overlap_end) VALUES (?, ?, ?, ?)",
-                [(chunk_id, span_id, start, end) for span_id, start, end in draft.span_overlaps],
-            )
+    revision = create_or_get_revision(connection, material_id, extraction_id)
+    _refresh_exercise_citations_for_material(connection, material_id)
+    _refresh_card_citations_for_material(connection, material_id)
+    _refresh_phase9c_session_sources_for_material(connection, material_id)
+    existing = connection.execute(
+        "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
+    ).fetchone()[0]
+    if existing:
         _sync_chunk_search_for_revision(connection, str(revision["id"]))
         _refresh_study_source_links_for_material(connection, material_id)
-        return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
+        return revision
+    old_chunk_ids = [str(value[0]) for value in connection.execute(
+        "SELECT id FROM chunks WHERE revision_id = ?", (revision["id"],)
+    ).fetchall()]
+    _delete_chunk_search_rows(connection, old_chunk_ids)
+    connection.execute("DELETE FROM chunks WHERE revision_id = ?", (revision["id"],))
+    spans = [SourceSpan(str(span["id"]), int(span["ordinal"]), str(span["span_kind"]),
+                        str(span["label"]), str(span["text"]))
+             for span in connection.execute(
+                 "SELECT id, ordinal, span_kind, label, text FROM text_spans "
+                 "WHERE extraction_id = ? ORDER BY ordinal, id", (extraction_id,)).fetchall()]
+    drafts = chunk_text(str(row["text"]), spans, chunk_size=chunk_size, overlap=overlap,
+                        strategy=CHUNKING_STRATEGY, version=CHUNKING_VERSION)
+    for draft in drafts:
+        chunk_id = f"chunk_{uuid.uuid4().hex}"
+        connection.execute(
+            "INSERT INTO chunks (id, project_id, material_id, revision_id, extraction_id, chunk_index, text, "
+            "normalized_text, start_offset, end_offset, token_count_estimate, overlap_before, overlap_after, "
+            "strategy, chunking_version, status, error_code, created_at, superseded_at) "
+            "VALUES (?, (SELECT project_id FROM materials WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ready', NULL, ?, NULL)",
+            (chunk_id, material_id, material_id, revision["id"], extraction_id, draft.chunk_index, draft.text,
+             draft.normalized_text, draft.start_offset, draft.end_offset, draft.token_count_estimate,
+             draft.overlap_before, draft.overlap_after, CHUNKING_STRATEGY, CHUNKING_VERSION, utc_now()),
+        )
+        connection.executemany(
+            "INSERT INTO chunk_spans (chunk_id, span_id, overlap_start, overlap_end) VALUES (?, ?, ?, ?)",
+            [(chunk_id, span_id, start, end) for span_id, start, end in draft.span_overlaps],
+        )
+    _sync_chunk_search_for_revision(connection, str(revision["id"]))
+    _refresh_study_source_links_for_material(connection, material_id)
+    return connection.execute("SELECT * FROM material_revisions WHERE id = ?", (revision["id"],)).fetchone()
+
+
+def index_material_revision(connection: sqlite3.Connection, material_id: str,
+                            extraction_id: str, *, chunk_size: int = 800,
+                            overlap: int = 80) -> sqlite3.Row:
+    with connection:
+        return _index_material_revision_in_transaction(
+            connection, material_id, extraction_id, chunk_size=chunk_size, overlap=overlap,
+        )
 
 
 def reclaim_stale_embedding_operations(connection: sqlite3.Connection, *, project_id: str,
