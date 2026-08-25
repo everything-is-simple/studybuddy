@@ -1,6 +1,6 @@
 # Phase 9C Prompt 包：练习与反馈工作流（S3/S4/S5）
 
-本目录保存 Phase 9C 的总体规划、共用上下文、逐子任务执行 prompt、推荐执行顺序和验收门禁。它是备用实施材料，不是实现证据；Phase 9C 当前仍为 `planned`，不得因为 prompt、契约草案或历史项目存在类似功能而标记完成。
+本目录保存 Phase 9C 的总体规划、共用上下文、逐子任务执行 prompt、推荐执行顺序和验收门禁。Phase 9C 整体仍为 `planned`：9C-2/9C-3 已分别达到 `implemented/backend-pass`，但 prompt、契约草案或历史项目类似功能本身不是实现证据，且不得标记 Phase 9C completed。
 
 ## 目标范围
 
@@ -17,7 +17,7 @@
 - `9C-1_正式领域契约与状态机.md`：冻结 session、attempt、grading/review、mistake、weak-point、cram 的关系和状态机。
 - `PHASE9C_DOMAIN_CONTRACT.md`：9C-1 Gate B 正式契约产物；状态为 `planned/contract-frozen`，不是实现证据。
 - `9C-2_Migration_与_schema.md`：实现连续 migration、约束、升级/回滚和 schema 测试。
-- `9C-3_Repository_与_domain_transaction.md`：实现共享领域事务、投影、幂等、隐私和 append-only 保护。
+- `9C-3_Repository_与_domain_transaction.md`：共享领域事务、投影、幂等、隐私和 append-only 保护；已达到 `implemented/backend-pass`。
 - `9C-4_S3_限时练习工作流.md`：实现 S3 session/计时/提交/评分/结果闭环。
 - `9C-5_S4_错题改错与人工复核.md`：实现 S4 错题、改错、重做、短答人工复核和历史闭环。
 - `9C-6_S5_期末冲刺工作流.md`：实现 S5 冲刺目标、模拟练习和结果反馈闭环。
