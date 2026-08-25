@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 9D-2 migration/backend gate 复核后）
-> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v12，完整 backend 为 **325 passed, 2 skipped**；整体阶段性完成度约 **55%–60%**。Phase 9D 已部分立项并推进至 9D-2，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
+> 更新：2026-08-30（Phase 9D-3 repository/domain backend gate 复核后）
+> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v12，完整 backend 为 **331 passed, 2 skipped**；整体阶段性完成度约 **55%–60%**。Phase 9D 已部分立项并推进至 9D-3，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -35,7 +35,7 @@
 - [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
 - [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`325 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`331 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
 
 **状态：时间盒验收完成（v1）。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`，并已明确记入 v1 运行边界。
 
@@ -236,12 +236,12 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9D：扩展学习服务（S6/S7，部分立项）
 
-> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 v12 migration 为 `implemented/backend-pass`。9D-3 至 9D-11 尚未实现，Phase 9D 不得标记 completed。总规划、契约和 Gate A-L 见 [`prompts/phase9d/`](prompts/phase9d/)。
+> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 v12 migration 与 9D-3 repository/domain transaction 均为 `implemented/backend-pass`。9D-4 至 9D-11 尚未实现，Phase 9D 不得标记 completed。总规划、契约和 Gate A-L 见 [`prompts/phase9d/`](prompts/phase9d/)。
 
 - [x] 9D-0：完成需求、隐私、数据保留、真实组件证据和运维成本审计；作出部分立项结论并冻结 non-goals。真实 OCR/ASR 与真实 SMTP/飞书外发暂不立项。状态为 `planned/audit-draft`。
 - [x] 9D-1：冻结 capture/transcript/report/delivery dry-run 的实体、状态机、幂等、脱敏、source lifecycle 和 non-repair 契约。状态为 `planned/contract-frozen`，不代表 schema/domain/API/UI 实现。
 - [x] 9D-2：通过连续 v12 `phase9d_extended_learning_schema` migration 增加 capture session、transcript、report snapshot 和 delivery-attempt schema；new DB、v11 upgrade、幂等、failure rollback、history/user_version、约束和 backup schema-version 测试通过。focused migration/governance `25 passed`，完整 backend `325 passed, 2 skipped`。状态为 `implemented/backend-pass`。
-- [ ] 9D-3：实现 project scope、append-only operation/delivery facts、投影重算、幂等、原子写入、脱敏和 secret 边界的 repository/domain transaction。
+- [x] 9D-3：实现 project scope、capture/transcription operation 与 confidence/uncertain facts、可重算 report projection、append-only delivery audit、幂等、事务 rollback、脱敏、secret/raw-response 排除和 material source 降级。专项 `6 passed`，migration + 9A/9B/9C/9D 相关回归 `49 passed`，完整 backend `331 passed, 2 skipped`。状态为 `implemented/backend-pass`；不代表 OCR/ASR 执行、S2 接入、完整 report/delivery workflow、API/UI 或 lifecycle/restore gates。
 - [ ] 9D-4：实现 deterministic fake/loopback S7 课堂采集与 OCR/ASR 转写、置信度/uncertain、失败/超时和 raw-response 禁止持久化。
 - [ ] 9D-5：将确认后的转写接入 S2 material/revision/chunk/retrieval/citation 管线，并保护用户编辑。
 - [ ] 9D-6：实现 S6 家长报告只读聚合、强制脱敏、快照/重算和安全导出。
