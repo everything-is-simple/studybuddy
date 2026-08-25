@@ -173,8 +173,11 @@ def test_repository_has_one_executable_test_contract():
     assert "test-browser.ps1" in governance
     backend_runner = ROOT / "backend/scripts/test-backend.ps1"
     browser_runner = ROOT / "backend/scripts/test-browser.ps1"
+    cli_entry = ROOT / "backend/app/__main__.py"
     assert backend_runner.is_file()
     assert browser_runner.is_file()
+    assert cli_entry.is_file()
+    assert "from .cli import main" in cli_entry.read_text(encoding="utf-8")
     assert "'--workers=1'" in browser_runner.read_text(encoding="utf-8")
 
 
@@ -186,3 +189,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         assert entry in gitignore
     for name in ("STATUS.md", "TODO.md", "PHASE_ROADMAP.md", "CODE_TEST_GOVERNANCE.md"):
         assert name in read("INDEX.md")
+    assert (DOCS / "prompts" / "evidence" / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").is_file()
+    assert (DOCS / "prompts" / "evidence" / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").is_file()
+    assert not (DOCS / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").exists()
+    assert not (DOCS / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").exists()
