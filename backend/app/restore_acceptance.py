@@ -95,6 +95,8 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
         "study_plan_dependencies", "study_progress_events", "module_source_links",
         "plan_item_source_links", "notes", "note_blocks", "note_module_links",
         "note_block_source_links", "rhythm_settings", "rhythm_allocations",
+        "practice_sessions", "practice_session_items", "exercise_attempt_reviews",
+        "mistake_cases", "mistake_occurrences", "mistake_feedback_events", "cram_goals",
     )
     placeholders = ",".join("?" for _ in required_tables)
     present = {
@@ -181,6 +183,38 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
             "SELECT status,COUNT(*) FROM note_block_source_links GROUP BY status ORDER BY status"
         ).fetchall()
     }
+    phase9c_source_statuses = {
+        str(row[0]): int(row[1]) for row in connection.execute(
+            "SELECT source_status,COUNT(*) FROM mistake_occurrences GROUP BY source_status ORDER BY source_status"
+        ).fetchall()
+    }
+    phase9c_session_statuses = {
+        str(row[0]): int(row[1]) for row in connection.execute(
+            "SELECT status,COUNT(*) FROM practice_sessions GROUP BY status ORDER BY status"
+        ).fetchall()
+    }
+    invalid_session_items = connection.execute(
+        "SELECT COUNT(*) FROM practice_session_items i "
+        "JOIN practice_sessions s ON s.id=i.session_id "
+        "JOIN exercises e ON e.id=i.exercise_id "
+        "WHERE i.project_id != s.project_id OR e.project_id != i.project_id"
+    ).fetchone()[0]
+    if invalid_session_items:
+        raise AcceptanceError("acceptance_phase9c_session_scope_invalid")
+    invalid_attempt_links = connection.execute(
+        "SELECT COUNT(*) FROM exercise_attempts a "
+        "JOIN practice_session_items i ON i.id=a.session_item_id "
+        "WHERE a.session_id != i.session_id OR a.exercise_id != i.exercise_id"
+    ).fetchone()[0]
+    if invalid_attempt_links:
+        raise AcceptanceError("acceptance_phase9c_attempt_link_invalid")
+    invalid_review_links = connection.execute(
+        "SELECT COUNT(*) FROM exercise_attempt_reviews r "
+        "JOIN exercise_attempts a ON a.id=r.attempt_id "
+        "WHERE r.exercise_id != a.exercise_id"
+    ).fetchone()[0]
+    if invalid_review_links:
+        raise AcceptanceError("acceptance_phase9c_review_link_invalid")
     return {
         "status": "passed",
         "counts": counts,
@@ -188,6 +222,8 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
         "source_statuses": source_statuses,
         "note_statuses": note_statuses,
         "note_source_statuses": note_source_statuses,
+        "phase9c_source_statuses": phase9c_source_statuses,
+        "phase9c_session_statuses": phase9c_session_statuses,
         "rhythm_settings_count": counts["rhythm_settings"],
         "rhythm_allocations_count": counts["rhythm_allocations"],
         "summary_plan_count": len(summary_rows),

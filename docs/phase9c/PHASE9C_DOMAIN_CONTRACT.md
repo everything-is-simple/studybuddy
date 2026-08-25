@@ -678,6 +678,6 @@ Weak point 作为实时 projection 读时可以计算，但读取不得写 cache
 
 准确状态：
 
-> **Phase 9C-1：`planned/contract-frozen`。** S3/S4/S5 正式实体关系、状态机、不变量、时间/评分/复核/重做/冲刺语义和隐私边界已冻结；9C-2 已完成 v11 migration/schema，9C-3 已完成共享 repository/domain transaction，9C-4 已完成 S3 PracticeRunner backend workflow，9C-5 已完成 S4 ErrorFixer backend workflow，9C-6 已完成 S5 ExamCrammer backend workflow，9C-7 已完成最小安全 API，9C-8 已完成最小 Chromium workspace，分别为 `implemented/backend-pass` 和 `browser-pass`。lifecycle/restore 和最终 acceptance 仍未完成，不代表 Phase 9C completed。
+> **Phase 9C-1：`planned/contract-frozen`。** S3/S4/S5 正式实体关系、状态机、不变量、时间/评分/复核/重做/冲刺语义和隐私边界已冻结；9C-2 已完成 v11 migration/schema，9C-3 已完成共享 repository/domain transaction，9C-4 已完成 S3 PracticeRunner backend workflow，9C-5 已完成 S4 ErrorFixer backend workflow，9C-6 已完成 S5 ExamCrammer backend workflow，9C-7 已完成最小安全 API，9C-8 已完成最小 Chromium workspace，9C-9 已完成 source lifecycle 与 backup/restore non-repair gates，分别为 `browser-pass` 和 `scoped-gates-pass`/`restore-gates-pass`。最终 acceptance 仍未完成，不代表 Phase 9C completed。
 
-下一任务：**9C-9 source lifecycle 与 backup/restore**。验证 delete/restore/purge/re-index、citation status、历史保留和 backup/verify/restore non-repair，不新增未冻结业务能力。
+下一任务：**9C-10 完整验收、证据与文档收口**。运行最终 backend/Chromium/lifecycle/restore gates，形成脱敏 acceptance evidence，并同步全部权威状态文档。
