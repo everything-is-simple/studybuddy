@@ -989,7 +989,13 @@ def submit_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, 
         grading = "pending_review"
     attempt_id = f"attempt_{uuid.uuid4().hex}"
     with connection:
-        connection.execute("INSERT INTO exercise_attempts VALUES (?,?,?,?,?,?,?,?,?)", (attempt_id, exercise_id, json.dumps(answer, ensure_ascii=False), score, int(correct) if correct is not None else None, grading, utc_now(), None, ""))
+        connection.execute(
+            "INSERT INTO exercise_attempts "
+            "(id, exercise_id, answer_json, score, is_correct, grading_status, submitted_at, reviewed_at, feedback) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (attempt_id, exercise_id, json.dumps(answer, ensure_ascii=False), score,
+             int(correct) if correct is not None else None, grading, utc_now(), None, ""),
+        )
     return {"id": attempt_id, "exercise_id": exercise_id, "score": score, "is_correct": correct, "grading_status": grading}
 
 

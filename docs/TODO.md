@@ -218,11 +218,11 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
-> 当前状态：`planned`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
+> 当前状态：整体 `planned`；9C-0/9C-1 已完成，9C-2 为 `implemented/backend-pass`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
 
 - [ ] 9C-0：现状审计与范围冻结；盘点 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 与 9D/Phase 10 non-goals。
 - [ ] 9C-1：正式领域契约与状态机；冻结 session、attempt、grading/review、mistake、weak-point、cram、时间和隐私边界。
-- [ ] 9C-2：通过连续 migration 增加最小 S3/S4/S5 schema，完成 new-db、upgrade、rollback、history/user_version 和 backup version 测试。
+- [x] 9C-2：通过连续 v11 `phase9c_exercise_feedback_schema` migration 增加最小 S3/S4/S5 schema，完成 new-db、v10 upgrade、幂等、rollback、history/user_version、约束和 backup version 测试；状态为 `implemented/backend-pass`，不代表 9C repository/domain、API/UI、source lifecycle、restore 或 Phase 9C completed。
 - [ ] 9C-3：实现 repository/domain transaction；attempt/review append-only、投影可重算、服务端计时、source/citation 和 privacy contract。
 - [ ] 9C-4：实现 S3 限时练习 session、快照、提交、deterministic grading、超时、结果和失败边界。
 - [ ] 9C-5：实现 S4 错题改错、重做、weak-point、短答人工复核和反馈历史；不覆盖旧 attempt。

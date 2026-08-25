@@ -678,6 +678,6 @@ Weak point 作为实时 projection 读时可以计算，但读取不得写 cache
 
 准确状态：
 
-> **Phase 9C-1：`planned/contract-frozen`。** S3/S4/S5 正式实体关系、状态机、不变量、时间/评分/复核/重做/冲刺语义和隐私边界已冻结；未实现 migration、repository、API、UI 或业务能力，不代表 Phase 9C completed。
+> **Phase 9C-1：`planned/contract-frozen`。** S3/S4/S5 正式实体关系、状态机、不变量、时间/评分/复核/重做/冲刺语义和隐私边界已冻结；9C-2 已在此契约范围内完成 v11 migration/schema，后续 repository、API、UI 和业务能力仍未完成，不代表 Phase 9C completed。
 
-下一任务：**9C-2 Migration 与 schema**。9C-2 只能实现本契约范围内的连续 v11 migration 和 schema tests；如实现发现必须改变本契约，必须停止并先提交契约变更，而不是顺手扩大业务范围。
+下一任务：**9C-3 Repository 与 domain transaction**。9C-3 必须以 v11 实际 schema 和本契约为准，实现共享事务、ownership、snapshot、append-only facts、projection、幂等、rollback、source/privacy boundary；不得顺手扩大到 API/UI。

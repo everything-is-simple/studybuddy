@@ -21,8 +21,8 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 10
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 10
+        assert assert_schema_version(connection) == 11
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 11
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
                              "material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -33,7 +33,9 @@ def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
                              "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
                              "study_plan_dependencies", "study_progress_events", "module_source_links",
                              "plan_item_source_links", "notes", "note_blocks", "note_module_links",
-                             "note_block_source_links", "rhythm_settings", "rhythm_allocations"}
+                             "note_block_source_links", "rhythm_settings", "rhythm_allocations",
+                             "practice_sessions", "practice_session_items", "exercise_attempt_reviews",
+                             "mistake_cases", "mistake_occurrences", "mistake_feedback_events", "cram_goals"}
         virtual_tables = {row[0] for row in connection.execute(
             "SELECT name FROM sqlite_master WHERE sql LIKE 'CREATE VIRTUAL TABLE%'"
         )}
@@ -136,7 +138,7 @@ def test_v9_database_upgrades_to_phase9b_v10_once(monkeypatch, tmp_path: Path):
         assert assert_schema_version(connection) == 9
         assert connection.execute("SELECT name FROM sqlite_master WHERE name='notes'").fetchone() is None
     monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 10)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:10])
     with connect(database) as connection:
         assert assert_schema_version(connection) == 10
         assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=10").fetchone()) == (
@@ -241,7 +243,7 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 10
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 11
         assert connection.execute("SELECT provider_request_id, total_tokens, finish_reason, idempotency_key, retrieval_run_id FROM ai_operations").description is not None
         assert connection.execute("SELECT id, goal_id, status, user_edited FROM study_plans").description is not None
         assert connection.execute("SELECT id, provenance, generation_operation_id FROM notes").description is not None
@@ -286,7 +288,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 10
+    assert manifest["database"]["schema_version"] == 11
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))
