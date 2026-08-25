@@ -1,6 +1,6 @@
 # Database migrations
 
-Current schema version: **11**.
+Current schema version: **12**.
 
 The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The migration runner is `backend/app/migrations/runner.py`.
 
@@ -16,6 +16,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 9 | phase9a_learning_plan_schema
 10 | phase9b_material_learning_schema
 11 | phase9c_exercise_feedback_schema
+12 | phase9d_extended_learning_schema
 ```
 
 ## Rules
@@ -23,6 +24,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 - Migrations are consecutive, recorded, idempotent, and run inside `BEGIN IMMEDIATE`.
 - Schema DDL, migration-history insertion, and `PRAGMA user_version` are committed atomically.
 - v11 adds the Phase 9C session/item snapshots, attempt linkage metadata, review/mistake/feedback facts, and cram-goal persistence schema. Domain validation and projections remain outside the migration.
+- v12 adds the Phase 9D capture-session, transcript draft/segment, report snapshot, delivery-attempt, and capture-linked operation persistence schema. Domain validation, OCR/ASR execution, report aggregation, and delivery behavior remain outside the migration.
 - A failure rolls back; the service never becomes ready with a half-upgraded schema.
 - Migration history and `PRAGMA user_version` are never edited manually.
 - There is no automatic down migration. Preserve the failed database and restore a verified backup into a new empty target when recovery is required.
