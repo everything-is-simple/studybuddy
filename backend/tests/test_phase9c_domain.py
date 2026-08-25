@@ -23,8 +23,11 @@ from app.repository import (
     get_practice_session,
     index_material_revision,
     list_practice_sessions,
+    get_mistake_case,
     list_mistake_cases,
     list_weak_points,
+    mark_mistake_from_attempt,
+    redo_mistake_case,
     review_exercise_attempt,
     soft_delete_material,
     start_practice_session,
@@ -132,6 +135,77 @@ def test_s3_all_question_types_finish_and_result_summary(tmp_path: Path):
         assert summary["summary"]["scored_count"] == 0
 
 
+def test_s4_uncertain_and_user_marked_are_distinct(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        exercise = _exercise(connection, kind="short_answer")
+        session = _active_session(connection, str(exercise["id"]))
+        item = session["items"][0]
+        attempt = submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(item["id"]), answer="uncertain")
+        reviewed = review_exercise_attempt(connection, project_id="project_9c", attempt_id=str(attempt["id"]), decision="uncertain", feedback="Needs human context")
+        assert reviewed["decision"] == "uncertain"
+        assert list_mistake_cases(connection, project_id="project_9c") == []
+        marked = mark_mistake_from_attempt(connection, project_id="project_9c", attempt_id=str(attempt["id"]), feedback="User wants to revisit")
+        assert marked["origin"] == "user_reported"
+        assert marked["occurrences"][0]["reason_code"] == "user_marked"
+
+
+def test_s4_short_answer_review_privacy_and_redeterministic_boundary(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        short = _exercise(connection, kind="short_answer")
+        session = _active_session(connection, str(short["id"]))
+        attempt = submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(session["items"][0]["id"]), answer="private submitted answer")
+        review = review_exercise_attempt(connection, project_id="project_9c", attempt_id=str(attempt["id"]), decision="correct", feedback="Accepted")
+        assert review["decision"] == "correct"
+        assert "answer_json" not in review and "answer_key_json" not in review
+        assert list_mistake_cases(connection, project_id="project_9c") == []
+        deterministic = _exercise(connection, kind="true_false")
+        deterministic_session = _active_session(connection, str(deterministic["id"]))
+        deterministic_attempt = submit_practice_session_item(connection, project_id="project_9c", session_id=str(deterministic_session["id"]), item_id=str(deterministic_session["items"][0]["id"]), answer=False)
+        with pytest.raises(ValueError, match="review_not_allowed"):
+            review_exercise_attempt(connection, project_id="project_9c", attempt_id=str(deterministic_attempt["id"]), decision="incorrect")
+
+
+def test_s4_review_feedback_and_attempt_facts_are_append_only_with_rollback(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        exercise = _exercise(connection, kind="short_answer")
+        session = _active_session(connection, str(exercise["id"]))
+        attempt = submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(session["items"][0]["id"]), answer="original answer")
+        connection.execute("CREATE TRIGGER fail_review BEFORE INSERT ON exercise_attempt_reviews BEGIN SELECT RAISE(ABORT, 'private'); END")
+        with pytest.raises(sqlite3.IntegrityError):
+            review_exercise_attempt(connection, project_id="project_9c", attempt_id=str(attempt["id"]), decision="incorrect", feedback="feedback")
+        connection.execute("DROP TRIGGER fail_review")
+        assert connection.execute("SELECT COUNT(*) FROM exercise_attempt_reviews").fetchone()[0] == 0
+        assert connection.execute("SELECT answer_json,grading_status FROM exercise_attempts WHERE id=?", (attempt["id"],)).fetchone()[1] == "pending_review"
+        review_exercise_attempt(connection, project_id="project_9c", attempt_id=str(attempt["id"]), decision="incorrect", feedback="feedback")
+        case = list_mistake_cases(connection, project_id="project_9c")[0]
+        connection.execute("CREATE TRIGGER fail_feedback BEFORE INSERT ON mistake_feedback_events BEGIN SELECT RAISE(ABORT, 'private'); END")
+        with pytest.raises(sqlite3.IntegrityError):
+            add_mistake_feedback(connection, project_id="project_9c", mistake_case_id=str(case["id"]), event_kind="user_correction", content="correction")
+        connection.execute("DROP TRIGGER fail_feedback")
+        assert connection.execute("SELECT COUNT(*) FROM mistake_feedback_events").fetchone()[0] == 0
+        assert connection.execute("SELECT status FROM mistake_cases WHERE id=?", (case["id"],)).fetchone()[0] == "open"
+        assert connection.execute("SELECT COUNT(*) FROM exercise_attempts WHERE id=?", (attempt["id"],)).fetchone()[0] == 1
+
+
+def test_s4_redo_creates_new_session_and_preserves_attempt_history(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        exercise = _exercise(connection, kind="multiple_choice")
+        session = _active_session(connection, str(exercise["id"]))
+        first = submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(session["items"][0]["id"]), answer=0)
+        case = list_mistake_cases(connection, project_id="project_9c")[0]
+        redo = redo_mistake_case(connection, project_id="project_9c", mistake_case_id=str(case["id"]))
+        assert redo["id"] != session["id"] and redo["items"][0]["exercise_id"] == exercise["id"]
+        start_practice_session(connection, project_id="project_9c", session_id=str(redo["id"]))
+        second = submit_practice_session_item(connection, project_id="project_9c", session_id=str(redo["id"]), item_id=str(redo["items"][0]["id"]), answer=1)
+        assert second["id"] != first["id"]
+        assert connection.execute("SELECT COUNT(*) FROM exercise_attempts WHERE exercise_id=?", (exercise["id"],)).fetchone()[0] == 2
+        assert get_mistake_case(connection, project_id="project_9c", mistake_case_id=str(case["id"]))["occurrences"]
+
+
 def test_short_answer_requires_explicit_review_and_feedback(tmp_path: Path):
     with connect(tmp_path / "studybuddy.sqlite3") as connection:
         _seed_project(connection)
@@ -218,6 +292,22 @@ def test_session_source_lifecycle_retains_history_without_source_text(tmp_path: 
         unavailable = get_practice_session(connection, project_id="project_9c", session_id=str(session["id"]))
         assert unavailable["items"][0]["citation_status"] == "source_unavailable"
         assert "answer_key_json" not in unavailable["items"][0]
+
+
+def test_s4_source_status_degrades_without_deleting_mistake_facts(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        exercise, material_id = _cited_exercise(connection)
+        session = _active_session(connection, str(exercise["id"]))
+        attempt = submit_practice_session_item(connection, project_id="project_9c", session_id=str(session["id"]), item_id=str(session["items"][0]["id"]), answer=False)
+        case = list_mistake_cases(connection, project_id="project_9c")[0]
+        assert soft_delete_material(connection, material_id) is True
+        deleted = get_mistake_case(connection, project_id="project_9c", mistake_case_id=str(case["id"]))
+        assert deleted["occurrences"][0]["source_status"] == "source_deleted"
+        purge_material(connection, material_id)
+        unavailable = get_mistake_case(connection, project_id="project_9c", mistake_case_id=str(case["id"]))
+        assert unavailable["occurrences"][0]["source_status"] == "source_unavailable"
+        assert unavailable["occurrences"][0]["attempt_id"] == attempt["id"]
 
 
 def test_transaction_rolls_back_partial_session_on_snapshot_failure(tmp_path: Path):

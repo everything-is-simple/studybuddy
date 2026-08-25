@@ -1402,6 +1402,8 @@ def _phase9c_mistake_case(connection: sqlite3.Connection, *, project_id: str, ex
     row = connection.execute("SELECT id,status FROM mistake_cases WHERE project_id=? AND exercise_id=? AND exercise_revision_fingerprint=?",
                              (project_id, exercise_id, revision_fingerprint)).fetchone()
     if row is not None:
+        if row["status"] == "archived":
+            raise ValueError("mistake_archived")
         if row["status"] == "fixed":
             connection.execute("UPDATE mistake_cases SET status='reopened',updated_at=?,fixed_at=NULL WHERE id=?", (utc_now(), row["id"]))
         return str(row["id"])
@@ -1426,6 +1428,50 @@ def _phase9c_materialize_mistake(connection: sqlite3.Connection, *, project_id: 
     return occurrence_id
 
 
+def _phase9c_attempt_source(connection: sqlite3.Connection, attempt: sqlite3.Row) -> tuple[str | None, str]:
+    if attempt["session_item_id"] is not None:
+        item = connection.execute(
+            "SELECT source_revision,citation_status FROM practice_session_items WHERE id=?",
+            (attempt["session_item_id"],),
+        ).fetchone()
+        if item is not None:
+            return item["source_revision"], item["citation_status"]
+    citation = connection.execute(
+        "SELECT revision_id,status FROM exercise_citations WHERE exercise_id=? ORDER BY position,id LIMIT 1",
+        (attempt["exercise_id"],),
+    ).fetchone()
+    if citation is None:
+        return None, "valid"
+    return citation["revision_id"], citation["status"] if citation["status"] in PHASE9C_SOURCE_STATUSES else "source_unavailable"
+
+
+def mark_mistake_from_attempt(connection: sqlite3.Connection, *, project_id: str, attempt_id: str,
+                              feedback: object = "") -> dict[str, object]:
+    """Explicit user marking; it is never inferred from an uncertain answer."""
+    feedback = _phase9c_text(feedback, code="mistake_feedback_invalid", maximum=PHASE9C_CORRECTION_MAX, allow_empty=True)
+    with connection:
+        attempt = connection.execute(
+            "SELECT a.* FROM exercise_attempts a JOIN exercises e ON e.id=a.exercise_id "
+            "WHERE a.id=? AND e.project_id=?", (attempt_id, project_id)
+        ).fetchone()
+        if attempt is None:
+            raise ValueError("attempt_not_found")
+        source_revision, source_status = _phase9c_attempt_source(connection, attempt)
+        _phase9c_materialize_mistake(
+            connection, project_id=project_id, attempt_id=attempt_id, exercise_id=attempt["exercise_id"],
+            reason_code="user_marked", origin="user_reported", source_revision=source_revision,
+            source_status=source_status,
+        )
+        case = connection.execute(
+            "SELECT id FROM mistake_cases WHERE project_id=? AND exercise_id=? "
+            "ORDER BY updated_at DESC,id DESC LIMIT 1", (project_id, attempt["exercise_id"])
+        ).fetchone()
+        if feedback:
+            add_mistake_feedback(connection, project_id=project_id, mistake_case_id=str(case["id"]),
+                                 event_kind="user_note", content=feedback)
+        return get_mistake_case(connection, project_id=project_id, mistake_case_id=str(case["id"])) or {}
+
+
 def review_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, attempt_id: str,
                             decision: str, feedback: object = "") -> dict[str, object]:
     feedback = _phase9c_text(feedback, code="review_invalid_payload", maximum=PHASE9C_FEEDBACK_MAX, allow_empty=True)
@@ -1447,9 +1493,7 @@ def review_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, 
         connection.execute("INSERT INTO exercise_attempt_reviews VALUES (?,?,?,?,?,?,?,?,?)",
                            (review_id, project_id, attempt_id, attempt["exercise_id"], decision, feedback, "local_user", now, now))
         if decision == "incorrect":
-            item = connection.execute("SELECT source_revision,citation_status FROM practice_session_items WHERE id=?", (attempt["session_item_id"],)).fetchone()
-            source_revision = item["source_revision"] if item else None
-            source_status = item["citation_status"] if item else "valid"
+            source_revision, source_status = _phase9c_attempt_source(connection, attempt)
             _phase9c_materialize_mistake(connection, project_id=project_id, attempt_id=attempt_id, exercise_id=attempt["exercise_id"],
                                           reason_code="review_incorrect", origin="human_review", source_revision=source_revision, source_status=source_status)
         return {"id": review_id, "attempt_id": attempt_id, "decision": decision, "feedback": feedback, "reviewer_kind": "local_user", "reviewed_at": now}
@@ -1491,16 +1535,66 @@ def archive_mistake_case(connection: sqlite3.Connection, *, project_id: str, mis
         return dict(result)
 
 
+def get_mistake_case(connection: sqlite3.Connection, *, project_id: str,
+                     mistake_case_id: str) -> dict[str, object] | None:
+    case = connection.execute(
+        "SELECT * FROM mistake_cases WHERE id=? AND project_id=?", (mistake_case_id, project_id)
+    ).fetchone()
+    if case is None:
+        return None
+    occurrences = [dict(row) for row in connection.execute(
+        "SELECT id,mistake_case_id,attempt_id,origin,reason_code,source_revision,source_status,created_at "
+        "FROM mistake_occurrences WHERE mistake_case_id=? ORDER BY created_at,id", (mistake_case_id,)
+    ).fetchall()]
+    feedback = [dict(row) for row in connection.execute(
+        "SELECT id,mistake_case_id,event_kind,content,provenance,created_at "
+        "FROM mistake_feedback_events WHERE mistake_case_id=? ORDER BY created_at,id", (mistake_case_id,)
+    ).fetchall()]
+    return {**dict(case), "occurrences": occurrences, "feedback_events": feedback}
+
+
 def list_mistake_cases(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
     rows = connection.execute("SELECT * FROM mistake_cases WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()
-    return [dict(row) for row in rows]
+    return [get_mistake_case(connection, project_id=project_id, mistake_case_id=str(row["id"])) or {} for row in rows]
+
+
+def redo_mistake_case(connection: sqlite3.Connection, *, project_id: str,
+                      mistake_case_id: str, title: object | None = None) -> dict[str, object]:
+    with connection:
+        case = connection.execute(
+            "SELECT * FROM mistake_cases WHERE id=? AND project_id=?", (mistake_case_id, project_id)
+        ).fetchone()
+        if case is None:
+            raise ValueError("mistake_not_found")
+        if case["status"] == "archived":
+            raise ValueError("mistake_archived")
+        source = connection.execute(
+            "SELECT a.session_id,s.session_kind,s.cram_goal_id,s.timezone,s.local_date,s.duration_seconds "
+            "FROM mistake_occurrences o JOIN exercise_attempts a ON a.id=o.attempt_id "
+            "LEFT JOIN practice_sessions s ON s.id=a.session_id "
+            "WHERE o.mistake_case_id=? ORDER BY o.created_at DESC,o.id DESC LIMIT 1", (mistake_case_id,)
+        ).fetchone()
+        if source is None:
+            raise ValueError("mistake_redo_not_ready")
+        session_kind = source["session_kind"] or "practice"
+        cram_goal_id = source["cram_goal_id"] if session_kind == "cram" else None
+        session_title = title if title is not None else f"Redo: {case['exercise_id']}"
+    return create_practice_session(
+        connection, project_id=project_id, title=session_title,
+        exercise_ids=[str(case["exercise_id"])], duration_seconds=int(source["duration_seconds"] or 600),
+        timezone_name=str(source["timezone"] or "UTC"), local_date=str(source["local_date"] or date.today().isoformat()),
+        session_kind=session_kind, cram_goal_id=cram_goal_id,
+    )
 
 
 def list_weak_points(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
     rows = connection.execute(
         "SELECT c.exercise_id,c.exercise_revision_fingerprint,COUNT(o.id) AS occurrence_count,"
         "SUM(CASE WHEN c.status IN ('open','in_review','reopened') THEN 1 ELSE 0 END) AS open_count,"
-        "SUM(CASE WHEN c.status='fixed' THEN 1 ELSE 0 END) AS fixed_count,MAX(o.created_at) AS last_occurrence_at "
+        "SUM(CASE WHEN c.status='fixed' THEN 1 ELSE 0 END) AS fixed_count,"
+        "SUM(CASE WHEN c.status='reopened' THEN 1 ELSE 0 END) AS reopened_count,"
+        "SUM(CASE WHEN o.source_status!='valid' THEN 1 ELSE 0 END) AS source_warning_count,"
+        "MAX(o.created_at) AS last_occurrence_at "
         "FROM mistake_cases c JOIN mistake_occurrences o ON o.mistake_case_id=c.id "
         "WHERE c.project_id=? AND c.status!='archived' GROUP BY c.exercise_id,c.exercise_revision_fingerprint "
         "ORDER BY last_occurrence_at DESC", (project_id,)
