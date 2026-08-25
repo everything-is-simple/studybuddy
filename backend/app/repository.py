@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .adapters.file_parsers.models import ParseResult
 from .chunking import CHUNKING_STRATEGY, CHUNKING_VERSION, SourceSpan, chunk_text
@@ -372,6 +373,8 @@ def restore_material(connection: sqlite3.Connection, material_id: str) -> sqlite
             return None
         _refresh_exercise_citations_for_material(connection, material_id)
         _refresh_card_citations_for_material(connection, material_id)
+        # Restore does not promote retained 9C snapshot source status; only an
+        # explicit re-index/refresh path may revalidate it.
     return connection.execute(
         "SELECT m.id, m.original_name, m.source_sha256, m.stored_path, m.media_type, e.status, e.error_code, "
         "length(e.text) AS text_length, (SELECT COUNT(*) FROM text_spans s WHERE s.extraction_id = e.id) AS span_count, "
@@ -643,6 +646,34 @@ def _refresh_exercise_citations_for_material(connection: sqlite3.Connection, mat
     for row in connection.execute(
             "SELECT DISTINCT exercise_id FROM exercise_citations WHERE material_id=?", (material_id,)).fetchall():
         _refresh_exercise_citations(connection, str(row["exercise_id"]))
+
+
+def _refresh_phase9c_session_sources_for_material(connection: sqlite3.Connection, material_id: str) -> None:
+    rows = connection.execute(
+        "SELECT id,source_revision,source_extraction_id,source_chunk_id FROM practice_session_items "
+        "WHERE source_material_id=?", (material_id,)
+    ).fetchall()
+    for row in rows:
+        status = "source_unavailable"
+        material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (material_id,)).fetchone()
+        if material is not None and material["deleted_at"] is not None:
+            status = "source_deleted"
+        elif material is not None and row["source_chunk_id"] is not None:
+            chunk = connection.execute(
+                "SELECT c.status,c.revision_id,c.extraction_id,r.is_current FROM chunks c "
+                "JOIN material_revisions r ON r.id=c.revision_id WHERE c.id=? AND c.material_id=?",
+                (row["source_chunk_id"], material_id),
+            ).fetchone()
+            if chunk is not None and chunk["status"] == "ready" and chunk["is_current"]:
+                status = "valid" if (chunk["revision_id"] == row["source_revision"] and
+                                      chunk["extraction_id"] == row["source_extraction_id"]) else "stale"
+            elif chunk is not None:
+                status = "stale"
+        connection.execute("UPDATE practice_session_items SET citation_status=?,updated_at=? WHERE id=?",
+                           (status, utc_now(), row["id"]))
+        if row["source_revision"] is not None:
+            connection.execute("UPDATE mistake_occurrences SET source_status=? WHERE source_revision=?",
+                               (status, row["source_revision"]))
 
 
 def _validate_exercise_source_revision(connection: sqlite3.Connection, source_revision: str | None,
@@ -997,6 +1028,446 @@ def submit_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, 
              int(correct) if correct is not None else None, grading, utc_now(), None, ""),
         )
     return {"id": attempt_id, "exercise_id": exercise_id, "score": score, "is_correct": correct, "grading_status": grading}
+
+
+# Phase 9C shared exercise-feedback domain repository. These functions own
+# SQLite transactions and leave HTTP serialization to the later API task.
+PHASE9C_SESSION_TITLE_MAX = 200
+PHASE9C_SESSION_MAX_ITEMS = 50
+PHASE9C_MIN_DURATION_SECONDS = 60
+PHASE9C_MAX_DURATION_SECONDS = 7200
+PHASE9C_FEEDBACK_MAX = 4000
+PHASE9C_CORRECTION_MAX = 12000
+PHASE9C_SESSION_STATUSES = {"draft", "active", "finished", "expired", "archived"}
+PHASE9C_MISTAKE_STATUSES = {"open", "in_review", "fixed", "reopened", "archived"}
+PHASE9C_SOURCE_STATUSES = {"valid", "source_deleted", "source_unavailable", "stale"}
+
+
+def _phase9c_text(value: object, *, code: str, maximum: int, allow_empty: bool = False) -> str:
+    if not isinstance(value, str) or len(value) > maximum:
+        raise ValueError(code)
+    value = value.strip()
+    if not value and not allow_empty:
+        raise ValueError(code)
+    return value
+
+
+def _phase9c_timezone(value: object, *, code: str) -> str:
+    value = _phase9c_text(value, code=code, maximum=100)
+    try:
+        ZoneInfo(value)
+    except ZoneInfoNotFoundError:
+        raise ValueError(code) from None
+    return value
+
+
+def _phase9c_local_date(value: object, *, code: str) -> str:
+    value = _phase9c_text(value, code=code, maximum=10)
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError:
+        raise ValueError(code) from None
+
+
+def _phase9c_iso_now() -> tuple[str, datetime]:
+    value = utc_now()
+    return value, datetime.fromisoformat(value).astimezone(timezone.utc)
+
+
+def _phase9c_parse_now(value: str) -> datetime:
+    return datetime.fromisoformat(value).astimezone(timezone.utc)
+
+
+def _phase9c_source_snapshot(connection: sqlite3.Connection, exercise_id: str) -> dict[str, object]:
+    citations = connection.execute(
+        "SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,status "
+        "FROM exercise_citations WHERE exercise_id=? ORDER BY position,id LIMIT 1", (exercise_id,)
+    ).fetchone()
+    if citations is None:
+        return {"source_material_id": None, "source_revision": None, "source_extraction_id": None,
+                "source_chunk_id": None, "source_span_id": None, "citation_key": None,
+                "citation_status": "valid"}
+    _refresh_exercise_citations(connection, exercise_id)
+    citations = connection.execute(
+        "SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,status "
+        "FROM exercise_citations WHERE exercise_id=? ORDER BY position,id LIMIT 1", (exercise_id,)
+    ).fetchone()
+    status = citations["status"] if citations["status"] in PHASE9C_SOURCE_STATUSES else "source_unavailable"
+    if status != "valid":
+        raise ValueError("citation_invalid")
+    return {"source_material_id": citations["material_id"], "source_revision": citations["revision_id"],
+            "source_extraction_id": citations["extraction_id"], "source_chunk_id": citations["chunk_id"],
+            "source_span_id": citations["span_id"], "citation_key": citations["citation_key"],
+            "citation_status": status}
+
+
+def _phase9c_project_exercise(connection: sqlite3.Connection, *, project_id: str, exercise_id: str,
+                              ready: bool = True) -> sqlite3.Row:
+    sql = "SELECT * FROM exercises WHERE id=? AND project_id=?"
+    params: tuple[object, ...] = (exercise_id, project_id)
+    if ready:
+        sql += " AND status='ready'"
+    row = connection.execute(sql, params).fetchone()
+    if row is None:
+        raise ValueError("exercise_not_ready" if ready else "exercise_not_found")
+    return row
+
+
+def _phase9c_session_public(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
+    items = connection.execute(
+        "SELECT id,session_id,exercise_id,position,exercise_type,prompt,options_json,explanation_snapshot,"
+        "exercise_kind,source_material_id,source_revision,source_extraction_id,source_chunk_id,source_span_id,"
+        "citation_key,citation_status,created_at,updated_at FROM practice_session_items "
+        "WHERE session_id=? ORDER BY position,id", (row["id"],)
+    ).fetchall()
+    attempts = connection.execute(
+        "SELECT session_item_id,score,is_correct,grading_status,submitted_at,reviewed_at FROM exercise_attempts "
+        "WHERE session_id=? ORDER BY submitted_at,id", (row["id"],)
+    ).fetchall()
+    safe_items = []
+    for item in items:
+        payload = dict(item)
+        payload["options"] = json.loads(payload.pop("options_json"))
+        safe_items.append(payload)
+    deterministic = [item for item in attempts if item["grading_status"] == "deterministic"]
+    return {"id": row["id"], "project_id": row["project_id"], "session_kind": row["session_kind"],
+            "cram_goal_id": row["cram_goal_id"], "status": row["status"], "title": row["title"],
+            "duration_seconds": row["duration_seconds"], "timezone": row["timezone"],
+            "local_date": row["local_date"], "started_at": row["started_at"],
+            "deadline_at": row["deadline_at"], "finished_at": row["finished_at"],
+            "created_at": row["created_at"], "updated_at": row["updated_at"], "items": safe_items,
+            "summary": {"total_item_count": len(items), "submitted_count": len(attempts),
+                        "unanswered_count": len(items) - len(attempts),
+                        "correct_count": sum(bool(item["is_correct"]) for item in deterministic),
+                        "incorrect_count": sum(item["is_correct"] is False for item in deterministic),
+                        "pending_review_count": sum(item["grading_status"] == "pending_review" for item in attempts),
+                        "scored_count": len(deterministic),
+                        "score_total": sum(float(item["score"] or 0) for item in deterministic),
+                        "source_warning_count": sum(item["citation_status"] != "valid" for item in items),
+                        "last_attempt_at": attempts[-1]["submitted_at"] if attempts else None}}
+
+
+def _phase9c_expire_if_needed(connection: sqlite3.Connection, row: sqlite3.Row, now: datetime, now_text: str) -> sqlite3.Row:
+    if row["status"] == "active" and row["deadline_at"] is not None and now >= _phase9c_parse_now(str(row["deadline_at"])):
+        connection.execute("UPDATE practice_sessions SET status='expired',finished_at=?,updated_at=? WHERE id=? AND status='active'",
+                           (now_text, now_text, row["id"]))
+        row = connection.execute("SELECT * FROM practice_sessions WHERE id=?", (row["id"],)).fetchone()
+    return row
+
+
+def create_cram_goal(connection: sqlite3.Connection, *, project_id: str, title: object, target_date: object,
+                     timezone_name: object = "UTC", target_exercise_count: object = 1,
+                     plan_id: str | None = None, plan_item_id: str | None = None) -> dict[str, object]:
+    title = _phase9c_text(title, code="cram_invalid_payload", maximum=200)
+    target_date = _phase9c_local_date(target_date, code="cram_invalid_payload")
+    timezone_name = _phase9c_timezone(timezone_name, code="cram_invalid_payload")
+    if not isinstance(target_exercise_count, int) or isinstance(target_exercise_count, bool) or not 1 <= target_exercise_count <= 200:
+        raise ValueError("cram_invalid_payload")
+    goal_id, now = f"cram_goal_{uuid.uuid4().hex}", utc_now()
+    with connection:
+        if not _study_project_exists(connection, project_id):
+            raise ValueError("project_not_found")
+        if plan_id is not None:
+            plan = connection.execute("SELECT project_id FROM study_plans WHERE id=?", (plan_id,)).fetchone()
+            if plan is None or plan["project_id"] != project_id:
+                raise ValueError("cram_scope_conflict")
+        if plan_item_id is not None:
+            item = connection.execute("SELECT project_id,plan_id FROM study_plan_items WHERE id=?", (plan_item_id,)).fetchone()
+            if item is None or item["project_id"] != project_id or (plan_id is not None and item["plan_id"] != plan_id):
+                raise ValueError("cram_scope_conflict")
+        connection.execute("INSERT INTO cram_goals VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                           (goal_id, project_id, title, target_date, timezone_name, target_exercise_count, "draft",
+                            plan_id, plan_item_id, now, now, None, None))
+    return get_cram_goal(connection, project_id=project_id, goal_id=goal_id) or {}
+
+
+def get_cram_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: str) -> dict[str, object] | None:
+    row = connection.execute("SELECT * FROM cram_goals WHERE id=? AND project_id=?", (goal_id, project_id)).fetchone()
+    return dict(row) if row is not None else None
+
+
+def transition_cram_goal(connection: sqlite3.Connection, *, project_id: str, goal_id: str, target: str) -> dict[str, object]:
+    allowed = {"active": {"draft"}, "completed": {"active"}, "archived": {"draft", "active", "completed"}}
+    with connection:
+        row = connection.execute("SELECT * FROM cram_goals WHERE id=? AND project_id=?", (goal_id, project_id)).fetchone()
+        if row is None:
+            raise ValueError("cram_goal_not_found")
+        if target not in allowed or row["status"] not in allowed[target]:
+            raise ValueError("cram_goal_invalid_state")
+        if target == "completed" and connection.execute("SELECT 1 FROM practice_sessions WHERE cram_goal_id=? AND status IN ('finished','expired')", (goal_id,)).fetchone() is None:
+            raise ValueError("cram_goal_not_ready")
+        now = utc_now()
+        connection.execute("UPDATE cram_goals SET status=?,updated_at=?,completed_at=?,archived_at=? WHERE id=?",
+                           (target, now, now if target == "completed" else row["completed_at"], now if target == "archived" else row["archived_at"], goal_id))
+    return get_cram_goal(connection, project_id=project_id, goal_id=goal_id) or {}
+
+
+def create_practice_session(connection: sqlite3.Connection, *, project_id: str, title: object,
+                            exercise_ids: list[str], duration_seconds: object = 600,
+                            timezone_name: object = "UTC", local_date: object = "1970-01-01",
+                            session_kind: str = "practice", cram_goal_id: str | None = None) -> dict[str, object]:
+    title = _phase9c_text(title, code="practice_invalid_payload", maximum=PHASE9C_SESSION_TITLE_MAX)
+    timezone_name = _phase9c_timezone(timezone_name, code="practice_invalid_payload")
+    local_date = _phase9c_local_date(local_date, code="practice_invalid_payload")
+    if session_kind not in {"practice", "cram"} or not isinstance(duration_seconds, int) or isinstance(duration_seconds, bool) or not PHASE9C_MIN_DURATION_SECONDS <= duration_seconds <= PHASE9C_MAX_DURATION_SECONDS:
+        raise ValueError("practice_invalid_payload")
+    if not isinstance(exercise_ids, list) or not 1 <= len(exercise_ids) <= PHASE9C_SESSION_MAX_ITEMS or len(set(exercise_ids)) != len(exercise_ids):
+        raise ValueError("practice_invalid_selection")
+    session_id, now = f"practice_session_{uuid.uuid4().hex}", utc_now()
+    with connection:
+        if not _study_project_exists(connection, project_id):
+            raise ValueError("project_not_found")
+        if session_kind == "practice" and cram_goal_id is not None:
+            raise ValueError("practice_scope_conflict")
+        if session_kind == "cram":
+            goal = connection.execute("SELECT project_id,status FROM cram_goals WHERE id=?", (cram_goal_id,)).fetchone()
+            if goal is None or goal["project_id"] != project_id or goal["status"] != "active":
+                raise ValueError("cram_scope_conflict")
+        connection.execute("INSERT INTO practice_sessions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                           (session_id, project_id, session_kind, cram_goal_id, "draft", title, duration_seconds,
+                            timezone_name, local_date, None, None, None, now, now))
+        for position, exercise_id in enumerate(exercise_ids):
+            exercise = _phase9c_project_exercise(connection, project_id=project_id, exercise_id=exercise_id)
+            source = _phase9c_source_snapshot(connection, exercise_id)
+            connection.execute(
+                "INSERT INTO practice_session_items (id,session_id,project_id,exercise_id,position,exercise_type,prompt,options_json,"
+                "explanation_snapshot,exercise_kind,source_material_id,source_revision,source_extraction_id,source_chunk_id,source_span_id,"
+                "citation_key,citation_status,answer_key_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (f"practice_item_{uuid.uuid4().hex}", session_id, project_id, exercise_id, position, exercise["exercise_type"],
+                 exercise["prompt"], exercise["options_json"], exercise["explanation"], exercise["exercise_kind"],
+                 source["source_material_id"], source["source_revision"], source["source_extraction_id"], source["source_chunk_id"],
+                 source["source_span_id"], source["citation_key"], source["citation_status"], exercise["answer_key_json"], now, now),
+            )
+        row = connection.execute("SELECT * FROM practice_sessions WHERE id=?", (session_id,)).fetchone()
+        return _phase9c_session_public(connection, row)
+
+
+def get_practice_session(connection: sqlite3.Connection, *, project_id: str, session_id: str) -> dict[str, object] | None:
+    with connection:
+        now_text, now = _phase9c_iso_now()
+        row = connection.execute("SELECT * FROM practice_sessions WHERE id=? AND project_id=?", (session_id, project_id)).fetchone()
+        if row is None:
+            return None
+        row = _phase9c_expire_if_needed(connection, row, now, now_text)
+        return _phase9c_session_public(connection, row)
+
+
+def start_practice_session(connection: sqlite3.Connection, *, project_id: str, session_id: str) -> dict[str, object]:
+    with connection:
+        row = connection.execute("SELECT * FROM practice_sessions WHERE id=? AND project_id=?", (session_id, project_id)).fetchone()
+        if row is None:
+            raise ValueError("practice_session_not_found")
+        if row["status"] != "draft":
+            raise ValueError("practice_session_invalid_state")
+        for item in connection.execute("SELECT exercise_id FROM practice_session_items WHERE session_id=? ORDER BY position", (session_id,)).fetchall():
+            _phase9c_project_exercise(connection, project_id=project_id, exercise_id=item["exercise_id"])
+        now_text, now = _phase9c_iso_now()
+        deadline = (now + timedelta(seconds=int(row["duration_seconds"]))).isoformat()
+        connection.execute("UPDATE practice_sessions SET status='active',started_at=?,deadline_at=?,updated_at=? WHERE id=?",
+                           (now_text, deadline, now_text, session_id))
+        return _phase9c_session_public(connection, connection.execute("SELECT * FROM practice_sessions WHERE id=?", (session_id,)).fetchone())
+
+
+def archive_practice_session(connection: sqlite3.Connection, *, project_id: str, session_id: str) -> dict[str, object]:
+    with connection:
+        row = connection.execute("SELECT * FROM practice_sessions WHERE id=? AND project_id=?", (session_id, project_id)).fetchone()
+        if row is None:
+            raise ValueError("practice_session_not_found")
+        now_text, now = _phase9c_iso_now()
+        row = _phase9c_expire_if_needed(connection, row, now, now_text)
+        if row["status"] not in {"draft", "finished", "expired"}:
+            raise ValueError("practice_session_invalid_state")
+        connection.execute("UPDATE practice_sessions SET status='archived',updated_at=? WHERE id=?", (now_text, session_id))
+        return _phase9c_session_public(connection, connection.execute("SELECT * FROM practice_sessions WHERE id=?", (session_id,)).fetchone())
+
+
+def _phase9c_session_item(connection: sqlite3.Connection, *, project_id: str, session_id: str, item_id: str) -> tuple[sqlite3.Row, sqlite3.Row]:
+    session = connection.execute("SELECT * FROM practice_sessions WHERE id=? AND project_id=?", (session_id, project_id)).fetchone()
+    if session is None:
+        raise ValueError("practice_session_not_found")
+    item = connection.execute("SELECT * FROM practice_session_items WHERE id=? AND session_id=? AND project_id=?", (item_id, session_id, project_id)).fetchone()
+    if item is None:
+        raise ValueError("practice_session_item_not_found")
+    return session, item
+
+
+def submit_practice_session_item(connection: sqlite3.Connection, *, project_id: str, session_id: str,
+                                 item_id: str, answer: object, submission_key: str | None = None) -> dict[str, object]:
+    with connection:
+        session, item = _phase9c_session_item(connection, project_id=project_id, session_id=session_id, item_id=item_id)
+        now_text, now = _phase9c_iso_now()
+        session = _phase9c_expire_if_needed(connection, session, now, now_text)
+        if session["status"] != "active":
+            # Expiry is a persisted server-time state transition, not a failed
+            # submission write. Commit it before returning the stable conflict.
+            if session["status"] == "expired":
+                connection.commit()
+                raise ValueError("practice_session_expired")
+            raise ValueError("practice_session_invalid_state")
+        existing = connection.execute("SELECT * FROM exercise_attempts WHERE session_item_id=?", (item_id,)).fetchone()
+        if existing is not None:
+            return {"id": existing["id"], "exercise_id": existing["exercise_id"], "session_id": session_id,
+                    "session_item_id": item_id, "score": existing["score"], "is_correct": None if existing["is_correct"] is None else bool(existing["is_correct"]),
+                    "grading_status": existing["grading_status"], "submitted_at": existing["submitted_at"], "replay": True}
+        if submission_key is not None:
+            submission_key = _phase9c_text(submission_key, code="practice_invalid_submission", maximum=200)
+            duplicate = connection.execute("SELECT * FROM exercise_attempts WHERE session_id=? AND submission_key=?", (session_id, submission_key)).fetchone()
+            if duplicate is not None:
+                return {"id": duplicate["id"], "exercise_id": duplicate["exercise_id"], "session_id": session_id,
+                        "session_item_id": duplicate["session_item_id"], "score": duplicate["score"],
+                        "is_correct": None if duplicate["is_correct"] is None else bool(duplicate["is_correct"]),
+                        "grading_status": duplicate["grading_status"], "submitted_at": duplicate["submitted_at"], "replay": True}
+        expected = json.loads(item["answer_key_json"])
+        correct = score = None
+        grading = "pending_review"
+        if item["exercise_type"] == "multiple_choice":
+            options = json.loads(item["options_json"])
+            if not isinstance(answer, int) or isinstance(answer, bool) or not 0 <= answer < len(options):
+                raise ValueError("invalid_exercise_answer")
+            correct, score, grading = answer == expected, 1.0 if answer == expected else 0.0, "deterministic"
+        elif item["exercise_type"] == "true_false":
+            if not isinstance(answer, bool):
+                raise ValueError("invalid_exercise_answer")
+            correct, score, grading = answer == expected, 1.0 if answer == expected else 0.0, "deterministic"
+        elif not isinstance(answer, str) or not answer.strip() or len(answer) > MAX_EXERCISE_ANSWER_LENGTH:
+            raise ValueError("invalid_exercise_answer")
+        attempt_id = f"attempt_{uuid.uuid4().hex}"
+        connection.execute(
+            "INSERT INTO exercise_attempts (id,exercise_id,answer_json,score,is_correct,grading_status,submitted_at,reviewed_at,feedback,session_id,session_item_id,submission_key,submission_sequence) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (attempt_id, item["exercise_id"], json.dumps(answer, ensure_ascii=False), score, None if correct is None else int(correct),
+             grading, now_text, None, "", session_id, item_id, submission_key, 0),
+        )
+        if correct is False:
+            _phase9c_materialize_mistake(connection, project_id=project_id, attempt_id=attempt_id,
+                                          exercise_id=str(item["exercise_id"]), reason_code="deterministic_incorrect", origin="deterministic",
+                                          source_revision=item["source_revision"], source_status=item["citation_status"])
+        return {"id": attempt_id, "exercise_id": item["exercise_id"], "session_id": session_id, "session_item_id": item_id,
+                "score": score, "is_correct": correct, "grading_status": grading, "submitted_at": now_text, "replay": False}
+
+
+def finish_practice_session(connection: sqlite3.Connection, *, project_id: str, session_id: str) -> dict[str, object]:
+    with connection:
+        row = connection.execute("SELECT * FROM practice_sessions WHERE id=? AND project_id=?", (session_id, project_id)).fetchone()
+        if row is None:
+            raise ValueError("practice_session_not_found")
+        now_text, now = _phase9c_iso_now()
+        row = _phase9c_expire_if_needed(connection, row, now, now_text)
+        if row["status"] != "active":
+            raise ValueError("practice_session_invalid_state")
+        connection.execute("UPDATE practice_sessions SET status='finished',finished_at=?,updated_at=? WHERE id=?", (now_text, now_text, session_id))
+        return _phase9c_session_public(connection, connection.execute("SELECT * FROM practice_sessions WHERE id=?", (session_id,)).fetchone())
+
+
+def _phase9c_mistake_case(connection: sqlite3.Connection, *, project_id: str, exercise_id: str,
+                           origin: str, revision_fingerprint: str) -> str:
+    row = connection.execute("SELECT id,status FROM mistake_cases WHERE project_id=? AND exercise_id=? AND exercise_revision_fingerprint=?",
+                             (project_id, exercise_id, revision_fingerprint)).fetchone()
+    if row is not None:
+        if row["status"] == "fixed":
+            connection.execute("UPDATE mistake_cases SET status='reopened',updated_at=?,fixed_at=NULL WHERE id=?", (utc_now(), row["id"]))
+        return str(row["id"])
+    case_id = f"mistake_{uuid.uuid4().hex}"
+    now = utc_now()
+    connection.execute("INSERT INTO mistake_cases VALUES (?,?,?,?,?,?,?,?,?,?)",
+                       (case_id, project_id, exercise_id, revision_fingerprint, "open", origin, now, now, None, None))
+    return case_id
+
+
+def _phase9c_materialize_mistake(connection: sqlite3.Connection, *, project_id: str, attempt_id: str, exercise_id: str,
+                                  reason_code: str, origin: str, source_revision: str | None, source_status: str) -> str:
+    fingerprint = hashlib.sha256(f"{exercise_id}\x1f{source_revision or ''}".encode()).hexdigest()
+    case_id = _phase9c_mistake_case(connection, project_id=project_id, exercise_id=exercise_id, origin=origin, revision_fingerprint=fingerprint)
+    existing = connection.execute("SELECT id FROM mistake_occurrences WHERE attempt_id=? AND reason_code=?", (attempt_id, reason_code)).fetchone()
+    if existing is not None:
+        return str(existing["id"])
+    occurrence_id = f"mistake_occurrence_{uuid.uuid4().hex}"
+    connection.execute("INSERT INTO mistake_occurrences VALUES (?,?,?,?,?,?,?,?,?)",
+                       (occurrence_id, project_id, case_id, attempt_id, origin, reason_code, source_revision,
+                        source_status if source_status in PHASE9C_SOURCE_STATUSES else "source_unavailable", utc_now()))
+    return occurrence_id
+
+
+def review_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, attempt_id: str,
+                            decision: str, feedback: object = "") -> dict[str, object]:
+    feedback = _phase9c_text(feedback, code="review_invalid_payload", maximum=PHASE9C_FEEDBACK_MAX, allow_empty=True)
+    if decision not in {"correct", "incorrect", "uncertain"}:
+        raise ValueError("review_invalid_decision")
+    with connection:
+        attempt = connection.execute(
+            "SELECT a.* FROM exercise_attempts a JOIN exercises e ON e.id=a.exercise_id "
+            "WHERE a.id=? AND e.project_id=?", (attempt_id, project_id)
+        ).fetchone()
+        if attempt is None:
+            raise ValueError("attempt_not_found")
+        if attempt["grading_status"] != "pending_review":
+            raise ValueError("review_not_allowed")
+        if connection.execute("SELECT 1 FROM exercise_attempt_reviews WHERE attempt_id=?", (attempt_id,)).fetchone() is not None:
+            raise ValueError("review_duplicate")
+        now = utc_now()
+        review_id = f"review_{uuid.uuid4().hex}"
+        connection.execute("INSERT INTO exercise_attempt_reviews VALUES (?,?,?,?,?,?,?,?,?)",
+                           (review_id, project_id, attempt_id, attempt["exercise_id"], decision, feedback, "local_user", now, now))
+        if decision == "incorrect":
+            item = connection.execute("SELECT source_revision,citation_status FROM practice_session_items WHERE id=?", (attempt["session_item_id"],)).fetchone()
+            source_revision = item["source_revision"] if item else None
+            source_status = item["citation_status"] if item else "valid"
+            _phase9c_materialize_mistake(connection, project_id=project_id, attempt_id=attempt_id, exercise_id=attempt["exercise_id"],
+                                          reason_code="review_incorrect", origin="human_review", source_revision=source_revision, source_status=source_status)
+        return {"id": review_id, "attempt_id": attempt_id, "decision": decision, "feedback": feedback, "reviewer_kind": "local_user", "reviewed_at": now}
+
+
+def add_mistake_feedback(connection: sqlite3.Connection, *, project_id: str, mistake_case_id: str,
+                         event_kind: str, content: object) -> dict[str, object]:
+    content = _phase9c_text(content, code="mistake_feedback_invalid", maximum=PHASE9C_CORRECTION_MAX,
+                             allow_empty=event_kind != "user_correction")
+    if event_kind not in {"user_correction", "user_note", "status_transition"}:
+        raise ValueError("mistake_feedback_invalid")
+    with connection:
+        case = connection.execute("SELECT * FROM mistake_cases WHERE id=? AND project_id=?", (mistake_case_id, project_id)).fetchone()
+        if case is None:
+            raise ValueError("mistake_not_found")
+        if case["status"] == "archived":
+            raise ValueError("mistake_invalid_state")
+        now, event_id = utc_now(), f"feedback_{uuid.uuid4().hex}"
+        connection.execute("INSERT INTO mistake_feedback_events VALUES (?,?,?,?,?,?,?)",
+                           (event_id, project_id, mistake_case_id, event_kind, content, "user_created", now))
+        if event_kind == "user_correction":
+            connection.execute("UPDATE mistake_cases SET status='fixed',fixed_at=?,updated_at=? WHERE id=?", (now, now, mistake_case_id))
+        elif event_kind == "status_transition":
+            connection.execute("UPDATE mistake_cases SET status='in_review',updated_at=? WHERE id=? AND status='open'", (now, mistake_case_id))
+        return {"id": event_id, "mistake_case_id": mistake_case_id, "event_kind": event_kind, "content": content, "provenance": "user_created", "created_at": now}
+
+
+def archive_mistake_case(connection: sqlite3.Connection, *, project_id: str, mistake_case_id: str) -> dict[str, object]:
+    with connection:
+        row = connection.execute("SELECT * FROM mistake_cases WHERE id=? AND project_id=?", (mistake_case_id, project_id)).fetchone()
+        if row is None:
+            raise ValueError("mistake_not_found")
+        if row["status"] == "archived":
+            raise ValueError("mistake_invalid_state")
+        now = utc_now()
+        connection.execute("UPDATE mistake_cases SET status='archived',archived_at=?,updated_at=? WHERE id=?",
+                           (now, now, mistake_case_id))
+        result = connection.execute("SELECT * FROM mistake_cases WHERE id=?", (mistake_case_id,)).fetchone()
+        return dict(result)
+
+
+def list_mistake_cases(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
+    rows = connection.execute("SELECT * FROM mistake_cases WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_weak_points(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
+    rows = connection.execute(
+        "SELECT c.exercise_id,c.exercise_revision_fingerprint,COUNT(o.id) AS occurrence_count,"
+        "SUM(CASE WHEN c.status IN ('open','in_review','reopened') THEN 1 ELSE 0 END) AS open_count,"
+        "SUM(CASE WHEN c.status='fixed' THEN 1 ELSE 0 END) AS fixed_count,MAX(o.created_at) AS last_occurrence_at "
+        "FROM mistake_cases c JOIN mistake_occurrences o ON o.mistake_case_id=c.id "
+        "WHERE c.project_id=? AND c.status!='archived' GROUP BY c.exercise_id,c.exercise_revision_fingerprint "
+        "ORDER BY last_occurrence_at DESC", (project_id,)
+    ).fetchall()
+    return [dict(row) for row in rows]
 
 
 # Phase 9A domain repository. These functions own SQLite transactions and
@@ -2769,6 +3240,7 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
             (material_id,),
         )
         _refresh_study_source_links_for_material(connection, material_id)
+        _refresh_phase9c_session_sources_for_material(connection, material_id)
         connection.execute(
             "UPDATE note_block_source_links SET status = 'source_unavailable', updated_at = ? WHERE material_id = ?",
             (utc_now(), material_id),
@@ -2787,6 +3259,7 @@ def purge_material(connection: sqlite3.Connection, material_id: str) -> tuple[st
         ).fetchall()]
         _delete_chunk_search_rows(connection, chunk_ids)
         connection.execute("DELETE FROM materials WHERE id = ? AND deleted_at IS NOT NULL", (material_id,))
+        _refresh_phase9c_session_sources_for_material(connection, material_id)
     return row[0], row[1], row[2]
 
 
@@ -2911,6 +3384,7 @@ def soft_delete_material(connection: sqlite3.Connection, material_id: str) -> bo
             _refresh_exercise_citations_for_material(connection, material_id)
             _refresh_card_citations_for_material(connection, material_id)
             _refresh_study_source_links_for_material(connection, material_id)
+            _refresh_phase9c_session_sources_for_material(connection, material_id)
     return cursor.rowcount == 1
 
 
@@ -2984,6 +3458,7 @@ def index_material_revision(connection: sqlite3.Connection, material_id: str,
         revision = create_or_get_revision(connection, material_id, extraction_id)
         _refresh_exercise_citations_for_material(connection, material_id)
         _refresh_card_citations_for_material(connection, material_id)
+        _refresh_phase9c_session_sources_for_material(connection, material_id)
         existing = connection.execute(
             "SELECT COUNT(*) FROM chunks WHERE revision_id = ? AND status = 'ready'", (revision["id"],)
         ).fetchone()[0]
