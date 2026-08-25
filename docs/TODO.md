@@ -218,7 +218,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
-> 当前状态：整体 `planned`；9C-0/9C-1 已完成，9C-2/9C-3/9C-4/9C-5/9C-6 为 `implemented/backend-pass`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
+> 当前状态：整体 `planned`；9C-0/9C-1 已完成，9C-2/9C-3/9C-4/9C-5/9C-6/9C-7 为 `implemented/backend-pass`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
 
 - [ ] 9C-0：现状审计与范围冻结；盘点 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 与 9D/Phase 10 non-goals。
 - [ ] 9C-1：正式领域契约与状态机；冻结 session、attempt、grading/review、mistake、weak-point、cram、时间和隐私边界。
@@ -227,7 +227,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9C-4：完成 S3 PracticeRunner backend 闭环：practice session create/read/list/start/submit/finish/expire/result、immutable snapshot、服务端 deadline、MC/TF deterministic grading、short-answer pending review、append-only attempt、duplicate/idempotency replay/mismatch、只读安全 result、rollback 和 source lifecycle 读路径；focused `8 passed`、相关 focused `39 passed`、完整 backend `307 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 S4/S5、API/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-5：完成 S4 ErrorFixer backend：deterministic/review/user-marked 错题事实区分、case/occurrence 归并与幂等、uncertain review、feedback/archive、fixed→reopened、redo 新 session/attempt、weak-point projection、source status 降级、privacy 和 rollback；focused `13 passed`、相关 focused `44 passed`、完整 backend `312 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 S5、API/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-6：完成 S5 ExamCrammer backend：cram goal 生命周期、显式 cram session/题目快照、S3 attempt/grading/result 复用、mistake/weak-point summary、selection/project/target/date 边界、privacy、plan/progress/rhythm 不变更和 rollback；focused `15 passed`、相关 focused `46 passed`、完整 backend `314 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 API/UI、9C lifecycle/restore gates 或 Phase 9C completed。
-- [ ] 9C-7：实现 S3/S4/S5 最小安全 API、输入边界、错误、幂等、隐私和导出 contract。
+- [x] 9C-7：完成 S3/S4/S5 最小安全 FastAPI API：practice session、attempt submit/review、mistake/weak-point、cram goal/session/result、server project scope、稳定 400/404/409/422/500 错误、Idempotency-Key、privacy 和生命周期边界；focused `3 passed`、相关 focused `32 passed`、完整 backend `317 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 Chromium/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [ ] 9C-8：实现最小 Chromium workspace，覆盖 happy/failure/expired/duplicate/reload/narrow/keyboard/privacy 路径。
 - [ ] 9C-9：完成 source lifecycle、citation status、backup/verify/restore non-repair 与历史保留验收。
 - [ ] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口。
