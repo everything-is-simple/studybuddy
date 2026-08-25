@@ -1,6 +1,6 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 9A acceptance closeout 后）
+> 更新：2026-08-30（Phase 9C acceptance closeout 后）
 > 当前基线：本地单进程文件材料管理基础系统已可用，整体阶段性完成度约 **55%–60%**。I1 migration/schema versioning 与 I2 backup/restore 运维闭环已完成；完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
@@ -125,13 +125,13 @@ revision → chunks → retrieval → citations → Q&A
 
 **P6-D 限制：** 使用 Playwright/DOM contract 断言而非 axe；系统级 screen reader、真实 Provider 下完整体验、真实离线/极端长回答和长时整批 Chromium 单次稳定性仍为 `not_verified`。页面 toast 只是补充，主要错误已同步到页面 status/alert；同步 Provider 请求不能真正取消，只能丢弃 stale response。
 
-- [x] P6-E 导入 → ready → indexing → retrieval → thread → Q&A → citation → 定位 → 返回 → 导出 → refresh/history 核心工作流整体验收；证据：`docs/P6E_ACCEPTANCE_EVIDENCE.md`。
+- [x] P6-E 导入 → ready → indexing → retrieval → thread → Q&A → citation → 定位 → 返回 → 导出 → refresh/history 核心工作流整体验收；证据：`docs/prompts/P6E_ACCEPTANCE_EVIDENCE.md`。
 - [x] P6-D 统一应用级导航、当前 material/thread/scope 状态、页面 status/alert 和补充 toast。
 - [x] P6-D 桌面/390x844 窄屏布局、键盘视图切换、可见焦点、dialog Escape/focus return 和关键 ARIA/current/status/alert 语义。
 - [x] P6-D fake Provider Chromium 专项验收：`backend/tests/browser_p6d.spec.js`，2 passed；未引入 API 或 migration，未引入 axe。
 - [x] P6-E fake Provider 核心工作流、empty retrieval、source lifecycle、retry、duplicate click、stale response、refresh/history、导出失败和窄屏路径验收。
-- [x] P6-E Provider failure UX 回归：timeout、network failure、rate limit、unavailable、malformed/safe error contract；详见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
-- [x] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；已分别使用精确 runtime gate 和临时 synthetic data root 通过，结果见 `docs/P6E_ACCEPTANCE_EVIDENCE.md`。
+- [x] P6-E Provider failure UX 回归：timeout、network failure、rate limit、unavailable、malformed/safe error contract；详见 `docs/prompts/P6E_ACCEPTANCE_EVIDENCE.md`。
+- [x] DeepSeek `deepseek-chat` 和 Agnes `agnes-ai-hub` / `agnes-2.5-flash` 的 P6-E 真实 UI 路径；已分别使用精确 runtime gate 和临时 synthetic data root 通过，结果见 `docs/prompts/P6E_ACCEPTANCE_EVIDENCE.md`。
 - [ ] 系统级 screen reader、真实 offline/极端长回答和长时整批 Chromium 稳定性验收。
 
 ## Phase 8：Cards / Exercises（仅在 Phase 7 收口后）
@@ -153,7 +153,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 列出已有/未使用字段、兼容性风险和 v5 migration 要求。
 - [x] 冻结 embedding identity、status/stale、provider/model/dimension 和 retrieval policy 语义。
 - [x] 冻结 lexical-only、vector-only、hybrid、fallback 与 empty 行为。
-- [x] 将正式记录写入 `docs/PHASE7_1_AUDIT_AND_CONTRACT.md`。
+- [x] 将正式记录写入 `docs/prompts/PHASE7_1_AUDIT_AND_CONTRACT.md`。
 
 **当前限制：** 7.1–7.7 fake/backend 验收、embedding/retrieval/Q&A metadata backup/restore、损坏生命周期、102/1,002 chunks synthetic benchmark、retrieval mode UI/Chromium final acceptance、indexing lease/失败重试/恢复专项，以及 Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 精确真实 embedding gate 均已通过。Phase 7 已在该精确配置范围完成；其它 provider/model 仍独立处理。
 
@@ -168,7 +168,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] embedding/retrieval/Q&A metadata backup/restore 专项验收、损坏生命周期测试和 synthetic benchmark。
 - [x] retrieval mode UI/Chromium final acceptance：lexical/vector/hybrid、fallback 和 vector 不回退边界。
 - [x] indexing lease、`embedding_index` operation 审计、stale reclaim、失败保留和显式 retry_count/retry 专项。
-- [x] 真实 embedding provider 外部网络 acceptance：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 已通过直接向量、隔离 indexing、vector retrieval 和审计 metadata gate；证据见 `docs/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`。
+- [x] 真实 embedding provider 外部网络 acceptance：Mistral `mistral` / `mistral-embed` / `https://api.mistral.ai/v1` 已通过直接向量、隔离 indexing、vector retrieval 和审计 metadata gate；证据见 `docs/prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md`。
 - [ ] 其它 provider/model 的 embedding 独立验证：Agnes `agnes-2.5-flash`、ARK `deepseek-v4-flash`、MiniMax `embo-01`、NVIDIA `nvidia/nv-embedqa-e5-v5` 本轮未通过，不阻塞 Mistral 精确配置范围的 Phase 7 完成。
 
 - [ ] 任务记录、progress、retry/cancel、worker 与长任务恢复（需求明确后）。
@@ -182,11 +182,11 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9A：学习领域基础与计划核心
 
-> 充分上下文、总规划 prompt、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`phase9a/`](phase9a/)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
+> 充分上下文、总规划 prompt、逐子任务边界、实现 prompt、测试门禁和推荐 commit 拆分见 [`prompts/phase9a/`](prompts/phase9a/)。以下任务仍为 planned，不能把 prompt/设计文档视为实现证据。
 
-- [x] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结；初稿见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/audit-draft`，不代表领域能力实现。
-- [x] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机；正式契约见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/contract-frozen`，不代表 schema/API/UI 实现。
-- [x] 9A-2：通过连续 v9 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 new-db/v8-upgrade/rollback/幂等和 backup/restore schema-history 测试；见 [`phase9a/PHASE9A_DOMAIN_CONTRACT.md`](phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `implemented/backend-pass`，repository/domain 及其后续 API/UI 另由 9A-3 至 9A-5 验收。
+- [x] 9A-0：完成现状审计、9A non-goals、9B/9C/9D 边界和风险冻结；初稿见 [`prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md`](prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/audit-draft`，不代表领域能力实现。
+- [x] 9A-1：冻结 learning goal、knowledge module、study plan/item、dependency、progress event、source link 的正式领域契约和状态机；正式契约见 [`prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md`](prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `planned/contract-frozen`，不代表 schema/API/UI 实现。
+- [x] 9A-2：通过连续 v9 migration 增加计划、目标、模块、依赖、进度事件和 source link schema，并完成 new-db/v8-upgrade/rollback/幂等和 backup/restore schema-history 测试；见 [`prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md`](prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md)。状态为 `implemented/backend-pass`，repository/domain 及其后续 API/UI 另由 9A-3 至 9A-5 验收。
 - [x] 9A-3：实现 repository/domain 事务、DAG 依赖校验、append-only progress、状态投影、source identity validation、source lifecycle refresh 和用户编辑保护；focused `backend/tests/test_phase9a_domain.py` 8 passed，full backend 通过。状态为 `implemented/backend-pass`，API/UI 另由 9A-4/9A-5 验收。
 - [x] 9A-4：实现最小 goal/module/plan/item/dependency/progress/source API、project scope、输入边界和稳定错误 contract；`backend/tests/test_phase9a_api.py` 4 passed，full backend 通过。状态为 `implemented/backend-pass`，UI/Chromium 另由 9A-5 验收，source lifecycle/backup closeout 仍未完成。
 - [x] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace，并覆盖 dependency cycle failure、500/retry、390x844、keyboard 和 reload recovery；`backend/tests/browser_phase9a.spec.js` 2 passed。状态为 `browser-pass`，不代表 real-pass 或 9A completed。
@@ -201,11 +201,11 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9B：资料学习工作流（S1/S2）
 
-> 当前状态：`planned`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`docs/phase9b/`](phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
+> 当前状态：在限定范围内 `completed`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`prompts/phase9b/`](prompts/phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
 >
-> 当前子任务状态：9B-0 为 `planned/audit-draft`，9B-1 为 `planned/contract-frozen`，9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 为 `browser-pass`，9B-8 为 `scoped-gates-pass`/`restore-gates-pass`，9B-9 已完成限定范围内 `completed` closeout；审计、正式契约、schema 和最终证据见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md) 与 [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)。
+> 当前子任务状态：9B-0 为 `planned/audit-draft`，9B-1 为 `planned/contract-frozen`，9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 为 `browser-pass`，9B-8 为 `scoped-gates-pass`/`restore-gates-pass`，9B-9 已完成限定范围内 `completed` closeout；审计、正式契约、schema 和最终证据见 [`prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md`](prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md) 与 [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)。
 
-- [x] 9B-0：完成现状审计、S1/S2 范围冻结和风险记录；状态为 `planned/audit-draft`，产出见 [`phase9b/PHASE9B_DOMAIN_CONTRACT.md`](phase9b/PHASE9B_DOMAIN_CONTRACT.md)。
+- [x] 9B-0：完成现状审计、S1/S2 范围冻结和风险记录；状态为 `planned/audit-draft`，产出见 [`prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md`](prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md)。
 - [x] 9B-1：冻结 S1/S2 实体关系、cadence/timezone/workload、note/block/module/citation 关系、状态机、不变量、source lifecycle、AI draft、错误码、API resource、导出和 backup/restore non-repair 边界；状态为 `planned/contract-frozen`，不代表实现完成。
 - [x] 9B-2：通过连续 v10 `phase9b_material_learning_schema` migration 增加 note/block/module-link/source-tombstone 与 rhythm persistence schema，并覆盖 new-db、v9 upgrade、幂等、failure rollback、history/user_version 和 backup schema-version；状态为 `implemented/backend-pass`，不代表 9B repository/domain、API/UI、source lifecycle 或 restore artifact 验收。
 - [x] 9B-3：实现共用 repository/domain transaction：note/block/module link、server-side citation source link validation、source status refresh、rhythm settings/allocation 与 deterministic summary；focused `backend/tests/test_phase9b_domain.py` 通过，状态为 `implemented/backend-pass`。
@@ -218,10 +218,10 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
-> 当前状态：整体 `planned`；9C-0/9C-1 已完成，9C-2/9C-3/9C-4/9C-5/9C-6/9C-7 为 `implemented/backend-pass`，9C-8 为 `browser-pass`，9C-9 为 `scoped-gates-pass`/`restore-gates-pass`。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`phase9c/`](phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
+> 当前状态：在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内 `completed`；9C-0/9C-1 为 `planned/audit-draft`/`contract-frozen`，9C-2 至 9C-7 为 `implemented/backend-pass`，9C-8 为 `browser-pass`，9C-9 为 `scoped-gates-pass`/`restore-gates-pass`，9C-10 已完成 Gate A-J closeout。Phase 9C 总体 prompt、共用上下文、9C-0 至 9C-10 子任务 prompts、执行顺序和 Gate A-J 已集中存放于 [`prompts/phase9c/`](prompts/phase9c/)。prompt 包不是实现证据；必须逐项执行、测试并独立收口。
 
-- [ ] 9C-0：现状审计与范围冻结；盘点 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 与 9D/Phase 10 non-goals。
-- [ ] 9C-1：正式领域契约与状态机；冻结 session、attempt、grading/review、mistake、weak-point、cram、时间和隐私边界。
+- [x] 9C-0：完成现状审计与范围冻结；盘点 Phase 8/9A/9B 实际能力，冻结 S3/S4/S5 与 9D/Phase 10 non-goals。
+- [x] 9C-1：完成正式领域契约与状态机冻结；覆盖 session、attempt、grading/review、mistake、weak-point、cram、时间和隐私边界。
 - [x] 9C-2：通过连续 v11 `phase9c_exercise_feedback_schema` migration 增加最小 S3/S4/S5 schema，完成 new-db、v10 upgrade、幂等、rollback、history/user_version、约束和 backup version 测试；状态为 `implemented/backend-pass`，不代表 9C repository/domain、API/UI、source lifecycle、restore 或 Phase 9C completed。
 - [x] 9C-3：实现 v11 上的共享 repository/domain transaction：practice/cram session 与 immutable item snapshot、服务端 deadline、MC/TF deterministic grading、short-answer pending review、attempt/review/feedback append-only、mistake/weak-point projection、source/privacy boundary、cram 不写 plan/progress 和 rollback；focused `7 passed`、相关 focused regression `46 passed`、完整 backend `306 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 API/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-4：完成 S3 PracticeRunner backend 闭环：practice session create/read/list/start/submit/finish/expire/result、immutable snapshot、服务端 deadline、MC/TF deterministic grading、short-answer pending review、append-only attempt、duplicate/idempotency replay/mismatch、只读安全 result、rollback 和 source lifecycle 读路径；focused `8 passed`、相关 focused `39 passed`、完整 backend `307 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 S4/S5、API/UI、9C lifecycle/restore gates 或 Phase 9C completed。
@@ -230,7 +230,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9C-7：完成 S3/S4/S5 最小安全 FastAPI API：practice session、attempt submit/review、mistake/weak-point、cram goal/session/result、server project scope、稳定 400/404/409/422/500 错误、Idempotency-Key、privacy 和生命周期边界；focused `3 passed`、相关 focused `32 passed`、完整 backend `317 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 Chromium/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-8：完成最小 Chromium workspace：S3 session/start/submit/finish/result、S4 mistake/feedback/redo、S5 cram goal/session/result、reload、duplicate/idempotency、500/network retry、default-provider safe failure、keyboard/focus、390x844 overflow 和 privacy DOM；focused Chromium `3 passed`，相关 UI failure `9 passed`。状态为 `browser-pass`，不代表 real-pass、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-9：完成 S3/S4/S5 source lifecycle 与 backup/verify/新空目录 restore non-repair：v11 表/历史事实、session/item linkage、attempt/review/mistake/feedback/cram status 保留，delete/restore/purge/re-index source status 安全降级；专项 `14 passed`、完整 backend `320 passed, 2 skipped`。状态为 `scoped-gates-pass`/`restore-gates-pass`，不代表 9C-10 closeout 或 Phase 9C completed。
-- [ ] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口。
+- [x] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口；证据见 [`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md)。
 
 完成声明仅限 deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore；不包含真实 Provider、scheduler/worker、OCR/ASR、Phase 9D 或全局 production `real-pass`。
 

@@ -17,13 +17,13 @@ def test_authoritative_status_documents_agree_on_p6e_boundary():
     roadmap = read("PHASE_ROADMAP.md")
     status = read("STATUS.md")
     todo = read("TODO.md")
-    evidence = read("P6E_ACCEPTANCE_EVIDENCE.md")
+    evidence = read("prompts/P6E_ACCEPTANCE_EVIDENCE.md")
 
     assert "P6-E fake Provider" in roadmap
     assert "P6-E core workflow acceptance" in status
     assert "P6-E fake Provider 核心工作流整体验收" in todo
-    assert "P6E_ACCEPTANCE_EVIDENCE.md" in roadmap
-    assert "P6E_ACCEPTANCE_EVIDENCE.md" in status
+    assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in roadmap
+    assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in status
     assert "Fake Provider complete workflow" in evidence
     assert "real network" in evidence
     assert "not global availability" in evidence
@@ -31,9 +31,9 @@ def test_authoritative_status_documents_agree_on_p6e_boundary():
 
 def test_governance_preserves_real_provider_and_runtime_boundaries():
     architecture = read("ARCHITECTURE.md")
-    decisions = read("DECISIONS.md")
+    decisions = read("prompts/DECISIONS.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
-    provider_setup = read("AI_PROVIDER_SETUP.md")
+    provider_setup = read("prompts/AI_PROVIDER_SETUP.md")
 
     for document in (architecture, decisions, progress, provider_setup):
         assert "not_verified" in document
@@ -67,9 +67,9 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     todo = read("TODO.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
     architecture = read("ai-learning-architecture.md")
-    decisions = read("DECISIONS.md")
+    decisions = read("prompts/DECISIONS.md")
     migration_doc = read("MIGRATIONS.md")
-    contract = read("phase9a/PHASE9A_DOMAIN_CONTRACT.md")
+    contract = read("prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md")
     acceptance = read("PHASE9A_ACCEPTANCE_EVIDENCE.md")
     runner = (ROOT / "backend" / "app" / "migrations" / "runner.py").read_text(encoding="utf-8")
 
@@ -79,7 +79,7 @@ def test_phase9a_contract_migration_and_status_are_consistent():
         assert "9A-2" in document
     assert "Phase 9A" in status
     assert "v9" in status
-    assert "phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
+    assert "prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
     assert "Current schema version: **11**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
     assert "10 | phase9b_material_learning_schema" in migration_doc
@@ -125,9 +125,9 @@ def test_phase9b_closeout_and_current_regression_are_consistent():
     todo = read("TODO.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
     architecture = read("ARCHITECTURE.md")
-    contract = read("phase9b/PHASE9B_DOMAIN_CONTRACT.md")
+    contract = read("prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md")
     evidence = read("PHASE9B_ACCEPTANCE_EVIDENCE.md")
-    decisions = read("DECISIONS.md")
+    decisions = read("prompts/DECISIONS.md")
     governance = read("CODE_TEST_GOVERNANCE.md")
 
     for document in (roadmap, status, todo, progress, architecture, contract, decisions):
