@@ -13,7 +13,8 @@ Phase 10 的目标不是继续无限加功能，而是把当前 Phase 9D 部分�
 - `backend/app/task_runner.py`：10-3 explicit-only single-process runner/recovery；Gate D 已通过。
 - `PHASE10_TASK_INTEGRATION_EVIDENCE.md`：10-4 approved `embedding_index` task integration；Gate E 已通过。
 - `PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`：10-5 safe observability/readiness/read-only diagnostics；Gate F 已通过。
-- `PHASE10_OPERATIONS_EVIDENCE.md`：10-6 backup/restore/migration operations、verified rotation、upgrade preflight、restore drill 与 stop/quarantine policy；Gate G 已通过，批准进入 10-7。
+- `PHASE10_OPERATIONS_EVIDENCE.md`：10-6 backup/restore/migration operations、verified rotation、upgrade preflight、restore drill 与 stop/quarantine policy；Gate G 已通过。
+- `PHASE10_RELEASE_RUNTIME_EVIDENCE.md`：10-7 local serve、配置、单实例锁、Windows 启停/健康脚本和安全默认值 Gate H evidence。
 - `EXECUTION_ORDER_AND_GATES.md`：顺序、推荐 commit、Gate A-J、停工规则和完成措辞。
 
 ## 计划步骤

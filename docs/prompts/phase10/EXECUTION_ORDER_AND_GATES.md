@@ -50,7 +50,7 @@
 - **Gate E（Integration）**：批准的 indexing/embedding/generation/OCR/ASR/report 操作接入；同步兼容、幂等、失败和审计无回归。
 - **Gate F（Observability）**：脱敏日志、request/task correlation、metrics、liveness/readiness/degraded 与 operator diagnostics 可用。
 - **Gate G（Operations）**：upgrade、backup、verify、restore drill、保留轮换、corruption quarantine/read-only/停机决策有可复现证据。
-- **Gate H（Release runtime）**：安全配置、数据目录、锁、启动/停止、版本、健康检查和本地安装/升级路径通过。
+- **Gate H（Release runtime）**：安全配置、data-root 单实例锁、显式 serve/version、Windows start/health/stop、版本、健康检查和本地源码发布路径通过；不等于 universal installer 或所有 Windows 环境支持。
 - **Gate I（Boundary evidence）**：容量、性能、长时 smoke、权限/资源不足等时间盒结果形成；未验证故障如实登记。
 - **Gate J（Release closeout）**：隔离 data root 完成 release candidate 全路径，完整 backend 与相关 Chromium 通过，文档、TODO、STATUS、ROADMAP、README、INDEX 和发布 checklist 一致。
 

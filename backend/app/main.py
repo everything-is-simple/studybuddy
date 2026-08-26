@@ -22,6 +22,7 @@ from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
 from .diagnostics import DiagnosticError, collect_diagnostics
 from .import_locks import acquire_hash_lock, release_hash_lock
+from .instance_lock import InstanceLock, InstanceLockError
 from .migrations.runner import MigrationError
 from .observability import (correlation, emit_event, increment, metrics_snapshot, new_id, observe_http,
                             record_import, reset_correlation, route_class, set_correlation,
@@ -156,38 +157,50 @@ async def lifespan(app: FastAPI):
     config: AppConfig = app.state.config
     app.state.ready = False
     app.state.startup_state = "starting"
+    instance_lock = None
     try:
         preflight(config)
+        instance_lock = InstanceLock(config.data_root / ".studybuddy-instance.lock")
+        instance_lock.acquire()
+        app.state.instance_lock = instance_lock
+        increment("startup", "instance_lock", "acquired")
         increment("startup", "preflight", "success")
     except StartupPreflightError as error:
         increment("startup", "preflight", "failed")
         emit_event("startup_preflight_failed", level=40, error_code=str(error))
         raise
+    except InstanceLockError as error:
+        increment("startup", "instance_lock", "failed")
+        emit_event("startup_instance_lock_failed", level=40, error_code=str(error))
+        raise StartupPreflightError(str(error)) from None
     try:
-        with connect(config.database_path):
-            pass
-        increment("startup", "database", "success")
-    except MigrationError as error:
-        increment("startup", "database", "failed")
-        emit_event("startup_database_failed", level=40, error_code=error.code)
-        raise StartupPreflightError(error.code) from None
-    except (OSError, sqlite3.Error, ValueError):
-        increment("startup", "database", "failed")
-        emit_event("startup_database_failed", level=40, error_code="database_startup_failed")
-        raise StartupPreflightError("database_startup_failed") from None
-    audit = run_audit(config.database_path) or {"status": "ok", "reasons": []}
-    app.state.audit_reasons = tuple(audit.get("reasons", []))
-    increment("startup", "audit", "completed" if audit.get("status") == "ok" else "degraded")
-    reconcile(config)
-    increment("startup", "recovery", "completed")
-    app.state.ready = True
-    app.state.startup_state = "ready"
-    emit_event("startup_ready", component="startup", outcome="ready")
-    try:
+        try:
+            with connect(config.database_path):
+                pass
+            increment("startup", "database", "success")
+        except MigrationError as error:
+            increment("startup", "database", "failed")
+            emit_event("startup_database_failed", level=40, error_code=error.code)
+            raise StartupPreflightError(error.code) from None
+        except (OSError, sqlite3.Error, ValueError):
+            increment("startup", "database", "failed")
+            emit_event("startup_database_failed", level=40, error_code="database_startup_failed")
+            raise StartupPreflightError("database_startup_failed") from None
+        audit = run_audit(config.database_path) or {"status": "ok", "reasons": []}
+        app.state.audit_reasons = tuple(audit.get("reasons", []))
+        increment("startup", "audit", "completed" if audit.get("status") == "ok" else "degraded")
+        reconcile(config)
+        increment("startup", "recovery", "completed")
+        app.state.ready = True
+        app.state.startup_state = "ready"
+        emit_event("startup_ready", component="startup", outcome="ready")
         yield
     finally:
         app.state.ready = False
         app.state.startup_state = "stopped"
+        if instance_lock is not None:
+            instance_lock.release()
+            increment("startup", "instance_lock", "released")
 
 
 def _valid_filename(raw_name: str) -> str | None:

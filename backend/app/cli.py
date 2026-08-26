@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 from .backup import BackupError, backup_data, restore_backup, rotate_backups, upgrade_preflight, verify_backup
 from .config import config_from_environment
-from .diagnostics import DiagnosticError, collect_diagnostics
+from .diagnostics import APPLICATION_VERSION, DiagnosticError, collect_diagnostics
 from .observability import emit_event, increment
-from .migrations.runner import MigrationError, assert_schema_version
+from .migrations.runner import CURRENT_SCHEMA_VERSION, MigrationError, assert_schema_version
 from .restore_acceptance import verify_restored_data
 from .repository import connect, recover_active_operation_tasks
 from .task_handlers import build_task_runner
@@ -40,6 +41,9 @@ def main(argv: list[str] | None = None) -> int:
     tasks.add_argument("--max-tasks", type=int, default=1)
     diagnostics = sub.add_parser("diagnostics")
     diagnostics.add_argument("--data-root", required=True, type=Path)
+    serve = sub.add_parser("serve")
+    serve.add_argument("--data-root", type=Path)
+    sub.add_parser("version")
     rotation = sub.add_parser("rotate-backups")
     rotation.add_argument("--backup-root", required=True, type=Path)
     rotation.add_argument("--retain", required=True, type=int)
@@ -49,7 +53,19 @@ def main(argv: list[str] | None = None) -> int:
     upgrade.add_argument("--backup", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
-        if args.command == "backup":
+        if args.command == "serve":
+            import uvicorn
+            from .main import create_app
+            config = config_from_environment()
+            if args.data_root is not None:
+                config = replace(config, data_root=args.data_root)
+            logging.basicConfig(level=getattr(logging, config.log_level), format="%(message)s")
+            app = create_app(config)
+            uvicorn.run(app, host=config.host, port=config.port, workers=1, reload=False)
+            return 0
+        if args.command == "version":
+            result = {"application_version": APPLICATION_VERSION, "schema_version": CURRENT_SCHEMA_VERSION}
+        elif args.command == "backup":
             result = backup_data(args.data_root, args.output, args.project_id)
         elif args.command == "verify-backup":
             result = verify_backup(args.backup)
@@ -95,12 +111,13 @@ def main(argv: list[str] | None = None) -> int:
             result = {"status": "completed", "tasks_run": completed}
         else:
             result = restore_backup(args.data_root, args.backup, args.confirm)
-    except (BackupError, MigrationError, DiagnosticError) as error:
+    except (BackupError, MigrationError, DiagnosticError, ValueError) as error:
+        code = getattr(error, "code", str(error) if str(error).startswith("invalid_") else "operator_command_failed")
         if args.command == "diagnostics":
             increment("diagnostics", "failed")
-            emit_event("operator_diagnostics_failed", level=40, error_code=error.code,
+            emit_event("operator_diagnostics_failed", level=40, error_code=code,
                        component="operator", outcome="failed")
-        print(json.dumps({"status": "failed", "error_code": error.code}, ensure_ascii=False))
+        print(json.dumps({"status": "failed", "error_code": code}, ensure_ascii=False))
         return 1
     print(json.dumps(result, ensure_ascii=False))
     return 0

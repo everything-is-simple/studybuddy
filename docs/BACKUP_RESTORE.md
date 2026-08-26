@@ -62,6 +62,16 @@ C:/miniconda/py310/python.exe -m app.cli upgrade-preflight --data-root <live-roo
 
 `upgrade-preflight` 只读检查 live database/originals、schema history/`user_version`、integrity/FK、写入 ACL access 和指定 rollback backup 的重新 verify/schema match；不 migration、repair、rebuild、运行 task 或调用外部能力。只有 `status=ready` 且 `backup_verified=true` 才可进入明确的停机升级流程。
 
+## 本地启动与停止
+
+```text
+powershell -NoProfile -File .\backend\scripts\start-studybuddy.ps1 -DataRoot <local-data-root> -Port 8787
+powershell -NoProfile -File .\backend\scripts\health-studybuddy.ps1 -Port 8787
+powershell -NoProfile -File .\backend\scripts\stop-studybuddy.ps1 -DataRoot <local-data-root>
+```
+
+启动脚本固定 loopback、单进程、delivery off，并用 data root 下的 PID 文件配合应用的 `.studybuddy-instance.lock`；停止只操作该 PID，不按端口杀进程。配置、Provider key 来源、升级和发布限制见 [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) 与 [`prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)。
+
 ## 诊断与健康
 
 ```text
