@@ -33,3 +33,6 @@ tmp_sb/
 .env
 .env.*
 !.env.example
+
+# local first-run helper overrides
+first-run-studybuddy.local.ps1

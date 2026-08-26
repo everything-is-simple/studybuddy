@@ -52,7 +52,7 @@
 - **Gate G（Operations）**：upgrade、backup、verify、restore drill、保留轮换、corruption quarantine/read-only/停机决策有可复现证据。
 - **Gate H（Release runtime）**：安全配置、data-root 单实例锁、显式 serve/version、Windows start/health/stop、版本、健康检查和本地源码发布路径通过；不等于 universal installer 或所有 Windows 环境支持。
 - **Gate I（Boundary evidence）**：容量、性能、长时 smoke、权限/资源不足等时间盒结果形成；未验证故障如实登记。
-- **Gate J（Release closeout）**：隔离 data root 完成 release candidate 全路径，完整 backend 与相关 Chromium 通过，文档、TODO、STATUS、ROADMAP、README、INDEX 和发布 checklist 一致。
+- **Gate J（Release closeout）**：已通过。隔离 `mkdtemp` data root 的 release candidate 全路径、完整 backend、相关 Chromium、`PHASE10_RELEASE_CANDIDATE_EVIDENCE.md` 以及 TODO/STATUS/ROADMAP/README/INDEX 文档同步均已完成。
 
 ## 停工规则
 
@@ -67,4 +67,4 @@
 
 > Phase 10 已完成，StudyBuddy 已在明确的 local single-process / single-instance / SQLite / local-disk v1 支持范围内完成生产化和上线收口：后台任务基础、任务状态与恢复、可观察性、migration/backup/restore 运维、启动配置、发布演练、边界验收和文档证据均已通过。该声明不代表多用户、认证授权、云同步、协作、多进程共享 data_root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道或全局 production real-pass；未验证项目仍按 evidence 标记为 `not_verified`。
 
-若任何 Gate A-J 未通过，只能声明已通过的局部 gate，不得写 Phase 10 completed、上线成功或 production-ready。
+Gate A-J 已全部通过，因此可以使用上文限定范围的 Phase 10 completed / 本地单机 v1 上线收口措辞；不得扩大为多用户、共享 data root 多进程、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道或全局 production-ready。

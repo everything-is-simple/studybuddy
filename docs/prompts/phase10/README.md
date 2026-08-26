@@ -16,6 +16,7 @@ Phase 10 的目标不是继续无限加功能，而是把当前 Phase 9D 部分�
 - `PHASE10_OPERATIONS_EVIDENCE.md`：10-6 backup/restore/migration operations、verified rotation、upgrade preflight、restore drill 与 stop/quarantine policy；Gate G 已通过。
 - `PHASE10_RELEASE_RUNTIME_EVIDENCE.md`：10-7 local serve、配置、单实例锁、Windows 启停/健康脚本和安全默认值 Gate H evidence。
 - `PHASE10_BOUNDARY_EVIDENCE.md`：10-8 local capacity、performance、lifecycle 和 failure-boundary Gate I evidence。
+- `PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`：10-9 isolated release candidate drill、full regression、Gate J 和 local-v1 release closeout evidence。
 - `EXECUTION_ORDER_AND_GATES.md`：顺序、推荐 commit、Gate A-J、停工规则和完成措辞。
 
 ## 计划步骤
@@ -33,4 +34,4 @@ Phase 10 的目标不是继续无限加功能，而是把当前 Phase 9D 部分�
 9. 完成容量、性能、长时和故障边界证据；
 10. 完成 release candidate、端到端上线演练和文档收口。
 
-每步必须独立测试、独立提交、独立更新状态；prompt 本身不是实现证据。只有 Gate A-J 全部通过，才能使用本包定义的“Phase 10 已完成、StudyBuddy 本地单机 v1 已上线”措辞。
+每步必须独立测试、独立提交、独立更新状态；prompt 本身不是实现证据。Gate A-J 已全部通过，因此本包定义的“Phase 10 已完成、StudyBuddy 本地单机 v1 已上线”措辞仅适用于其明确的 local single-process / single-instance / SQLite / local-disk 范围。
