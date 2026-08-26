@@ -242,15 +242,27 @@ def test_core_design_tracks_current_phase_and_moved_document_links():
     migrations = read("MIGRATIONS.md")
     roadmap = read("PHASE_ROADMAP.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
+    status = read("STATUS.md")
+    phase9d = read("PHASE9D_ACCEPTANCE_EVIDENCE.md")
+    restore_acceptance = (ROOT / "backend" / "app" / "restore_acceptance.py").read_text(encoding="utf-8")
 
     for document in (architecture, ai_architecture, progress):
         assert "Phase 9C" in document
         assert "PHASE9C_ACCEPTANCE_EVIDENCE.md" in document
-    assert "Phase 9C/9D 学习能力" not in architecture
-    assert "后续 Phase 9C/9D 学习工作流" not in ai_architecture
+        assert "PHASE9D_ACCEPTANCE_EVIDENCE.md" in document
+    for document in (architecture, ai_architecture, progress, status, phase9d):
+        assert "v12" in document
+        assert "Phase 9D" in document
+    assert "Phase 9D" in roadmap
+    assert "PHASE9D_ACCEPTANCE_EVIDENCE.md" in roadmap
+    assert "当前正式 schema 为 v11" not in architecture
+    assert "API/UI、完整 source lifecycle/restore gates" not in ai_architecture
     assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in architecture
     assert "prompts/BACKUP_OPERATIONS.md" in backup
     assert "prompts/RESTORE_DRILL.md" in backup
-    assert "prompts/OPERATOR_UPGRADE.md" in migrations
+    assert "Phase 9D capture-session" in migrations
+    assert "OCR/ASR" in backup and "report generation" in backup and "delivery" in backup
+    assert "_phase9d_checks" in restore_acceptance
+    assert "acceptance_phase9d_schema_missing" in restore_acceptance
     assert "prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md" in roadmap
     assert "prompts/DECISIONS.md" in progress

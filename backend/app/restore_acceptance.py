@@ -236,6 +236,82 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
+def _phase9d_checks(connection: sqlite3.Connection) -> dict[str, Any]:
+    required_tables = (
+        "capture_sessions", "transcript_drafts", "transcript_segments",
+        "report_snapshots", "report_delivery_attempts",
+    )
+    placeholders = ",".join("?" for _ in required_tables)
+    present = {
+        str(row[0]) for row in connection.execute(
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name IN ({placeholders})",
+            required_tables,
+        ).fetchall()
+    }
+    if present != set(required_tables):
+        raise AcceptanceError("acceptance_phase9d_schema_missing")
+
+    invalid_draft_scope = connection.execute(
+        "SELECT COUNT(*) FROM transcript_drafts d JOIN capture_sessions c ON c.id=d.capture_session_id "
+        "WHERE d.project_id != c.project_id"
+    ).fetchone()[0]
+    if invalid_draft_scope:
+        raise AcceptanceError("acceptance_phase9d_draft_scope_invalid")
+    invalid_segment_scope = connection.execute(
+        "SELECT COUNT(*) FROM transcript_segments s JOIN transcript_drafts d ON d.id=s.draft_id "
+        "WHERE s.project_id != d.project_id"
+    ).fetchone()[0]
+    if invalid_segment_scope:
+        raise AcceptanceError("acceptance_phase9d_segment_scope_invalid")
+    invalid_operation_scope = connection.execute(
+        "SELECT COUNT(*) FROM ai_operations o LEFT JOIN capture_sessions c ON c.id=o.capture_session_id "
+        "WHERE o.capture_session_id IS NOT NULL AND (c.id IS NULL OR o.project_id != c.project_id)"
+    ).fetchone()[0]
+    if invalid_operation_scope:
+        raise AcceptanceError("acceptance_phase9d_operation_scope_invalid")
+    invalid_delivery_scope = connection.execute(
+        "SELECT COUNT(*) FROM report_delivery_attempts a JOIN report_snapshots r ON r.id=a.report_id "
+        "WHERE a.project_id != r.project_id"
+    ).fetchone()[0]
+    if invalid_delivery_scope:
+        raise AcceptanceError("acceptance_phase9d_delivery_scope_invalid")
+    invalid_valid_source = connection.execute(
+        "SELECT COUNT(*) FROM capture_sessions c LEFT JOIN materials m ON m.id=c.material_id "
+        "WHERE c.source_status='valid' AND (m.id IS NULL OR m.project_id != c.project_id OR m.deleted_at IS NOT NULL)"
+    ).fetchone()[0]
+    if invalid_valid_source:
+        raise AcceptanceError("acceptance_phase9d_source_invalid")
+
+    return {
+        "status": "passed",
+        "counts": {
+            table: int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+            for table in required_tables
+        },
+        "capture_statuses": {
+            str(row[0]): int(row[1]) for row in connection.execute(
+                "SELECT status,COUNT(*) FROM capture_sessions GROUP BY status ORDER BY status"
+            ).fetchall()
+        },
+        "capture_source_statuses": {
+            str(row[0]): int(row[1]) for row in connection.execute(
+                "SELECT COALESCE(source_status,'unbound'),COUNT(*) FROM capture_sessions "
+                "GROUP BY COALESCE(source_status,'unbound') ORDER BY 1"
+            ).fetchall()
+        },
+        "report_statuses": {
+            str(row[0]): int(row[1]) for row in connection.execute(
+                "SELECT status,COUNT(*) FROM report_snapshots GROUP BY status ORDER BY status"
+            ).fetchall()
+        },
+        "delivery_statuses": {
+            str(row[0]): int(row[1]) for row in connection.execute(
+                "SELECT status,COUNT(*) FROM report_delivery_attempts GROUP BY status ORDER BY status"
+            ).fetchall()
+        },
+    }
+
+
 def _offline(data_root: Path) -> dict[str, Any]:
     connection, metadata = _check_database(data_root)
     checks: dict[str, Any] = {
@@ -249,6 +325,7 @@ def _offline(data_root: Path) -> dict[str, Any]:
         "foreign_keys": {"status": "passed"},
         "schema_history": {"status": "passed", "count": metadata["history_count"]},
         "study": _study_checks(connection),
+        "phase9d": _phase9d_checks(connection),
     }
     try:
         active = connection.execute(

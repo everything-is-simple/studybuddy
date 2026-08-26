@@ -338,7 +338,17 @@ def test_backup_restore_preserves_phase9d_history_without_side_effects(tmp_path:
     monkeypatch.setattr("app.repository.record_report_delivery_attempt", fail_ai)
 
     assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
-    assert verify_restored_data(restored)["status"] == "passed"
+    acceptance = verify_restored_data(restored)
+    assert acceptance["status"] == "passed"
+    phase9d = acceptance["checks"]["phase9d"]
+    assert phase9d["counts"]["capture_sessions"] == 1
+    assert phase9d["counts"]["transcript_drafts"] == 1
+    assert phase9d["counts"]["report_snapshots"] == 1
+    assert phase9d["counts"]["report_delivery_attempts"] == 0
+    assert phase9d["capture_statuses"] == {"confirmed": 1}
+    assert phase9d["capture_source_statuses"] == {"source_deleted": 1}
+    assert phase9d["report_statuses"] == {"ready": 1}
+    assert phase9d["delivery_statuses"] == {}
     after = _snapshot(restored / "studybuddy.sqlite3", TEST_TABLES)
     # history counts preserved; stored_path may be rebased by restore
     assert len(after["capture_sessions"]) == len(before["capture_sessions"])
