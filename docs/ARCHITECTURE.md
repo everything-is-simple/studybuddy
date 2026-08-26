@@ -2,7 +2,7 @@
 
 > 核心运行入口：`backend/app/main.py:create_app`（FastAPI 应用工厂）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。业务持久化只能经 `backend/app/repository.py`，schema 只能经 `backend/app/migrations/runner.py`，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v13（Phase 9D 的历史 persistence baseline 为 v12）；Phase 9D 最终限定范围证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 已完成 v13 的 task/attempt persistence schema，但尚未实现 scheduler/worker、task runner 或业务接入。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v13（Phase 9D 的历史 persistence baseline 为 v12）；Phase 9D 最终限定范围证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 已完成 v13 task/attempt persistence schema 与 explicit-only single-process task runner/recovery；runner 默认不在 startup、backup、restore 或 read path 自动启动，业务接入尚未实现。scheduler/worker、多进程执行仍不在支持范围。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。
 
 ## Evolution boundary
 

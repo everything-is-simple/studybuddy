@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from app.config import AppConfig
 from app.main import create_app
+from app.repository import connect
 
 
 def client(root: Path) -> TestClient:
@@ -69,6 +70,38 @@ def test_missing_original_does_not_delete_material(tmp_path: Path):
         assert app.get(f"/api/materials/{material_id}").status_code == 200
         assert app.get(f"/api/materials/{material_id}/text").status_code == 200
         assert app.get(f"/api/materials/{material_id}/original").status_code == 500
+
+
+def test_startup_marks_interrupted_task_stale_without_starting_runner(tmp_path: Path):
+    database = tmp_path / "studybuddy.sqlite3"
+    with connect(database) as connection:
+        connection.execute("INSERT INTO projects VALUES ('task_recovery','Task recovery','now')")
+        connection.execute(
+            "INSERT INTO ai_operations (id,operation_type,status,project_id,input_fingerprint,retry_count,created_at,started_at) "
+            "VALUES ('recovery_operation','embedding_index','running','task_recovery','input',0,'now','now')"
+        )
+        connection.execute(
+            "INSERT INTO operation_tasks "
+            "(id,project_id,operation_id,task_kind,status,input_fingerprint,progress_percent,stage_code,retry_count,max_retries,created_at,updated_at,started_at) "
+            "VALUES ('recovery_task','task_recovery','recovery_operation','test','running','input',40,'indexing',0,0,'now','now','now')"
+        )
+        connection.execute(
+            "INSERT INTO operation_task_attempts "
+            "(id,task_id,project_id,attempt_number,status,progress_percent,stage_code,lease_started_at,lease_expires_at,heartbeat_at,created_at,started_at) "
+            "VALUES ('recovery_attempt','recovery_task','task_recovery',1,'running',40,'indexing','now','2999-01-01T00:00:00+00:00','now','now','now')"
+        )
+    with client(tmp_path) as app:
+        assert app.get("/api/health").status_code == 200
+    with connect(database) as connection:
+        assert tuple(connection.execute(
+            "SELECT status,error_code FROM operation_tasks WHERE id='recovery_task'"
+        ).fetchone()) == ("stale", "task_recovery_required")
+        assert tuple(connection.execute(
+            "SELECT status,error_code FROM operation_task_attempts WHERE id='recovery_attempt'"
+        ).fetchone()) == ("stale", "task_recovery_required")
+        assert tuple(connection.execute(
+            "SELECT status,error_code FROM ai_operations WHERE id='recovery_operation'"
+        ).fetchone()) == ("stale", "task_recovery_required")
 
 
 def test_recovery_unlink_failure_does_not_block_startup(tmp_path: Path, monkeypatch):

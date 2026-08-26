@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .config import AppConfig
 from .observability import emit_event, increment
-from .repository import connect
+from .repository import connect, recover_active_operation_tasks
 from .storage import sha256_file
 
 logger = logging.getLogger(__name__)
@@ -103,11 +103,25 @@ def _reconcile_originals(config: AppConfig) -> None:
                         pass
 
 
+def _reconcile_operation_tasks(config: AppConfig) -> None:
+    """Mark interrupted task attempts stale; startup never queues or executes a task."""
+    try:
+        with connect(config.database_path) as connection:
+            recovered = recover_active_operation_tasks(connection)
+        if recovered:
+            increment("recovery_events", "task_recovery_required", str(min(recovered, 9)))
+            emit_event("task_recovery_required", level=logging.WARNING,
+                       error_code="task_recovery_required", component="recovery", outcome="stale")
+    except Exception:
+        _note("task_recovery_check_failed")
+
+
 def reconcile(config: AppConfig) -> None:
     """Run the one-shot, conservative startup reconciliation pass."""
     increment("recovery", "started")
     _cleanup_stale_incoming(config.data_root)
     _reconcile_originals(config)
+    _reconcile_operation_tasks(config)
     # Missing referenced originals are intentionally detection-only.  Do not use
     # stored_path for deletion or mutate database rows here.
     try:
