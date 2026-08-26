@@ -1,6 +1,6 @@
 # StudyBuddy 项目进度报告
 
-> 更新日期：2026-08-30（以 Phase 10-2 v13 task schema、Gate C 与全量回归重新对齐）
+> 更新日期：2026-08-30（以 Phase 10-9 release candidate、Gate J 与文档收口重新对齐）
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
 
@@ -174,7 +174,7 @@ StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-aud
 
 Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
-### Phase 10：本地生产化与上线收口（10-0 至 10-8 已完成，Gate I boundary evidence 已形成）
+### Phase 10：本地生产化与上线收口（10-0 至 10-9 已完成，Gate J 已通过）
 
 - 10-0：已完成本地单机 v1 的成功上线标准、支持边界、non-goals 和 release go/no-go；Gate A 通过，状态为 `planned/audit-draft`。审计产物：[`prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`](prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md)。
 - 10-1：已完成 operation/task 状态机、progress、lease、retry、cooperative cancel、幂等、兼容策略和重启恢复语义冻结；Gate B 通过，状态为 `planned/contract-frozen`。契约见 [`prompts/phase10/PHASE10_OPERATION_TASK_CONTRACT.md`](prompts/phase10/PHASE10_OPERATION_TASK_CONTRACT.md)。
@@ -184,10 +184,10 @@ Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不�
 - 10-5：已实现严格 allowlisted 的 structured events、`X-Request-ID` → operation → task correlation、低基数 process-local metrics、task duration 和 backup/verify/restore events。`/api/liveness` 只表示 HTTP process 存活；`/api/health` 仅在 startup preflight/connect/audit/recovery 和 runtime diagnostics 都无降级原因时为 200；`/api/readiness` 在 audit integrity/FK/relation、runtime database 或 stale task 异常时安全 503，不伪造 healthy。新增只读 `diagnostics --data-root` 输出 application/schema、task counts、稳定原因和建议动作；不会迁移、repair、rebuild 或执行 task。Gate F 为 `implemented/backend-pass`：focused `65 passed`，完整 backend `388 passed, 2 skipped`；证据见 [`prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`](prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md)。
 - 10-6：已完成 local v1 backup/restore/migration 运维闭环。backup manifest/verify 复核 database size/hash/integrity/FK、连续 history/`user_version` 与 originals layout/hash/size；连续旧 schema backup 可作为 rollback evidence，restore 保留其版本且不自动 migration，后续显式新版本 startup 才升级。新增 non-mutating `upgrade-preflight --data-root ... --backup ...`、default dry-run/confirmed verified `rotate-backups`、v13 operator upgrade runbook、restore drill 和 stop/quarantine policy。corruption、original mismatch、schema/history、restore acceptance 或 readiness 异常不 repair、不进入 runtime read-only serving，停止并保留证据。Gate G 为 `implemented/backend-pass` / `restore-gates-pass`：focused `67 passed`；full backend at that gate `396 passed, 2 skipped`，证据见 [`prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md`](prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md)。真实断电、ACL、磁盘满和 network filesystem 仍为 `not_verified`。
 - 10-7：已完成 local runtime release。`AppConfig` 冻结 loopback host/port、upload limit、provider/key runtime source、demo、单任务并发、log level 与 external backup root；新增跨平台 `.studybuddy-instance.lock`、显式 `serve`/`version` CLI、Windows start/health/stop 脚本及 PID/优雅停止。默认 provider 未配置、delivery off、workers=1、reload=false；secret 不进 CLI、数据库、日志或 artifact。Gate H 为 `implemented/backend-pass`：focused `38 passed`，完整 backend at that gate `410 passed, 2 skipped`，证据见 [`prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)。universal installer、ACL、disk-full、power-loss、network filesystem 和 forced termination 仍为 `not_verified`。
-- 10-8：已完成隔离临时目录中的 local boundary evidence。新增 `backend/scripts/phase10_boundary.py`，覆盖 startup、单/批量导入、搜索/导出、revision/chunk/embedding、Q&A、Cards/Exercises、9A–9D 最小流程、task progress/retry、10-cycle lifecycle、backup/verify/restore、数据库大小和 Python peak working set。Windows synthetic runner 的 18 项检查全部通过；focused `2 passed`；完整 backend `412 passed, 2 skipped`；串行相关 Chromium 为 Q&A `9 passed, 1 skipped`、Phase 8 `3 passed`、Phase 9B `3 passed`。Gate I 为 `scoped-gates-pass`，证据见 [`prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md`](prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md)。ACL、disk-full/quota、断电、硬件/文件系统损坏、network filesystem、多进程、所有真实 Provider/OCR/ASR/外发、universal installer 和无界长时生产负载仍为 `not_verified`。
-- 10-9：完成 release candidate 端到端上线演练、完整回归、脱敏 evidence 和文档收口。
+- 10-8：已完成隔离临时目录中的 local boundary evidence。新增 `backend/scripts/phase10_boundary.py`，覆盖 startup、单/批量导入、搜索/导出、revision/chunk/embedding、Q&A、Cards/Exercises、9A–9D 最小流程、task progress/retry、10-cycle lifecycle、backup/verify/restore、数据库大小和 Python peak working set。Windows synthetic runner 的 18 项检查全部通过；focused `2 passed`；当时完整 backend `412 passed, 2 skipped`，Gate J 最终完整 backend `413 passed, 2 skipped`；串行相关 Chromium 为 Q&A `9 passed, 1 skipped`、Phase 8 `3 passed`、Phase 9B `3 passed`。Gate I 为 `scoped-gates-pass`，证据见 [`prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md`](prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md)。ACL、disk-full/quota、断电、硬件/文件系统损坏、network filesystem、多进程、所有真实 Provider/OCR/ASR/外发、universal installer 和无界长时生产负载仍为 `not_verified`。
+- 10-9：已完成 release candidate 端到端上线演练、完整 backend/相关 Chromium 回归、脱敏 evidence 和文档收口。`backend/tests/test_phase10_gate_j.py` 在每次 run 的隔离 `mkdtemp` data root 中覆盖 startup/health/readiness、材料/同步 indexing、fake Q&A/citation、Cards/Exercises、9A/9C/9D 最小路径、approved embedding task 的 success/retry/cancel、backup→verify→新空目录 restore、双次重启和只读 diagnostics；完整 backend `413 passed, 2 skipped`，Gate J 已通过。证据见 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 
-执行包：[`docs/prompts/phase10/`](prompts/phase10/)。只有 Gate A-J 全部通过，才能声明本地单机 v1 上线；多用户、云同步、协作、多进程共享 data_root、真实断电恢复和全局 production `real-pass` 不在该声明内。
+执行包：[`docs/prompts/phase10/`](prompts/phase10/)。Gate A-J 已全部通过，因此可声明：**Phase 10 已完成，StudyBuddy 已在明确的 local single-process / single-instance / SQLite / local-disk v1 支持范围内完成生产化和上线收口。** 多用户、认证授权、云同步、协作、多进程共享 data_root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 和全局 production `real-pass` 不在该声明内。
 
 ### P2：产品验证通过后再做架构扩展
 

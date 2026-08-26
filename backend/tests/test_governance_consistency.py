@@ -212,6 +212,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "STATUS.md",
         "TODO.md",
         "ai-learning-architecture.md",
+        "LOCAL_V1_USER_GUIDE.md",
     }
     assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
     assert (DOCS / "prompts" / "README.md").is_file()

@@ -148,9 +148,14 @@ def test_same_data_root_cannot_have_two_live_app_instances(tmp_path: Path):
 
 def test_operator_scripts_are_local_single_process_and_do_not_accept_secrets():
     start = (ROOT / "scripts" / "start-studybuddy.ps1").read_text(encoding="utf-8")
+    first_run = (ROOT / "scripts" / "first-run-studybuddy.ps1").read_text(encoding="utf-8")
     stop = (ROOT / "scripts" / "stop-studybuddy.ps1").read_text(encoding="utf-8")
     health = (ROOT / "scripts" / "health-studybuddy.ps1").read_text(encoding="utf-8")
     assert "127.0.0.1" in start and "backend.app" in start and "serve" in start
     assert "--workers" not in start and "--reload" not in start and "-m backend.app serve" in start
+    assert "OpenBrowser" in start and 'Start-Process "http://127.0.0.1:$Port"' in start
     assert "API_KEY" not in start and "API_KEY" not in stop
+    assert "STUDYBUDDY_AI_API_KEY" in first_run
+    assert "-OpenBrowser:$OpenBrowser" in first_run
+    assert "STUDYBUDDY_AI_BASE_URL" in first_run and "STUDYBUDDY_AI_PROVIDER" in first_run
     assert "api/liveness" in health and "api/health" in health and "api/readiness" in health

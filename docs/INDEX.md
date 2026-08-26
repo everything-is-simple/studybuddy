@@ -11,6 +11,10 @@
 - [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：长期阶段、依赖和完成标准。
 - [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)：项目现状摘要。
 
+## 使用与竣工
+
+- [`LOCAL_V1_USER_GUIDE.md`](LOCAL_V1_USER_GUIDE.md)：竣工报告、首次配置、启动/停止、首次验收、真实 AI 配置、日常使用和最小产品扩展路线。
+
 ## 核心设计与运维
 
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构和实施边界。
@@ -31,6 +35,7 @@
 - [`prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md`](prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md)：Phase 10-6 backup/restore/migration operations Gate G evidence.
 - [`prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)：Phase 10-7 local runtime/configuration/start-stop Gate H evidence。
 - [`prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md`](prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md)：Phase 10-8 local capacity/performance/lifecycle/boundary Gate I evidence。
+- [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：Phase 10-9 isolated release candidate drill、Gate J 与 local-v1 release closeout evidence。
 
 ## 非核心资料
 

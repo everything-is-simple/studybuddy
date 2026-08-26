@@ -2,7 +2,8 @@
 param(
     [string]$DataRoot = $env:STUDYBUDDY_DATA_ROOT,
     [int]$Port = 8787,
-    [string]$Python = $env:STUDYBUDDY_PYTHON
+    [string]$Python = $env:STUDYBUDDY_PYTHON,
+    [switch]$OpenBrowser
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -40,6 +41,9 @@ try {
     if ($process.HasExited) {
         Remove-Item -Force -LiteralPath $pidPath -ErrorAction SilentlyContinue
         throw 'studybuddy_start_failed'
+    }
+    if ($OpenBrowser) {
+        Start-Process "http://127.0.0.1:$Port"
     }
     Write-Output "studybuddy_started"
 } finally {
