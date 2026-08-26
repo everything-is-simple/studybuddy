@@ -2,7 +2,7 @@
 
 > 状态：`planned/contract-frozen`（Gate B：通过）  
 > 前置：Phase 10-0 `planned/audit-draft`，Gate A `scoped go`  
-> 当前基线：schema v12；本文件只冻结契约，不实现 task runner，不新增 migration。
+> 当前基线：schema v13；10-2 已落实最小 task/attempt schema，尚未实现 task runner 或业务接入。
 
 ## 1. 契约目标
 
@@ -17,7 +17,7 @@ Phase 10 将“业务操作记录”和“执行任务”分成两个概念：
 
 ### 2.1 当前 `ai_operations` 实际能力
 
-当前正式表由 `backend/app/migrations/runner.py` v2/v3/v4/v12 逐步建立和扩展，已有字段包括：
+当前 `ai_operations` 正式表由 `backend/app/migrations/runner.py` v2/v3/v4/v12 逐步建立和扩展，已有字段包括：
 
 - identity：`id`、`operation_type`、`project_id`；
 - source/scope：`material_id`、`thread_id`、`source_revision`、Phase 9D 的 `capture_session_id`；
@@ -55,7 +55,7 @@ queued | running | succeeded | failed | cancelled | stale
 
 1. 既有 `ai_operations` 保留，不在 10-1 删除、重命名或改变既有字段语义。
 2. 既有历史 operation 不强制回填为 task；没有 task 记录的历史 operation 仍按原有查询、backup/restore 和 source lifecycle 语义读取。
-3. 新 runner-backed operation 使用 task 执行层；operation 与 task 的关联由 10-2 migration 冻结并实现，不能在 10-1 假设具体列名。
+3. 新 runner-backed operation 使用 task 执行层；10-2 v13 已通过 `operation_tasks.operation_id`（每 operation 最多一个 task）及 project-scoped composite FK 固化关联，历史 operation 不回填。
 4. 既有同步 API 只有在 10-4 对某一 operation 明确批准后，才允许返回 task handle 或改为排队；没有批准的 endpoint 保持同步行为。
 5. 既有 `stale` 只表示该 operation 的当前执行事实失效或租约过期，不自动等价于成功、失败可重试或 artifact 可用；具体 retryability 由 operation policy 决定。
 6. 旧 operation 的 `retry_count` 保留其现有含义；统一 task attempt 计数不得静默覆盖旧历史。迁移时必须明确旧字段到新字段的映射。
@@ -299,7 +299,7 @@ answer key/user submitted answer
 
 ## 10. Backup、restore、startup 和读取语义
 
-- backup 必须保存 operation/task/attempt 的业务审计事实和终态；是否保存 lease 运行时字段由 10-2 冻结，但恢复后不能让旧 lease 继续有效。
+- backup 必须保存 operation/task/attempt 的业务审计事实和终态；v13 保存 attempt 的 lease 时间事实，但不保存 lease owner/token；恢复后不能让旧 lease 继续有效。
 - restore 后 queued/running/cancel_requested 的任务不得自动执行；默认按 `stale`/`recovery_required` 方式安全处理，保留原审计并要求显式 operator action。
 - restore/startup/read 不调用 provider、OCR/ASR、parser、index、report 或 delivery handler；不自动 repair、rebuild 或发送。
 - restored succeeded/failed/cancelled/stale 事实必须保持原状态；source deleted/unavailable/stale 不能被 task 恢复为 valid。
@@ -314,8 +314,8 @@ Gate B 通过标准：
 3. progress、lease、attempt、retry 和 cooperative cancellation 的限制明确；
 4. 幂等、重复副作用、source revision、draft/user edit、delivery off 和隐私边界明确；
 5. backup/restore/startup/read 的 non-repair/non-run 语义明确；
-6. 10-2 可以据此设计最小 v13 migration，10-3 可以据此实现 runner，10-4 可以据此逐项接入业务；
-7. 当前 10-1 不修改生产代码、不新增 schema、不改变旧 API。
+6. 10-2 已据此完成最小 v13 migration；10-3 可以据此实现 runner，10-4 可以据此逐项接入业务；
+7. 10-1 本身未修改旧 API；10-2 未改变旧同步 operation 语义。
 
 10-2 以后必须新增正式测试覆盖：
 
@@ -340,10 +340,6 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/ -q -p no:cacheprovider
 
 ## 12. 10-1 完成声明
 
-> Phase 10-1 已完成 operation/task 正式契约、状态机、兼容策略、progress/lease/retry/cancel/幂等和隐私边界冻结；Gate B 通过。尚未实现 task schema、task runner、后台执行、取消、长任务恢复或业务接入；Phase 10 和 StudyBuddy 本地 v1 尚未完成上线。
+> Phase 10-1 已完成 operation/task 正式契约、状态机、兼容策略、progress/lease/retry/cancel/幂等和隐私边界冻结；Gate B 通过。10-2 已完成 v13 最小 task/attempt schema，Gate C 通过。task runner、后台执行、取消、长任务恢复和业务接入仍尚未实现；Phase 10 和 StudyBuddy 本地 v1 尚未完成上线。
 
-下一步：执行 `docs/prompts/phase10/10-2_migration_schema_与运行兼容.md`。推荐提交：
-
-```text
-docs: freeze operation task contract
-```
+下一步：执行 `docs/prompts/phase10/10-3_单进程_task_runner_与恢复.md`。

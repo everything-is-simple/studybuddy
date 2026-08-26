@@ -46,6 +46,13 @@ def test_offline_acceptance_checks_database_and_original(tmp_path: Path):
         "report_statuses": {},
         "delivery_statuses": {},
     }
+    assert result["checks"]["phase10_tasks"] == {
+        "status": "passed",
+        "counts": {"operation_tasks": 0, "operation_task_attempts": 0},
+        "task_statuses": {},
+        "attempt_statuses": {},
+        "execution": "not_run_by_restore_acceptance",
+    }
 
 
 def test_online_acceptance_checks_http_contract(monkeypatch, tmp_path: Path):
@@ -97,6 +104,7 @@ def test_empty_acceptance_skips_material_specific_checks(tmp_path: Path):
     assert result["checks"]["original_download"]["reason"] == "offline_mode"
     assert result["checks"]["phase9d"]["status"] == "passed"
     assert result["checks"]["phase9d"]["counts"]["capture_sessions"] == 0
+    assert result["checks"]["phase10_tasks"]["execution"] == "not_run_by_restore_acceptance"
 
 
 def test_phase9d_acceptance_rejects_invalid_valid_capture_source(tmp_path: Path):

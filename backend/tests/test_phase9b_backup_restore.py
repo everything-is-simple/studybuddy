@@ -122,7 +122,7 @@ def test_phase9b_backup_restore_preserves_notes_rhythm_tombstones_and_non_repair
     assert (source / "studybuddy.sqlite3").read_bytes() == before_bytes
     manifest_text = (backup / "manifest.json").read_text(encoding="utf-8")
     manifest = json.loads(manifest_text)
-    assert manifest["database"]["schema_version"] == 12
+    assert manifest["database"]["schema_version"] == 13
     assert str(source) not in manifest_text
     assert "Valid 9B source" not in manifest_text and "stored_path" not in manifest_text
 
