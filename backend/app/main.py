@@ -37,7 +37,9 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          list_deleted_materials, list_materials,
                          list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
                          purge_material, reclaim_stale_qa_operations, reclaim_stale_embedding_operations,
-                         create_embedding_index_operation, finish_embedding_index_operation, rename_material, restore_material, run_chunk_retrieval,
+                         create_embedding_index_operation, create_task_backed_embedding_operation,
+                         finish_embedding_index_operation, get_operation_task_public, rename_material, restore_material, run_chunk_retrieval,
+                         request_operation_task_cancel,
                          run_hybrid_retrieval, run_vector_retrieval, save_material_with_extraction, soft_delete_material,
                          validate_citation_key, qa_request_fingerprint, create_deck, get_deck,
                          list_decks, list_cards, create_card, update_card, confirm_card, transition_card, review_card,
@@ -72,6 +74,8 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          create_cram_goal, list_cram_goals, get_cram_goal, transition_cram_goal,
                          create_cram_session, get_cram_result)
 from .storage import sha256_file, store_original
+from .task_handlers import build_task_runner, embedding_provider_identity
+from .task_runner import TaskRunnerError
 
 
 def _phase9d_http_status(code: str) -> int:
@@ -1107,6 +1111,99 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         if result is None:
             raise HTTPException(status_code=404, detail="material_not_found")
         return {**result, "revision_id": revision["id"]}
+
+    @app.post("/api/materials/{material_id}/ai-index/tasks", status_code=202)
+    def enqueue_embedding_index_task(
+        material_id: str,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> dict[str, object]:
+        """Explicitly queue the approved embedding stage; legacy /ai-index stays synchronous."""
+        if idempotency_key is not None and (len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key)):
+            raise HTTPException(status_code=400, detail="embedding_index_invalid_idempotency_key")
+        config = app.state.config
+        try:
+            provider_id, model_id, model_revision = embedding_provider_identity(config)
+            with connect(config.database_path) as connection:
+                state = material_state(connection, material_id)
+                if state == "missing":
+                    raise HTTPException(status_code=404, detail="material_not_found")
+                if state == "deleted":
+                    raise HTTPException(status_code=404, detail="source_deleted")
+                extraction = connection.execute(
+                    "SELECT id FROM extractions WHERE material_id=? ORDER BY created_at DESC,id DESC LIMIT 1", (material_id,)
+                ).fetchone()
+                if extraction is None:
+                    raise HTTPException(status_code=404, detail="extraction_not_found")
+                # Revision/chunk creation remains the pre-existing synchronous source
+                # transaction. Only provider-backed embedding is runner-approved here.
+                revision = index_material_revision(connection, material_id, str(extraction["id"]))
+                queued = create_task_backed_embedding_operation(
+                    connection, project_id=config.project_id, material_id=material_id,
+                    source_revision=str(revision["id"]), provider_id=provider_id, model_id=model_id,
+                    model_revision=model_revision, idempotency_key=idempotency_key,
+                )
+                task = get_operation_task_public(
+                    connection, task_id=str(queued["task_id"]), project_id=config.project_id,
+                )
+        except HTTPException:
+            raise
+        except (EmbeddingError, ProviderError) as error:
+            raise HTTPException(status_code=503, detail=error.code) from None
+        except ValueError as error:
+            code = str(error)
+            status = 404 if code == "material_not_found" else 409 if code in {
+                "source_deleted", "source_stale", "embedding_index_idempotency_mismatch",
+                "task_project_scope_violation",
+            } else 400
+            raise HTTPException(status_code=status, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="embedding_index_enqueue_failed") from None
+        return {**task, "replay": bool(queued["replay"])}
+
+    @app.get("/api/tasks/{task_id}")
+    def task_status(task_id: str) -> dict[str, object]:
+        if not task_id or len(task_id) > 120:
+            raise HTTPException(status_code=404, detail="task_not_found")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return get_operation_task_public(connection, task_id=task_id, project_id=app.state.config.project_id)
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "task_not_found" else 409, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="task_read_failed") from None
+
+    @app.post("/api/tasks/{task_id}/cancel")
+    def cancel_task(task_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                get_operation_task_public(connection, task_id=task_id, project_id=app.state.config.project_id)
+                status = request_operation_task_cancel(connection, task_id=task_id)
+                return {**get_operation_task_public(connection, task_id=task_id, project_id=app.state.config.project_id),
+                        "cancel_result": status}
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "task_not_found" else 409, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="task_cancel_failed") from None
+
+    @app.post("/api/tasks/{task_id}/retry")
+    def retry_task(task_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                get_operation_task_public(connection, task_id=task_id, project_id=app.state.config.project_id)
+            runner = build_task_runner(app.state.config)
+            runner.retry(task_id)
+            with connect(app.state.config.database_path) as connection:
+                return get_operation_task_public(connection, task_id=task_id, project_id=app.state.config.project_id)
+        except TaskRunnerError as error:
+            code = error.code
+            raise HTTPException(status_code=404 if code == "task_not_found" else 409, detail=code) from None
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "task_not_found" else 409, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="task_retry_failed") from None
 
     @app.get("/api/materials/{material_id}/ai-index")
     def material_index_status(material_id: str) -> dict[str, object]:

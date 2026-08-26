@@ -3,11 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from .backup import BackupError, backup_data, restore_backup, verify_backup
+from .config import config_from_environment
 from .migrations.runner import MigrationError, assert_schema_version
 from .restore_acceptance import verify_restored_data
+from .repository import connect, recover_active_operation_tasks
+from .task_handlers import build_task_runner
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,6 +32,10 @@ def main(argv: list[str] | None = None) -> int:
     acceptance = sub.add_parser("verify-restored-data")
     acceptance.add_argument("--data-root", required=True, type=Path)
     acceptance.add_argument("--base-url")
+    tasks = sub.add_parser("run-tasks")
+    tasks.add_argument("--data-root", required=True, type=Path)
+    tasks.add_argument("--once", action="store_true")
+    tasks.add_argument("--max-tasks", type=int, default=1)
     args = parser.parse_args(argv)
     try:
         if args.command == "backup":
@@ -46,6 +54,23 @@ def main(argv: list[str] | None = None) -> int:
             if result.get("status") != "passed":
                 print(json.dumps(result, ensure_ascii=False))
                 return 1
+        elif args.command == "run-tasks":
+            if args.max_tasks < 1 or args.max_tasks > 1000:
+                print(json.dumps({"status": "failed", "error_code": "invalid_max_tasks"}, ensure_ascii=False))
+                return 1
+            config = replace(config_from_environment(), data_root=args.data_root)
+            # This explicit runner process must not inherit a prior process's
+            # execution claim. Recovery marks it stale; it never auto-retries it.
+            with connect(config.database_path) as connection:
+                recover_active_operation_tasks(connection)
+            runner = build_task_runner(config)
+            completed = 0
+            if args.once:
+                completed = int(runner.run_once())
+            else:
+                while completed < args.max_tasks and runner.run_once():
+                    completed += 1
+            result = {"status": "completed", "tasks_run": completed}
         else:
             result = restore_backup(args.data_root, args.backup, args.confirm)
     except (BackupError, MigrationError) as error:

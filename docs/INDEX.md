@@ -26,6 +26,7 @@
 - [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)：S1/S2 工作流验收。
 - [`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md)：S3/S4/S5 工作流验收。
 - [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)：S6/S7 部分立项范围的 Gate A-L scoped closeout。
+- [`prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`](prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md)：Phase 10-4 approved embedding task integration Gate E evidence.
 
 ## 非核心资料
 
