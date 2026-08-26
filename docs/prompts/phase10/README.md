@@ -7,6 +7,7 @@ Phase 10 的目标不是继续无限加功能，而是把当前 Phase 9D 部分�
 - `00_MASTER_PLAN_PROMPT.md`：总体规划 prompt，先审计并定义“成功上线”。
 - `00_COMMON_CONTEXT.md`：每个子任务必须附带的共同上下文。
 - `10-0_上线定义_现状审计与范围冻结.md` 至 `10-9_发布候选_上线演练与收口.md`：逐任务执行 prompt，一项一项执行。
+- `PHASE10_AUDIT_AND_SCOPE.md`：10-0 审计产物；Gate A 已通过，批准进入 10-1。
 - `EXECUTION_ORDER_AND_GATES.md`：顺序、推荐 commit、Gate A-J、停工规则和完成措辞。
 
 ## 计划步骤

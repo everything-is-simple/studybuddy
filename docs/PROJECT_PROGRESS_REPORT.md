@@ -174,9 +174,9 @@ StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-aud
 
 Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
-### Phase 10：本地生产化与上线收口（规划完成，实现未开始）
+### Phase 10：本地生产化与上线收口（10-0 已完成，后续实现未开始）
 
-- 10-0：定义本地单机 v1 的成功上线标准、支持边界、non-goals 和 release go/no-go。
+- 10-0：已完成本地单机 v1 的成功上线标准、支持边界、non-goals 和 release go/no-go；Gate A 通过，状态为 `planned/audit-draft`。审计产物：[`prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`](prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md)。
 - 10-1：冻结 operation/task 状态机、progress、lease、retry、cooperative cancel、幂等和重启恢复。
 - 10-2：通过 migration runner 增加最小 task schema，验证升级/rollback/history/backup 兼容。
 - 10-3：实现单进程 task runner、任务隔离、lease、progress、失败重试、stale/restart recovery。

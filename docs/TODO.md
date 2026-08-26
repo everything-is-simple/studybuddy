@@ -262,7 +262,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 规划已完成，执行 prompt 统一位于 [`docs/prompts/phase10/`](prompts/phase10/)。共 10 步，必须按顺序一次执行一个；prompt 不是实现证据。目标是 local single-process / single-instance / SQLite / local-disk v1 上线。
 
-- [ ] 10-0：上线定义、现状审计、支持边界与 non-goals 冻结；Gate A。
+- [x] 10-0：上线定义、现状审计、支持边界与 non-goals 冻结；Gate A 已通过（`planned/audit-draft`）。证据：[`prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`](prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md)。
 - [ ] 10-1：operation/task 正式契约与状态机；Gate B。
 - [ ] 10-2：连续 migration/schema、v12 升级、rollback、history/user_version、backup 兼容；Gate C。
 - [ ] 10-3：单进程 task runner、lease、progress、retry、cooperative cancel、stale/restart recovery；Gate D。

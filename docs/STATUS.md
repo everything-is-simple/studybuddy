@@ -18,7 +18,7 @@
 | I2 operator backup/restore | implemented | `backend/app/backup.py`, CLI, restore acceptance tests |
 | I3 minimal observability | implemented | `backend/app/observability.py`, `backend/tests/test_observability.py` |
 | I4 real environment/capacity baseline | time-box closed (v1) | `H:\studybuddy-test\artifacts\infrastructure-i4\latest.json`, `latest.md` |
-| Phase 10 local production/release | planned; implementation not started | `docs/prompts/phase10/`, Gate A-J; local single-process v1 target |
+| Phase 10 local production/release | 10-0 `planned/audit-draft`; implementation not started | `docs/prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`, Gate A passed; local single-process v1 target |
 | Local single-process infrastructure v1 | basically complete | I1+I2+I3 implemented; I4 time-box closed with declared limits |
 | AI/learning architecture | architecture plus Phase 4–7 and Phase 8 completed in fake-provider scope | `ai-learning-architecture.md`, `PHASE8_ACCEPTANCE_EVIDENCE.md`; real-provider generation, human short-answer review and later learning workflows remain future scope |
 | Material revision / deterministic chunks | implemented / backend-tested | `backend/app/chunking.py`, `backend/app/repository.py`, `backend/tests/test_ai_indexing.py` |
