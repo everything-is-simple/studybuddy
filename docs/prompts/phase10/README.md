@@ -11,7 +11,8 @@ Phase 10 的目标不是继续无限加功能，而是把当前 Phase 9D 部分�
 - `PHASE10_OPERATION_TASK_CONTRACT.md`：10-1 operation/task 正式契约与状态机；Gate B 已通过。
 - v13 `phase10_operation_task_schema`：10-2 最小 task/attempt schema；Gate C 已通过。
 - `backend/app/task_runner.py`：10-3 explicit-only single-process runner/recovery；Gate D 已通过。
-- `PHASE10_TASK_INTEGRATION_EVIDENCE.md`：10-4 approved `embedding_index` task integration；Gate E 已通过，批准进入 10-5。
+- `PHASE10_TASK_INTEGRATION_EVIDENCE.md`：10-4 approved `embedding_index` task integration；Gate E 已通过。
+- `PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`：10-5 safe observability/readiness/read-only diagnostics；Gate F 已通过，批准进入 10-6。
 - `EXECUTION_ORDER_AND_GATES.md`：顺序、推荐 commit、Gate A-J、停工规则和完成措辞。
 
 ## 计划步骤

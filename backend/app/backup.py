@@ -309,7 +309,13 @@ def _rebase_restored_material_paths(database: Path, data_root: Path) -> None:
 
 
 def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict[str, Any]:
-    if not confirm: raise BackupError("restore_confirmation_required")
+    increment("restore", "started")
+    emit_event("restore_started", component="backup", outcome="started")
+    if not confirm:
+        increment("restore", "failed")
+        emit_event("restore_failed", level=40, error_code="restore_confirmation_required",
+                   component="backup", outcome="failed")
+        raise BackupError("restore_confirmation_required")
     data_root, backup = Path(data_root), Path(backup)
     if data_root.exists() or data_root.is_symlink():
         _lstat(data_root, "restore_target_symlink")
@@ -331,12 +337,18 @@ def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict
         if data_root.exists():
             data_root.rmdir()
         staging.rename(data_root)
-    except BackupError:
+    except BackupError as error:
         try: shutil.rmtree(staging, ignore_errors=True)
         except OSError: pass
+        increment("restore", "failed")
+        emit_event("restore_failed", level=40, error_code=error.code, component="backup", outcome="failed")
         raise
     except (OSError, shutil.Error, sqlite3.Error):
         try: shutil.rmtree(staging, ignore_errors=True)
         except OSError: pass
+        increment("restore", "failed")
+        emit_event("restore_failed", level=40, error_code="restore_replace_failed", component="backup", outcome="failed")
         raise BackupError("restore_replace_failed") from None
+    increment("restore", "succeeded")
+    emit_event("restore_completed", component="backup", outcome="succeeded")
     return {"status": "restored", "error_code": None}

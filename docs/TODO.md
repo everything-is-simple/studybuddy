@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
 > 更新：2026-08-30（Phase 10-4 approved embedding task 接入、Gate E 与全量回归重新对齐）
-> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v13，完整 backend 为 **382 passed, 2 skipped**；整体阶段性完成度约 **60%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md) 与 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。
+> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v13，完整 backend 为 **388 passed, 2 skipped**；整体阶段性完成度约 **60%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md) 与 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -35,7 +35,7 @@
 - [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
 - [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`382 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`388 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
 
 **状态：时间盒验收完成（v1）。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`，并已明确记入 v1 运行边界。
 
@@ -267,7 +267,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 10-2：连续 v13 `phase10_operation_task_schema`；new DB、v12 upgrade、rollback、history/`PRAGMA user_version`、backup/restore non-run 通过，Gate C 已通过（`implemented/backend-pass`；full backend `382 passed, 2 skipped`）。证据：`backend/tests/test_migrations.py`、`test_backup_restore.py`、`test_restore_acceptance.py`。
 - [x] 10-3：单进程 task runner、handler registry、lease/progress/retry/cooperative cancel、stale/restart/shutdown recovery 已实现；runner 默认不在启动/backup/restore 中自动运行，Gate D 已通过（`implemented/backend-pass`）。focused runner/recovery `44 passed`；旧 operation 回归 `55 passed`；完整 backend `382 passed, 2 skipped`。
 - [x] 10-4：仅批准 `embedding_index` 的 provider-backed 阶段接入 runner；新增显式 enqueue/read/cancel/retry API 和 `run-tasks` operator CLI，既有同步 `/ai-index` 保持不变。固定 revision/provider identity、project scope、idempotency、batch checkpoint、retry/cancel/source lifecycle/privacy 通过；Q&A、generation、OCR/ASR、report/delivery 未接入。Gate E 已通过（`implemented/backend-pass`；focused `43 passed`；full backend `382 passed, 2 skipped`）。证据：[`prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`](prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md)。
-- [ ] 10-5：structured logging、metrics、request/task tracing、liveness/readiness/degraded、operator diagnostics；Gate F。
+- [x] 10-5：安全 structured events、request→operation→task correlation、低基数 process metrics、task duration、backup/verify/restore metrics，`liveness`/`health`/`readiness` 三态与只读 `diagnostics` CLI 已实现。audit/runtime database/stale task 不伪造 healthy；无路径/SQL/正文/secret/raw error 泄露。Gate F 已通过（`implemented/backend-pass`；focused `65 passed`；full backend `388 passed, 2 skipped`）。证据：[`prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`](prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md)。
 - [ ] 10-6：migration/backup/verify/restore 运维、保留轮换、restore drill、corruption/read-only/停机策略；Gate G。
 - [ ] 10-7：安全配置、单实例锁、启动/停止、数据目录、升级和本地发布方式；Gate H。
 - [ ] 10-8：容量、性能、长时 smoke、ACL/资源不足等边界验收，固定 not_verified 清单；Gate I。

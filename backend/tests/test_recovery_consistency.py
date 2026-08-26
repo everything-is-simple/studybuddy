@@ -91,7 +91,10 @@ def test_startup_marks_interrupted_task_stale_without_starting_runner(tmp_path: 
             "VALUES ('recovery_attempt','recovery_task','task_recovery',1,'running',40,'indexing','now','2999-01-01T00:00:00+00:00','now','now','now')"
         )
     with client(tmp_path) as app:
-        assert app.get("/api/health").status_code == 200
+        assert app.get("/api/health").json() == {"detail": "service_degraded"}
+        readiness = app.get("/api/readiness")
+        assert readiness.status_code == 503
+        assert readiness.json() == {"detail": {"status": "degraded", "reason": "task_recovery_required"}}
     with connect(database) as connection:
         assert tuple(connection.execute(
             "SELECT status,error_code FROM operation_tasks WHERE id='recovery_task'"

@@ -5287,7 +5287,7 @@ def create_task_backed_embedding_operation(connection: sqlite3.Connection, *, pr
                                           material_id: str, source_revision: str,
                                           provider_id: str, model_id: str | None,
                                           model_revision: str, idempotency_key: str | None = None,
-                                          max_retries: int = 1) -> dict[str, object]:
+                                          request_id: str | None = None, max_retries: int = 1) -> dict[str, object]:
     """Queue the approved embedding-only task; never persist source text in its task envelope."""
     if not project_id or not material_id or not source_revision or not provider_id or max_retries < 0:
         raise ValueError("embedding_task_invalid_request")
@@ -5326,9 +5326,9 @@ def create_task_backed_embedding_operation(connection: sqlite3.Connection, *, pr
         with connection:
             connection.execute(
                 "INSERT INTO ai_operations (id,operation_type,status,project_id,material_id,input_fingerprint,source_revision,"
-                "provider_id,model_id,idempotency_key,retry_count,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,0,?)",
+                "provider_id,model_id,request_id,idempotency_key,retry_count,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,?)",
                 (operation_id, "embedding_index", "queued", project_id, material_id, fingerprint,
-                 source_revision, provider_id, model_id, idempotency_key, now),
+                 source_revision, provider_id, model_id, request_id, idempotency_key, now),
             )
             create_operation_task(
                 connection, task_id=task_id, project_id=project_id, operation_id=operation_id,

@@ -121,8 +121,12 @@ def test_preflight_order(monkeypatch, tmp_path: Path):
     events: list[str] = []
     monkeypatch.setattr(main, "preflight", lambda config: events.append("preflight"))
     monkeypatch.setattr(main, "connect", lambda path: events.append("connect") or __import__("contextlib").nullcontext())
-    monkeypatch.setattr(main, "run_audit", lambda path: events.append("audit"))
+    monkeypatch.setattr(main, "run_audit", lambda path: events.append("audit") or {"status": "ok", "reasons": []})
     monkeypatch.setattr(main, "reconcile", lambda config: events.append("recovery"))
+    monkeypatch.setattr(main, "collect_diagnostics", lambda root: {
+        "status": "ok", "reasons": [], "schema_version": 13,
+        "task_counts": {}, "recommended_actions": ["none"],
+    })
     with TestClient(create_app(AppConfig(data_root=tmp_path))) as client:
         assert client.get("/api/health").status_code == 200
     assert events == ["preflight", "connect", "audit", "recovery"]

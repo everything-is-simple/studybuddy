@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sys
 import threading
 from pathlib import Path
@@ -61,6 +62,24 @@ def test_embedding_task_queue_runs_explicitly_and_keeps_legacy_index_synchronous
         with connect(tmp_path / "studybuddy.sqlite3") as connection:
             assert connection.execute("SELECT COUNT(*) FROM embeddings WHERE status='ready'").fetchone()[0] >= 1
             assert connection.execute("SELECT COUNT(*) FROM operation_tasks WHERE operation_id=?", (queued["operation_id"],)).fetchone()[0] == 1
+
+
+def test_embedding_enqueue_request_correlation_is_preserved_for_runner_event(tmp_path: Path, caplog):
+    with _client(tmp_path) as api:
+        source = _upload(api)
+        queued_response = api.post(
+            f"/api/materials/{source['material_id']}/ai-index/tasks",
+            headers={"X-Request-ID": "phase10-task-request"},
+        )
+        assert queued_response.status_code == 202
+        queued = queued_response.json()
+        with caplog.at_level(logging.INFO, logger="studybuddy.observability"):
+            assert build_task_runner(api.app.state.config).run_once() is True
+    text = "\n".join(record.getMessage() for record in caplog.records)
+    assert '"request_id": "phase10-task-request"' in text
+    assert f'"task_id": "{queued["task_id"]}"' in text
+    assert f'"operation_id": "{queued["operation_id"]}"' in text
+    assert "Phase ten embedding task source" not in text
 
 
 def test_embedding_task_idempotency_replay_and_provider_configuration_mismatch(tmp_path: Path):
