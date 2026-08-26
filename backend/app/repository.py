@@ -167,6 +167,274 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+TASK_TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "stale"}
+TASK_ACTIVE_STATUSES = {"running", "cancel_requested"}
+TASK_STAGE_CODES = {
+    "queued", "reading_source", "indexing", "provider_call", "persisting",
+    "finalizing", "recovery_required",
+}
+
+
+def _task_row(connection: sqlite3.Connection, task_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT * FROM operation_tasks WHERE id=?", (task_id,)
+    ).fetchone()
+
+
+def create_operation_task(connection: sqlite3.Connection, *, task_id: str, project_id: str,
+                           operation_id: str, task_kind: str, input_fingerprint: str,
+                           idempotency_key_fingerprint: str | None = None,
+                           max_retries: int = 0, parent_task_id: str | None = None) -> dict[str, object]:
+    if not task_id or not project_id or not operation_id or not task_kind or not input_fingerprint:
+        raise ValueError("task_invalid_request")
+    if max_retries < 0:
+        raise ValueError("task_invalid_request")
+    existing = connection.execute(
+        "SELECT * FROM operation_tasks WHERE operation_id=?", (operation_id,)
+    ).fetchone()
+    if existing is not None:
+        if str(existing["project_id"]) != project_id:
+            raise ValueError("task_project_scope_violation")
+        if str(existing["input_fingerprint"]) != input_fingerprint or (
+            existing["idempotency_key_fingerprint"] != idempotency_key_fingerprint
+        ):
+            raise ValueError("task_idempotency_key_mismatch")
+        return dict(existing) | {"replay": True}
+    now = utc_now()
+    try:
+        connection.execute(
+            "INSERT INTO operation_tasks "
+            "(id,project_id,operation_id,parent_task_id,task_kind,status,input_fingerprint,"
+            "idempotency_key_fingerprint,progress_percent,stage_code,retry_count,max_retries,created_at,updated_at) "
+            "VALUES (?,?,?,?,?,'queued',?,?,0,'queued',0,?,?,?)",
+            (task_id, project_id, operation_id, parent_task_id, task_kind, input_fingerprint,
+             idempotency_key_fingerprint, max_retries, now, now),
+        )
+    except sqlite3.IntegrityError as exc:
+        raise ValueError("task_create_conflict") from exc
+    return dict(_task_row(connection, task_id)) | {"replay": False}
+
+
+def get_operation_task(connection: sqlite3.Connection, *, task_id: str,
+                       project_id: str | None = None) -> dict[str, object]:
+    row = _task_row(connection, task_id)
+    if row is None:
+        raise ValueError("task_not_found")
+    if project_id is not None and str(row["project_id"]) != project_id:
+        raise ValueError("task_project_scope_violation")
+    return dict(row)
+
+
+def claim_operation_task(connection: sqlite3.Connection, *, task_id: str,
+                         lease_seconds: int, attempt_id: str) -> dict[str, object]:
+    if lease_seconds < 1 or not attempt_id:
+        raise ValueError("task_invalid_request")
+    row = _task_row(connection, task_id)
+    if row is None:
+        raise ValueError("task_not_found")
+    if row["status"] != "queued":
+        raise ValueError("task_already_running" if row["status"] in TASK_ACTIVE_STATUSES else "task_invalid_state_transition")
+    now = utc_now()
+    expires = (datetime.now(timezone.utc) + timedelta(seconds=lease_seconds)).isoformat()
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        current = _task_row(connection, task_id)
+        if current is None:
+            raise ValueError("task_not_found")
+        if current["status"] != "queued":
+            raise ValueError("task_already_running" if current["status"] in TASK_ACTIVE_STATUSES else "task_invalid_state_transition")
+        connection.execute(
+            "UPDATE operation_tasks SET status='running',started_at=COALESCE(started_at,?),updated_at=?,stage_code='reading_source' "
+            "WHERE id=? AND status='queued'",
+            (now, now, task_id),
+        )
+        connection.execute(
+            "UPDATE ai_operations SET status='running',started_at=COALESCE(started_at,?),finished_at=NULL,error_code=NULL "
+            "WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status='queued'",
+            (now, task_id),
+        )
+        connection.execute(
+            "INSERT INTO operation_task_attempts "
+            "(id,task_id,project_id,attempt_number,status,progress_percent,stage_code,lease_started_at,lease_expires_at,heartbeat_at,created_at,started_at) "
+            "SELECT ?,id,project_id,retry_count+1,'running',progress_percent,'reading_source',?,?,?,?,? FROM operation_tasks WHERE id=?",
+            (attempt_id, now, expires, now, now, now, task_id),
+        )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    return {"task_id": task_id, "attempt_id": attempt_id, "lease_expires_at": expires}
+
+
+def update_operation_task_progress(connection: sqlite3.Connection, *, task_id: str,
+                                   attempt_id: str, progress_percent: int | None,
+                                   stage_code: str) -> bool:
+    if progress_percent is not None and not 0 <= progress_percent <= 100:
+        raise ValueError("task_invalid_progress")
+    if stage_code not in TASK_STAGE_CODES:
+        raise ValueError("task_invalid_stage")
+    now = utc_now()
+    cursor = connection.execute(
+        "UPDATE operation_task_attempts SET progress_percent=COALESCE(?,progress_percent),stage_code=?,heartbeat_at=? "
+        "WHERE id=? AND task_id=? AND status='running' AND "
+        "(progress_percent IS NULL OR ? IS NULL OR progress_percent <= ?)",
+        (progress_percent, stage_code, now, attempt_id, task_id, progress_percent, progress_percent),
+    )
+    if cursor.rowcount != 1:
+        return False
+    connection.execute(
+        "UPDATE operation_tasks SET progress_percent=COALESCE(?,progress_percent),stage_code=?,updated_at=? "
+        "WHERE id=? AND status IN ('running','cancel_requested')",
+        (progress_percent, stage_code, now, task_id),
+    )
+    connection.commit()
+    return True
+
+
+def heartbeat_operation_task(connection: sqlite3.Connection, *, task_id: str,
+                              attempt_id: str, lease_seconds: int) -> bool:
+    now = utc_now()
+    expires = (datetime.now(timezone.utc) + timedelta(seconds=lease_seconds)).isoformat()
+    cursor = connection.execute(
+        "UPDATE operation_task_attempts SET lease_expires_at=?,heartbeat_at=? "
+        "WHERE id=? AND task_id=? AND status='running' AND lease_expires_at IS NOT NULL AND lease_expires_at > ?",
+        (expires, now, attempt_id, task_id, now),
+    )
+    if cursor.rowcount:
+        connection.commit()
+        return True
+    connection.rollback()
+    return False
+
+
+def request_operation_task_cancel(connection: sqlite3.Connection, *, task_id: str) -> str:
+    row = _task_row(connection, task_id)
+    if row is None:
+        raise ValueError("task_not_found")
+    now = utc_now()
+    if row["status"] == "queued":
+        connection.execute("UPDATE operation_tasks SET status='cancelled',finished_at=?,updated_at=? WHERE id=? AND status='queued'", (now, now, task_id))
+        connection.execute(
+            "UPDATE ai_operations SET status='cancelled',finished_at=?,error_code=NULL "
+            "WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status='queued'",
+            (now, task_id),
+        )
+        connection.commit()
+        return "cancelled"
+    if row["status"] == "running":
+        connection.execute("UPDATE operation_tasks SET status='cancel_requested',cancel_requested_at=?,updated_at=? WHERE id=? AND status='running'", (now, now, task_id))
+        connection.commit()
+        return "cancel_requested"
+    if row["status"] == "cancel_requested":
+        return "cancel_requested"
+    raise ValueError("task_cancel_not_allowed")
+
+
+def retry_operation_task(connection: sqlite3.Connection, *, task_id: str,
+                         retryable_error_codes: set[str]) -> dict[str, object]:
+    row = _task_row(connection, task_id)
+    if row is None:
+        raise ValueError("task_not_found")
+    if row["status"] not in {"failed", "stale"} or str(row["error_code"] or "") not in retryable_error_codes:
+        raise ValueError("task_retry_not_allowed")
+    if int(row["retry_count"]) >= int(row["max_retries"]):
+        raise ValueError("task_retry_limit_reached")
+    now = utc_now()
+    connection.execute(
+        "UPDATE operation_tasks SET status='queued',retry_count=retry_count+1,error_code=NULL,progress_percent=0,stage_code='queued',"
+        "finished_at=NULL,cancel_requested_at=NULL,updated_at=? WHERE id=? AND status IN ('failed','stale')",
+        (now, task_id),
+    )
+    connection.execute(
+        "UPDATE ai_operations SET status='queued',finished_at=NULL,error_code=NULL "
+        "WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status IN ('failed','stale')",
+        (task_id,),
+    )
+    connection.commit()
+    return get_operation_task(connection, task_id=task_id)
+
+
+def finish_operation_task(connection: sqlite3.Connection, *, task_id: str, attempt_id: str,
+                          status: str, error_code: str | None = None) -> bool:
+    if status not in {"succeeded", "failed", "cancelled", "stale"}:
+        raise ValueError("task_invalid_state_transition")
+    row = _task_row(connection, task_id)
+    if row is None:
+        raise ValueError("task_not_found")
+    now = utc_now()
+    task_status = "succeeded" if status == "succeeded" else status
+    if row["status"] == "cancel_requested" and status == "succeeded":
+        task_status = "succeeded"
+    cursor = connection.execute(
+        "UPDATE operation_task_attempts SET status=?,error_code=?,finished_at=? "
+        "WHERE id=? AND task_id=? AND status='running' AND "
+        "(?='stale' OR lease_expires_at IS NULL OR lease_expires_at > ?)",
+        (status, error_code, now, attempt_id, task_id, status, now),
+    )
+    if cursor.rowcount != 1:
+        connection.rollback()
+        return False
+    connection.execute(
+        "UPDATE operation_tasks SET status=?,error_code=?,progress_percent=CASE WHEN ?='succeeded' THEN 100 ELSE progress_percent END,"
+        "stage_code=CASE WHEN ?='succeeded' THEN 'finalizing' ELSE stage_code END,finished_at=?,updated_at=? "
+        "WHERE id=? AND status IN ('running','cancel_requested')",
+        (task_status, error_code, task_status, task_status, now, now, task_id),
+    )
+    connection.execute(
+        "UPDATE ai_operations SET status=?,error_code=?,finished_at=? "
+        "WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status='running'",
+        (task_status, error_code, now, task_id),
+    )
+    connection.commit()
+    return True
+
+
+def recover_active_operation_tasks(connection: sqlite3.Connection) -> int:
+    """On process startup, retain incomplete work as stale; never queue or execute it."""
+    now = utc_now()
+    rows = connection.execute(
+        "SELECT id,task_id FROM operation_task_attempts WHERE status='running'"
+    ).fetchall()
+    for row in rows:
+        connection.execute(
+            "UPDATE operation_task_attempts SET status='stale',error_code='task_recovery_required',finished_at=? "
+            "WHERE id=? AND status='running'",
+            (now, row["id"]),
+        )
+    task_rows = connection.execute(
+        "SELECT id FROM operation_tasks WHERE status IN ('running','cancel_requested')"
+    ).fetchall()
+    for row in task_rows:
+        connection.execute(
+            "UPDATE operation_tasks SET status='stale',error_code='task_recovery_required',finished_at=?,updated_at=? "
+            "WHERE id=? AND status IN ('running','cancel_requested')",
+            (now, now, row["id"]),
+        )
+        connection.execute(
+            "UPDATE ai_operations SET status='stale',error_code='task_recovery_required',finished_at=? "
+            "WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status='running'",
+            (now, row["id"]),
+        )
+    if rows or task_rows:
+        connection.commit()
+    return len(task_rows)
+
+
+def reclaim_stale_operation_tasks(connection: sqlite3.Connection) -> int:
+    now = utc_now()
+    rows = connection.execute(
+        "SELECT id,task_id FROM operation_task_attempts WHERE status='running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?",
+        (now,),
+    ).fetchall()
+    for row in rows:
+        connection.execute("UPDATE operation_task_attempts SET status='stale',error_code='task_lease_expired',finished_at=? WHERE id=? AND status='running'", (now, row["id"]))
+        connection.execute("UPDATE operation_tasks SET status='stale',error_code='task_lease_expired',finished_at=?,updated_at=? WHERE id=? AND status IN ('running','cancel_requested')", (now, now, row["task_id"]))
+        connection.execute("UPDATE ai_operations SET status='stale',error_code='task_lease_expired',finished_at=? WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status='running'", (now, row["task_id"]))
+    if rows:
+        connection.commit()
+    return len(rows)
+
+
 def save_extraction(connection: sqlite3.Connection, material_id: str, result: ParseResult) -> str:
     extraction_id = f"extraction_{uuid.uuid4().hex}"
     with connection:

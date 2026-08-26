@@ -226,7 +226,7 @@ def _baseline_complete(connection: sqlite3.Connection) -> bool:
             return False
     if CURRENT_SCHEMA_VERSION >= 13:
         if not {
-            "id", "project_id", "operation_id", "task_kind", "status",
+            "id", "project_id", "operation_id", "parent_task_id", "task_kind", "status",
             "input_fingerprint", "idempotency_key_fingerprint", "progress_percent",
             "stage_code", "retry_count", "max_retries", "error_code", "created_at",
             "updated_at", "started_at", "finished_at", "cancel_requested_at",
