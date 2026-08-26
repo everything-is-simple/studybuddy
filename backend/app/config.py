@@ -23,6 +23,10 @@ DEFAULT_EMBEDDING_MAX_RETRIES = 0
 DEFAULT_REPORT_DELIVERY_MODE = "off"
 DEFAULT_REPORT_DELIVERY_ENABLED = False
 DEFAULT_REPORT_DELIVERY_AUTHORIZED = False
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8787
+DEFAULT_TASK_MAX_CONCURRENCY = 1
+DEFAULT_LOG_LEVEL = "INFO"
 
 
 @dataclass(frozen=True)
@@ -58,6 +62,14 @@ class AppConfig:
     report_delivery_targets: tuple[str, ...] = ()
     report_delivery_smtp_password: str | None = field(default=None, repr=False)
     report_delivery_feishu_secret: str | None = field(default=None, repr=False)
+    # Runtime/release controls are appended to preserve existing positional
+    # AppConfig construction compatibility. Secrets remain repr-hidden above.
+    host: str = DEFAULT_HOST
+    port: int = DEFAULT_PORT
+    task_max_concurrency: int = DEFAULT_TASK_MAX_CONCURRENCY
+    log_level: str = DEFAULT_LOG_LEVEL
+    backup_root: Path | None = None
+    demo_mode: bool = False
 
     @property
     def originals_root(self) -> Path:
@@ -122,6 +134,20 @@ def _env_bool(name: str, default: bool) -> bool:
     raise ValueError(f"invalid_{name.lower()}")
 
 
+def _env_host() -> str:
+    value = os.environ.get("STUDYBUDDY_HOST", DEFAULT_HOST).strip()
+    if value not in {"127.0.0.1", "localhost", "::1"}:
+        raise ValueError("invalid_host")
+    return value
+
+
+def _env_log_level() -> str:
+    value = os.environ.get("STUDYBUDDY_LOG_LEVEL", DEFAULT_LOG_LEVEL).strip().upper()
+    if value not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
+        raise ValueError("invalid_log_level")
+    return value
+
+
 def _env_delivery_mode() -> str:
     value = os.environ.get("STUDYBUDDY_REPORT_DELIVERY_MODE", DEFAULT_REPORT_DELIVERY_MODE).strip().lower()
     if value not in {"off", "dry_run", "live"}:
@@ -154,12 +180,22 @@ def config_from_environment() -> AppConfig:
             raise ValueError("invalid_max_upload_bytes") from exc
         if max_upload_bytes < 1:
             raise ValueError("invalid_max_upload_bytes")
+    demo_mode = _env_bool("STUDYBUDDY_DEMO_MODE", False)
+    ai_provider = os.environ.get("STUDYBUDDY_AI_PROVIDER") or None
+    ai_model = os.environ.get("STUDYBUDDY_AI_MODEL") or None
+    if demo_mode:
+        if (ai_provider not in {None, "fake"}
+                or os.environ.get("STUDYBUDDY_AI_BASE_URL")
+                or os.environ.get("STUDYBUDDY_AI_API_KEY")):
+            raise ValueError("invalid_demo_configuration")
+        ai_provider = "fake"
+        ai_model = ai_model or "fake-studybuddy-v1"
     return AppConfig(
         data_root=Path(configured_root),
         max_upload_bytes=max_upload_bytes,
         project_id=os.environ.get("STUDYBUDDY_PROJECT_ID", "default"),
-        ai_provider_id=os.environ.get("STUDYBUDDY_AI_PROVIDER") or None,
-        ai_model_id=os.environ.get("STUDYBUDDY_AI_MODEL") or None,
+        ai_provider_id=ai_provider,
+        ai_model_id=ai_model,
         ai_base_url=_valid_base_url(os.environ.get("STUDYBUDDY_AI_BASE_URL")),
         ai_api_key=os.environ.get("STUDYBUDDY_AI_API_KEY") or None,
         ai_timeout_seconds=_env_float("STUDYBUDDY_AI_TIMEOUT_SECONDS", DEFAULT_AI_TIMEOUT_SECONDS, minimum=0.1, maximum=120.0),
@@ -184,4 +220,10 @@ def config_from_environment() -> AppConfig:
         report_delivery_targets=_env_delivery_targets(),
         report_delivery_smtp_password=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD") or None,
         report_delivery_feishu_secret=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_FEISHU_SECRET") or None,
+        host=_env_host(),
+        port=_env_int("STUDYBUDDY_PORT", DEFAULT_PORT, minimum=1024, maximum=65535),
+        task_max_concurrency=_env_int("STUDYBUDDY_TASK_MAX_CONCURRENCY", DEFAULT_TASK_MAX_CONCURRENCY, minimum=1, maximum=1),
+        log_level=_env_log_level(),
+        backup_root=Path(os.environ["STUDYBUDDY_BACKUP_ROOT"]) if os.environ.get("STUDYBUDDY_BACKUP_ROOT") else None,
+        demo_mode=demo_mode,
     )
