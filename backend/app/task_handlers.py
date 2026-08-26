@@ -85,7 +85,7 @@ def _embedding_handler(config: AppConfig, context: TaskContext) -> TaskResult:
             code = str(error)
             if code == "task_cancel_requested":
                 context.raise_if_cancel_requested()
-            if code in {"source_stale", "source_deleted", "task_lease_lost"}: 
+            if code in {"source_stale", "source_deleted", "task_lease_lost"}:
                 raise TaskFailed(code) from None
             raise TaskFailed("embedding_index_failed") from None
     context.progress(95, "persisting")
