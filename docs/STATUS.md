@@ -1,12 +1,12 @@
 # StudyBuddy Status
 
-> 更新：2026-08-30（Phase 10-5 observability/readiness/diagnostics、Gate F 与全量回归重新对齐）。当前整体阶段性估算为 **60% 左右**：Phase 9A/9B/9C 在明确范围内完成，Phase 9D 部分立项范围已完成收口，Phase 10 已完成 10-0 至 10-5，完整 StudyBuddy 尚未达到全局 `real-pass`。
+> 更新：2026-08-30（Phase 10-6 operations、Gate G 与全量回归重新对齐）。当前整体阶段性估算为 **60% 左右**：Phase 9A/9B/9C 在明确范围内完成，Phase 9D 部分立项范围已完成收口，Phase 10 已完成 10-0 至 10-6，完整 StudyBuddy 尚未达到全局 `real-pass`。
 >
 > **当前同步快照：** 正式 schema 为 v13；Phase 9C 整体已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成，Phase 9A 和 Phase 9B 均已分别在限定范围内完成。Phase 9D-0 已完成 `planned/audit-draft` 并作出部分立项结论，9D-1 已完成 `planned/contract-frozen`，9D-2 至 9D-8 达到 `implemented/backend-pass`，9D-9 达到 `browser-pass`，9D-10 达到 `backend-pass`，9D-11 达到 `closeout-scoped-pass`。9D-7 提供默认关闭的 allowlisted dry-run 与 live 拒绝，9D-8 提供 S6/S7 最小安全 API，9D-9 提供桌面/窄屏/键盘/reload/failure/privacy workspace，9D-10 验证 source lifecycle 与 backup/restore non-repair。限定范围 evidence 见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。脱敏证据见 [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)、[`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)、[`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md) 和 [`prompts/phase9d/`](prompts/phase9d/)。这不代表 Phase 9D completed、真实 OCR/ASR、真实对外交付、scheduler/worker、系统级 screen reader 或全局 production `real-pass`。
 
 | Area | Status | Evidence |
 |---|---|---|
-| Current backend regression baseline | 388 passed, 2 skipped | `C:\miniconda\py310\python.exe -m pytest backend/tests/ -q -p no:cacheprovider`; 2 skips are opt-in real-provider smoke |
+| Current backend regression baseline | 396 passed, 2 skipped | `C:\miniconda\py310\python.exe -m pytest backend/tests/ -q -p no:cacheprovider`; 2 skips are opt-in real-provider smoke |
 | Formal file parser Adapter | implemented / local real-pass | `backend/app/adapters/file_parsers/` and test artifacts |
 | Formal file import | real-pass | `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json` |
 | Batch and folder import | real-pass | formal multi-file/folder artifacts |
@@ -15,10 +15,10 @@
 | SQLite/storage consistency | implemented | backend transaction, recovery, security and contention tests |
 | Startup preflight/readiness | implemented / backend-tested | preflight -> connect/migrate -> diagnostic audit -> recovery -> ready; `liveness`/`health`/`readiness` do not report degraded storage/audit/task-recovery state as healthy |
 | I1 migration/schema versioning | implemented | `backend/app/migrations/`, `backend/tests/test_migrations.py` |
-| I2 operator backup/restore | implemented | `backend/app/backup.py`, CLI, restore acceptance tests |
+| I2 operator backup/restore | implemented / operations-gated | explicit backup/verify/restore, current/history schema manifest checks, default-dry-run verified rotation, upgrade preflight, restore drill and stop/quarantine policy; `backend/app/backup.py`, CLI, restore acceptance tests |
 | I3 observability and operator diagnostics | implemented / backend-tested | safe structured request/task correlation, low-cardinality process metrics, backup/restore events and explicit read-only `diagnostics`; no central/persistent telemetry |
 | I4 real environment/capacity baseline | time-box closed (v1) | `H:\studybuddy-test\artifacts\infrastructure-i4\latest.json`, `latest.md` |
-| Phase 10 local production/release | 10-0 `planned/audit-draft`, 10-1 `planned/contract-frozen`, 10-2/10-5 `implemented/backend-pass`; only explicit `embedding_index` task execution is approved | `PHASE10_AUDIT_AND_SCOPE.md`, `PHASE10_OPERATION_TASK_CONTRACT.md`, `prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`, `prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`, `backend/app/task_runner.py`, `backend/app/diagnostics.py`; Gates A-F passed |
+| Phase 10 local production/release | 10-0 `planned/audit-draft`, 10-1 `planned/contract-frozen`, 10-2 through 10-6 `implemented/backend-pass`; only explicit `embedding_index` task execution is approved | `PHASE10_AUDIT_AND_SCOPE.md`, `PHASE10_OPERATION_TASK_CONTRACT.md`, `prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`, `prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`, `prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md`, `backend/app/task_runner.py`, `backend/app/backup.py`; Gates A-G passed |
 | Local single-process infrastructure v1 | basically complete | I1+I2+I3 implemented; I4 time-box closed with declared limits |
 | AI/learning architecture | architecture plus Phase 4–7 and Phase 8 completed in fake-provider scope | `ai-learning-architecture.md`, `PHASE8_ACCEPTANCE_EVIDENCE.md`; real-provider generation, human short-answer review and later learning workflows remain future scope |
 | Material revision / deterministic chunks | implemented / backend-tested | `backend/app/chunking.py`, `backend/app/repository.py`, `backend/tests/test_ai_indexing.py` |

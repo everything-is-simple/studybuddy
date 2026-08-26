@@ -6,7 +6,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from .backup import BackupError, backup_data, restore_backup, verify_backup
+from .backup import BackupError, backup_data, restore_backup, rotate_backups, upgrade_preflight, verify_backup
 from .config import config_from_environment
 from .diagnostics import DiagnosticError, collect_diagnostics
 from .observability import emit_event, increment
@@ -40,6 +40,13 @@ def main(argv: list[str] | None = None) -> int:
     tasks.add_argument("--max-tasks", type=int, default=1)
     diagnostics = sub.add_parser("diagnostics")
     diagnostics.add_argument("--data-root", required=True, type=Path)
+    rotation = sub.add_parser("rotate-backups")
+    rotation.add_argument("--backup-root", required=True, type=Path)
+    rotation.add_argument("--retain", required=True, type=int)
+    rotation.add_argument("--confirm", action="store_true")
+    upgrade = sub.add_parser("upgrade-preflight")
+    upgrade.add_argument("--data-root", required=True, type=Path)
+    upgrade.add_argument("--backup", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
         if args.command == "backup":
@@ -65,6 +72,10 @@ def main(argv: list[str] | None = None) -> int:
             if result["status"] != "ok":
                 print(json.dumps(result, ensure_ascii=False))
                 return 1
+        elif args.command == "rotate-backups":
+            result = rotate_backups(args.backup_root, retain=args.retain, confirm=args.confirm)
+        elif args.command == "upgrade-preflight":
+            result = upgrade_preflight(args.data_root, args.backup)
         elif args.command == "run-tasks":
             if args.max_tasks < 1 or args.max_tasks > 1000:
                 print(json.dumps({"status": "failed", "error_code": "invalid_max_tasks"}, ensure_ascii=False))

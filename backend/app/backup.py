@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .migrations.runner import MigrationError, assert_schema_version
+from .migrations.runner import CURRENT_SCHEMA_VERSION, MigrationError, assert_schema_version, inspect_schema_version
 from .observability import emit_event, increment
 
 _FORMAT = "studybuddy-backup"
@@ -79,20 +79,24 @@ def _sqlite_header(path: Path, code: str) -> None:
         raise BackupError(code) from None
 
 
-def _checks(path: Path) -> tuple[str, str, int]:
+def _checks(path: Path, *, require_current: bool) -> tuple[str, str, int]:
+    connection: sqlite3.Connection | None = None
     try:
         connection = sqlite3.connect(path)
+        connection.execute("PRAGMA query_only = ON")
         integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0]).lower()
         foreign = connection.execute("PRAGMA foreign_key_check").fetchall()
         try:
-            version = assert_schema_version(connection)
+            version = assert_schema_version(connection) if require_current else inspect_schema_version(connection)
         except MigrationError:
             raise BackupError("backup_schema_version_invalid") from None
-        connection.close()
     except BackupError:
         raise
     except (OSError, sqlite3.Error):
         raise BackupError("backup_database_integrity_failed") from None
+    finally:
+        if connection is not None:
+            connection.close()
     return integrity, "ok" if not foreign else "failed", version
 
 
@@ -130,15 +134,19 @@ def _copy_atomic(source: Path, target: Path, error: str = "backup_create_failed"
 
 
 def _referenced_hashes(database: Path) -> tuple[set[str], dict[str, int]]:
+    connection: sqlite3.Connection | None = None
     try:
         connection = sqlite3.connect(database)
+        connection.execute("PRAGMA query_only = ON")
         rows = connection.execute("SELECT source_sha256 FROM materials").fetchall()
         project = connection.execute("SELECT COUNT(*) FROM materials").fetchone()[0]
         active = connection.execute("SELECT COUNT(*) FROM materials WHERE deleted_at IS NULL").fetchone()[0]
         deleted = connection.execute("SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL").fetchone()[0]
-        connection.close()
     except (OSError, sqlite3.Error):
         raise BackupError("backup_database_read_failed") from None
+    finally:
+        if connection is not None:
+            connection.close()
     hashes = {str(row[0]).lower() for row in rows}
     if any(len(value) != 64 or any(c not in "0123456789abcdef" for c in value) for value in hashes):
         raise BackupError("backup_reference_invalid")
@@ -183,7 +191,7 @@ def backup_data(data_root: Path, output: Path, project_id: str = "default") -> d
         destination = sqlite3.connect(output / _DB_NAME)
         source.backup(destination)
         destination.close(); source.close()
-        integrity, foreign, schema_version = _checks(output / _DB_NAME)
+        integrity, foreign, schema_version = _checks(output / _DB_NAME, require_current=False)
         if integrity != "ok": raise BackupError("backup_database_integrity_failed")
         if foreign != "ok": raise BackupError("backup_foreign_key_check_failed")
         files = []; total = 0
@@ -197,7 +205,7 @@ def backup_data(data_root: Path, output: Path, project_id: str = "default") -> d
             size = target.stat().st_size
             files.append({"relative_path": str(Path("originals") / relative).replace("\\", "/"), "sha256": digest, "size": size})
             total += size
-        manifest = {"format": _FORMAT, "format_version": _VERSION, "status": "complete", "created_at": datetime.now(timezone.utc).isoformat(), "project_id": project_id, "database": {"filename": _DB_NAME, "sha256": _sha256(output / _DB_NAME), "size": (output / _DB_NAME).stat().st_size, "integrity_check": integrity, "foreign_key_check": foreign, "schema_version": schema_version}, "originals": {"root": "originals", "count": len(files), "total_bytes": total, "files": files}, "references": references}
+        manifest = {"format": _FORMAT, "format_version": _VERSION, "status": "complete", "created_at": datetime.now(timezone.utc).isoformat(), "project_id": project_id, "database": {"filename": _DB_NAME, "sha256": _sha256(output / _DB_NAME), "size": (output / _DB_NAME).stat().st_size, "integrity_check": integrity, "foreign_key_check": foreign, "schema_version": schema_version, "current_schema_at_backup": CURRENT_SCHEMA_VERSION}, "originals": {"root": "originals", "count": len(files), "total_bytes": total, "files": files}, "references": references}
         _atomic_json(output / "manifest.json", manifest)
         increment("backup", "succeeded")
         emit_event("backup_completed", component="backup", outcome="succeeded")
@@ -234,12 +242,21 @@ def _verify_backup(backup: Path) -> dict[str, Any]:
     database_meta = manifest.get("database")
     if not isinstance(database_meta, dict):
         raise BackupError("backup_manifest_invalid")
+    if database_meta.get("filename") != _DB_NAME:
+        raise BackupError("backup_manifest_invalid")
     if _sha256(database) != database_meta.get("sha256"):
         raise BackupError("backup_database_hash_mismatch")
-    integrity, foreign, schema_version = _checks(database)
-    if integrity != "ok": raise BackupError("backup_database_integrity_failed")
-    if foreign != "ok": raise BackupError("backup_foreign_key_check_failed")
+    if database_meta.get("size") != database.stat().st_size:
+        raise BackupError("backup_manifest_invalid")
+    integrity, foreign, schema_version = _checks(database, require_current=False)
+    if integrity != "ok" or database_meta.get("integrity_check") != "ok":
+        raise BackupError("backup_database_integrity_failed")
+    if foreign != "ok" or database_meta.get("foreign_key_check") != "ok":
+        raise BackupError("backup_foreign_key_check_failed")
     if database_meta.get("schema_version") != schema_version:
+        raise BackupError("backup_schema_version_mismatch")
+    recorded_current = database_meta.get("current_schema_at_backup")
+    if recorded_current is not None and (not isinstance(recorded_current, int) or recorded_current < schema_version):
         raise BackupError("backup_schema_version_mismatch")
     files = manifest.get("originals", {}).get("files", [])
     if not isinstance(files, list): raise BackupError("backup_manifest_invalid")
@@ -289,7 +306,7 @@ def _rebase_restored_material_paths(database: Path, data_root: Path) -> None:
             )
         connection.commit()
         connection.close()
-        integrity, foreign, _ = _checks(database)
+        integrity, foreign, _ = _checks(database, require_current=False)
         if integrity != "ok":
             raise BackupError("restore_database_integrity_failed")
         if foreign != "ok":
@@ -306,6 +323,119 @@ def _rebase_restored_material_paths(database: Path, data_root: Path) -> None:
         except Exception:
             pass
         raise BackupError("restore_database_update_failed") from None
+
+
+def rotate_backups(backup_root: Path, *, retain: int, confirm: bool = False) -> dict[str, Any]:
+    """Delete only older verified backup directories after an explicit confirmation."""
+    increment("backup_rotation", "started")
+    if retain < 1:
+        increment("backup_rotation", "failed")
+        emit_event("backup_rotation_failed", level=40, error_code="backup_retention_invalid",
+                   component="backup", outcome="failed")
+        raise BackupError("backup_retention_invalid")
+    root = Path(backup_root)
+    _lstat(root, "backup_rotation_root_invalid")
+    if not stat.S_ISDIR(root.stat().st_mode):
+        raise BackupError("backup_rotation_root_invalid")
+    candidates: list[tuple[str, Path]] = []
+    for child in _safe_children(root):
+        try:
+            info = child.lstat()
+        except OSError:
+            continue
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+            continue
+        try:
+            manifest = _manifest(child)
+            verify_backup(child)
+            created_at = manifest.get("created_at")
+            if not isinstance(created_at, str):
+                continue
+            candidates.append((created_at, child))
+        except BackupError:
+            # Unknown, incomplete, or invalid artifacts are evidence, not rotation candidates.
+            continue
+    candidates.sort(key=lambda item: (item[0], item[1].name), reverse=True)
+    selected = candidates[retain:]
+    if not confirm:
+        increment("backup_rotation", "dry_run")
+        emit_event("backup_rotation_dry_run", component="backup", outcome="dry_run")
+        return {"status": "dry_run", "error_code": None, "verified_count": len(candidates),
+                "retain": retain, "delete_count": len(selected)}
+    deleted = 0
+    try:
+        # Validate the complete deletion set before removing anything. This
+        # guarantees an invalid/corrupt old artifact cannot turn a rotation
+        # failure into a deletion of another verified backup.
+        for _created_at, candidate in selected:
+            _lstat(candidate, "backup_rotation_candidate_invalid")
+            verify_backup(candidate)
+        for _created_at, candidate in selected:
+            _lstat(candidate, "backup_rotation_candidate_invalid")
+            shutil.rmtree(candidate)
+            deleted += 1
+    except (BackupError, OSError, shutil.Error):
+        # Existing verified backups and the live data root remain untouched on a rotation failure.
+        increment("backup_rotation", "failed")
+        emit_event("backup_rotation_failed", level=40, error_code="backup_rotation_failed",
+                   component="backup", outcome="failed")
+        raise BackupError("backup_rotation_failed") from None
+    increment("backup_rotation", "succeeded")
+    emit_event("backup_rotation_completed", component="backup", outcome="succeeded")
+    return {"status": "rotated", "error_code": None, "verified_count": len(candidates),
+            "retain": retain, "deleted_count": deleted}
+
+
+def upgrade_preflight(data_root: Path, verified_backup: Path) -> dict[str, Any]:
+    """Non-mutating upgrade decision check; it never migrates, repairs, or writes."""
+    increment("upgrade_preflight", "started")
+    root = Path(data_root)
+    database = root / "studybuddy.sqlite3"
+    try:
+        _lstat(root, "upgrade_data_root_invalid")
+        if not stat.S_ISDIR(root.stat().st_mode):
+            raise BackupError("upgrade_data_root_invalid")
+        _sqlite_header(database, "upgrade_database_missing")
+        # This is only an ACL/access preflight, not a substitute for the later
+        # SQLite transaction. It lets an operator stop before a known unwritable root.
+        if not os.access(root, os.W_OK) or not os.access(database, os.W_OK):
+            raise BackupError("upgrade_data_root_not_writable")
+        integrity, foreign, schema_version = _checks(database, require_current=False)
+        if integrity != "ok":
+            raise BackupError("upgrade_database_integrity_failed")
+        if foreign != "ok":
+            raise BackupError("upgrade_foreign_key_check_failed")
+        originals = root / "originals"
+        originals_info = _lstat(originals, "upgrade_originals_missing")
+        if not stat.S_ISDIR(originals_info.st_mode):
+            raise BackupError("upgrade_originals_invalid")
+        hashes, _references = _referenced_hashes(database)
+        for digest in hashes:
+            source_file = _validate_layout(originals, digest)
+            if _sha256(source_file) != digest:
+                raise BackupError("upgrade_original_hash_mismatch")
+        backup_result = verify_backup(verified_backup)
+        backup_database = Path(verified_backup) / _DB_NAME
+        _backup_integrity, _backup_foreign, backup_schema_version = _checks(
+            backup_database, require_current=False
+        )
+        if backup_schema_version != schema_version:
+            raise BackupError("upgrade_backup_schema_mismatch")
+        result = {
+            "status": "ready", "error_code": None, "database_schema_version": schema_version,
+            "backup_schema_version": backup_schema_version,
+            "target_schema_version": CURRENT_SCHEMA_VERSION,
+            "migration_required": schema_version != CURRENT_SCHEMA_VERSION,
+            "backup_verified": backup_result["status"] == "valid",
+        }
+        increment("upgrade_preflight", "ready")
+        emit_event("upgrade_preflight_completed", component="operator", outcome="ready")
+        return result
+    except BackupError as error:
+        increment("upgrade_preflight", "failed")
+        emit_event("upgrade_preflight_failed", level=40, error_code=error.code,
+                   component="operator", outcome="failed")
+        raise
 
 
 def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict[str, Any]:

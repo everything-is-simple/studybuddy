@@ -340,6 +340,6 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/ -q -p no:cacheprovider
 
 ## 12. 10-1 完成声明
 
-> Phase 10-1 已完成 operation/task 正式契约、状态机、兼容策略、progress/lease/retry/cancel/幂等和隐私边界冻结；Gate B 通过。10-2 已完成 v13 最小 task/attempt schema，Gate C 通过。10-3 已实现 explicit-only 单进程 runner、cooperative cancellation 和 stale/restart/shutdown recovery，Gate D 通过。10-4 已仅批准并接入 `embedding_index` 的 provider-backed task，Gate E 通过；10-5 已完成 safe structured observability、health/readiness/degraded 与 explicit read-only diagnostics，Gate F 通过；其余业务长任务仍未接入。Phase 10 和 StudyBuddy 本地 v1 尚未完成上线。
+> Phase 10-1 已完成 operation/task 正式契约、状态机、兼容策略、progress/lease/retry/cancel/幂等和隐私边界冻结；Gate B 通过。10-2 已完成 v13 最小 task/attempt schema，Gate C 通过。10-3 已实现 explicit-only 单进程 runner、cooperative cancellation 和 stale/restart/shutdown recovery，Gate D 通过。10-4 已仅批准并接入 `embedding_index` 的 provider-backed task，Gate E 通过；10-5 已完成 safe structured observability、health/readiness/degraded 与 explicit read-only diagnostics，Gate F 通过；10-6 已完成 upgrade preflight、verified backup rotation、restore drill 与 stop/quarantine policy，Gate G 通过；其余业务长任务仍未接入。Phase 10 和 StudyBuddy 本地 v1 尚未完成上线。
 
 下一步：执行 `docs/prompts/phase10/10-6_backup_restore_与_migration_运维闭环.md`。
