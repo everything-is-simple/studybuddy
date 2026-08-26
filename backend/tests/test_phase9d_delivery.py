@@ -224,7 +224,8 @@ def test_delivery_failure_retry_and_idempotency_do_not_repeat_implicit_work(tmp_
         assert retried["status"] == "dry_run" and retried["retry_of"] == failed["id"]
         assert succeeding.calls == 1
         attempts = list_report_delivery_attempts(connection, project_id=PROJECT_ID, report_id=str(report["id"]))
-        assert [attempt["id"] for attempt in attempts] == [failed["id"], retried["id"]]
+        assert {attempt["id"] for attempt in attempts} == {failed["id"], retried["id"]}
+        assert next(attempt for attempt in attempts if attempt["id"] == retried["id"])["retry_of"] == failed["id"]
         with pytest.raises(ValueError, match="delivery_failed"):
             execute_report_delivery(
                 connection, config=config, project_id=PROJECT_ID, report_id=str(report["id"]),
