@@ -25,7 +25,14 @@ logger = logging.getLogger(__name__)
 _runner_locks_guard = threading.Lock()
 _runner_locks: dict[str, threading.Lock] = {}
 
-TaskHandler = Callable[["TaskContext"], None]
+@dataclass(frozen=True)
+class TaskResult:
+    """A handler may return only an opaque, persisted artifact identifier."""
+
+    output_artifact_id: str | None = None
+
+
+TaskHandler = Callable[["TaskContext"], TaskResult | None]
 
 
 def _dispatcher_lock(database_path: Path) -> threading.Lock:
@@ -48,6 +55,14 @@ class TaskRunnerError(ValueError):
 
 class TaskCancelled(Exception):
     """A handler raises this only after a cooperative cancellation safe point."""
+
+
+class TaskFailed(Exception):
+    """A handler raises a stable, non-sensitive business error code."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
 
 
 @dataclass(frozen=True)
@@ -224,23 +239,30 @@ class TaskRunner:
             return
         try:
             context.raise_if_cancel_requested()
-            policy.handler(context)
+            result = policy.handler(context)
+            if result is not None and not isinstance(result, TaskResult):
+                raise TaskFailed("task_handler_failed")
             # An already-completed irreversible handler may legitimately win a late cancel.
-            self._finish(task_id, attempt_id, "succeeded", None)
+            self._finish(task_id, attempt_id, "succeeded", None,
+                         output_artifact_id=result.output_artifact_id if result else None)
         except TaskCancelled:
             self._finish(task_id, attempt_id, "cancelled", None)
+        except TaskFailed as error:
+            self._finish(task_id, attempt_id, "failed", error.code)
         except TaskRunnerError as error:
             self._finish(task_id, attempt_id, "stale", error.code)
         except Exception:
             # Do not emit exception text, traceback, payload, source content, or provider data.
             self._finish(task_id, attempt_id, "failed", "task_handler_failed")
 
-    def _finish(self, task_id: str, attempt_id: str, status: str, error_code: str | None) -> None:
+    def _finish(self, task_id: str, attempt_id: str, status: str, error_code: str | None,
+                *, output_artifact_id: str | None = None) -> None:
         try:
             with connect_database(self._database_path) as connection:
                 if finish_operation_task(
                     connection, task_id=task_id, attempt_id=attempt_id,
                     status=status, error_code=error_code,
+                    output_artifact_id=output_artifact_id,
                 ):
                     increment("task_runs", status)
                     emit_event("task_finished", error_code=error_code, component="task_runner", outcome=status)

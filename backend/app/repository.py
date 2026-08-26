@@ -6,6 +6,7 @@ import sqlite3
 import stat
 import time
 import uuid
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -355,7 +356,8 @@ def retry_operation_task(connection: sqlite3.Connection, *, task_id: str,
 
 
 def finish_operation_task(connection: sqlite3.Connection, *, task_id: str, attempt_id: str,
-                          status: str, error_code: str | None = None) -> bool:
+                          status: str, error_code: str | None = None,
+                          output_artifact_id: str | None = None) -> bool:
     if status not in {"succeeded", "failed", "cancelled", "stale"}:
         raise ValueError("task_invalid_state_transition")
     row = _task_row(connection, task_id)
@@ -381,9 +383,9 @@ def finish_operation_task(connection: sqlite3.Connection, *, task_id: str, attem
         (task_status, error_code, task_status, task_status, now, now, task_id),
     )
     connection.execute(
-        "UPDATE ai_operations SET status=?,error_code=?,finished_at=? "
+        "UPDATE ai_operations SET status=?,error_code=?,output_artifact_id=COALESCE(?,output_artifact_id),finished_at=? "
         "WHERE id=(SELECT operation_id FROM operation_tasks WHERE id=?) AND status='running'",
-        (task_status, error_code, now, task_id),
+        (task_status, error_code, output_artifact_id, now, task_id),
     )
     connection.commit()
     return True
@@ -5281,6 +5283,88 @@ def reclaim_stale_embedding_operations(connection: sqlite3.Connection, *, projec
     return len(stale_ids)
 
 
+def create_task_backed_embedding_operation(connection: sqlite3.Connection, *, project_id: str,
+                                          material_id: str, source_revision: str,
+                                          provider_id: str, model_id: str | None,
+                                          model_revision: str, idempotency_key: str | None = None,
+                                          max_retries: int = 1) -> dict[str, object]:
+    """Queue the approved embedding-only task; never persist source text in its task envelope."""
+    if not project_id or not material_id or not source_revision or not provider_id or max_retries < 0:
+        raise ValueError("embedding_task_invalid_request")
+    material = connection.execute(
+        "SELECT project_id,deleted_at FROM materials WHERE id=?", (material_id,)
+    ).fetchone()
+    revision = connection.execute(
+        "SELECT material_id,is_current FROM material_revisions WHERE id=?", (source_revision,)
+    ).fetchone()
+    if material is None:
+        raise ValueError("material_not_found")
+    if str(material["project_id"]) != project_id:
+        raise ValueError("task_project_scope_violation")
+    if material["deleted_at"] is not None:
+        raise ValueError("source_deleted")
+    if revision is None or str(revision["material_id"]) != material_id or int(revision["is_current"]) != 1:
+        raise ValueError("source_stale")
+    fingerprint = hashlib.sha256(
+        f"embedding_index\x1f{material_id}\x1f{source_revision}\x1f{provider_id}\x1f{model_id or ''}\x1f{model_revision}".encode("utf-8")
+    ).hexdigest()
+    key_fingerprint = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest() if idempotency_key else None
+    if idempotency_key is not None:
+        existing = connection.execute(
+            "SELECT * FROM ai_operations WHERE project_id=? AND idempotency_key=?", (project_id, idempotency_key)
+        ).fetchone()
+        if existing is not None:
+            if (str(existing["operation_type"]) != "embedding_index" or
+                    str(existing["input_fingerprint"]) != fingerprint):
+                raise ValueError("embedding_index_idempotency_mismatch")
+            task = connection.execute("SELECT * FROM operation_tasks WHERE operation_id=?", (existing["id"],)).fetchone()
+            if task is None:
+                raise ValueError("task_result_unavailable")
+            return {"operation_id": str(existing["id"]), "task_id": str(task["id"]), "replay": True}
+    operation_id, task_id, now = f"embedding_index_{uuid.uuid4().hex}", f"task_{uuid.uuid4().hex}", utc_now()
+    try:
+        with connection:
+            connection.execute(
+                "INSERT INTO ai_operations (id,operation_type,status,project_id,material_id,input_fingerprint,source_revision,"
+                "provider_id,model_id,idempotency_key,retry_count,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,0,?)",
+                (operation_id, "embedding_index", "queued", project_id, material_id, fingerprint,
+                 source_revision, provider_id, model_id, idempotency_key, now),
+            )
+            create_operation_task(
+                connection, task_id=task_id, project_id=project_id, operation_id=operation_id,
+                task_kind="embedding_index", input_fingerprint=fingerprint,
+                idempotency_key_fingerprint=key_fingerprint, max_retries=max_retries,
+            )
+    except sqlite3.IntegrityError as exc:
+        raise ValueError("embedding_index_enqueue_failed") from exc
+    return {"operation_id": operation_id, "task_id": task_id, "replay": False}
+
+
+def get_operation_task_public(connection: sqlite3.Connection, *, task_id: str,
+                              project_id: str) -> dict[str, object]:
+    task = get_operation_task(connection, task_id=task_id, project_id=project_id)
+    operation = connection.execute(
+        "SELECT operation_type,status,provider_id,model_id,output_artifact_id FROM ai_operations WHERE id=? AND project_id=?",
+        (task["operation_id"], project_id),
+    ).fetchone()
+    if operation is None:
+        raise ValueError("task_result_unavailable")
+    attempts = connection.execute(
+        "SELECT COUNT(*) FROM operation_task_attempts WHERE task_id=? AND project_id=?", (task_id, project_id)
+    ).fetchone()[0]
+    return {
+        "task_id": task["id"], "operation_id": task["operation_id"], "status": task["status"],
+        "task_kind": task["task_kind"], "operation_type": operation["operation_type"],
+        "progress_percent": task["progress_percent"], "stage_code": task["stage_code"],
+        "retry_count": task["retry_count"], "attempt_count": attempts, "max_retries": task["max_retries"],
+        "error_code": task["error_code"], "output_artifact_id": operation["output_artifact_id"],
+        "provider_id": operation["provider_id"], "model_id": operation["model_id"],
+        "created_at": task["created_at"], "started_at": task["started_at"],
+        "updated_at": task["updated_at"], "finished_at": task["finished_at"],
+        "cancel_requested": task["status"] == "cancel_requested",
+    }
+
+
 def create_embedding_index_operation(connection: sqlite3.Connection, *, project_id: str,
                                      material_id: str, source_revision: str,
                                      retry_count: int = 0) -> str:
@@ -5308,23 +5392,54 @@ def finish_embedding_index_operation(connection: sqlite3.Connection, operation_i
 
 def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id: str,
                                   provider: EmbeddingProvider, rebuild: bool = False,
-                                  retry_failed: bool = False, operation_id: str | None = None) -> dict[str, object]:
+                                  retry_failed: bool = False, operation_id: str | None = None,
+                                  expected_revision_id: str | None = None,
+                                  checkpoint: Callable[[], bool | None] | None = None) -> dict[str, object]:
     """Explicit, synchronous SQLite-first indexing; never called during startup."""
-    if getattr(provider, "dimensions", 0) == 0:
-        probe = connection.execute(
-            "SELECT text FROM chunks WHERE material_id=? AND status='ready' ORDER BY chunk_index, id LIMIT 1",
-            (material_id,),
+    def check_checkpoint() -> None:
+        if checkpoint is not None and checkpoint() is False:
+            raise ValueError("task_cancel_requested")
+
+    def require_current_source() -> None:
+        if expected_revision_id is None:
+            return
+        source = connection.execute(
+            "SELECT r.id FROM material_revisions r JOIN materials m ON m.id=r.material_id "
+            "WHERE r.id=? AND r.material_id=? AND r.is_current=1 AND m.deleted_at IS NULL",
+            (expected_revision_id, material_id),
         ).fetchone()
+        if source is None:
+            raise ValueError("source_stale")
+
+    require_current_source()
+    if getattr(provider, "dimensions", 0) == 0:
+        probe_sql = "SELECT text FROM chunks WHERE material_id=? AND status='ready' "
+        probe_args: tuple[str, ...] = (material_id,)
+        if expected_revision_id is not None:
+            probe_sql += "AND revision_id=? "
+            probe_args = (material_id, expected_revision_id)
+        probe = connection.execute(probe_sql + "ORDER BY chunk_index, id LIMIT 1", probe_args).fetchone()
         if probe is not None:
+            check_checkpoint()
             provider.embed([str(probe["text"])])
+            require_current_source()
+            check_checkpoint()
     with connection:
-        rows = connection.execute(
+        rows_sql = (
             "SELECT c.id, c.text, c.revision_id FROM chunks c JOIN materials m ON m.id=c.material_id "
             "JOIN material_revisions r ON r.id=c.revision_id WHERE c.material_id=? AND m.deleted_at IS NULL "
-            "AND r.is_current=1 AND c.status='ready' ORDER BY c.chunk_index, c.id", (material_id,)
-        ).fetchall()
+            "AND r.is_current=1 AND c.status='ready' "
+        )
+        rows_args: tuple[str, ...] = (material_id,)
+        if expected_revision_id is not None:
+            rows_sql += "AND c.revision_id=? "
+            rows_args = (material_id, expected_revision_id)
+        rows = connection.execute(rows_sql + "ORDER BY c.chunk_index, c.id", rows_args).fetchall()
         if not rows:
             return {"status": "empty", "material_id": material_id, "embedded_count": 0, "skipped_count": 0}
+        # Do not retain a SQLite write transaction across provider calls. Each
+        # completed provider batch commits its idempotent rows before the next call.
+        connection.commit()
         embedded = skipped = 0
         for start in range(0, len(rows), 32):
             batch = rows[start:start + 32]
@@ -5353,7 +5468,14 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
             if not todo:
                 continue
             try:
+                check_checkpoint()
                 vectors = provider.embed([str(row["text"]) for row, _ in todo])
+                check_checkpoint()
+                # Serialize source validation with the batch write. A delete or
+                # revision refresh either wins before this check (no write), or
+                # follows this committed, source-valid batch and marks it stale.
+                connection.execute("BEGIN IMMEDIATE")
+                require_current_source()
                 if len(vectors) != len(todo):
                     raise EmbeddingError("embedding_invalid_response")
                 for (row, content_hash), vector in zip(todo, vectors):
@@ -5371,6 +5493,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                          provider.model_revision, provider.dimensions, encoding, payload, content_hash,
                          row["revision_id"], now, now))
                     embedded += 1
+                connection.commit()
             except EmbeddingError as error:
                 for row, content_hash in todo:
                     now = utc_now()
@@ -5383,7 +5506,25 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
                          provider.model_revision, provider.dimensions, encoding, None, content_hash,
                          row["revision_id"], error.code, now, now))
+                connection.commit()
                 raise
+            except ValueError as error:
+                if str(error) in {"source_stale", "task_cancel_requested", "task_lease_lost"}:
+                    raise
+                error = EmbeddingError("embedding_provider_failed")
+                for row, content_hash in todo:
+                    now = utc_now()
+                    connection.execute("""INSERT INTO embeddings
+                        (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
+                         content_hash,source_revision,status,error_code,created_at,updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)
+                        ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
+                        DO UPDATE SET vector_payload=NULL,status='failed',error_code=excluded.error_code,updated_at=excluded.updated_at""",
+                        (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
+                         provider.model_revision, provider.dimensions, encoding, None, content_hash,
+                         row["revision_id"], error.code, now, now))
+                connection.commit()
+                raise error
             except Exception:
                 error = EmbeddingError("embedding_provider_failed")
                 for row, content_hash in todo:
@@ -5397,6 +5538,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
                          provider.model_revision, provider.dimensions, encoding, None, content_hash,
                          row["revision_id"], error.code, now, now))
+                connection.commit()
                 raise error
         return {"status": "ready", "material_id": material_id, "embedded_count": embedded, "skipped_count": skipped,
                 "provider_id": provider.provider_id, "model_id": provider.model_id, "dimensions": provider.dimensions,

@@ -164,7 +164,7 @@ Phase 8.1–8.6 已收口：v7/v8 migration、Cards/Exercises backend、fake-pro
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 与 Phase 9A/9B/9C 已在各自限定范围内完成；Phase 9D 的部分立项范围已完成审计、契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、S7→S2 confirmed transcript ingestion、S6 report aggregation/redaction、默认关闭的 delivery dry-run/授权/审计、最小安全 API、Chromium workspace、source lifecycle、backup/restore non-repair 和 scoped closeout；证据见 `PHASE9D_ACCEPTANCE_EVIDENCE.md`。真实 OCR/ASR 与真实外发仍未立项。Phase 10 已完成规划、10-0 范围审计、10-1 契约冻结、10-2 v13 task/attempt schema，以及 10-3 explicit single-process runner/recovery（Gates A-D）；runner 默认不自动启动，业务接入仍未实现。总体 prompt、10-0 至 10-9 子任务 prompt、执行顺序和 Gate A-J 见 [`prompts/phase10/`](prompts/phase10/)。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 与 Phase 9A/9B/9C 已在各自限定范围内完成；Phase 9D 的部分立项范围已完成审计、契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、S7→S2 confirmed transcript ingestion、S6 report aggregation/redaction、默认关闭的 delivery dry-run/授权/审计、最小安全 API、Chromium workspace、source lifecycle、backup/restore non-repair 和 scoped closeout；证据见 `PHASE9D_ACCEPTANCE_EVIDENCE.md`。真实 OCR/ASR 与真实外发仍未立项。Phase 10 已完成规划、10-0 范围审计、10-1 契约冻结、10-2 v13 task/attempt schema、10-3 explicit single-process runner/recovery，以及 10-4 approved `embedding_index` task 接入（Gates A-E）；runner 默认不自动启动，只有显式 API/CLI 可执行 approved embedding task。总体 prompt、10-0 至 10-9 子任务 prompt、执行顺序和 Gate A-J 见 [`prompts/phase10/`](prompts/phase10/)。
 
 ### 与祖宗/前两代版本的治理结论
 
@@ -174,13 +174,13 @@ StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-aud
 
 Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
-### Phase 10：本地生产化与上线收口（10-0 至 10-3 已完成，业务接入尚未实现）
+### Phase 10：本地生产化与上线收口（10-0 至 10-4 已完成，approved embedding task 已接入）
 
 - 10-0：已完成本地单机 v1 的成功上线标准、支持边界、non-goals 和 release go/no-go；Gate A 通过，状态为 `planned/audit-draft`。审计产物：[`prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`](prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md)。
 - 10-1：已完成 operation/task 状态机、progress、lease、retry、cooperative cancel、幂等、兼容策略和重启恢复语义冻结；Gate B 通过，状态为 `planned/contract-frozen`。契约见 [`prompts/phase10/PHASE10_OPERATION_TASK_CONTRACT.md`](prompts/phase10/PHASE10_OPERATION_TASK_CONTRACT.md)。
 - 10-2：已完成连续 v13 `phase10_operation_task_schema`；新增 project-scoped task envelope 和 append-only attempt audit，保留旧 `ai_operations`、不回填旧 operation、不实现 runner/handler。new DB、v12 upgrade、幂等、rollback、history/`PRAGMA user_version`、backup/restore 和 restore acceptance non-run 已通过；Gate C 状态为 `implemented/backend-pass`。
-- 10-3：已实现单进程 `TaskRunner`、handler registry、单线程并发限制、SQLite lease/heartbeat/compare-and-set、progress 单调性、policy-gated retry、queued/running cooperative cancel、handler failure 脱敏、lease/startup/shutdown stale recovery 和旧 `ai_operations` 状态兼容。runner 不在 FastAPI startup、backup、restore 或 read path 自动启动；启动只将遗留 active task 标记为 `stale/task_recovery_required`，不自动重跑。Gate D 状态为 `implemented/backend-pass`：focused runner/recovery `44 passed`，旧 operation 回归 `55 passed`，完整 backend `377 passed, 2 skipped`。
-- 10-4：将批准的 indexing/embedding/AI/OCR/ASR/report 操作接入 runner，保持副作用和同步兼容。
+- 10-3：已实现单进程 `TaskRunner`、handler registry、单线程并发限制、SQLite lease/heartbeat/compare-and-set、progress 单调性、policy-gated retry、queued/running cooperative cancel、handler failure 脱敏、lease/startup/shutdown stale recovery 和旧 `ai_operations` 状态兼容。runner 不在 FastAPI startup、backup、restore 或 read path 自动启动；启动只将遗留 active task 标记为 `stale/task_recovery_required`，不自动重跑。Gate D 状态为 `implemented/backend-pass`：focused runner/recovery `44 passed`，旧 operation 回归 `55 passed`，完整 backend `382 passed, 2 skipped`。
+- 10-4：只批准 `embedding_index` 的 provider-backed 阶段接入 runner。`POST /api/materials/{material_id}/ai-index/tasks` 显式创建固定 project/material/current revision/provider identity 的 task handle；`GET /api/tasks/{task_id}`、cancel/retry 和 `run-tasks` CLI 均保持显式，旧 `/ai-index` 同步 API 不变。handler 在 provider batch 前后检查 lease/cancel/source lifecycle，任务重试用 idempotent embedding upsert 避免重复 ready artifact。Q&A、draft generation、capture transcription、report snapshot 和 delivery 未接入，真实 provider/OCR/ASR/外发未运行。Gate E 为 `implemented/backend-pass`：focused `43 passed`，完整 backend `382 passed, 2 skipped`；证据见 [`prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`](prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md)。
 - 10-5：完成 structured logging、metrics、request/task tracing、health/readiness/degraded、operator diagnostics。
 - 10-6：完成 backup/verify/restore、保留轮换、restore drill、corruption/read-only/停机策略。
 - 10-7：完成安全配置、单实例锁、启动/停止、升级和本地发布方式。
