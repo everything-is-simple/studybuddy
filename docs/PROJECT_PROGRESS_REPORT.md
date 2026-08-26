@@ -170,7 +170,7 @@ P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase
 
 StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-audit`、`ai-studybuddy`、`AIStudyBuddy` 和 `pi-studybuddy`，它在正式 source of truth、Composer/Integration/Test 分层、migration 控制、原文件与 SQLite 安全、backup/restore、revision → chunk → retrieval → citation 可追溯链、Provider evidence 边界和分层验收状态上更成熟。
 
-但它还不是功能宽度上的全面替代品。前代版本仍覆盖更多学习业务，例如 cards、exercises、study plans、S1–S7、OCR/ASR、报告或桌面工作流。历史代码、设计、组件 smoke、fake Provider 或前代用户路径只能作为需求和契约参考，不能作为正式系统完成证据。当前完成度约 55%–60% 的主要含义正是：可靠基础、可信 Q&A 和受限的 Cards/Exercises 闭环已形成，但学习计划和更广泛学习产品上层尚未完成。
+但它还不是功能宽度上的全面替代品。前代版本仍可能覆盖更广的产品化学习业务，例如更完整的 study plans、OCR/ASR、报告或桌面工作流；当前正式系统已吸收并在限定范围内验收 Cards/Exercises、9A 学习计划基础、9B S1/S2、9C S3/S4/S5 和 9D S6/S7 部分立项能力。历史代码、设计、组件 smoke、fake Provider 或前代用户路径只能作为需求和契约参考，不能作为正式系统完成证据。当前完成度约 60% 的主要含义是：可靠基础、可信 Q&A 和限定范围的学习产品闭环已形成，但生产化扩展及未立项能力仍未完成。
 
 Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
@@ -193,8 +193,8 @@ Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不�
 - 全局生产级 `real-pass`。
 - 多进程或多 Uvicorn worker 共享同一 data_root。
 - 真实断电、磁盘损坏、网络文件系统恢复。
-- 不宣称所有真实 Provider、RAG、Cards、Exercises 或学习计划已具备；DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 已有各自精确 API/UI smoke evidence；其它 Provider/model 仍需独立验证。Phase 4 fake Provider Q&A 和 P6-E fake 核心工作流已通过对应验收。
-- 已具备 OCR、ASR、ZIP import、文件夹 export 或后台任务队列。
+- 不宣称所有真实 Provider、Embedding、Cards、Exercises 或学习计划能力均已具备；DeepSeek `deepseek-chat` 和 Agnes `agnes-2.5-flash` 已有各自精确 API/UI smoke evidence，其它 Provider/model 仍需独立验证。Phase 4 fake Provider Q&A、Phase 8 Cards/Exercises 以及 Phase 9A–9D 已通过各自限定范围验收，但不等于真实 Provider 或完整产品能力。
+- 已实现的 OCR/ASR 仅是 9D 批准范围内的 deterministic fake/loopback capture/transcription；不宣称真实 OCR/ASR、ZIP import、文件夹 export 或后台任务队列已具备。
 - 已完成多用户、认证授权、云同步和协作。
 
 ## 六、权威文档索引
