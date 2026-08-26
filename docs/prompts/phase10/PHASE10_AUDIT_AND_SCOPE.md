@@ -1,8 +1,8 @@
 # Phase 10-0 审计与上线范围冻结
 
-> 状态：`planned/audit-draft`（Gate A：通过）  
-> 审计对象：StudyBuddy 当前 `master`，schema v12   
-> 审计日期：2026-08-30  
+> 状态：`planned/audit-draft`（Gate A：通过）
+> 审计对象：StudyBuddy 当前 `master`，schema v12
+> 审计日期：2026-08-30
 > 审计原则：本文件是 Phase 10 的范围与上线定义证据，不是 Phase 10 实现证据。
 
 ## 1. 审计结论
@@ -280,6 +280,6 @@ release candidate 至少必须在隔离 data root 验证：
 
 **Gate A：通过（scoped go）**。
 
-批准范围：本地单进程 v1 的生产化和上线收口。  
-未批准范围：多用户、多进程共享、云同步、真实 OCR/ASR、真实外发、自动定时推送和全局 production real-pass。  
+批准范围：本地单进程 v1 的生产化和上线收口。
+未批准范围：多用户、多进程共享、云同步、真实 OCR/ASR、真实外发、自动定时推送和全局 production real-pass。
 下一步：执行 `docs/prompts/phase10/10-1_operation_task_契约与状态机.md`。

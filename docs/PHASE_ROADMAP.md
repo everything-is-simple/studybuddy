@@ -198,9 +198,9 @@ Phase 9A、Phase 9B 与 Phase 9C 已分别在明确范围内完成；Phase 9D �
 
 ### Phase 10：本地生产化、后台任务与上线收口
 
-**状态：规划已完成；10-0 已完成现状审计与范围冻结（`planned/audit-draft`，Gate A 通过），实现尚未开始。推荐目标是 local single-process / single-instance / SQLite / local-disk v1 上线，不将多用户互联网服务作为隐含目标。**
+**状态：规划已完成；10-0 已完成现状审计与范围冻结（`planned/audit-draft`，Gate A 通过），10-1 已完成 operation/task 契约冻结（`planned/contract-frozen`，Gate B 通过），实现尚未开始。推荐目标是 local single-process / single-instance / SQLite / local-disk v1 上线，不将多用户互联网服务作为隐含目标。**
 
-Phase 10 的总体规划、共用上下文、逐任务 prompts、执行顺序和 Gate A-J 已保存于 [`prompts/phase10/`](prompts/phase10/)。10-0 审计产物见 [`prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`](prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md)，Gate A 已通过，下一步为 10-1。Phase 10 共 10 步（10-0 至 10-9），必须一次执行一个、逐步测试、逐步提交和逐步更新证据：
+Phase 10 的总体规划、共用上下文、逐任务 prompts、执行顺序和 Gate A-J 已保存于 [`prompts/phase10/`](prompts/phase10/)。10-0 审计产物见 [`prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md`](prompts/phase10/PHASE10_AUDIT_AND_SCOPE.md)，Gate A 已通过；10-1 operation/task 契约见 [`prompts/phase10/PHASE10_OPERATION_TASK_CONTRACT.md`](prompts/phase10/PHASE10_OPERATION_TASK_CONTRACT.md)，Gate B 已通过，下一步为 10-2。Phase 10 共 10 步（10-0 至 10-9），必须一次执行一个、逐步测试、逐步提交和逐步更新证据：
 
 1. 10-0：定义“成功上线”、审计现状、冻结支持边界与 non-goals；
 2. 10-1：冻结 operation/task 状态、进度、租约、幂等、重试、取消和恢复契约；
