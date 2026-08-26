@@ -21,8 +21,8 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 12
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 12
+        assert assert_schema_version(connection) == 13
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 13
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
                              "material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -37,7 +37,8 @@ def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
                              "practice_sessions", "practice_session_items", "exercise_attempt_reviews",
                              "mistake_cases", "mistake_occurrences", "mistake_feedback_events", "cram_goals",
                              "capture_sessions", "transcript_drafts", "transcript_segments",
-                             "report_snapshots", "report_delivery_attempts"}
+                             "report_snapshots", "report_delivery_attempts",
+                             "operation_tasks", "operation_task_attempts"}
         virtual_tables = {row[0] for row in connection.execute(
             "SELECT name FROM sqlite_master WHERE sql LIKE 'CREATE VIRTUAL TABLE%'"
         )}
@@ -245,8 +246,10 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 12
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 13
         assert connection.execute("SELECT provider_request_id, total_tokens, finish_reason, idempotency_key, retrieval_run_id FROM ai_operations").description is not None
+        assert connection.execute("SELECT id,operation_id,status,progress_percent FROM operation_tasks").description is not None
+        assert connection.execute("SELECT id,task_id,attempt_number,lease_expires_at FROM operation_task_attempts").description is not None
         assert connection.execute("SELECT id, goal_id, status, user_edited FROM study_plans").description is not None
         assert connection.execute("SELECT id, provenance, generation_operation_id FROM notes").description is not None
         assert connection.execute("SELECT id, cadence, target_minutes FROM rhythm_settings").description is not None
@@ -320,6 +323,54 @@ def test_phase9d_schema_has_required_tables_constraints_and_indexes(tmp_path: Pa
             )
 
 
+def test_phase10_task_schema_constraints_and_scope_are_enforced(tmp_path: Path):
+    database = tmp_path / "studybuddy.sqlite3"
+    with connect(database) as connection:
+        connection.execute("INSERT INTO projects VALUES ('project_task_a','Task A','now')")
+        connection.execute("INSERT INTO projects VALUES ('project_task_b','Task B','now')")
+        connection.execute(
+            "INSERT INTO ai_operations (id,operation_type,status,project_id,input_fingerprint,retry_count,created_at) "
+            "VALUES ('operation_task_a','embedding_index','queued','project_task_a','input-a',0,'now')"
+        )
+        connection.execute(
+            "INSERT INTO operation_tasks "
+            "(id,project_id,operation_id,task_kind,status,input_fingerprint,progress_percent,stage_code,retry_count,max_retries,created_at,updated_at) "
+            "VALUES ('task_a','project_task_a','operation_task_a','embedding_index','queued','input-a',0,'queued',0,2,'now','now')"
+        )
+        connection.execute(
+            "INSERT INTO operation_task_attempts "
+            "(id,task_id,project_id,attempt_number,status,progress_percent,stage_code,created_at,started_at) "
+            "VALUES ('attempt_a_1','task_a','project_task_a',1,'running',0,'reading_source','now','now')"
+        )
+        assert tuple(connection.execute(
+            "SELECT status,progress_percent,stage_code,retry_count,max_retries FROM operation_tasks WHERE id='task_a'"
+        ).fetchone()) == ('queued', 0, 'queued', 0, 2)
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO operation_tasks "
+                "(id,project_id,operation_id,task_kind,status,input_fingerprint,retry_count,max_retries,created_at,updated_at) "
+                "VALUES ('task_scope_bad','project_task_b','operation_task_a','embedding_index','queued','input-a',0,0,'now','now')"
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO operation_task_attempts "
+                "(id,task_id,project_id,attempt_number,status,created_at) "
+                "VALUES ('attempt_scope_bad','task_a','project_task_b',2,'running','now')"
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO operation_tasks "
+                "(id,project_id,operation_id,task_kind,status,input_fingerprint,progress_percent,retry_count,max_retries,created_at,updated_at) "
+                "VALUES ('task_progress_bad','project_task_a','operation_task_a','embedding_index','invalid','input-a',101,0,0,'now','now')"
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO operation_task_attempts "
+                "(id,task_id,project_id,attempt_number,status,created_at) "
+                "VALUES ('attempt_duplicate_running','task_a','project_task_a',2,'running','now')"
+            )
+
+
 def test_v11_database_upgrades_to_phase9d_v12_once(monkeypatch, tmp_path: Path):
     from app.migrations import runner
 
@@ -331,7 +382,7 @@ def test_v11_database_upgrades_to_phase9d_v12_once(monkeypatch, tmp_path: Path):
         assert assert_schema_version(connection) == 11
         assert connection.execute("SELECT name FROM sqlite_master WHERE name='capture_sessions'").fetchone() is None
     monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 12)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:12])
     with connect(database) as connection:
         assert assert_schema_version(connection) == 12
         assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=12").fetchone()) == (
@@ -340,6 +391,67 @@ def test_v11_database_upgrades_to_phase9d_v12_once(monkeypatch, tmp_path: Path):
         assert connection.execute("SELECT name FROM sqlite_master WHERE name='capture_sessions'").fetchone() is not None
     with connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=12").fetchone()[0] == 1
+
+
+def test_v12_database_upgrades_to_phase10_v13_once(monkeypatch, tmp_path: Path):
+    from app.migrations import runner
+
+    database = tmp_path / "studybuddy.sqlite3"
+    migrations = runner._MIGRATIONS
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 12)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:12])
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 12
+        assert connection.execute("SELECT name FROM sqlite_master WHERE name='operation_tasks'").fetchone() is None
+        connection.execute("INSERT INTO projects VALUES ('legacy_task_project','Legacy','now')")
+        connection.execute(
+            "INSERT INTO ai_operations (id,operation_type,status,project_id,input_fingerprint,retry_count,created_at) "
+            "VALUES ('legacy_task_operation','qa_answer','succeeded','legacy_task_project','legacy-input',0,'now')"
+        )
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 13
+        assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=13").fetchone()) == (
+            13, "phase10_operation_task_schema",
+        )
+        assert connection.execute("SELECT name FROM sqlite_master WHERE name='operation_tasks'").fetchone() is not None
+        assert tuple(connection.execute(
+            "SELECT operation_type,status,project_id,input_fingerprint FROM ai_operations WHERE id='legacy_task_operation'"
+        ).fetchone()) == ('qa_answer', 'succeeded', 'legacy_task_project', 'legacy-input')
+        assert connection.execute("SELECT COUNT(*) FROM operation_tasks").fetchone()[0] == 0
+    with connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=13").fetchone()[0] == 1
+
+
+def test_phase10_migration_failure_rolls_back_v13_to_existing_v12(monkeypatch, tmp_path: Path):
+    from app.migrations import runner
+
+    database = tmp_path / "studybuddy.sqlite3"
+    migrations = runner._MIGRATIONS
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 12)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:12])
+    with connect(database) as connection:
+        assert assert_schema_version(connection) == 12
+
+    original = runner._migration_v13
+    def broken(connection: sqlite3.Connection) -> None:
+        original(connection)
+        raise sqlite3.OperationalError("private")
+
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
+    monkeypatch.setattr(runner, "_MIGRATIONS", tuple(
+        (version, name, broken if version == 13 else function)
+        for version, name, function in migrations
+    ))
+    connection = sqlite3.connect(database)
+    with pytest.raises(MigrationError, match="database_migration_failed"):
+        migrate(connection)
+    assert connection.execute("SELECT name FROM sqlite_master WHERE name='operation_tasks'").fetchone() is None
+    assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 12
+    assert connection.execute("SELECT 1 FROM schema_migrations WHERE version=13").fetchone() is None
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 12
+    connection.close()
 
 
 def test_phase9d_migration_failure_rolls_back_v12_to_existing_v11(monkeypatch, tmp_path: Path):
@@ -405,7 +517,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 12
+    assert manifest["database"]["schema_version"] == 13
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))

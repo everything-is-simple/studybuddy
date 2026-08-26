@@ -312,6 +312,55 @@ def _phase9d_checks(connection: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
+def _phase10_task_checks(connection: sqlite3.Connection) -> dict[str, Any]:
+    required_tables = ("operation_tasks", "operation_task_attempts")
+    placeholders = ",".join("?" for _ in required_tables)
+    present = {
+        str(row[0]) for row in connection.execute(
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name IN ({placeholders})",
+            required_tables,
+        ).fetchall()
+    }
+    if present != set(required_tables):
+        raise AcceptanceError("acceptance_phase10_task_schema_missing")
+    invalid_task_scope = connection.execute(
+        "SELECT COUNT(*) FROM operation_tasks t JOIN ai_operations o ON o.id=t.operation_id "
+        "WHERE t.project_id != o.project_id"
+    ).fetchone()[0]
+    if invalid_task_scope:
+        raise AcceptanceError("acceptance_phase10_task_scope_invalid")
+    invalid_attempt_scope = connection.execute(
+        "SELECT COUNT(*) FROM operation_task_attempts a JOIN operation_tasks t ON t.id=a.task_id "
+        "WHERE a.project_id != t.project_id"
+    ).fetchone()[0]
+    if invalid_attempt_scope:
+        raise AcceptanceError("acceptance_phase10_attempt_scope_invalid")
+    duplicate_running = connection.execute(
+        "SELECT COUNT(*) FROM (SELECT task_id FROM operation_task_attempts WHERE status='running' "
+        "GROUP BY task_id HAVING COUNT(*) > 1)"
+    ).fetchone()[0]
+    if duplicate_running:
+        raise AcceptanceError("acceptance_phase10_attempt_state_invalid")
+    return {
+        "status": "passed",
+        "counts": {
+            table: int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+            for table in required_tables
+        },
+        "task_statuses": {
+            str(row[0]): int(row[1]) for row in connection.execute(
+                "SELECT status,COUNT(*) FROM operation_tasks GROUP BY status ORDER BY status"
+            ).fetchall()
+        },
+        "attempt_statuses": {
+            str(row[0]): int(row[1]) for row in connection.execute(
+                "SELECT status,COUNT(*) FROM operation_task_attempts GROUP BY status ORDER BY status"
+            ).fetchall()
+        },
+        "execution": "not_run_by_restore_acceptance",
+    }
+
+
 def _offline(data_root: Path) -> dict[str, Any]:
     connection, metadata = _check_database(data_root)
     checks: dict[str, Any] = {
@@ -326,6 +375,7 @@ def _offline(data_root: Path) -> dict[str, Any]:
         "schema_history": {"status": "passed", "count": metadata["history_count"]},
         "study": _study_checks(connection),
         "phase9d": _phase9d_checks(connection),
+        "phase10_tasks": _phase10_task_checks(connection),
     }
     try:
         active = connection.execute(

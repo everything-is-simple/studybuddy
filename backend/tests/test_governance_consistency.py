@@ -82,16 +82,18 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "Phase 9A" in status
     assert "v9" in status
     assert "prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
-    assert "Current schema version: **12**." in migration_doc
+    assert "Current schema version: **13**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
     assert "10 | phase9b_material_learning_schema" in migration_doc
     assert "11 | phase9c_exercise_feedback_schema" in migration_doc
-    assert "CURRENT_SCHEMA_VERSION = 12" in runner
+    assert "CURRENT_SCHEMA_VERSION = 13" in runner
     assert '(9, "phase9a_learning_plan_schema", _migration_v9)' in runner
     assert '(10, "phase9b_material_learning_schema", _migration_v10)' in runner
     assert '(11, "phase9c_exercise_feedback_schema", _migration_v11)' in runner
     assert "12 | phase9d_extended_learning_schema" in migration_doc
     assert '(12, "phase9d_extended_learning_schema", _migration_v12)' in runner
+    assert "13 | phase10_operation_task_schema" in migration_doc
+    assert '(13, "phase10_operation_task_schema", _migration_v13)' in runner
     assert "implemented/backend-pass" in contract
     assert "repository/domain transaction" in contract
     assert "API/UI" in contract
@@ -253,6 +255,10 @@ def test_core_design_tracks_current_phase_and_moved_document_links():
     for document in (architecture, ai_architecture, progress, status, phase9d):
         assert "v12" in document
         assert "Phase 9D" in document
+    for document in (architecture, ai_architecture, progress, status):
+        assert "v13" in document
+    assert "operation_tasks" in restore_acceptance
+    assert "not_run_by_restore_acceptance" in restore_acceptance
     assert "Phase 9D" in roadmap
     assert "PHASE9D_ACCEPTANCE_EVIDENCE.md" in roadmap
     assert "当前正式 schema 为 v11" not in architecture
