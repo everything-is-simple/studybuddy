@@ -20,6 +20,9 @@ DEFAULT_EMBEDDING_MAX_TEXT_CHARS = 12000
 DEFAULT_EMBEDDING_MAX_DIMENSIONS = 4096
 DEFAULT_EMBEDDING_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 DEFAULT_EMBEDDING_MAX_RETRIES = 0
+DEFAULT_REPORT_DELIVERY_MODE = "off"
+DEFAULT_REPORT_DELIVERY_ENABLED = False
+DEFAULT_REPORT_DELIVERY_AUTHORIZED = False
 
 
 @dataclass(frozen=True)
@@ -47,6 +50,14 @@ class AppConfig:
     embedding_max_dimensions: int = DEFAULT_EMBEDDING_MAX_DIMENSIONS
     embedding_max_response_bytes: int = DEFAULT_EMBEDDING_MAX_RESPONSE_BYTES
     embedding_max_retries: int = DEFAULT_EMBEDDING_MAX_RETRIES
+    # Delivery is deliberately disabled for live use. Secrets are runtime-only
+    # configuration and are excluded from reprs and persistence by design.
+    report_delivery_mode: str = DEFAULT_REPORT_DELIVERY_MODE
+    report_delivery_enabled: bool = DEFAULT_REPORT_DELIVERY_ENABLED
+    report_delivery_authorized: bool = DEFAULT_REPORT_DELIVERY_AUTHORIZED
+    report_delivery_targets: tuple[str, ...] = ()
+    report_delivery_smtp_password: str | None = field(default=None, repr=False)
+    report_delivery_feishu_secret: str | None = field(default=None, repr=False)
 
     @property
     def originals_root(self) -> Path:
@@ -99,6 +110,36 @@ def _valid_base_url(value: str | None) -> str | None:
     return value.rstrip("/")
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"invalid_{name.lower()}")
+
+
+def _env_delivery_mode() -> str:
+    value = os.environ.get("STUDYBUDDY_REPORT_DELIVERY_MODE", DEFAULT_REPORT_DELIVERY_MODE).strip().lower()
+    if value not in {"off", "dry_run", "live"}:
+        raise ValueError("invalid_report_delivery_mode")
+    return value
+
+
+def _env_delivery_targets() -> tuple[str, ...]:
+    raw = os.environ.get("STUDYBUDDY_REPORT_DELIVERY_TARGETS", "")
+    values = tuple(item.strip() for item in raw.split(",") if item.strip())
+    if len(values) > 100 or any(len(item) > 100 for item in values):
+        raise ValueError("invalid_report_delivery_targets")
+    for value in values:
+        if any(not (char.isascii() and (char.isalnum() or char in "._-")) for char in value):
+            raise ValueError("invalid_report_delivery_targets")
+    return values
+
+
 def config_from_environment() -> AppConfig:
     configured_root = os.environ.get("STUDYBUDDY_DATA_ROOT")
     if not configured_root:
@@ -137,4 +178,10 @@ def config_from_environment() -> AppConfig:
         embedding_max_dimensions=_env_int("STUDYBUDDY_EMBEDDING_MAX_DIMENSIONS", DEFAULT_EMBEDDING_MAX_DIMENSIONS, minimum=1, maximum=4096),
         embedding_max_response_bytes=_env_int("STUDYBUDDY_EMBEDDING_MAX_RESPONSE_BYTES", DEFAULT_EMBEDDING_MAX_RESPONSE_BYTES, minimum=1, maximum=16 * 1024 * 1024),
         embedding_max_retries=_env_int("STUDYBUDDY_EMBEDDING_MAX_RETRIES", DEFAULT_EMBEDDING_MAX_RETRIES, minimum=0, maximum=2),
+        report_delivery_mode=_env_delivery_mode(),
+        report_delivery_enabled=_env_bool("STUDYBUDDY_REPORT_DELIVERY_ENABLED", DEFAULT_REPORT_DELIVERY_ENABLED),
+        report_delivery_authorized=_env_bool("STUDYBUDDY_REPORT_DELIVERY_AUTHORIZED", DEFAULT_REPORT_DELIVERY_AUTHORIZED),
+        report_delivery_targets=_env_delivery_targets(),
+        report_delivery_smtp_password=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD") or None,
+        report_delivery_feishu_secret=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_FEISHU_SECRET") or None,
     )

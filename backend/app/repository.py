@@ -2846,10 +2846,18 @@ def _phase9d_delivery_public(row: sqlite3.Row, *, replay: bool = False) -> dict[
 def record_report_delivery_attempt(connection: sqlite3.Connection, *, project_id: str,
                                    report_id: str, channel: object, mode: object,
                                    target_label: object, idempotency_key: object | None = None,
-                                   retry_of: str | None = None) -> dict[str, object]:
+                                   retry_of: str | None = None, status_override: str | None = None,
+                                   error_code_override: str | None = None) -> dict[str, object]:
     if channel not in PHASE9D_DELIVERY_CHANNELS:
         raise ValueError("delivery_target_not_allowed")
     if mode not in PHASE9D_DELIVERY_MODES:
+        raise ValueError("delivery_failed")
+    if status_override not in {None, "blocked", "dry_run", "failed"}:
+        raise ValueError("delivery_failed")
+    if error_code_override is not None and error_code_override not in {
+        "delivery_disabled", "delivery_target_not_allowed", "delivery_authorization_required",
+        "delivery_live_not_approved", "delivery_failed",
+    }:
         raise ValueError("delivery_failed")
     label = _phase9d_target_label(target_label)
     key = _phase9d_idempotency_key(idempotency_key)
@@ -2878,16 +2886,18 @@ def record_report_delivery_attempt(connection: sqlite3.Connection, *, project_id
                 return _phase9d_delivery_public(existing, replay=True)
         if retry_of is not None:
             previous = connection.execute(
-                "SELECT id FROM report_delivery_attempts WHERE id=? AND project_id=? AND report_id=?",
+                "SELECT id FROM report_delivery_attempts WHERE id=? AND project_id=? AND report_id=? AND status='failed'",
                 (retry_of, project_id, report_id),
             ).fetchone()
             if previous is None:
                 raise ValueError("delivery_failed")
-        status, error_code = {
+        default_status, default_error_code = {
             "off": ("blocked", "delivery_disabled"),
             "dry_run": ("dry_run", None),
             "live": ("blocked", "delivery_live_not_approved"),
         }[str(mode)]
+        status = status_override or default_status
+        error_code = error_code_override if error_code_override is not None else default_error_code
         attempt_id, now = f"delivery_attempt_{uuid.uuid4().hex}", utc_now()
         connection.execute(
             "INSERT INTO report_delivery_attempts (id,project_id,report_id,channel,mode,target_label,"
@@ -2898,6 +2908,29 @@ def record_report_delivery_attempt(connection: sqlite3.Connection, *, project_id
         )
         row = connection.execute("SELECT * FROM report_delivery_attempts WHERE id=?", (attempt_id,)).fetchone()
         return _phase9d_delivery_public(row)
+
+
+def find_report_delivery_replay(connection: sqlite3.Connection, *, project_id: str,
+                                 report_id: str, channel: object, mode: object,
+                                 target_label: object, idempotency_key: object | None,
+                                 content_fingerprint: str) -> dict[str, object] | None:
+    """Return an idempotent delivery result before any adapter is invoked."""
+    key = _phase9d_idempotency_key(idempotency_key)
+    if key is None:
+        return None
+    label = _phase9d_target_label(target_label)
+    key_fingerprint = hashlib.sha256(f"{project_id}\x1f{key}".encode("utf-8")).hexdigest()
+    existing = connection.execute(
+        "SELECT * FROM report_delivery_attempts WHERE project_id=? AND report_id=? AND channel=? "
+        "AND idempotency_key_fingerprint=? ORDER BY created_at,id LIMIT 1",
+        (project_id, report_id, channel, key_fingerprint),
+    ).fetchone()
+    if existing is None:
+        return None
+    if (existing["mode"] != mode or existing["target_label"] != label or
+            existing["content_fingerprint"] != content_fingerprint):
+        raise ValueError("delivery_idempotency_mismatch")
+    return _phase9d_delivery_public(existing, replay=True)
 
 
 def list_report_delivery_attempts(connection: sqlite3.Connection, *, project_id: str,

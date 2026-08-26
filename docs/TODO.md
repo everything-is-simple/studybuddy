@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 9D-6 S6 report aggregation/redaction backend gate 复核后）
-> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v12，完整 backend 为 **345 passed, 2 skipped**；整体阶段性完成度约 **55%–60%**。Phase 9D 已部分立项并推进至 9D-6，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
+> 更新：2026-08-30（Phase 9D-7 S6 delivery dry-run backend gate 复核后）
+> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v12，完整 backend 为 **352 passed, 2 skipped**；整体阶段性完成度约 **55%–60%**。Phase 9D 已部分立项并推进至 9D-7，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -236,7 +236,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9D：扩展学习服务（S6/S7，部分立项）
 
-> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 v12 migration、9D-3 repository/domain transaction、9D-4 S7 capture/transcription backend、9D-5 S7→S2 ingestion backend 和 9D-6 S6 report aggregation/redaction backend 均为 `implemented/backend-pass`。9D-7 至 9D-11 尚未实现，Phase 9D 不得标记 completed。总规划、契约和 Gate A-L 见 [`prompts/phase9d/`](prompts/phase9d/)。
+> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 至 9D-7 均为 `implemented/backend-pass`。9D-8 至 9D-11 尚未实现，Phase 9D 不得标记 completed。总规划、契约和 Gate A-L 见 [`prompts/phase9d/`](prompts/phase9d/)。
 
 - [x] 9D-0：完成需求、隐私、数据保留、真实组件证据和运维成本审计；作出部分立项结论并冻结 non-goals。真实 OCR/ASR 与真实 SMTP/飞书外发暂不立项。状态为 `planned/audit-draft`。
 - [x] 9D-1：冻结 capture/transcript/report/delivery dry-run 的实体、状态机、幂等、脱敏、source lifecycle 和 non-repair 契约。状态为 `planned/contract-frozen`，不代表 schema/domain/API/UI 实现。
@@ -244,8 +244,8 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9D-3：实现 project scope、capture/transcription operation 与 confidence/uncertain facts、可重算 report projection、append-only delivery audit、幂等、事务 rollback、脱敏、secret/raw-response 排除和 material source 降级。专项 `6 passed`，migration + 9A/9B/9C/9D 相关回归 `49 passed`，完整 backend `331 passed, 2 skipped`。状态为 `implemented/backend-pass`；不代表 OCR/ASR 执行、S2 接入、完整 report/delivery workflow、API/UI 或 lifecycle/restore gates。
 - [x] 9D-4：实现 deterministic fake/loopback S7 课堂采集与 OCR/ASR 转写：敏感音频/图片原件上传、hash-derived originals/material lifecycle 绑定、confidence/uncertain、失败/超时/非法输出、幂等 replay/retry、rollback、raw-response 排除和 source lifecycle 安全读路径。专项 `6 passed`，migration + 9A/9B/9C/9D 相关回归 `55 passed`，完整 backend `337 passed, 2 skipped`。状态为 `implemented/backend-pass`；不代表 9D-5 S2 接入、API/UI、完整 lifecycle/restore gates 或真实 OCR/ASR real-pass。
 - [x] 9D-5：将确认后的转写接入同一 capture material 的 S2 material/revision/chunk/retrieval/citation 管线：confirmed transcript 创建 `class_capture_transcript` extraction/revision，复用确定性 chunk/FTS retrieval 和服务端 citation identity；支持 draft→显式 edit→confirm/reject、uncertain 保留、用户编辑保护、source 校验和 confirm 原子 rollback。专项 9D-4/9D-5 `10 passed`，相关 9A/retrieval 回归 `26 passed`，完整 backend `341 passed, 2 skipped`。状态为 `implemented/backend-pass`；不代表 9D-6 报告/交付、API/UI、完整 lifecycle/restore gates 或真实 OCR/ASR real-pass。
-- [x] 9D-6：实现 S6 家长报告只读聚合、强制脱敏、快照/重算和安全导出：支持 daily/weekly/monthly/exam_alert、服务端 IANA timezone 半开日期窗口、白名单 payload schema、source degradation 归一化、空数据安全零值、快照幂等/fingerprint、JSON/Markdown 导出和学习事实只读保护。专项 `4 passed`，相关 migration/governance/domain 回归 `49 passed`，完整 backend `345 passed, 2 skipped`。状态为 `implemented/backend-pass`；不代表 9D-7 delivery、API/UI、完整 lifecycle/restore gates 或 Phase 9D completed。
-- [ ] 9D-7：实现默认关闭、仅 dry-run、显式授权/白名单和 append-only 审计的交付层；不实现 live delivery。
+- [x] 9D-6：实现 S6 家长报告只读聚合、强制脱敏、快照/重算和安全导出：支持 daily/weekly/monthly/exam_alert、服务端 IANA timezone 半开日期窗口、白名单 payload schema、source degradation 归一化、空数据安全零值、快照幂等/fingerprint、JSON/Markdown 导出和学习事实只读保护。专项 `4 passed`，相关 migration/governance/domain 回归 `49 passed`，完整 backend `345 passed, 2 skipped`。状态为 `implemented/backend-pass`。
+- [x] 9D-7：实现配置强制的默认 `off`、allowlisted local `dry_run`、live 三重授权后仍拒绝、append-only 审计、adapter 前幂等 replay、失败显式 retry 和 secret/runtime-only 边界；`backend/app/delivery.py` 不实现 SMTP/飞书网络发送、scheduler 或 API/UI。focused 9D `27 passed`，完整 backend `352 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表真实外发、API/UI、lifecycle/restore gates 或 Phase 9D completed。
 - [ ] 9D-8：实现 Phase 9D 最小安全 API contract。
 - [ ] 9D-9：实现 desktop/narrow/keyboard/reload/failure/privacy Chromium workspace。
 - [ ] 9D-10：完成 source lifecycle 与 backup/verify/新空目录 restore non-repair 验收；restore 不触发 OCR/ASR、报告生成或交付。
