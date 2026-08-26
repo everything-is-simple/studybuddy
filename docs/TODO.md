@@ -236,7 +236,7 @@ revision → chunks → retrieval → citations → Q&A
 
 ### Phase 9D：扩展学习服务（S6/S7，部分立项）
 
-> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 至 9D-7 均为 `implemented/backend-pass`。9D-8 至 9D-11 尚未实现，Phase 9D 不得标记 completed。总规划、契约和 Gate A-L 见 [`prompts/phase9d/`](prompts/phase9d/)。
+> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 至 9D-8 为 `implemented/backend-pass`，9D-9 为 `browser-pass`，9D-10 为 `backend-pass`，9D-11 为 `closeout-scoped-pass`。总规划、契约、Gate A-L 和限定范围证据见 [`prompts/phase9d/`](prompts/phase9d/) 与 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。
 
 - [x] 9D-0：完成需求、隐私、数据保留、真实组件证据和运维成本审计；作出部分立项结论并冻结 non-goals。真实 OCR/ASR 与真实 SMTP/飞书外发暂不立项。状态为 `planned/audit-draft`。
 - [x] 9D-1：冻结 capture/transcript/report/delivery dry-run 的实体、状态机、幂等、脱敏、source lifecycle 和 non-repair 契约。状态为 `planned/contract-frozen`，不代表 schema/domain/API/UI 实现。
@@ -249,8 +249,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9D-8：实现 Phase 9D 最小安全 API contract：S7 capture/transcript 全链路、S6 report/delivery audit；默认 delivery off、live 三重授权仍拒绝、secret/runtime-only、稳定错误、Idempotency-Key、project scope；focused 4 passed，完整 backend 356 passed。状态为 `implemented/backend-pass`；Chromium/UI/lifecycle/restore gates 另由后续子任务验收。
 - [x] 9D-9：实现 desktop/narrow/keyboard/reload/failure/privacy Chromium workspace：S6/S7 采集、转写、报告预览/导出、默认关闭交付和审计 UI；`browser_phase9d.spec.js` 4 passed，相关 UI 回归 15 passed。状态为 `browser-pass`。
 - [x] 9D-10：实现 source lifecycle + backup/restore 门禁：capture material 软删除/硬删除时 source_status 正确降级、历史 transcript/operation/report 不丢失；backup→verify→新空目录 restore 保留全部 S6/S7 事实、不触发 OCR/ASR/报告生成/交付，source status 不被修复。`test_phase9d_backup_restore.py` 4 passed，完整 backend 360 passed。状态为 `backend-pass`；Phase 9D closeout（ Gate L）仍待后续子任务。
-- [ ] 9D-10：完成 source lifecycle 与 backup/verify/新空目录 restore non-repair 验收；restore 不触发 OCR/ASR、报告生成或交付。
-- [ ] 9D-11：完成 Gate A-L、完整回归、脱敏 evidence 和最终文档收口。
+- [x] 9D-11：完成 Gate A-L 的部分立项范围收口、完整 backend/UI 回归、脱敏 evidence 和 STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX/README 同步；证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。真实 OCR/ASR provider 与真实 SMTP/飞书外发仍明确不在本次立项范围。
 
 真实 OCR/ASR provider 与真实对外交付必须先在 Composer/Integration 获得独立证据并再次评审；当前部分立项不包含这些能力。
 

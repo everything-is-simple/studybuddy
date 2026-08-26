@@ -204,6 +204,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "PHASE9A_ACCEPTANCE_EVIDENCE.md",
         "PHASE9B_ACCEPTANCE_EVIDENCE.md",
         "PHASE9C_ACCEPTANCE_EVIDENCE.md",
+        "PHASE9D_ACCEPTANCE_EVIDENCE.md",
         "PHASE_ROADMAP.md",
         "PROJECT_PROGRESS_REPORT.md",
         "STATUS.md",
