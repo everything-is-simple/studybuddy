@@ -1,15 +1,15 @@
 # Restore Drill
 
-This drill verifies that an operator can recover StudyBuddy without overwriting live data.
+This drill proves a local StudyBuddy v1 backup can be restored without overwriting live data. It does not prove power-loss recovery, ACL correctness, network filesystem safety, live Provider/OCR/ASR/delivery behavior, or multi-process operation.
 
 ## Preconditions
 
-- Select a backup that has passed `verify-backup`.
+- Select a backup that has passed `verify-backup`; quarantine a failed backup rather than repairing it.
 - Stop or isolate the live service before any replacement decision.
-- Use a new target directory that is absent or empty.
-- Confirm target disk capacity and operator permissions.
-- Keep backup and target outside the live data root.
-- Use a separate port for the drill; never run two services against one data root.
+- Use an absent or empty drill target outside the live data root, backup root, and web roots.
+- Confirm free space and operator permissions. Do not follow symlinks for source, backup, or drill directories.
+- Use a separate port for online verification. Never run two processes against one data root.
+- Preserve the live root and verified source backup throughout the drill.
 
 ## Procedure
 
@@ -19,63 +19,58 @@ C:/miniconda/py310/python.exe -m app.cli restore --data-root <drill-root> --back
 C:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <drill-root>
 ```
 
-For online verification, start a separate drill instance with the restored root:
+The offline acceptance validates database integrity, foreign keys, continuous schema history/version, originals hash/size/layout, material state, and Phase 9A-9D/Phase 10 operation/task/attempt/source lifecycle facts. It never runs migration, task runner/handler, index/rebuild, Provider, OCR/ASR, report generation, delivery, source refresh, or repair.
+
+For online acceptance, start one isolated drill instance configured with the drill root and a separate port, then run:
 
 ```text
-C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8792
 C:/miniconda/py310/python.exe -m app.cli verify-restored-data --data-root <drill-root> --base-url http://127.0.0.1:8792
 C:/miniconda/py310/python.exe -m app.cli schema-version --database <drill-root>/studybuddy.sqlite3
+C:/miniconda/py310/python.exe -m app.cli diagnostics --data-root <drill-root>
 ```
 
-The online check covers health, active/deleted lists, one active detail when present,
-original download, extracted text, and database consistency. An empty database reports
-material detail/original/text checks as skipped, not failed. Stop the drill instance
-and remove only the drill target after recording the result.
+Check `/api/liveness`, `/api/health`, and `/api/readiness`; only health `200` and readiness `ready` pass. The online acceptance also checks lists, one active material when present, original download, and extracted text. An empty database reports material detail/original/text checks as skipped, not failed. Stop the drill instance before removing only the drill target after recording the result.
 
-## Success criteria
+## Success Criteria
 
-- backup verification passed;
-- restore staging verification passed;
-- live data was not modified;
-- health passed in online mode;
-- active/deleted lists passed;
-- detail passed, or no-active-material was explicitly skipped;
-- original SHA-256 and size passed;
-- extracted text passed UTF-8 and content checks;
+- backup and restore staging verification passed;
+- live root was not modified;
+- offline acceptance passed;
+- online acceptance passed or is explicitly recorded `not_run`;
 - schema history and `PRAGMA user_version` agree;
-- FTS/search remains available after startup;
-- no automatic repair, migration of the backup, or hidden rebuild occurred;
-- no sensitive path, source text, secret, SQL or traceback was written to the result.
+- diagnostics is `ok`; health and readiness are ready in online mode;
+- active/deleted list, original hash/size, extracted text, and task/attempt state checks passed or their allowed empty-data skips are recorded;
+- no automatic migration of the backup, repair, rebuild, task execution, source-state promotion, Provider call, report generation, or delivery occurred;
+- output and records contain no live path, source text, secret, SQL, raw response, or traceback.
 
-## Record template
+## Record Template
 
 ```text
 Drill ID:
 Date/time:
 Operator:
+Application build identifier:
 Source backup identifier:
-Backup verify: passed / failed (error code):
-Restore target type: new empty directory
-Schema version:
-Active count:
-Deleted count:
+Backup verify: passed / failed (stable error code):
+Restore target: new empty directory
+Backup schema version:
+Restored schema version:
 Offline acceptance: passed / failed:
-Online acceptance: passed / failed / not run:
+Online acceptance: passed / failed / not_run:
+Liveness:
 Health:
-List:
-Detail:
-Original download:
-Text export:
-Search:
+Readiness:
+Diagnostics:
+Active/deleted counts:
+Original hash/size:
+Task/attempt state:
 Duration:
-Failures:
-Remediation:
+Failures and stable error codes:
+Recovery decision:
 Next scheduled drill:
+Known not_verified limits:
 ```
 
-## Incident boundaries
+## Incident Boundaries
 
-A failed verify, integrity check, schema check, staging check, or post-restore check is
-not a reason to start the target. Preserve the stable error code and use another verified
-backup. There is no runtime read-only mode in this release; stop the service when the
-storage state cannot be established as safe.
+A failed verify, integrity, foreign-key, schema/history, staging, original hash, readiness, or post-restore check is a stop condition. Do not start the target, overwrite a live root, substitute originals, manually edit schema history/version, or treat liveness as readiness. Preserve the failed target/backup and stable error code, then use another verified backup into a new target. There is no runtime read-only serving mode in this release; stop the affected service until an explicit recovery decision is accepted.

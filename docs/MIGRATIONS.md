@@ -31,6 +31,20 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 - Migration history and `PRAGMA user_version` are never edited manually.
 - There is no automatic down migration. Preserve the failed database and restore a verified backup into a new empty target when recovery is required.
 
+## Upgrade preflight
+
+升级前必须停止访问 live `data_root` 的所有 StudyBuddy/SQLite writer，先创建并 verify 新的 rollback backup，再执行：
+
+```text
+C:/miniconda/py310/python.exe -m app.cli upgrade-preflight \
+  --data-root <live-data-root> \
+  --backup <verified-backup-root>
+```
+
+该命令不执行 migration 或任何写入：检查 database header、integrity、foreign keys、连续 history/`PRAGMA user_version`、hash-derived originals、data root/database ACL access，以及 rollback backup 的重新 verify 和 schema match。`status=ready` 只是明确启动 migration 前的 operator go signal；它不是锁，也不代替 migration runner 的 `BEGIN IMMEDIATE` transaction。
+
+历史 schema backup 只要 history 与 `user_version` 一致即可验证并作为 rollback evidence；restore 保留其版本，不自动升级。恢复后的目标只能由后续显式启动的新版本迁移。直接 current v1 restore target 必须通过 current-schema verify/acceptance。
+
 ## Inspecting a database
 
 ```text
@@ -42,4 +56,4 @@ The command validates; it does not migrate or repair.
 
 ## Upgrade and recovery
 
-Use [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) for the stop, backup, verify, upgrade, acceptance, and failure-recovery procedure. Backup/restore version checks are described in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md).
+Use [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) for the stop, backup, verify, preflight, upgrade, acceptance, and failure-recovery procedure. Backup/restore version checks are described in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md). On any schema/history/integrity/original failure, stop the service, preserve the failed database and verified backup, and restore only into a new empty target. v1 has no runtime read-only serving mode and does not claim real power-loss recovery.

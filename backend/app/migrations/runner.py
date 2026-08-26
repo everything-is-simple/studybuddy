@@ -1269,9 +1269,17 @@ def migrate(connection: sqlite3.Connection) -> MigrationResult:
         raise MigrationError("database_migration_failed") from exc
 
 
-def assert_schema_version(connection: sqlite3.Connection) -> int:
-    version = schema_version(connection)
+def inspect_schema_version(connection: sqlite3.Connection) -> int:
+    """Validate recorded history without applying a migration or changing the database."""
+    version = _check_history(connection)
     pragma = int(connection.execute("PRAGMA user_version").fetchone()[0])
-    if version != CURRENT_SCHEMA_VERSION or pragma != CURRENT_SCHEMA_VERSION:
+    if version < 1 or pragma != version:
+        raise MigrationError("database_schema_version_unknown")
+    return version
+
+
+def assert_schema_version(connection: sqlite3.Connection) -> int:
+    version = inspect_schema_version(connection)
+    if version != CURRENT_SCHEMA_VERSION:
         raise MigrationError("database_schema_version_unknown")
     return version
