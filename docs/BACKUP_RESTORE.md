@@ -48,7 +48,7 @@ C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
   --data-root <restored-root>
 ```
 
-需要 HTTP 验收时追加 `--base-url`。验收覆盖 integrity、foreign keys、schema version、migration history、材料列表、原文件引用/hash、extraction、9A goals/modules/plans/items/dependencies/progress/source links，以及 v10 Phase 9B notes/blocks/module links/note source statuses/rhythm settings/allocations；online 模式另覆盖 health、detail、original download 和 text export。验收不会运行 migration、rebuild、Provider、source refresh 或 repair；它不会将 retained `stale`、`source_deleted`、`source_unavailable` 提升为 valid。
+需要 HTTP 验收时追加 `--base-url`。验收覆盖 integrity、foreign keys、schema version、migration history、材料列表、原文件引用/hash、extraction、9A goals/modules/plans/items/dependencies/progress/source links、v10 Phase 9B notes/blocks/module links/note source statuses/rhythm settings/allocations、v11 Phase 9C session/item/review/mistake/cram consistency，以及 v12 Phase 9D capture session、transcript draft/segment、report snapshot、delivery attempt 的表存在性、project scope 与 source-status consistency。online 模式另覆盖 health、detail、original download 和 text export。验收不会运行 migration、rebuild、Provider、OCR/ASR、report generation、delivery、source refresh 或 repair；它不会将 retained `stale`、`source_deleted`、`source_unavailable` 提升为 valid。
 
 ## 运维边界
 

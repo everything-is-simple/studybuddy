@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 9D-8 API contract 复核后）
-> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v12，完整 backend 为 **356 passed, 2 skipped**；整体阶段性完成度约 **55%–60%**。Phase 9D 已部分立项并推进至 9D-8，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。
+> 更新：2026-08-30（以当前 v12 实现、Phase 9D scoped closeout 与全量回归重新对齐）
+> 当前基线：本地单进程文件材料管理基础系统已可用，正式 schema 为 v12，完整 backend 为 **361 passed, 2 skipped**；整体阶段性完成度约 **60%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md) 与 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -35,7 +35,7 @@
 - [x] 固化单进程、单实例、local disk 限制；明确禁止多 worker/shared `data_root`。
 - [x] 记录可复现命令、环境、结果与未验证边界：`H:\studybuddy-test\scripts\i4_baseline.py`。
 
-证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`345 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
+证据：`H:\studybuddy-test\artifacts\infrastructure-i4\latest.json` 和 `latest.md`（最近一次基线已重新运行并更新）。当前 backend 全测：`361 passed, 2 skipped`；2 个 skip 为默认关闭的真实 Provider smoke。
 
 **状态：时间盒验收完成（v1）。** S0–S3 和 40-cycle smoke 为 real；ACL、资源耗尽、S4、peak memory、断电/网络盘/硬件损坏为 `not_verified`，并已明确记入 v1 运行边界。
 
@@ -248,7 +248,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9D-7：实现配置强制的默认 `off`、allowlisted local `dry_run`、live 三重授权后仍拒绝、append-only 审计、adapter 前幂等 replay、失败显式 retry 和 secret/runtime-only 边界；`backend/app/delivery.py` 不实现 SMTP/飞书网络发送、scheduler 或 API/UI。focused 9D `27 passed`，完整 backend `352 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表真实外发、API/UI、lifecycle/restore gates 或 Phase 9D completed。
 - [x] 9D-8：实现 Phase 9D 最小安全 API contract：S7 capture/transcript 全链路、S6 report/delivery audit；默认 delivery off、live 三重授权仍拒绝、secret/runtime-only、稳定错误、Idempotency-Key、project scope；focused 4 passed，完整 backend 356 passed。状态为 `implemented/backend-pass`；Chromium/UI/lifecycle/restore gates 另由后续子任务验收。
 - [x] 9D-9：实现 desktop/narrow/keyboard/reload/failure/privacy Chromium workspace：S6/S7 采集、转写、报告预览/导出、默认关闭交付和审计 UI；`browser_phase9d.spec.js` 4 passed，相关 UI 回归 15 passed。状态为 `browser-pass`。
-- [x] 9D-10：实现 source lifecycle + backup/restore 门禁：capture material 软删除/硬删除时 source_status 正确降级、历史 transcript/operation/report 不丢失；backup→verify→新空目录 restore 保留全部 S6/S7 事实、不触发 OCR/ASR/报告生成/交付，source status 不被修复。`test_phase9d_backup_restore.py` 4 passed，完整 backend 360 passed。状态为 `backend-pass`；Phase 9D closeout（ Gate L）仍待后续子任务。
+- [x] 9D-10：实现 source lifecycle + backup/restore 门禁：capture material 软删除/硬删除时 source_status 正确降级、历史 transcript/operation/report 不丢失；backup→verify→新空目录 restore 保留全部 S6/S7 事实、不触发 OCR/ASR/报告生成/交付，source status 不被修复。`test_phase9d_backup_restore.py` 4 passed，`test_restore_acceptance.py` 的 v12 read-only check 通过，完整 backend 361 passed。状态为 `backend-pass`；Gate L 已由 9D-11 的 scoped closeout 收口。
 - [x] 9D-11：完成 Gate A-L 的部分立项范围收口、完整 backend/UI 回归、脱敏 evidence 和 STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX/README 同步；证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。真实 OCR/ASR provider 与真实 SMTP/飞书外发仍明确不在本次立项范围。
 
 真实 OCR/ASR provider 与真实对外交付必须先在 Composer/Integration 获得独立证据并再次评审；当前部分立项不包含这些能力。

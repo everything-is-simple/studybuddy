@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -31,6 +32,20 @@ def test_offline_acceptance_checks_database_and_original(tmp_path: Path):
     assert result["checks"]["detail"]["material_id"] == item["material_id"]
     assert result["checks"]["original_download"]["status"] == "passed"
     assert result["checks"]["text_export"]["sha256"] == hashlib.sha256(b"restore text").hexdigest()
+    assert result["checks"]["phase9d"] == {
+        "status": "passed",
+        "counts": {
+            "capture_sessions": 0,
+            "transcript_drafts": 0,
+            "transcript_segments": 0,
+            "report_snapshots": 0,
+            "report_delivery_attempts": 0,
+        },
+        "capture_statuses": {},
+        "capture_source_statuses": {},
+        "report_statuses": {},
+        "delivery_statuses": {},
+    }
 
 
 def test_online_acceptance_checks_http_contract(monkeypatch, tmp_path: Path):
@@ -80,6 +95,28 @@ def test_empty_acceptance_skips_material_specific_checks(tmp_path: Path):
     assert result["status"] == "passed"
     assert result["checks"]["detail"] == {"status": "skipped", "reason": "no_active_material"}
     assert result["checks"]["original_download"]["reason"] == "offline_mode"
+    assert result["checks"]["phase9d"]["status"] == "passed"
+    assert result["checks"]["phase9d"]["counts"]["capture_sessions"] == 0
+
+
+def test_phase9d_acceptance_rejects_invalid_valid_capture_source(tmp_path: Path):
+    root = tmp_path / "data"
+    make_data(root)
+    database = root / "studybuddy.sqlite3"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO capture_sessions "
+            "(id,project_id,status,asset_kind,material_id,original_name,media_type,source_status,created_at,updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            ("capture_invalid", "default", "uploaded", "image", "material_missing", "lesson.png",
+             "image/png", "valid", "2026-01-15T08:00:00+00:00", "2026-01-15T08:00:00+00:00"),
+        )
+    result = verify_restored_data(root)
+    assert result == {
+        "status": "failed",
+        "mode": "offline",
+        "error_code": "acceptance_phase9d_source_invalid",
+    }
 
 
 def test_acceptance_does_not_expose_path_or_exception(tmp_path: Path):

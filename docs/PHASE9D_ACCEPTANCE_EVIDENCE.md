@@ -42,7 +42,7 @@
 | G S6 报告 | pass | `test_phase9d_report.py`、`test_phase9d_domain.py`；four report kinds, timezone half-open period, whitelist, source degradation and safe export |
 | H S6 交付 | pass for off/dry-run boundary | `test_phase9d_delivery.py`、`test_phase9d_api.py`、Chromium 9D S6 paths；default off, allowlist, idempotency, audit and live rejection |
 | I API/UI | pass | `test_phase9d_api.py` 4 tests；`browser_phase9d.spec.js` 4 tests；desktop/narrow/keyboard/reload/failure/privacy paths |
-| J 生命周期/恢复 | pass | `test_phase9d_backup_restore.py` 4 tests；soft-delete/purge degradation, history preservation, verify→new-empty-target restore and non-repair |
+| J 生命周期/恢复 | pass | `test_phase9d_backup_restore.py` and `test_restore_acceptance.py` (`5 passed`); soft-delete/purge degradation, history preservation, verify→new-empty-target restore, v12 capture/report/delivery scope checks and non-repair |
 | K 真实组件边界 | pass as explicit boundary | real-provider smoke remains default skipped; real OCR/ASR and live delivery are `not_verified`/not approved, not silently enabled |
 | L 收口 | pass for scoped closeout | this evidence plus synchronized STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX/README and regression results in Section 5 |
 
@@ -100,7 +100,7 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/ -q -p no:cacheprovider
 Result:
 
 ```text
-360 passed, 2 skipped
+361 passed, 2 skipped
 ```
 
 The two skips are opt-in real-provider smoke tests. No real OCR/ASR or live delivery test was promoted to a default pass.
@@ -118,7 +118,7 @@ C:\miniconda\py310\python.exe -m pytest \
   backend/tests/test_phase9d_backup_restore.py -v --tb=short
 ```
 
-Result: `35 passed`.
+Result: `35 passed`; the shared v12 restore-acceptance contract is additionally `5 passed` in `backend/tests/test_restore_acceptance.py`.
 
 Related Phase 8/9 Chromium and frontend failure regression:
 
@@ -134,7 +134,7 @@ npx playwright test \
 
 Result: `22 passed`.
 
-The Phase 9D browser subset is `4 passed`; the full related set includes Phase 8, Phase 9A/9B/9C and the frontend failure contract.
+The Phase 9D browser subset is `4 passed`; the full related set includes Phase 8, Phase 9A/9B/9C and the frontend failure contract. The full Chromium suite was also run after v12 restore-acceptance alignment: `52 passed, 3 skipped`; the three skips are explicit opt-in real-provider browser paths.
 
 Static verification:
 
@@ -150,6 +150,7 @@ Result: passed. `git diff --check`: passed before closeout edits.
 - 9D migration is registered through `backend/app/migrations/runner.py`; no runtime business-table creation was added for closeout.
 - 9D facts are included in SQLite backup and restored to a new empty target.
 - Restore rebases internal original paths to the selected target; this is expected path relocation, not source repair.
+- `verify_restored_data()` reads v12 capture session, transcript draft/segment, report snapshot and delivery-attempt table presence, project scope and valid-source consistency; it returns only counts/status distributions, never transcript/report/path/recipient content.
 - Restore, startup, read and verify do not call OCR/ASR, regenerate reports, send delivery, or upgrade degraded source status.
 - Historical transcript, operation, report snapshot and delivery audit facts remain append-only/readable within their safe contracts.
 
