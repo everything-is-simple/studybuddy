@@ -2,7 +2,7 @@
 
 ## 当前入口与状态
 
-StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v13；Phase 9A/9B/9C 已在 deterministic fake-provider、Chromium、backup/restore 的明确范围内完成，Phase 9D 的 9D-0 部分立项范围已完成 scoped closeout：审计、正式领域契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、confirmed transcript → S2 ingestion、S6 脱敏报告、默认关闭的 allowlisted dry-run delivery backend、最小安全 API、Chromium workspace、source lifecycle + backup/restore 门禁均已验收，但系统仍不是全局 production `real-pass`。当前后端回归基线为 **410 passed, 2 skipped**（真实 Provider smoke 默认跳过）。
+StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v13；Phase 9A/9B/9C 已在 deterministic fake-provider、Chromium、backup/restore 的明确范围内完成，Phase 9D 的 9D-0 部分立项范围已完成 scoped closeout：审计、正式领域契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、confirmed transcript → S2 ingestion、S6 脱敏报告、默认关闭的 allowlisted dry-run delivery backend、最小安全 API、Chromium workspace、source lifecycle + backup/restore 门禁均已验收，但系统仍不是全局 production `real-pass`。当前后端回归基线为 **412 passed, 2 skipped**（真实 Provider smoke 默认跳过）。
 
 - 运行 API：`/cygdrive/c/miniconda/py310/python -m uvicorn backend.app.main:app --reload`；应用工厂为 `backend.app.main:create_app`。
 - 运行 operator CLI：`/cygdrive/c/miniconda/py310/python -m backend.app`（入口实现：`backend/app/__main__.py` → `backend/app/cli.py`）；backup、verify、restore、schema 查询、`diagnostics`、`upgrade-preflight --data-root <root> --backup <verified-backup>` 和默认 dry-run 的 `rotate-backups` 均必须显式调用。

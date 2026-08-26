@@ -30,6 +30,7 @@
 - [`prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`](prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md)：Phase 10-5 observability/readiness/diagnostics Gate F evidence.
 - [`prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md`](prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md)：Phase 10-6 backup/restore/migration operations Gate G evidence.
 - [`prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)：Phase 10-7 local runtime/configuration/start-stop Gate H evidence。
+- [`prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md`](prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md)：Phase 10-8 local capacity/performance/lifecycle/boundary Gate I evidence。
 
 ## 非核心资料
 
