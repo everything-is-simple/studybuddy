@@ -2,7 +2,7 @@
 
 > 核心运行入口：`backend/app/main.py:create_app`（FastAPI 应用工厂）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。业务持久化只能经 `backend/app/repository.py`，schema 只能经 `backend/app/migrations/runner.py`，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
 
-> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v13（Phase 9D 的历史 persistence baseline 为 v12）；Phase 9D 最终限定范围证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 已完成 v13 task/attempt persistence schema、explicit-only single-process task runner/recovery，以及 approved `embedding_index` provider-backed task 接入；runner 只由显式 API/CLI 调用，不在 startup、backup、restore 或 read path 自动启动。Q&A、generation、capture transcription、report 和 delivery 未接入；scheduler/worker、多进程执行仍不在支持范围。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。
+> 当前项目阶段与优先级见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v13（Phase 9D 的历史 persistence baseline 为 v12）；Phase 9D 最终限定范围证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 已完成 v13 task/attempt persistence schema、explicit-only single-process task runner/recovery、approved `embedding_index` provider-backed task 接入，以及 safe structured observability/readiness/read-only diagnostics；runner 只由显式 API/CLI 调用，不在 startup、backup、restore 或 read path 自动启动。Q&A、generation、capture transcription、report 和 delivery 未接入；scheduler/worker、多进程执行仍不在支持范围。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。
 
 ## Evolution boundary
 
@@ -38,7 +38,7 @@ materials/extractions/text_spans 是当前 source of truth。FTS、revision、ch
 
 启动顺序为 preflight、SQLite connect/schema/index init、diagnostic audit、recovery、ready。SQLite 使用 WAL、foreign keys、2000 ms busy timeout 和事务边界。storage 操作要求 configured root containment、regular-file 和 non-symlink 校验；hash mismatch、unexpected layout、missing original 和失败清理均使用稳定错误边界。
 
-系统支持 process-local 同 hash coordination、controlled crash/restart recovery、write contention rollback、backup/verify/restore 和 restore acceptance。Observability 提供安全 structured events、`X-Request-ID`、request-scoped operation correlation、`/api/liveness`、readiness health 和有限的 process-local `/api/metrics`；metrics 不持久化、不跨进程聚合。支持范围仍是单进程、单实例、本地磁盘；I4 已有合成 TXT S0–S3 与 bounded lifecycle smoke 证据，但 ACL、资源耗尽、S4、peak memory、断电、网络盘和硬件损坏仍未验证；不支持多个 worker 或多个实例共享 `data_root`。
+系统支持 process-local 同 hash coordination、controlled crash/restart recovery、write contention rollback、backup/verify/restore 和 restore acceptance。Observability 提供安全 structured events、`X-Request-ID`、request→operation→task correlation、`/api/liveness`、`/api/health`、`/api/readiness`、显式 read-only `diagnostics` 和有限的 process-local `/api/metrics`；metrics 不持久化、不跨进程聚合。liveness 只表示 process 可响应，audit/runtime database/stale task 降级时 health/readiness 不伪造 healthy；diagnostics 不迁移、repair、rebuild 或执行任务。支持范围仍是单进程、单实例、本地磁盘；I4 已有合成 TXT S0–S3 与 bounded lifecycle smoke 证据，但 ACL、资源耗尽、S4、peak memory、断电、网络盘和硬件损坏仍未验证；不支持多个 worker 或多个实例共享 `data_root`。
 
 ## AI boundary
 

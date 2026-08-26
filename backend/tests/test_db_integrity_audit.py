@@ -43,7 +43,10 @@ def test_integrity_and_foreign_key_diagnostic_failures_are_bounded(tmp_path: Pat
     monkeypatch.setattr(db_audit, "_run", fake_run)
     with caplog.at_level(logging.WARNING):
         with make_client(tmp_path) as client:
-            assert client.get("/api/health").status_code == 200
+            assert client.get("/api/health").json() == {"detail": "service_degraded"}
+            assert client.get("/api/readiness").json() == {
+                "detail": {"status": "degraded", "reason": "database_integrity_check_failed"}
+            }
     text = caplog.text
     assert "corrupt synthetic detail" not in text
     assert "secret_table" not in text
@@ -77,7 +80,10 @@ def test_orphan_relations_are_diagnostic_only(tmp_path: Path, monkeypatch, caplo
         db.commit()
     with caplog.at_level(logging.WARNING):
         with make_client(tmp_path) as client:
-            assert client.get("/api/health").status_code == 200
+            assert client.get("/api/health").json() == {"detail": "service_degraded"}
+            assert client.get("/api/readiness").json() == {
+                "detail": {"status": "degraded", "reason": "database_foreign_key_check_failed"}
+            }
     assert "database_material_extraction_relation_failed" in caplog.text
     assert "orphan-extraction" not in caplog.text
     assert "missing-material" not in caplog.text
@@ -90,4 +96,7 @@ def test_audit_query_exception_does_not_block_health(tmp_path: Path, monkeypatch
     from app import db_audit
     monkeypatch.setattr(db_audit, "_relation_checks", lambda connection: (_ for _ in ()).throw(sqlite3.DatabaseError("private")))
     with make_client(tmp_path) as client:
-        assert client.get("/api/health").status_code == 200
+        assert client.get("/api/health").json() == {"detail": "service_degraded"}
+        assert client.get("/api/readiness").json() == {
+            "detail": {"status": "degraded", "reason": "database_relation_check_error"}
+        }

@@ -1,6 +1,6 @@
 # Operator backup / restore
 
-StudyBuddy 的备份与恢复是显式 operator 操作，不是普通用户 API。应用启动不会自动 backup、restore 或 repair。
+StudyBuddy 的备份与恢复是显式 operator 操作，不是普通用户 API。应用启动不会自动 backup、restore 或 repair。backup、verify 与 restore 均写入仅进程内、重启归零的安全 start/success/failure metrics/events；不包含路径、SQL、原始异常、正文或 secret。
 
 ## 备份
 
@@ -49,6 +49,14 @@ C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
 ```
 
 需要 HTTP 验收时追加 `--base-url`。验收覆盖 integrity、foreign keys、schema version、migration history、材料列表、原文件引用/hash、extraction、9A goals/modules/plans/items/dependencies/progress/source links、v10 Phase 9B notes/blocks/module links/note source statuses/rhythm settings/allocations、v11 Phase 9C session/item/review/mistake/cram consistency、v12 Phase 9D capture session/transcript draft/segment/report snapshot/delivery attempt 的表存在性、project scope 与 source-status consistency，以及 v13 Phase 10 task/attempt 表存在性、project scope、status 分布和 at-most-one-running-attempt 结构检查。online 模式另覆盖 health、detail、original download 和 text export。验收不会运行 migration、task runner、task handler、rebuild、Provider、OCR/ASR、report generation、delivery、source refresh 或 repair；它不会将 retained `stale`、`source_deleted`、`source_unavailable` 提升为 valid。
+
+## 诊断与健康
+
+```text
+C:/miniconda/py310/python.exe -m app.cli diagnostics --data-root <data-root>
+```
+
+该命令以 SQLite read-only connection 输出 application/schema version、task status counts、稳定降级原因和建议动作；不会执行 migration、repair、index rebuild、Provider 或 task handler。`/api/liveness` 只表示 HTTP process 可应答；`/api/health` 与 `/api/readiness` 在 database/audit/stale-task 诊断为 degraded 时返回 503，不伪造 healthy。diagnostics 返回 degraded/unavailable 时也以非零退出，operator 应保留数据与已验证 backup 后再执行明确的恢复决策。
 
 ## 运维边界
 

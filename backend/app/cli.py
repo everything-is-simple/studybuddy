@@ -8,6 +8,8 @@ from pathlib import Path
 
 from .backup import BackupError, backup_data, restore_backup, verify_backup
 from .config import config_from_environment
+from .diagnostics import DiagnosticError, collect_diagnostics
+from .observability import emit_event, increment
 from .migrations.runner import MigrationError, assert_schema_version
 from .restore_acceptance import verify_restored_data
 from .repository import connect, recover_active_operation_tasks
@@ -36,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
     tasks.add_argument("--data-root", required=True, type=Path)
     tasks.add_argument("--once", action="store_true")
     tasks.add_argument("--max-tasks", type=int, default=1)
+    diagnostics = sub.add_parser("diagnostics")
+    diagnostics.add_argument("--data-root", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
         if args.command == "backup":
@@ -52,6 +56,13 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "verify-restored-data":
             result = verify_restored_data(args.data_root, args.base_url)
             if result.get("status") != "passed":
+                print(json.dumps(result, ensure_ascii=False))
+                return 1
+        elif args.command == "diagnostics":
+            result = collect_diagnostics(args.data_root)
+            increment("diagnostics", str(result["status"]))
+            emit_event("operator_diagnostics", component="operator", outcome=str(result["status"]))
+            if result["status"] != "ok":
                 print(json.dumps(result, ensure_ascii=False))
                 return 1
         elif args.command == "run-tasks":
@@ -73,7 +84,11 @@ def main(argv: list[str] | None = None) -> int:
             result = {"status": "completed", "tasks_run": completed}
         else:
             result = restore_backup(args.data_root, args.backup, args.confirm)
-    except (BackupError, MigrationError) as error:
+    except (BackupError, MigrationError, DiagnosticError) as error:
+        if args.command == "diagnostics":
+            increment("diagnostics", "failed")
+            emit_event("operator_diagnostics_failed", level=40, error_code=error.code,
+                       component="operator", outcome="failed")
         print(json.dumps({"status": "failed", "error_code": error.code}, ensure_ascii=False))
         return 1
     print(json.dumps(result, ensure_ascii=False))

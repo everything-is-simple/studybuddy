@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from .adapters.file_parsers import ParseOptions, parse_file
 from .config import AppConfig, config_from_environment
 from .db_audit import run_audit
+from .diagnostics import DiagnosticError, collect_diagnostics
 from .import_locks import acquire_hash_lock, release_hash_lock
 from .migrations.runner import MigrationError
 from .observability import (correlation, emit_event, increment, metrics_snapshot, new_id, observe_http,
@@ -154,6 +155,7 @@ async def lifespan(app: FastAPI):
     """Do not expose a ready service until persistent storage is usable."""
     config: AppConfig = app.state.config
     app.state.ready = False
+    app.state.startup_state = "starting"
     try:
         preflight(config)
         increment("startup", "preflight", "success")
@@ -173,16 +175,19 @@ async def lifespan(app: FastAPI):
         increment("startup", "database", "failed")
         emit_event("startup_database_failed", level=40, error_code="database_startup_failed")
         raise StartupPreflightError("database_startup_failed") from None
-    run_audit(config.database_path)
-    increment("startup", "audit", "completed")
+    audit = run_audit(config.database_path) or {"status": "ok", "reasons": []}
+    app.state.audit_reasons = tuple(audit.get("reasons", []))
+    increment("startup", "audit", "completed" if audit.get("status") == "ok" else "degraded")
     reconcile(config)
     increment("startup", "recovery", "completed")
     app.state.ready = True
+    app.state.startup_state = "ready"
     emit_event("startup_ready", component="startup", outcome="ready")
     try:
         yield
     finally:
         app.state.ready = False
+        app.state.startup_state = "stopped"
 
 
 def _valid_filename(raw_name: str) -> str | None:
@@ -609,6 +614,27 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app = FastAPI(title="StudyBuddy", lifespan=lifespan)
     app.state.config = config or config_from_environment()
     app.state.ready = False
+    app.state.startup_state = "not_started"
+    app.state.audit_reasons = ()
+
+    def readiness_snapshot() -> tuple[str, str | None]:
+        if not app.state.ready:
+            return "not_ready", "service_not_ready"
+        if app.state.audit_reasons:
+            reason = str(app.state.audit_reasons[0])
+            increment("readiness", "degraded", reason)
+            return "degraded", reason
+        try:
+            diagnostic = collect_diagnostics(app.state.config.data_root)
+        except DiagnosticError:
+            increment("readiness", "degraded", "database_unavailable")
+            return "degraded", "database_unavailable"
+        if diagnostic["status"] == "degraded":
+            reason = str(diagnostic["reasons"][0]) if diagnostic["reasons"] else "diagnostic_degraded"
+            increment("readiness", "degraded", reason)
+            return "degraded", reason
+        increment("readiness", "ready")
+        return "ready", None
 
     @app.middleware("http")
     async def observability_middleware(request: Request, call_next):
@@ -644,9 +670,19 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
-        if not app.state.ready:
-            raise HTTPException(status_code=503, detail="service_not_ready")
+        status, _reason = readiness_snapshot()
+        if status != "ready":
+            # Public health never exposes a database path, SQL, source content,
+            # diagnostic exception, provider detail, or task identifiers.
+            raise HTTPException(status_code=503, detail="service_degraded" if status == "degraded" else "service_not_ready")
         return {"status": "ok"}
+
+    @app.get("/api/readiness")
+    def readiness() -> dict[str, str]:
+        status, reason = readiness_snapshot()
+        if status == "ready":
+            return {"status": "ready"}
+        raise HTTPException(status_code=503, detail={"status": status, "reason": reason})
 
     @app.get("/api/ai/capabilities")
     def ai_capabilities() -> dict[str, object]:
@@ -1121,6 +1157,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         if idempotency_key is not None and (len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key)):
             raise HTTPException(status_code=400, detail="embedding_index_invalid_idempotency_key")
         config = app.state.config
+        request_id, _operation_correlation_id = correlation()
         try:
             provider_id, model_id, model_revision = embedding_provider_identity(config)
             with connect(config.database_path) as connection:
@@ -1141,6 +1178,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                     connection, project_id=config.project_id, material_id=material_id,
                     source_revision=str(revision["id"]), provider_id=provider_id, model_id=model_id,
                     model_revision=model_revision, idempotency_key=idempotency_key,
+                    request_id=request_id,
                 )
                 task = get_operation_task_public(
                     connection, task_id=str(queued["task_id"]), project_id=config.project_id,

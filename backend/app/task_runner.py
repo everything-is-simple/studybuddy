@@ -8,7 +8,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from .observability import emit_event, increment
+from .observability import (emit_event, increment, observe_task,
+                             reset_task_correlation, set_task_correlation)
 from .repository import (
     claim_operation_task,
     finish_operation_task,
@@ -191,6 +192,10 @@ class TaskRunner:
                 except ValueError:
                     return False
                 task = get_operation_task(connection, task_id=task_id)
+                operation = connection.execute(
+                    "SELECT request_id FROM ai_operations WHERE id=?", (task["operation_id"],)
+                ).fetchone()
+                task["request_id"] = operation["request_id"] if operation is not None else None
             with self._lock:
                 self._active_task_id = task_id
             try:
@@ -233,27 +238,42 @@ class TaskRunner:
             operation_id=str(task["operation_id"]), task_kind=task_kind,
             _database_path=self._database_path, _lease_seconds=self._lease_seconds,
         )
-        policy = self._handlers.get(task_kind)
-        if policy is None:
-            self._finish(task_id, attempt_id, "failed", "task_handler_not_registered")
-            return
+        started = time.perf_counter()
+        tokens = set_task_correlation(
+            task_id, context.operation_id, context.project_id,
+            str(task["request_id"]) if task.get("request_id") else None,
+        )
+        outcome = "failed"
         try:
-            context.raise_if_cancel_requested()
-            result = policy.handler(context)
-            if result is not None and not isinstance(result, TaskResult):
-                raise TaskFailed("task_handler_failed")
-            # An already-completed irreversible handler may legitimately win a late cancel.
-            self._finish(task_id, attempt_id, "succeeded", None,
-                         output_artifact_id=result.output_artifact_id if result else None)
-        except TaskCancelled:
-            self._finish(task_id, attempt_id, "cancelled", None)
-        except TaskFailed as error:
-            self._finish(task_id, attempt_id, "failed", error.code)
-        except TaskRunnerError as error:
-            self._finish(task_id, attempt_id, "stale", error.code)
-        except Exception:
-            # Do not emit exception text, traceback, payload, source content, or provider data.
-            self._finish(task_id, attempt_id, "failed", "task_handler_failed")
+            policy = self._handlers.get(task_kind)
+            if policy is None:
+                self._finish(task_id, attempt_id, "failed", "task_handler_not_registered")
+                return
+            try:
+                context.raise_if_cancel_requested()
+                result = policy.handler(context)
+                if result is not None and not isinstance(result, TaskResult):
+                    raise TaskFailed("task_handler_failed")
+                # An already-completed irreversible handler may legitimately win a late cancel.
+                outcome = "succeeded"
+                self._finish(task_id, attempt_id, outcome, None,
+                             output_artifact_id=result.output_artifact_id if result else None)
+            except TaskCancelled:
+                outcome = "cancelled"
+                self._finish(task_id, attempt_id, outcome, None)
+            except TaskFailed as error:
+                outcome = "failed"
+                self._finish(task_id, attempt_id, outcome, error.code)
+            except TaskRunnerError as error:
+                outcome = "stale"
+                self._finish(task_id, attempt_id, outcome, error.code)
+            except Exception:
+                # Do not emit exception text, traceback, payload, source content, or provider data.
+                outcome = "failed"
+                self._finish(task_id, attempt_id, outcome, "task_handler_failed")
+        finally:
+            observe_task(task_kind, outcome, (time.perf_counter() - started) * 1000)
+            reset_task_correlation(tokens)
 
     def _finish(self, task_id: str, attempt_id: str, status: str, error_code: str | None,
                 *, output_artifact_id: str | None = None) -> None:
@@ -264,8 +284,9 @@ class TaskRunner:
                     status=status, error_code=error_code,
                     output_artifact_id=output_artifact_id,
                 ):
-                    increment("task_runs", status)
-                    emit_event("task_finished", error_code=error_code, component="task_runner", outcome=status)
+                    increment("task_runs", str(status))
+                    emit_event("task_finished", error_code=error_code, component="task_runner", outcome=status,
+                               lease_state="closed")
         except Exception:
             increment("task_runs", "finish_failed")
             emit_event("task_finish_failed", level=logging.WARNING,
