@@ -32,6 +32,7 @@
 所有规划 prompt、阶段审计、历史决策、provider/运行手册与已完成阶段的辅助证据统一放在 [`prompts/`](prompts/)。其中：
 
 - [`prompts/phase9a/`](prompts/phase9a/)、[`prompts/phase9b/`](prompts/phase9b/)、[`prompts/phase9c/`](prompts/phase9c/)：Phase 9 的任务规划、领域契约和执行门禁；它们不是实现状态证据。
+- [`prompts/phase10/`](prompts/phase10/)：Phase 10 本地生产化、后台任务与上线收口的总体 prompt、共用上下文、10-0 至 10-9 子任务 prompt 和 Gate A-J；它们不是实现状态证据。
 - `prompts/` 根目录：provider、升级、备份演练、基础设施和历史参考资料。
 
 ## 文档维护规则

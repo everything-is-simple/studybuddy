@@ -258,12 +258,29 @@ revision → chunks → retrieval → citations → Q&A
 - [ ] 只有 9A–9D 中明确立项的子阶段全部完成，才可称为 Phase 9 completed；未立项的 9D 能力不计入“已实现”。
 - [ ] Phase 9 完成不等于全局生产级 `real-pass`，也不代表多用户、云同步、OCR/ASR 或后台任务自动完成。
 
-## P2：生产化与扩展
+## Phase 10：本地生产化与上线收口
+
+> 规划已完成，执行 prompt 统一位于 [`docs/prompts/phase10/`](prompts/phase10/)。共 10 步，必须按顺序一次执行一个；prompt 不是实现证据。目标是 local single-process / single-instance / SQLite / local-disk v1 上线。
+
+- [ ] 10-0：上线定义、现状审计、支持边界与 non-goals 冻结；Gate A。
+- [ ] 10-1：operation/task 正式契约与状态机；Gate B。
+- [ ] 10-2：连续 migration/schema、v12 升级、rollback、history/user_version、backup 兼容；Gate C。
+- [ ] 10-3：单进程 task runner、lease、progress、retry、cooperative cancel、stale/restart recovery；Gate D。
+- [ ] 10-4：将批准的 indexing/embedding/AI/OCR/ASR/report 操作安全接入 runner，保留同步兼容；Gate E。
+- [ ] 10-5：structured logging、metrics、request/task tracing、liveness/readiness/degraded、operator diagnostics；Gate F。
+- [ ] 10-6：migration/backup/verify/restore 运维、保留轮换、restore drill、corruption/read-only/停机策略；Gate G。
+- [ ] 10-7：安全配置、单实例锁、启动/停止、数据目录、升级和本地发布方式；Gate H。
+- [ ] 10-8：容量、性能、长时 smoke、ACL/资源不足等边界验收，固定 not_verified 清单；Gate I。
+- [ ] 10-9：release candidate、隔离 data root 端到端上线演练、完整回归、evidence 与文档收口；Gate J。
+
+**Phase 10 完成门槛：** Gate A-J 全部通过，且 release candidate 完成安装→启动→导入→学习→任务→backup→verify→restore→重启→升级/诊断路径，才能声明本地单机 v1 已上线。不得扩大为多用户、云同步或全局 production real-pass。
+
+## P2：后续独立项目
 
 - [ ] 多用户、认证、授权、project isolation UI。
-- [ ] 多进程/多实例写协议，或继续明确 SQLite 单机路线。
+- [ ] 多进程/多实例写协议，或独立评估 SQLite 单机路线之外的部署。
 - [ ] 云同步、外部存储、协作。
-- [ ] 真实断电/网络盘/文件系统损坏风险评估与容量性能验收。
+- [ ] 真实断电/网络盘/文件系统损坏风险评估与容量性能验收（若作为更高等级部署要求）。
 
 ## 明确暂不做
 
