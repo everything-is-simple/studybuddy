@@ -247,7 +247,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9D-6：实现 S6 家长报告只读聚合、强制脱敏、快照/重算和安全导出：支持 daily/weekly/monthly/exam_alert、服务端 IANA timezone 半开日期窗口、白名单 payload schema、source degradation 归一化、空数据安全零值、快照幂等/fingerprint、JSON/Markdown 导出和学习事实只读保护。专项 `4 passed`，相关 migration/governance/domain 回归 `49 passed`，完整 backend `345 passed, 2 skipped`。状态为 `implemented/backend-pass`。
 - [x] 9D-7：实现配置强制的默认 `off`、allowlisted local `dry_run`、live 三重授权后仍拒绝、append-only 审计、adapter 前幂等 replay、失败显式 retry 和 secret/runtime-only 边界；`backend/app/delivery.py` 不实现 SMTP/飞书网络发送、scheduler 或 API/UI。focused 9D `27 passed`，完整 backend `352 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表真实外发、API/UI、lifecycle/restore gates 或 Phase 9D completed。
 - [x] 9D-8：实现 Phase 9D 最小安全 API contract：S7 capture/transcript 全链路、S6 report/delivery audit；默认 delivery off、live 三重授权仍拒绝、secret/runtime-only、稳定错误、Idempotency-Key、project scope；focused 4 passed，完整 backend 356 passed。状态为 `implemented/backend-pass`；Chromium/UI/lifecycle/restore gates 另由后续子任务验收。
-- [ ] 9D-9：实现 desktop/narrow/keyboard/reload/failure/privacy Chromium workspace。
+- [x] 9D-9：实现 desktop/narrow/keyboard/reload/failure/privacy Chromium workspace：S6/S7 采集、转写、报告预览/导出、默认关闭交付和审计 UI；`browser_phase9d.spec.js` 4 passed，相关 UI 回归 15 passed。状态为 `browser-pass`；source lifecycle/backup/restore 和 Phase 9D closeout 仍待后续子任务。
 - [ ] 9D-10：完成 source lifecycle 与 backup/verify/新空目录 restore non-repair 验收；restore 不触发 OCR/ASR、报告生成或交付。
 - [ ] 9D-11：完成 Gate A-L、完整回归、脱敏 evidence 和最终文档收口。
 
