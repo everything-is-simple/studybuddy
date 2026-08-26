@@ -196,15 +196,24 @@ Phase 9 原先同时承载学习计划和 S1–S7 七个业务子系统，范围
 
 Phase 9A、Phase 9B 与 Phase 9C 已分别在明确范围内完成；Phase 9D 的 9D-0 部分立项范围已按独立 gate 完成 scoped closeout，未立项的真实 OCR/ASR 与真实外发不计入完成声明。Phase 10 仍未开始；Phase 9 全部完成也不等于全局生产级 `real-pass`。
 
-### Phase 10：后台任务、生产化与扩展
+### Phase 10：本地生产化、后台任务与上线收口
 
-**状态：未开始；在 MVP 和学习业务边界验证后分阶段推进。**
+**状态：规划已完成，尚未开始实现；推荐目标是 local single-process / single-instance / SQLite / local-disk v1 上线，不将多用户互联网服务作为隐含目标。**
 
-- ai operation worker、任务状态、progress、retry、cancel、长任务恢复。
-- structured logging、metrics、request/operation tracing、degraded readiness。
-- migration 运维、backup 保留、restore 演练、corruption 流程。
-- 真实 ACL、磁盘满、容量、长时间压力和性能验收。
-- 多用户、认证授权、项目隔离、跨进程协议、云同步、协作。
+Phase 10 的总体规划、共用上下文、逐任务 prompts、执行顺序和 Gate A-J 已保存于 [`prompts/phase10/`](prompts/phase10/)。Phase 10 共 10 步（10-0 至 10-9），必须一次执行一个、逐步测试、逐步提交和逐步更新证据：
+
+1. 10-0：定义“成功上线”、审计现状、冻结支持边界与 non-goals；
+2. 10-1：冻结 operation/task 状态、进度、租约、幂等、重试、取消和恢复契约；
+3. 10-2：通过 migration runner 增加最小 task schema，并验证 v12 升级、rollback、history 和 backup 兼容；
+4. 10-3：实现单进程 task runner、lease、progress、cooperative cancel、retry、stale/restart recovery；
+5. 10-4：只把批准的 indexing/embedding/AI/OCR/ASR/report 操作接入 runner，保持同步兼容和副作用安全；
+6. 10-5：完成脱敏 structured logging、metrics、request/task tracing、liveness/readiness/degraded 和 operator diagnostics；
+7. 10-6：完成 migration、backup/verify/restore、保留轮换、restore drill 和 corruption/read-only/停机策略；
+8. 10-7：完成安全配置、数据目录、单实例锁、启动/停止、升级和本地发布方式；
+9. 10-8：完成容量、性能、长时 smoke、ACL/资源不足等时间盒验收并记录 not_verified 边界；
+10. 10-9：完成 release candidate 端到端上线演练、完整回归、证据和文档收口。
+
+**上线完成标准：** 只有 Gate A-J 全部通过，并在隔离 data root 完成安装/启动/导入/学习/任务/备份/恢复/重启/升级/诊断路径，才能称“StudyBuddy 本地单机 v1 已完成上线收口”。这不代表多用户、认证授权、云同步、协作、多进程共享 data_root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道或全局 production `real-pass`。
 
 ## 固定执行顺序
 
@@ -220,7 +229,7 @@ I4：真实环境与容量基线（时间盒） ✅ 已验收
 → Phase 9B：资料学习工作流（S1/S2）
 → Phase 9C：练习与反馈工作流（S3/S4/S5）
 → Phase 9D：扩展学习服务（S6/S7，条件性）
-→ Phase 10：后台任务、生产化、多用户和扩展
+→ Phase 10：本地生产化、后台任务与上线收口
 ```
 
 ## 基础设施基本完工声明门槛

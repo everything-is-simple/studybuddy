@@ -10,7 +10,7 @@ StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统
 - 权威文档入口：[`docs/INDEX.md`](docs/INDEX.md)；状态、路线和 TODO 分别以 [`docs/STATUS.md`](docs/STATUS.md)、[`docs/PHASE_ROADMAP.md`](docs/PHASE_ROADMAP.md)、[`docs/TODO.md`](docs/TODO.md) 为准。
 - 核心设计与治理：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)、[`docs/CODE_TEST_GOVERNANCE.md`](docs/CODE_TEST_GOVERNANCE.md)、[`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)、[`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。非核心规划、历史资料和辅助证据统一位于 [`docs/prompts/`](docs/prompts/)。
 
-**本地单进程文件材料基础设施 v1 已基本完工**，当前定位是可靠的本地单进程文件材料管理基础系统，并作为 AI MVP 的数据基础；尚不是完整 AI 学习产品，也不是全局生产级 `real-pass`。
+**本地单进程文件材料基础设施 v1 已基本完工**，当前定位是可靠的本地单进程文件材料管理基础系统，并作为 AI MVP 的数据基础；尚不是完整 AI 学习产品，也不是全局生产级 `real-pass`。Phase 10 已完成“本地单机 v1 生产化与上线收口”的规划，尚未开始实现；规划和逐任务 prompts 见 [`docs/prompts/phase10/`](docs/prompts/phase10/)。
 
 Operator backup / restore 已提供 CLI，详见 [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity/schema-version metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录；`verify-restored-data` 提供 offline/online restore 后验收。备份保留、轮换和 restore drill 见 `docs/prompts/BACKUP_OPERATIONS.md` 与 `docs/prompts/RESTORE_DRILL.md`。应用启动不会自动 backup、restore 或 repair。数据库 migration/schema versioning 已实现，升级和不可自动回滚流程见 [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
 

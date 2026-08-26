@@ -164,7 +164,7 @@ Phase 8.1–8.6 已收口：v7/v8 migration、Cards/Exercises backend、fake-pro
 
 ### 后续阶段：精确 Provider evidence、学习能力和生产化
 
-P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 与 Phase 9A/9B/9C 已在各自限定范围内完成；Phase 9D 的部分立项范围已完成审计、契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、S7→S2 confirmed transcript ingestion、S6 report aggregation/redaction、默认关闭的 delivery dry-run/授权/审计、最小安全 API、Chromium workspace、source lifecycle、backup/restore non-repair 和 scoped closeout；证据见 `PHASE9D_ACCEPTANCE_EVIDENCE.md`。真实 OCR/ASR 与真实外发仍未立项，Phase 10 不因本次收口而自动开始。
+P6-E 的 DeepSeek/Agnes 精确真实 UI path 已在显式配置下通过；Phase 7 已在 Mistral 精确 embedding 配置范围完成。Phase 8 与 Phase 9A/9B/9C 已在各自限定范围内完成；Phase 9D 的部分立项范围已完成审计、契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、S7→S2 confirmed transcript ingestion、S6 report aggregation/redaction、默认关闭的 delivery dry-run/授权/审计、最小安全 API、Chromium workspace、source lifecycle、backup/restore non-repair 和 scoped closeout；证据见 `PHASE9D_ACCEPTANCE_EVIDENCE.md`。真实 OCR/ASR 与真实外发仍未立项，Phase 10 不因本次收口而自动开始。Phase 10 现已完成规划包：目标是 local single-process / single-instance / SQLite / local-disk v1 的后台任务、生产化和上线收口；实现尚未开始。总体 prompt、10-0 至 10-9 子任务 prompt、执行顺序和 Gate A-J 见 [`prompts/phase10/`](prompts/phase10/)。
 
 ### 与祖宗/前两代版本的治理结论
 
@@ -174,12 +174,20 @@ StudyBuddy 已经是正式系统层面的进化：相对于 `kaobuddy-remote-aud
 
 Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不能作为一个统一可验收阶段。现改为 9A 学习领域与计划基础、9B S1/S2 资料学习、9C S3/S4/S5 练习反馈、条件性 9D S6/S7 扩展服务；每个子阶段必须独立完成领域契约、migration、API/UI、失败与 source lifecycle、浏览器和恢复证据。
 
-### P1：在 AI 闭环后补齐运行保障
+### Phase 10：本地生产化与上线收口（规划完成，实现未开始）
 
-- I1 migration/versioning、I2 backup/restore operator 闭环、I3 可观察性与 I4 真实环境/容量基线（时间盒）已完成。
-- 后台任务与可观察的任务状态；需要时再引入队列。
-- structured logging、metrics、trace/request id 和 readiness 分级。
-- 真实 ACL、磁盘满、长时间压力和容量测试。
+- 10-0：定义本地单机 v1 的成功上线标准、支持边界、non-goals 和 release go/no-go。
+- 10-1：冻结 operation/task 状态机、progress、lease、retry、cooperative cancel、幂等和重启恢复。
+- 10-2：通过 migration runner 增加最小 task schema，验证升级/rollback/history/backup 兼容。
+- 10-3：实现单进程 task runner、任务隔离、lease、progress、失败重试、stale/restart recovery。
+- 10-4：将批准的 indexing/embedding/AI/OCR/ASR/report 操作接入 runner，保持副作用和同步兼容。
+- 10-5：完成 structured logging、metrics、request/task tracing、health/readiness/degraded、operator diagnostics。
+- 10-6：完成 backup/verify/restore、保留轮换、restore drill、corruption/read-only/停机策略。
+- 10-7：完成安全配置、单实例锁、启动/停止、升级和本地发布方式。
+- 10-8：完成容量/性能/长时 smoke 及 ACL/资源不足等边界时间盒验收。
+- 10-9：完成 release candidate 端到端上线演练、完整回归、脱敏 evidence 和文档收口。
+
+执行包：[`docs/prompts/phase10/`](prompts/phase10/)。只有 Gate A-J 全部通过，才能声明本地单机 v1 上线；多用户、云同步、协作、多进程共享 data_root、真实断电恢复和全局 production `real-pass` 不在该声明内。
 
 ### P2：产品验证通过后再做架构扩展
 
