@@ -1,0 +1,314 @@
+# StudyBuddy 能力补齐、架构拆分与桌面化路线图
+
+> 状态：`planned`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。
+>
+> 批准日期：2026-08-30。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
+
+## 1. 决策与不变量
+
+### 1.1 已批准决策
+
+- 先完成架构重构和原生前端拆分；正式系统重构期间可以并行进行组件库的独立 smoke，但未通过全部规定门禁的组件不得进入正式系统。
+- 前端第一步保持 FastAPI + 正式静态资源 + 原生 HTML/CSS/JavaScript，不建立独立前端仓库、不引入 React/Vue/Vite。
+- `main.py` 拆为应用工厂、生命周期和按业务域划分的 routers；`repository.py` 拆为按业务域划分的 repository/domain 模块。稳定的导入入口仅可保留薄兼容层，不得继续成为实现汇聚点。
+- 已批准的能力顺序：真实 ASR -> 真实 OCR -> 报告组件 -> 真实外发。每项均遵守 Composer -> Integration -> Formal 门禁。
+- Tauri 桌面化为第一步末尾的时间盒工作，不提前承诺 macOS/Windows 安装包或跨平台支持。
+- 第二步仅在触发条件成立后评估 React/Vue 前端迁移；后端 HTTP API、数据生命周期和安全契约必须保持独立于前端框架。
+
+### 1.2 不可破坏边界
+
+- 正式实现唯一来源为 `H:\studybuddy`；组件实验位于 `H:\studybuddy-composer`，组合验证位于 `H:\studybuddy-integration`。不得复制参考项目实现进入正式系统。
+- 每次 schema 改动仍只能走 `backend/app/migrations/runner.py`；架构拆分本身不得借机修改 schema、迁移历史、`PRAGMA user_version` 或业务数据语义。
+- 继续支持 local-disk、单实例、单服务进程的 v1 运行边界，直至桌面包装阶段显式重新评估。不得承诺多用户、云同步、多实例共享 `data_root`、真实断电恢复或生产规模容量。
+- API、日志、页面、桌面壳、诊断和 artifact 不得泄露 key、绝对路径、SQL、traceback、原始 Provider/tool response、原件或未经批准的正文。
+- 对任何 AI 产物、OCR/ASR 转写、报告或外发：用户确认、来源生命周期、幂等、审计、失败重试和 backup/restore non-repair 契约优先于 UI 或工具接入速度。
+
+## 2. 总门禁：组件不得跳级进入正式系统
+
+每个候选组件必须按以下状态推进；任何失败、未验证、来源不清或安全边界不足都停留在当前层，不能进入下一层。
+
+```text
+C0 catalogued
+-> C1 composer_smoke_passed
+-> C2 integration_passed
+-> C3 formal_contract_frozen
+-> C4 formal_implemented
+-> C5 formal_gates_passed
+-> C6 scoped_closeout
+```
+
+| 阶段 | 地点 | 必须产物 | 进入下一阶段的门槛 |
+|---|---|---|---|
+| C0 | Composer | component card、来源/许可证/版本/哈希记录、已忽略的二进制原件、候选能力与 non-goals | 不执行不明二进制；确认可重复的安装/启动方式 |
+| C1 | Composer | fixture、独立 smoke、成功/失败/超时/取消或明确不支持的证据 | 全部规定 smoke 断言通过；不访问真实用户数据；证据不含敏感输入 |
+| C2 | Integration | 与 storage、SQLite、operation/task、source lifecycle 的组合契约 | 组合成功、失败、rollback、并发/超时边界及隔离 data root 测试全部通过 |
+| C3 | Formal | 正式领域/API/数据/隐私/任务契约和风险审计 | 评审确认不扩大支持边界；如需 schema，先有连续 migration 和 rollback 计划 |
+| C4 | Formal | 独立重实现、focused tests、必要 migration | 不复制 Composer 或参考实现；所有输入/输出和错误均为安全契约 |
+| C5 | Formal | backend、browser、source lifecycle、backup/restore、operator/runtime tests | 所有为该能力规定的测试通过，再运行完整 backend suite；真实 smoke 与 fixture/loopback 分级记录 |
+| C6 | Formal | 脱敏 acceptance evidence、STATUS/TODO/ROADMAP 同步 | 明确 `implemented`、`smoke_passed`、`real-pass` 和 `not_verified` 的范围；不把一次真实 smoke 外推为通用可用性 |
+
+“全部测试通过”指当前能力在 C1、C2、C5 写明的全部必跑测试均通过，且 C5 包含当时完整 backend regression；不以跳过、删除失败用例、人工口头确认或未验证归档替代门禁。
+
+## 3. 第一步路线图：架构、原生前端、能力流水线与桌面验证
+
+第一步预计按可验收闭环顺序推进，不承诺固定日历工期。每个编号应单独提交、单独测试、单独更新 TODO 状态；未通过不得开始依赖项。
+
+### A0：基线审计与拆分契约冻结
+
+**目的：** 先定义“只搬家、不改行为”的边界，防止以重构名义混入业务修改。
+
+**任务：**
+
+1. 为现有 API 路径、response schema、稳定错误码、生命周期、静态页面行为和关键 import 建立机器可检验的基线清单。
+2. 为 `main.py` 和 `repository.py` 建立职责地图、依赖图、循环导入风险清单和目标模块归属表。
+3. 确认正式静态资源目录、FastAPI mount、缓存策略及现有浏览器测试服务入口；完成 `frontend-plan.md` 的 F0 端点到页面映射。
+4. 固定兼容策略：旧 `backend.app.main:create_app` 在迁移期可作为薄导出入口，不能继续承载路由、HTML、CSS 或业务实现。
+5. 记录每个拆分批次的回退方式：仅代码回退，不执行数据库回滚、不删除 data root、不重写用户数据。
+
+**禁止：** 新 API、新 schema、新功能、新前端框架、格式化全仓库或借重构改变错误语义。
+
+**通过门槛：** focused contract tests 与当前完整 backend/browser 基线均通过；拆分目标、兼容入口、静态目录和每批次回退步骤已写入审计记录。
+
+### A1：拆分 repository.py 为按域模块
+
+**目的：** 停止将所有 SQL、事务和领域规则继续写入单一 6299 行文件。
+
+**目标结构（名称可在 A0 审计后微调）：**
+
+```text
+backend/app/repositories/
+  connection.py       # connect、transaction、时间/共用安全 helpers
+  materials.py        # material/extraction/span/search/lifecycle/export metadata
+  ai.py               # revision/chunk/retrieval/context/citation/Q&A/embedding
+  study.py            # decks/cards/exercises/review/attempt
+  plans.py            # goals/modules/plans/progress
+  learning.py         # notes/knowledge modules/rhythm
+  practice.py         # practice/error-fixer/exam-crammer
+  capture.py          # capture/transcript/source ingestion
+  reports.py          # report projection/export/delivery audit persistence
+  tasks.py            # operation/task persistence and task state
+  __init__.py         # 明确的公共导出；不得成为第二个巨型文件
+```
+
+**任务：**
+
+1. 先抽取无业务语义的 connection/transaction helpers，并为嵌套事务、rollback、SQLite lock 和 project scope 建回归测试。
+2. 一次只迁移一个域，顺序为 materials -> ai -> study -> plans/learning -> practice -> capture/reports -> tasks。
+3. 每次迁移保留原函数签名或在同一提交内更新全部调用方；不得同时改 SQL 语义、表结构或 response 字段。
+4. 域间调用只能经过明确 repository/domain service API；禁止跨模块直接访问另一模块的私有 SQL helper。
+5. 迁移完成后将原 `repository.py` 收缩为受测试的兼容导出层，或在所有调用点切换后删除；目标是它不再包含业务 SQL。
+
+**通过门槛：** 每域 focused tests、transaction/rollback/source lifecycle/backup-restore regressions 和完整 backend suite 通过；行数检查证明原文件不再含业务 SQL，且不存在循环导入。
+
+### A2：拆分 main.py 为应用工厂、生命周期与 routers
+
+**目的：** 把路由、输入验证、响应映射与前端资源从 3183 行单文件中剥离，避免新能力继续混杂。
+
+**目标结构：**
+
+```text
+backend/app/
+  app_factory.py      # create_app、middleware、exception mapping、router registration
+  lifespan.py         # preflight/connect/migrate/audit/recovery/ready/shutdown
+  api/
+    materials.py
+    ai.py
+    study.py
+    plans.py
+    learning.py
+    practice.py
+    capture.py
+    reports.py
+    delivery.py
+    tasks.py
+    system.py         # health/readiness/capabilities/diagnostics
+  main.py             # 仅兼容导出 create_app，或在完成迁移后删除并更新正式入口
+```
+
+**任务：**
+
+1. 将 Pydantic request/response models 放到所属 API 域或共享 schema 模块；禁止把内部 repository row 或 exception 直接暴露给 HTTP。
+2. 一次只迁移一个 router，保持 URL、HTTP method、状态码、错误码、幂等和 response JSON 兼容。
+3. 生命周期、instance lock、observability、ready state 和 exception mapping 集中在 app factory/lifespan，不允许 router 自行启动 subprocess、建表或写运行时目录。
+4. 把内嵌 HTML/CSS/JS 从路由代码中完全移出；A3 后不得使用 `HTMLResponse` 承载产品 UI。
+5. 更新服务入口、脚本和 browser test 启动方式；保持受支持的单实例、loopback、`workers=1`、`reload=false` 边界。
+
+**通过门槛：** API compatibility suite、完整 backend suite、现有 Chromium suite、启动/health/readiness、backup/restore 和 Gate J 回归均通过；`main.py` 只剩薄兼容层或已删除。
+
+### A3：执行 frontend-plan F0/F1，建立原生多页应用壳
+
+**目的：** 将 `main.py` 中的测试 workspace 转为可维护、可测试的正式静态资源，而不改变技术栈。
+
+**任务：**
+
+1. 按 A0 结论创建唯一正式 static root，并由 app factory 显式挂载；不创建未挂载的孤立 `frontend/` 目录。
+2. 建立 `css/tokens.css`、`css/app.css`、`js/api.js`、`js/shell.js`；统一请求取消、错误码映射、toast/dialog、导航、焦点和安全 DOM 写入。
+3. 将 `index.html` 限制为总览入口；迁移 `materials.html`、`material-detail.html`、`qa.html` 为独立任务页，采用 URL 中的非敏感资源标识保留上下文。
+4. 每页仅使用已存在、受测试的 API；发现缺口先回到后端契约任务，不在浏览器猜字段、写环境变量或直接调用外部 Provider。
+5. 保持并扩展现有 desktop、390px 窄屏、键盘、失败、重复点击、stale response、citation unavailable 与隐私 DOM 测试。
+
+**禁止：** 引入 React/Vue/Vite、浏览器存储 key/原文、浏览器执行本机工具、伪造 Provider/ASR 状态、将所有工作区再次塞回首页。
+
+**通过门槛：** `frontend-plan.md` F0/F1 对应页面、挂载和 API 映射已完成；相关 Chromium tests 全通过；不再由内嵌 HTML 提供产品 UI。
+
+### A4：执行 frontend-plan F2/F3，Provider 设置与采集页边界
+
+**目的：** 在真实 ASR 尚未接入前，先让页面如实表达能力状态，避免 UI 先行宣称可用。
+
+**任务：**
+
+1. 实施 `settings-provider.html`：仅显示后端 capability、安全配置状态、保存/验证的分离操作和安全错误；密钥输入后清空，永不回读或持久化到浏览器。
+2. 实施 `capture.html`：上传、operation/task 状态、draft 编辑、confirm/reject/archive 和 source lifecycle 显示；未通过 ASR 门禁时必须禁用真实转写动作并说明原因。
+3. 为每个页面补齐 loading/empty/error/success、键盘、窄屏、reload、privacy DOM 和失败重试测试。
+4. 真实 ASR adapter 只有在 B1-B3 通过后才能从“候选”变为可选能力；前端由 capabilities 驱动，不硬编码工具路径或模型名。
+
+**通过门槛：** F2/F3 的已批准 UI 范围可在 fake/loopback 或真实已验证能力下演示；未验证能力不会显示为已连接或可执行。
+
+### B0：组件库统一准备与证据治理
+
+**目的：** 为 ASR、OCR、报告、外发建立一致的入库和测试标准。
+
+**任务：**
+
+1. 在 `H:\studybuddy-composer` 为每个候选创建 component card、固定版本清单、许可证/来源记录、风险/隐私说明、独立 fixture 和 smoke command。
+2. 二进制安装包、模型、大型参考 archive 仅作为本地受忽略输入；Git 只提交 manifest、校验值、脚本、最小 fixture 和脱敏证据。
+3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
+4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
+
+**通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
+
+### B1：真实 ASR 组件流水线
+
+**候选与选择：** 首轮比较 `whisper.cpp`、FunASR、SenseVoice；不预先承诺任一候选胜出。优先评估可离线运行、Windows 可重复安装、可控 CLI 协议、无隐式网络外发、可提供明确文本/段落/时间戳输出的候选。
+
+**Composer smoke：**
+
+1. 审计可执行入口、参数、音频格式、模型安装、退出码、stdout/stderr、网络行为、资源和许可证。
+2. 对合成或明确授权的非敏感音频执行成功、不可读输入、格式不支持、超时、取消/终止、空输出、超大输出和重复调用测试。
+3. 验证临时文件和子进程清理、输出大小限制、错误脱敏、无路径/音频内容泄露和 deterministic fixture 结果。
+
+**Integration：** 将通过的候选与 local storage、operation/task、capture draft、source lifecycle 和 backup/restore 组合验证；只使用隔离 data root。
+
+**Formal：** 冻结 `CaptureTranscriptionProvider` 契约后独立实现 adapter；任务接入必须单独评审，不能因已有 `embedding_index` runner 而自动获批。必须实现 draft-first、用户确认、幂等、超时、取消、retry、安全审计和浏览器全链路。
+
+**通过门槛：** C0-C6 全部通过；真实 smoke 仅证明精确工具/模型/环境/音频范围，不外推为通用 ASR real-pass。
+
+### B2：真实 OCR 组件流水线
+
+**候选与选择：** 首轮比较 RapidOCR、PaddleOCR、CapsWriter；不预先承诺任一候选胜出。优先评估本地离线、中文可用、明确模型/版本/许可、可控制图片格式和资源上限的候选。
+
+**Composer smoke：**
+
+1. 审计执行入口、模型下载与网络行为、支持图片格式、语言包、输出结构、置信度和错误码。
+2. 对合成打印体中文/英文图片、空白图、损坏图、过大尺寸、格式不支持、超时和重复调用执行测试。
+3. 验证不把原图、完整 OCR 文本、tool stderr 或绝对路径写进普通日志/证据；输出限制、临时文件和子进程清理必须通过。
+
+**Integration：** 验证 image original、OCR draft、uncertain/confidence、operation/task、用户确认、material/revision/chunk/citation 接入、delete/restore/purge 和 backup/restore non-repair。
+
+**Formal：** 冻结 `ImageOcrProvider` 契约后独立实现；结果先作为 draft，未经确认不得覆盖材料或成为正常引用来源。
+
+**通过门槛：** C0-C6 全部通过；一次真实图片 smoke 仅记录精确组件和模型范围。
+
+### B3：报告组件流水线
+
+**范围：** 先验证本地、确定性、脱敏的 report projection 和 JSON/Markdown/PDF-safe export；不将“生成报告”与“真实外发”绑定。
+
+**Composer smoke：** 验证输入白名单、日/周/月/考试提醒时间窗口、时区、脱敏、空数据、source unavailable、稳定排序、导出大小和损坏输出失败。
+
+**Integration：** 与 9A-9D 学习数据、project scope、source lifecycle、append-only report audit、backup/restore 和隔离 data root 组合验证。
+
+**Formal：** 独立实现只读 report service/export API 和产品页面 `reports.html`；不持久化原始 prompt、完整敏感文本或导出内容到审计记录。
+
+**通过门槛：** C0-C6 全部通过。报告完成不自动批准 delivery，也不表示报告内容适用于医学、教育评估或其它高风险决策。
+
+### B4：真实外发组件流水线
+
+**顺序约束：** 只有 B3 scoped closeout 后才开始。默认 `delivery=off` 和既有 live 拒绝语义在整个阶段保持有效，直到精确 adapter 获得单独批准。
+
+**候选：** QQ SMTP、飞书 Webhook；每个渠道独立组件、独立证据、独立开关，不共享“已验证”结论。
+
+**Composer smoke：** 使用 loopback/fake SMTP 或本地 HTTP receiver 验证 payload、recipient/URL allowlist、secret 隔离、timeout、rate limit、失败、retry、Idempotency-Key 和禁止网络默认值。不得使用真实收件人、真实群聊或生产 webhook 作为默认测试目标。
+
+**Integration：** 验证 report export、delivery audit、dry-run、operator authorization、重复请求、失败 retry、source lifecycle、backup/restore 和恢复后不自动发送。
+
+**Formal：** 先保持 dry-run；真实 live adapter 必须具有运行时 enable、显式授权、逐次确认、channel allowlist、幂等、审计和立即安全失败的错误边界。真实发送 smoke 必须用户显式授权、使用非敏感测试目标并形成脱敏证据。
+
+**通过门槛：** C0-C6 全部通过。精确渠道的 real smoke 不表示所有 SMTP/webhook 配置均可用。
+
+### B5：明确延后项与重新立项条件
+
+| 项目 | 第一步结论 | 重新立项条件 |
+|---|---|---|
+| 外部 vector database / pgvector | 延后 | SQLite 向量检索的容量或功能证据显示明确瓶颈，并先冻结新的部署/backup/restore 契约 |
+| BullMQ 或其它外部队列 | 延后 | 当前单进程 task runner 的明确需求缺口，且已决定改变单机/单实例部署边界 |
+| DOC/RTF/PPT 旧格式转换 | 继续拒绝 | 有明确用户需求、可信转换器、隔离与安全合同；不得复用启发式 DOC 解码 |
+| 多用户、云同步、协作 | 延后 | 单独产品和部署路线，不与本路线图混入 |
+
+### D0：Tauri 桌面化准备审计
+
+**目的：** 在写桌面壳之前验证其是否与当前运行边界、安全模型和发布方式兼容。
+
+**任务：**
+
+1. 冻结桌面威胁模型：本地 UI shell、FastAPI sidecar、loopback port、data root、日志、崩溃、升级、卸载、secret 和文件选择器边界。
+2. 决定并记录 sidecar 生命周期、端口冲突、单实例、健康检查、退出清理、异常重启和用户可见错误语义。
+3. 明确 Tauri UI process + FastAPI sidecar 是新的桌面组合运行模型；不得沿用“单 OS 进程”文字宣称。若继续支持单实例 local service，必须以单一 app/data-root ownership 来验证。
+4. 先只针对 Windows 做开发环境 spike；macOS 仅在相应系统构建、签名和真实验收条件具备后单独立项。
+
+**通过门槛：** threat model、打包输入清单、sidecar 生命周期、数据目录迁移/备份策略和 release test plan 完成；没有将开发期 `tauri dev` 当作安装包证据。
+
+### D1：Tauri Windows 最小安装包时间盒
+
+**任务：**
+
+1. 创建最小 Tauri shell，加载正式静态前端，受控启动并监控 FastAPI sidecar。
+2. 验证首次启动、单实例、导入、Q&A fake path、受控退出/重启、日志脱敏、data root 位置、backup/restore、升级前检查和失败恢复。
+3. 仅在以上稳定后评估系统托盘、开机启动、文件关联；它们各自为可选子任务，不得阻塞基础安装包，也不得绕过导入安全边界。
+4. 构建安装/卸载/升级测试，用临时 data root；不删除或覆盖既有 live data root。
+
+**通过门槛：** Windows 安装包在隔离环境完成规定路径和完整 backend/browser/desktop smoke；记录包大小、依赖、签名状态和未验证限制。未达标则保留 Web/loopback 发布方式，不宣称桌面版本完成。
+
+### D2：macOS 可行性门（非第一步承诺）
+
+只在拥有 macOS 构建环境、签名/notarization 方案、系统 webview/sidecar 测试和数据目录/权限验收后启动。不得以 Windows 成功推断 macOS 可用。
+
+## 4. 第一步总验收与文档收口
+
+第一步完成不等于所有未来能力都完成。仅当下列独立 gate 均已有证据，才可声明“第一步 scoped closeout”：
+
+1. A0-A4 的架构/前端门禁通过，`main.py` 和 `repository.py` 不再承载巨型混合实现。
+2. B1-B4 中每个被正式批准和实现的组件均已完成 C0-C6；未通过或未启动者必须明确列为 `not_started`/`not_verified`，不得掩盖。
+3. D0-D1 Windows desktop 时间盒达标；若 D1 未达标，第一步可在能力与架构范围内关闭，但桌面化保持未完成，不能称为“桌面应用已交付”。
+4. 每次组件/正式接入都有 focused tests、完整 backend regression、相关 Chromium/desktop tests、source lifecycle、backup/restore 与安全检查。
+5. `README.md`、`STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md`、`frontend-plan.md`、组件 manifests/cards 和 acceptance evidence 与真实状态同步。
+
+## 5. 第二步路线图草案：现代前端框架迁移（6-12 个月后评估）
+
+> 状态：`draft / not approved for implementation`。只有原生静态前端的维护成本、复杂交互需求或 Web 多用户产品决策触发时才启动；不因“技术更新”单独发起迁移。
+
+### 触发门
+
+满足至少一项才可开始评估：
+
+- 页面/共享状态/重复逻辑已超过原生模块化方案可维护阈值，并有具体缺陷或开发成本证据；
+- 产品已批准拖拽计划、复杂富文本、跨页面实时状态或同等复杂交互；
+- 已批准多用户 Web 产品方向，并另行冻结认证、授权、project isolation、部署与数据边界。
+
+### 草案任务
+
+1. **E0 评估与 ADR：** 比较 React 与 Vue、路由、状态管理、测试、可访问性、Tauri 集成、许可证、构建可复现性和团队维护成本；不预先选型。
+2. **E1 API 契约冻结：** 为当前 API 建立版本化 contract tests；框架迁移不得借机改变来源生命周期、错误码、幂等、隐私或鉴权边界。
+3. **E2 最小垂直切片：** 在单独前端工作区试做总览 + materials + Q&A；保留原生前端作为可回退发布版本。
+4. **E3 组件与测试体系：** 建立设计 token、页面组件、请求层、错误状态、Playwright、可访问性和 visual regression；不接受无测试的大规模一次性重写。
+5. **E4 渐进迁移：** 按页面替换，不做“全部推倒重来”；每页在功能、窄屏、键盘、隐私 DOM 和失败路径验证通过后才切换默认入口。
+6. **E5 桌面与 Web 分流：** 明确 Tauri 包内资源和可能的 Web 发布产物；多用户 Web 需要独立后端/部署路线，不能复用 local-v1 声明。
+7. **E6 收口：** 性能、包体、离线、升级、回退、桌面 sidecar、browser/full regression 和文档证据全部通过后，才移除原生前端。
+
+## 6. 任务执行纪律
+
+- 一次只实现一个编号任务；一个任务同时涉及重构、schema、新组件和 UI 时，必须拆分，先完成契约和重构门禁。
+- 组件候选下载、模型下载或真实 smoke 不得与正式系统代码变更放在同一提交中。
+- 失败组件要保留可审计的失败结论、版本和安全原因；不删除失败测试来得到“通过”。
+- 所有真实网络/真实音频/真实图片/真实外发均需 explicit opt-in；默认 fixture、loopback、dry-run 和脱敏 evidence。
+- 完整 backend 命令保持：`C:\miniconda\py310\python.exe -m pytest backend/tests/`。浏览器和桌面门禁使用项目正式脚本；新增命令必须写入组件卡和相关 evidence。
+- 每个完成声明都要说明精确工具、模型、运行环境、输入类别、时间、通过范围和 `not_verified` 限制。

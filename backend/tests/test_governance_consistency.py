@@ -206,6 +206,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "component-adoption-audit-2026-08-27.md",
         "PHASE_ROADMAP.md",
         "PROJECT_PROGRESS_REPORT.md",
+        "ROADMAP_CAPABILITIES.md",
         "STATUS.md",
         "TODO.md",
         "ai-learning-architecture.md",

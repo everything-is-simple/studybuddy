@@ -275,6 +275,25 @@ revision → chunks → retrieval → citations → Q&A
 
 **Phase 10 完成结论：** Gate A-J 已全部通过；release candidate 已在隔离 data root 完成启动→导入→学习→任务→backup→verify→restore→重启→诊断路径，StudyBuddy 本地单机 v1 已在 local single-process / single-instance / SQLite / local-disk 的明确范围内上线收口。不得扩大为多用户、认证授权、云同步、协作、多进程共享 `data_root`、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道或全局 production `real-pass`。
 
+## P1：能力补齐、架构拆分与桌面化（已批准，尚未开始）
+
+> 权威执行路线：[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)。此 P1 不改变 Phase 10 local v1 的完成结论；每项组件必须完成 Composer -> Integration -> Formal 的全部门禁后才能进入正式系统。
+
+- [ ] A0：冻结 API/行为/静态资源/导入兼容基线，完成 `main.py` 与 `repository.py` 职责地图、拆分依赖图和逐批回退计划；禁止混入功能或 schema 变更。
+- [ ] A1：按域拆分 `repository.py`（materials、ai、study、plans、learning、practice、capture、reports、tasks），保留受测试的薄兼容入口；每域迁移后运行 focused + 全量 backend、source lifecycle 和 backup/restore 回归。
+- [ ] A2：按域拆分 `main.py`（app factory、lifespan、routers、schemas），保持 URL/状态码/错误码/幂等/response 兼容，移除内嵌产品 UI。
+- [ ] A3：执行 [`frontend-plan.md`](frontend-plan.md) F0/F1：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
+- [ ] A4：执行 `frontend-plan.md` F2/F3 的批准部分：Provider 设置与采集页的真实状态表达；未通过 ASR 门禁时不开放真实转写。
+- [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
+- [ ] B1：真实 ASR 候选（whisper.cpp/FunASR/SenseVoice）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；真实 smoke 必须 explicit opt-in。
+- [ ] B2：真实 OCR 候选（RapidOCR/PaddleOCR/CapsWriter）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；结果必须 draft-first 并需用户确认。
+- [ ] B3：report-core 完成 Composer smoke -> Integration -> Formal 本地脱敏 report projection/export 与 `reports.html`；不自动批准外发。
+- [ ] B4：QQ SMTP、飞书 Webhook 分别完成 Composer smoke -> Integration -> Formal dry-run/live 门禁；live 默认关闭、逐次确认、allowlist 和 explicit opt-in。
+- [ ] D0：冻结 Tauri 威胁模型、FastAPI sidecar 生命周期、单实例/data root/端口/升级/日志/secret 边界；先完成 Windows 开发 spike。
+- [ ] D1：时间盒完成 Tauri Windows 最小安装包；隔离环境验证启动、单实例、导入、fake Q&A、退出/重启、backup/restore 与脱敏日志。系统托盘、开机启动、文件关联均为可选后续子任务。
+- [ ] D2：macOS 仅在具备构建、签名/notarization、权限和实际验收环境后单独立项。
+- [ ] E0-E6：现代前端框架迁移仅为第二步 draft；只有维护复杂度、复杂交互或多用户 Web 产品决策触发后，才按 `ROADMAP_CAPABILITIES.md` 评估和实施。
+
 ## P2：后续独立项目
 
 - [ ] 多用户、认证、授权、project isolation UI。
