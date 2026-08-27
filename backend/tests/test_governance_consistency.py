@@ -52,7 +52,7 @@ def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
     status = read("STATUS.md")
     todo = read("TODO.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
-    evidence = read("PHASE8_ACCEPTANCE_EVIDENCE.md")
+    evidence = read("prompts/PHASE8_ACCEPTANCE_EVIDENCE.md")
 
     for document in (roadmap, status, todo, progress):
         assert "PHASE8_ACCEPTANCE_EVIDENCE.md" in document
@@ -72,7 +72,7 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     decisions = read("prompts/DECISIONS.md")
     migration_doc = read("MIGRATIONS.md")
     contract = read("prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md")
-    acceptance = read("PHASE9A_ACCEPTANCE_EVIDENCE.md")
+    acceptance = read("prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md")
     runner = (ROOT / "backend" / "app" / "migrations" / "runner.py").read_text(encoding="utf-8")
 
     for document in (roadmap, status, todo, progress, architecture):
@@ -132,7 +132,7 @@ def test_phase9b_closeout_and_current_regression_are_consistent():
     progress = read("PROJECT_PROGRESS_REPORT.md")
     architecture = read("ARCHITECTURE.md")
     contract = read("prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md")
-    evidence = read("PHASE9B_ACCEPTANCE_EVIDENCE.md")
+    evidence = read("prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md")
     decisions = read("prompts/DECISIONS.md")
     governance = read("CODE_TEST_GOVERNANCE.md")
 
@@ -202,11 +202,8 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "CODE_TEST_GOVERNANCE.md",
         "INDEX.md",
         "MIGRATIONS.md",
-        "PHASE8_ACCEPTANCE_EVIDENCE.md",
-        "PHASE9A_ACCEPTANCE_EVIDENCE.md",
-        "PHASE9B_ACCEPTANCE_EVIDENCE.md",
-        "PHASE9C_ACCEPTANCE_EVIDENCE.md",
-        "PHASE9D_ACCEPTANCE_EVIDENCE.md",
+        "frontend-plan.md",
+        "component-adoption-audit-2026-08-27.md",
         "PHASE_ROADMAP.md",
         "PROJECT_PROGRESS_REPORT.md",
         "STATUS.md",
@@ -246,7 +243,7 @@ def test_core_design_tracks_current_phase_and_moved_document_links():
     roadmap = read("PHASE_ROADMAP.md")
     progress = read("PROJECT_PROGRESS_REPORT.md")
     status = read("STATUS.md")
-    phase9d = read("PHASE9D_ACCEPTANCE_EVIDENCE.md")
+    phase9d = read("prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md")
     restore_acceptance = (ROOT / "backend" / "app" / "restore_acceptance.py").read_text(encoding="utf-8")
 
     for document in (architecture, ai_architecture, progress):

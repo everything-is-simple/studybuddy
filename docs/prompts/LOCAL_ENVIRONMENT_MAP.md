@@ -55,11 +55,29 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 |---|---|
 | `C:\miniconda\py310` | Python 3.10.19，StudyBuddy 测试/运行环境；依赖以 `backend/requirements.txt` 固定并已恢复验证 |
 | `C:\Program Files\nodejs` | Node.js 24.14.0；Playwright 由仓库 `node_modules` 提供 |
-| `C:\Git\bin` | Git 可执行文件 |
+| `C:\Program Files\Git` | Git 可执行文件（`cmd/git.exe`、`bin/bash.exe`） |
 | `C:\Program Files\PowerShell\7` | PowerShell 7 |
 | `C:\cygwin64\bin` | Cygwin 可执行文件（当前 agent shell 基础） |
 
-## 四、当前正式系统状态
+## 四、Pi / Pi Agent Desktop 开发环境约定
+
+Pi 与 Pi Agent Desktop 使用同一套本机工具链和项目目录约定。Pi 的持久配置位于 `C:\Users\Administrator\.pi\agent\settings.json`；shell 启动时统一注入以下非敏感路径变量：
+
+- `STUDYBUDDY_PYTHON=C:/miniconda/py310/python.exe`
+- `STUDYBUDDY_NODE=C:/Program Files/nodejs/node.exe`
+- `STUDYBUDDY_NPM` / `STUDYBUDDY_NPX`
+- `STUDYBUDDY_GIT=C:/Program Files/Git/cmd/git.exe`
+- `STUDYBUDDY_PWSH=C:/Program Files/PowerShell/7/pwsh.exe`
+- `STUDYBUDDY_CYGWIN=C:/cygwin64`
+- `STUDYBUDDY_ROOT=H:/studybuddy`
+- `STUDYBUDDY_COMPOSER=H:/studybuddy-composer`
+- `STUDYBUDDY_INTEGRATION=H:/studybuddy-integration`
+- `STUDYBUDDY_TEST=H:/studybuddy-test`
+- 参考目录变量：`STUDYBUDDY_ANCESTOR`、`STUDYBUDDY_PI_STUDYBUDDY`、`STUDYBUDDY_PI_REFERENCES`、`STUDYBUDDY_AISTUDYBUDDY`、`STUDYBUDDY_V2`、`STUDYBUDDY_V2_COMPOSER`
+
+Pi Agent Desktop 应以 `H:\studybuddy` 作为主工作区打开；需要操作 Composer、Integration、Test 或历史目录时，显式切换工作区，不把参考目录当作正式源码目录。不得把 API key、Provider 配置或 `H:\pi-references` 内容写入 Pi 配置、项目文档、日志或 artifact。
+
+## 五、当前正式系统状态
 
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
@@ -68,7 +86,7 @@ Composer 独立测试 -> Integration 组合测试 -> StudyBuddy 主系统重新�
 - 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
 - Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
-## 五、下一步准备
+## 六、下一步准备
 
 Phase 7、Phase 8 fake-provider closeout、Phase 9A 限定范围 acceptance 和 Phase 9B 限定范围 closeout 已完成；Phase 9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 Chromium workspace 为 `browser-pass`，9B-8 source lifecycle/backup-restore artifact 通过 scoped/restore gates，9B-9 已完成脱敏 evidence 与文档收口。下一步进入独立的 Phase 9C/9D 契约和 gate；9B–9D 必须保持独立范围、契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
@@ -80,7 +98,7 @@ Phase 7、Phase 8 fake-provider closeout、Phase 9A 限定范围 acceptance 和 
 
 组件通过后放入 `studybuddy-integration` 组合测试，最终在 `studybuddy` 主系统重新实现，测试 artifact 写入 `studybuddy-test`。
 
-## 六、关联文档
+## 七、关联文档
 
 - 项目入口：[`README.md`](../../README.md)
 - Agent 指令：[`AGENTS.md`](../../AGENTS.md)

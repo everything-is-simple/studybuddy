@@ -25,9 +25,9 @@
 
 权威范围和契约：
 
-- [`prompts/phase9d/PHASE9D_AUDIT_AND_SCOPE.md`](prompts/phase9d/PHASE9D_AUDIT_AND_SCOPE.md)
-- [`prompts/phase9d/PHASE9D_DOMAIN_CONTRACT.md`](prompts/phase9d/PHASE9D_DOMAIN_CONTRACT.md)
-- [`prompts/phase9d/EXECUTION_ORDER_AND_GATES.md`](prompts/phase9d/EXECUTION_ORDER_AND_GATES.md)
+- [`phase9d/PHASE9D_AUDIT_AND_SCOPE.md`](phase9d/PHASE9D_AUDIT_AND_SCOPE.md)
+- [`phase9d/PHASE9D_DOMAIN_CONTRACT.md`](phase9d/PHASE9D_DOMAIN_CONTRACT.md)
+- [`phase9d/EXECUTION_ORDER_AND_GATES.md`](phase9d/EXECUTION_ORDER_AND_GATES.md)
 
 ## 2. Gate Matrix
 
