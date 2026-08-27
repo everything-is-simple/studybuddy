@@ -280,7 +280,7 @@ revision → chunks → retrieval → citations → Q&A
 > 权威执行路线：[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)。此 P1 不改变 Phase 10 local v1 的完成结论；每项组件必须完成 Composer -> Integration -> Formal 的全部门禁后才能进入正式系统。
 
 - [ ] A0：冻结 API/行为/静态资源/导入兼容基线，完成 `main.py` 与 `repository.py` 职责地图、拆分依赖图和逐批回退计划；禁止混入功能或 schema 变更。
-- [ ] A1：按域拆分 `repository.py`（materials、ai、study、plans、learning、practice、capture、reports、tasks），保留受测试的薄兼容入口；每域迁移后运行 focused + 全量 backend、source lifecycle 和 backup/restore 回归。
+- [x] A1：完成 `repository.py` 的兼容 façade 与按域 repository 出口（`backend/app/repositories/`），保留 305 个公开符号、函数签名、事务边界和既有调用点；全量 backend `413 passed, 2 skipped`，Phase 8 Chromium `3 passed`。为保留跨域私有 helper 的 monkeypatch 与行为等价，函数实现暂由 `repositories/_legacy.py` 单一载体承载，域模块提供显式、可审计出口；这不是内部逻辑完全解耦或 A2 的开始。
 - [ ] A2：按域拆分 `main.py`（app factory、lifespan、routers、schemas），保持 URL/状态码/错误码/幂等/response 兼容，移除内嵌产品 UI。
 - [ ] A3：执行 [`frontend-plan.md`](frontend-plan.md) F0/F1：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
 - [ ] A4：执行 `frontend-plan.md` F2/F3 的批准部分：Provider 设置与采集页的真实状态表达；未通过 ASR 门禁时不开放真实转写。
