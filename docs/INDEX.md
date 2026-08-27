@@ -8,7 +8,8 @@
 - [`CODE_TEST_GOVERNANCE.md`](CODE_TEST_GOVERNANCE.md)：代码边界、测试层级、证据等级和提交门禁。
 - [`STATUS.md`](STATUS.md)：实现状态与证据索引的权威来源。
 - [`TODO.md`](TODO.md)：唯一可勾选的执行清单。
-- [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：长期阶段、依赖和完成标准。
+- [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：已完成 Phase 与长期阶段、依赖和完成标准。
+- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力补齐、架构拆分、原生前端与桌面化路线图；当前为 `planned`，不是完成证据。
 - [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)：项目现状摘要。
 
 ## 使用与竣工
@@ -48,5 +49,5 @@
 ## 文档维护规则
 
 - 根目录只保留 `README.md`、`AGENTS.md` 与项目元数据；活跃文档位于 `docs/`。
-- `STATUS.md`、`TODO.md` 与 `PHASE_ROADMAP.md` 分别负责状态、执行清单与长期顺序；发生冲突时先修正这些事实源。
+- `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责状态、执行清单、已完成阶段长期顺序与已批准后续路线；发生冲突时先修正这些事实源。
 - `docs/` 根目录只保留核心入口、设计、治理、状态、路线、TODO 和正式 acceptance；非核心过程资料、历史决策、规划 prompt 和辅助 evidence 只放在 `docs/prompts/`（辅助 evidence 置于 `docs/prompts/evidence/`），不要再复制到 `docs/` 根目录。

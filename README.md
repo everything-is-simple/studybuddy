@@ -7,7 +7,7 @@ StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统
 - 运行 local v1 API：`powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\start-studybuddy.ps1 -DataRoot <local-data-root> -Port 8787`；检查与停止分别使用 `health-studybuddy.ps1`、`stop-studybuddy.ps1`。`python -m backend.app serve` 是显式单进程入口（workers=1、reload=false）；应用工厂为 `backend.app.main:create_app`。开发期直接使用 Uvicorn reload 不属于 release runtime。
 - 运行 operator CLI：`/cygdrive/c/miniconda/py310/python -m backend.app`（入口实现：`backend/app/__main__.py` → `backend/app/cli.py`）；backup、verify、restore、schema 查询、`diagnostics`、`upgrade-preflight --data-root <root> --backup <verified-backup>` 和默认 dry-run 的 `rotate-backups` 均必须显式调用。
 - 后端门禁：`powershell -NoProfile -File .\\backend\\scripts\\test-backend.ps1`；浏览器门禁：`powershell -NoProfile -File .\\backend\\scripts\\test-browser.ps1 <spec>`。
-- 权威文档入口：[`docs/INDEX.md`](docs/INDEX.md)；新用户请先阅读 [`docs/LOCAL_V1_USER_GUIDE.md`](docs/LOCAL_V1_USER_GUIDE.md)，其中包含首次配置、启动、前端入口、验收清单和真实 AI 配置；状态、路线和 TODO 分别以 [`docs/STATUS.md`](docs/STATUS.md)、[`docs/PHASE_ROADMAP.md`](docs/PHASE_ROADMAP.md)、[`docs/TODO.md`](docs/TODO.md) 为准。
+- 权威文档入口：[`docs/INDEX.md`](docs/INDEX.md)；新用户请先阅读 [`docs/LOCAL_V1_USER_GUIDE.md`](docs/LOCAL_V1_USER_GUIDE.md)，其中包含首次配置、启动、前端入口、验收清单和真实 AI 配置；状态、已完成阶段路线、已批准后续能力路线和 TODO 分别以 [`docs/STATUS.md`](docs/STATUS.md)、[`docs/PHASE_ROADMAP.md`](docs/PHASE_ROADMAP.md)、[`docs/ROADMAP_CAPABILITIES.md`](docs/ROADMAP_CAPABILITIES.md)、[`docs/TODO.md`](docs/TODO.md) 为准。
 - 核心设计与治理：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)、[`docs/CODE_TEST_GOVERNANCE.md`](docs/CODE_TEST_GOVERNANCE.md)、[`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)、[`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。非核心规划、历史资料和辅助证据统一位于 [`docs/prompts/`](docs/prompts/)。
 
 **本地单机 v1 已完成生产化和上线收口**，范围严格限于 local single-process / single-instance / SQLite / local-disk：Phase 10 Gates A-J 已通过，release candidate 已在隔离 data root 完成启动、导入、索引、学习路径、显式任务、backup、verify、restore、重启和 diagnostics 演练。runner 仍只由显式 API/CLI 调用，启动/backup/restore/read 不自动执行；只有 approved `embedding_index` 接入 runner，Q&A、generation、OCR/ASR、report/delivery 未接入。该完成不代表多用户、认证授权、云同步、协作、多进程共享 data root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 或全局 production `real-pass`。证据和 prompts 见 [`docs/prompts/phase10/`](docs/prompts/phase10/)。
@@ -22,7 +22,7 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
 
-本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。
+本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/ROADMAP_CAPABILITIES.md)；该文档为 `planned`，不是能力完成证据。
 
 ## 当前正式实现
 
