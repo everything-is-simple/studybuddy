@@ -41,16 +41,16 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/
 
 `browser_file_import.spec.js`、`browser_folder_import.spec.js`、`browser_frontend_failure_contract.spec.js`、`browser_material_export.spec.js`、`browser_material_management.spec.js`、`browser_material_pagination.spec.js`、`browser_material_recycle_bin.spec.js`、`browser_material_search.spec.js`、`browser_multi_file_import.spec.js`、`browser_p6d.spec.js`、`browser_p6e.spec.js`、`browser_phase7.spec.js`、`browser_phase8.spec.js`、`browser_phase9a.spec.js`、`browser_phase9b.spec.js`、`browser_phase9c.spec.js`、`browser_phase9d.spec.js`、`browser_qa.spec.js`。
 
-首次 runner 执行时因缺少 Playwright Chromium executable 被环境阻塞。用户随后已执行 `npx playwright install chromium`，并完成了浏览器重跑。
+首次 runner 执行时因缺少 Playwright Chromium executable 被环境阻塞。用户随后已执行 `npx playwright install chromium`，A0 发现的 Phase 8 exercise browser failure 已由后续最小产品修复处理：`studyTransition()` 现在等待容器刷新完成后再渲染 ready artifact，避免测试或用户在被随后替换的瞬时 radio input 上作答。
 
 当前实际结果：
 
-- 完整 18 个 spec / 53 tests：**51 passed, 1 failed, 1 skipped**；
-- 单独重跑 `browser_phase9b.spec.js` + `browser_phase9c.spec.js`：**6 passed**；
-- 单独重跑 `browser_phase8.spec.js`：**2 passed, 1 failed**；
-- 唯一稳定复现的失败为 `browser_phase8.spec.js:38`：exercise UI 点击 `input[name="study-answer"]` 后，页面仍显示“请选择答案”，预期“回答正确”。
+- 聚焦 Phase 8 browser：**3 passed**；
+- 聚焦 Phase 8 backend：**18 passed**；
+- 完整 backend：**413 passed, 2 skipped**；
+- 完整 18 个 browser specs / 53 tests：**52 passed, 1 skipped**。
 
-该失败发生在现有业务/前端基线测试路径中，与 A0 文档变更无关；A0 不修改业务代码，不能在本提交中修复或重新解释它。浏览器基线现状态为 **`baseline-known-failure`**，不是 `browser-pass`。完整绿灯仍需在后续独立修复提交中处理并复跑 53 项。
+浏览器基线现状态为 **`browser-pass-with-one-opt-in-skip`**。剩余 skip 为既有 opt-in targeted Provider browser path，不属于 A0 架构拆分或 Phase 8 修复范围。本次修复未修改 schema、migration、`repository.py`、API 路径、HTTP 状态码、JSON/error code、backup/restore 或正式 static root。
 
 ### 入口与运行边界
 
