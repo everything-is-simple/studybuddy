@@ -11,7 +11,7 @@
 ## 2026-08-28: Phase 8.6 fake-provider closeout boundary
 
 - Phase 8 is completed only for its deterministic fake-provider, local single-process SQLite, Chromium and explicit backup/restore scope. `backend/tests/test_phase8_closeout.py` proves preservation of Cards/Exercises artifacts, citations, reviews, attempts and generation operations across backup → verify → restore into a new empty root.
-- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](../PHASE8_ACCEPTANCE_EVIDENCE.md).
+- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md).
 - This decision does not establish real Provider generation, human short-answer review, system-level accessibility, extreme-content behavior, worker support, multi-process support, or global product `real-pass`.
 
 ## 2026-08-28: Phase 8.5 Cards / Exercises workspace boundary
