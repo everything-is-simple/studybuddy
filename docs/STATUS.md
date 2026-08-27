@@ -52,6 +52,6 @@
 
 ## Approved Next Roadmap
 
-[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) records the approved, **not yet started** next step: behavior-preserving `main.py`/`repository.py` decomposition, native static frontend delivery under [`frontend-plan.md`](frontend-plan.md), Composer -> Integration -> Formal gates for ASR, OCR, reports and delivery, plus a time-boxed Tauri Windows desktop evaluation. It does not alter the Phase 10 local-v1 completion conclusion, and it is not evidence that any real OCR/ASR/live delivery/desktop package exists.
+[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) records the approved next step: behavior-preserving `main.py` decomposition, native static frontend delivery under [`frontend-plan.md`](frontend-plan.md), Composer -> Integration -> Formal gates for ASR, OCR, reports and delivery, plus a time-boxed Tauri Windows desktop evaluation. A1 repository structure is now closed in the limited compatibility scope documented in `TODO.md`: `backend/app/repositories/` provides explicit domain exports and `backend/app/repository.py` remains the public façade; internal function-body decoupling remains future work. It does not alter the Phase 10 local-v1 completion conclusion, and it is not evidence that any real OCR/ASR/live delivery/desktop package exists.
 
 For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md), and [`TODO.md`](TODO.md).

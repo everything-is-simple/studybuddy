@@ -91,3 +91,9 @@ A0 基线审计（本文件集）
 6. 任一门失败即回退本域迁移，不继续下一个域。
 
 详细路径、函数和调用点见 `A0_ROUTE_REPOSITORY_MAP.md`；静态入口见 `A0_STATIC_FRONTEND_CONTRACT.md`；回退步骤见 `A0_REFACTOR_ROLLBACK_PLAN.md`。
+
+## A1 重新采集与结构收口结果
+
+A1 实施前重新采集的实际 HEAD 为 `cc7f11f6cb569c1d572e11b23da5f20d0a162c59`，与 Prompt 中的短 SHA 一致；工作区原有用户文档 `docs/prompts/architecture/A1_REPOSITORY_SPLIT_PROMPT.md` 未被撤销。完整后端回归为 **413 passed, 2 skipped**，两个 skip 为 opt-in real-provider smoke；`browser_phase8.spec.js` 为 **3 passed**。公开 repository inventory 为 305 个符号，façade 对比无缺失。
+
+A1 新增 `backend/app/repositories/` 结构：connection、materials、ai、plans、learning、practice、capture、reports、tasks 九个显式域出口；`backend/app/repository.py` 继续作为兼容 façade。为保留现有跨域私有 helper 的 monkeypatch、函数 identity、事务边界和行为等价，当前函数实现暂由 `repositories/_legacy.py` 单一载体承载，域模块提供显式可审计导出；这是限定范围的结构收口，不是内部函数体完全解耦。未修改 `main.py`、前端、schema/migration、storage、provider 或生产调用点。

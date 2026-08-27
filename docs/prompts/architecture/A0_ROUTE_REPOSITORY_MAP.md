@@ -99,7 +99,11 @@ Before deleting or changing a code, generate an error-code inventory from `HTTPE
 | report projection/snapshot/export/delivery audit | `reports.py`, `delivery.py` | safe payload, fingerprint, default-off delivery, audit/idempotency |
 | operation task state machine | `tasks.py` | explicit-only runner; no scheduler/worker added by split |
 
-## 3. External import/call sites
+## 3. A1 repository structure
+
+A1 adds `backend/app/repositories/` with explicit domain export modules: `connection.py`, `materials.py`, `ai.py`, `plans.py`, `learning.py`, `practice.py`, `capture.py`, `reports.py`, and `tasks.py`. `backend/app/repository.py` remains the compatibility façade and re-exports all 305 public symbols, including legacy private helpers needed by existing transaction monkeypatch tests. To preserve cross-domain helper identity, transaction behavior, and patching semantics, the current A1 implementation bodies remain in `repositories/_legacy.py`; the domain modules are auditable exports, not a claim of complete internal function-body decoupling. No production caller was changed.
+
+## 4. External import/call sites
 
 Direct imports of `repository` found in production code:
 
@@ -112,7 +116,7 @@ Direct imports of `repository` found in production code:
 
 Test code additionally imports repository functions directly. Preserve all tested public symbols through a re-export façade until a separately accepted API migration.
 
-## 4. Cross-domain seams to preserve
+## 5. Cross-domain seams to preserve
 
 - material source identity → revision/chunks → retrieval/citation → generated card/note/report;
 - capture confirmed transcript → extraction/revision/chunk/FTS search;
