@@ -23,13 +23,13 @@
 
 ## 正式验收证据
 
-- [`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)：Cards / Exercises 限定范围验收。
-- [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)：学习领域与计划核心验收。
+- [`prompts/PHASE8_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE8_ACCEPTANCE_EVIDENCE.md)：Cards / Exercises 限定范围验收。
+- [`prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md)：学习领域与计划核心验收。
 - [`prompts/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](prompts/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)：9A source lifecycle 辅助证据。
 - [`prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md)：9A backup / restore 辅助证据。
-- [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)：S1/S2 工作流验收。
-- [`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md)：S3/S4/S5 工作流验收。
-- [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)：S6/S7 部分立项范围的 Gate A-L scoped closeout。
+- [`prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md)：S1/S2 工作流验收。
+- [`prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md)：S3/S4/S5 工作流验收。
+- [`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md)：S6/S7 部分立项范围的 Gate A-L scoped closeout。
 - [`prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`](prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md)：Phase 10-4 approved embedding task integration Gate E evidence.
 - [`prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`](prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md)：Phase 10-5 observability/readiness/diagnostics Gate F evidence.
 - [`prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md`](prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md)：Phase 10-6 backup/restore/migration operations Gate G evidence.

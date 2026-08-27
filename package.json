@@ -1,0 +1,12 @@
+{
+  "name": "studybuddy",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Local StudyBuddy browser-test tooling",
+  "scripts": {
+    "test:browser": "playwright test --workers=1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

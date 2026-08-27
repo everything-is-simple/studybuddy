@@ -1,6 +1,6 @@
 # Phase 9B Prompt 包：资料学习工作流 S1/S2
 
-本目录保存 Phase 9B 的正式规划与逐子任务执行 prompts。Phase 9B 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成 9B-9 closeout：9B-0/9B-1 完成审计与契约冻结，9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 为 `browser-pass`，9B-8 为 `scoped-gates-pass`/`restore-gates-pass`，9B-9 为限定范围内 `completed`。最终实现证据见 [`../../PHASE9B_ACCEPTANCE_EVIDENCE.md`](../../PHASE9B_ACCEPTANCE_EVIDENCE.md)；本目录中的 prompt、设计和计划本身不是实现证据。
+本目录保存 Phase 9B 的正式规划与逐子任务执行 prompts。Phase 9B 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成 9B-9 closeout：9B-0/9B-1 完成审计与契约冻结，9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 为 `browser-pass`，9B-8 为 `scoped-gates-pass`/`restore-gates-pass`，9B-9 为限定范围内 `completed`。最终实现证据见 [`../PHASE9B_ACCEPTANCE_EVIDENCE.md`](../PHASE9B_ACCEPTANCE_EVIDENCE.md)；本目录中的 prompt、设计和计划本身不是实现证据。
 
 ## 文件
 
