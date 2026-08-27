@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
 > 更新：2026-08-30（Phase 10-9 release candidate、Gate J 与文档收口已同步）
-> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，完整 backend 为 **413 passed, 2 skipped**；整体阶段性完成度约 **65%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，完整 backend 为 **413 passed, 2 skipped**；整体阶段性完成度约 **65%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -143,7 +143,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] answer key 和 submitted answer 不进入普通 exercise/attempt 列表响应；backup/restore 和 restart 保留 exercise/attempt history。
 - [x] 8.4 AI draft generation：card/exercise generation 接入显式 indexed single-material lexical/vector/hybrid retrieval、context/citation verification、provider 和 `ai_operations`；结构化输出仅在内存校验，不持久化 raw prompt/response，成功只原子保存 cited draft，失败只保留安全 failed operation。支持 1–10 draft、Idempotency-Key replay/running conflict/failed retry、source-stale、malformed/forged citation、provider failure、rollback 边界；fake provider backend 验收完成，真实 Provider 不在本子任务扩大范围。
 - [x] 8.5 Cards/Exercises UI、fake-provider Chromium 用户路径和基础可访问性验收：统一 nav、deck/set、draft generation/list/detail、citation 定位/unavailable、draft edit/save、confirm/reject/archive、card review、exercise attempt、刷新恢复、busy/retry failure、answer-key privacy、390x844 overflow 和键盘 nav；证据为 `backend/tests/browser_phase8.spec.js`。未做真实 Provider generation、系统级 screen reader 或极端长内容验收。
-- [x] 8.6 Phase 8 完整 citation source lifecycle、backup/restore、全量回归、正式证据/文档收口：新增 `backend/tests/test_phase8_closeout.py` 覆盖 artifact/citation/review/attempt/operation 的 backup → verify → 新空目录 restore 与 startup/read non-repair；full backend `250 passed, 2 skipped`、Phase 8 Chromium `3 passed`、相关 UI failure regression `9 passed`。证据：[`PHASE8_ACCEPTANCE_EVIDENCE.md`](PHASE8_ACCEPTANCE_EVIDENCE.md)。
+- [x] 8.6 Phase 8 完整 citation source lifecycle、backup/restore、全量回归、正式证据/文档收口：新增 `backend/tests/test_phase8_closeout.py` 覆盖 artifact/citation/review/attempt/operation 的 backup → verify → 新空目录 restore 与 startup/read non-repair；full backend `250 passed, 2 skipped`、Phase 8 Chromium `3 passed`、相关 UI failure regression `9 passed`。证据：[`prompts/PHASE8_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE8_ACCEPTANCE_EVIDENCE.md)。
 
 ## Phase 7：Embedding 与 Hybrid Retrieval
 
@@ -192,7 +192,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9A-5：实现 draft → confirm → active → progress → refresh 的最小 Chromium workspace，并覆盖 dependency cycle failure、500/retry、390x844、keyboard 和 reload recovery；`backend/tests/browser_phase9a.spec.js` 2 passed。状态为 `browser-pass`，不代表 real-pass 或 9A completed。
 - [x] 9A-6：完成 delete/restore/purge/re-index/source unavailable/stale 的 source lifecycle 集成；scoped backend/browser gates 通过（focused `16 passed`、full backend `270 passed, 2 skipped`、Phase 9A Chromium `3 passed`），并在 9A-8 closeout 中纳入最终 evidence。
 - [x] 9A-7：完成 9A 数据 backup/verify/restore、历史保留和 non-repair 验收；`backend/tests/test_phase9a_backup_restore.py` 与既有 backup/restore/restore-acceptance tests 通过，focused `13 passed`，full backend `272 passed, 2 skipped`。状态为 `restore-gates-pass`。证据见 [`prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md)。
-- [x] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。状态为 `completed`，准确范围和未验证边界见 [`PHASE9A_ACCEPTANCE_EVIDENCE.md`](PHASE9A_ACCEPTANCE_EVIDENCE.md)。
+- [x] 9A-8：完成 full regression、Chromium、脱敏 evidence、STATUS/TODO/ROADMAP 文档收口。状态为 `completed`，准确范围和未验证边界见 [`prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md)。
 
 > 下方为旧版 Phase 9A 概括性条目；详细可执行拆分以 9A-0 至 9A-8 为唯一口径，避免重复清单产生状态漂移。
 >
@@ -203,7 +203,7 @@ revision → chunks → retrieval → citations → Q&A
 
 > 当前状态：在限定范围内 `completed`。Phase 9B 的总规划 prompt、共用上下文、9B-0 至 9B-9 子任务 prompts、执行顺序和验收门槛已集中存放于 [`prompts/phase9b/`](prompts/phase9b/)。prompt 包不是实现证据，必须按顺序逐项执行并独立验收。
 >
-> 当前子任务状态：9B-0 为 `planned/audit-draft`，9B-1 为 `planned/contract-frozen`，9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 为 `browser-pass`，9B-8 为 `scoped-gates-pass`/`restore-gates-pass`，9B-9 已完成限定范围内 `completed` closeout；审计、正式契约、schema 和最终证据见 [`prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md`](prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md) 与 [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)。
+> 当前子任务状态：9B-0 为 `planned/audit-draft`，9B-1 为 `planned/contract-frozen`，9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 为 `browser-pass`，9B-8 为 `scoped-gates-pass`/`restore-gates-pass`，9B-9 已完成限定范围内 `completed` closeout；审计、正式契约、schema 和最终证据见 [`prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md`](prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md) 与 [`prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md)。
 
 - [x] 9B-0：完成现状审计、S1/S2 范围冻结和风险记录；状态为 `planned/audit-draft`，产出见 [`prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md`](prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md)。
 - [x] 9B-1：冻结 S1/S2 实体关系、cadence/timezone/workload、note/block/module/citation 关系、状态机、不变量、source lifecycle、AI draft、错误码、API resource、导出和 backup/restore non-repair 边界；状态为 `planned/contract-frozen`，不代表实现完成。
@@ -214,7 +214,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9B-6：实现 S1/S2 最小安全 FastAPI：rhythm settings/summary/allocation、notes/blocks/modules/source links、draft generation、confirm/reject/archive、source refresh、bounded JSON/Markdown export；服务端注入 project scope，复用 domain contract，覆盖安全错误、citation/source lifecycle、provider failure、idempotency 和隐私边界。focused `backend/tests/test_phase9b_api.py` 与完整 backend 通过，状态为 `implemented/backend-pass`；不代表 browser-pass 或 Phase 9B completed。
 - [x] 9B-7：实现 S1/S2 最小 Chromium workspace：S1 rhythm settings、allocation 调整、timeline/load/progress、export/reload；S2 user/AI citation draft、知识模块组织、编辑保护、confirm/reject/archive、source refresh、citation dialog 与 export。`backend/tests/browser_phase9b.spec.js` 串行隔离 data root，覆盖 desktop、390x844、keyboard、reload、duplicate click、provider_not_configured、malformed/network failure、citation unavailable 和安全 DOM。`3 passed`，状态为 `browser-pass`；不代表 restore-gates、real-pass 或 Phase 9B completed。
 - [x] 9B-8：验证 S1/S2 source lifecycle 与 backup/restore non-repair：note/block/module/source-link、rhythm/allocation、completed progress 在 delete/restore/purge/new revision 后保留正确 `valid`/`stale`/`source_deleted`/`source_unavailable` 历史；backup→verify→新空目录 restore 保留 v10 表/历史/状态，restore/startup/read/verify 不 provider/index/refresh/repair。新增 `test_phase9b_source_lifecycle.py`、`test_phase9b_backup_restore.py`，并扩展 `restore_acceptance.py` 的只读 v10 checks；当时状态为 `scoped-gates-pass`/`restore-gates-pass`；9B-9 已在此基础上完成限定范围内 Phase 9B closeout。
-- [x] 9B-9：完成 Gate A-I 全量验收、脱敏 evidence 与最终文档同步。focused closeout `59 passed`；完整 backend `299 passed, 2 skipped`；相关非真实 Provider Chromium `45 passed, 1 skipped`；默认 real-provider spec `2 skipped`。新增 [`PHASE9B_ACCEPTANCE_EVIDENCE.md`](PHASE9B_ACCEPTANCE_EVIDENCE.md)，同步 STATUS/README/ROADMAP/PROJECT_PROGRESS/INDEX/architecture。状态为限定范围内 `completed`，不代表 Phase 9C/9D、真实 Provider generation、scheduler/worker、人工复核或全局 production `real-pass`。
+- [x] 9B-9：完成 Gate A-I 全量验收、脱敏 evidence 与最终文档同步。focused closeout `59 passed`；完整 backend `299 passed, 2 skipped`；相关非真实 Provider Chromium `45 passed, 1 skipped`；默认 real-provider spec `2 skipped`。新增 [`prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md)，同步 STATUS/README/ROADMAP/PROJECT_PROGRESS/INDEX/architecture。状态为限定范围内 `completed`，不代表 Phase 9C/9D、真实 Provider generation、scheduler/worker、人工复核或全局 production `real-pass`。
 
 ### Phase 9C：练习与反馈工作流（S3/S4/S5）
 
@@ -230,13 +230,13 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9C-7：完成 S3/S4/S5 最小安全 FastAPI API：practice session、attempt submit/review、mistake/weak-point、cram goal/session/result、server project scope、稳定 400/404/409/422/500 错误、Idempotency-Key、privacy 和生命周期边界；focused `3 passed`、相关 focused `32 passed`、完整 backend `317 passed, 2 skipped`。状态为 `implemented/backend-pass`，不代表 Chromium/UI、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-8：完成最小 Chromium workspace：S3 session/start/submit/finish/result、S4 mistake/feedback/redo、S5 cram goal/session/result、reload、duplicate/idempotency、500/network retry、default-provider safe failure、keyboard/focus、390x844 overflow 和 privacy DOM；focused Chromium `3 passed`，相关 UI failure `9 passed`。状态为 `browser-pass`，不代表 real-pass、9C lifecycle/restore gates 或 Phase 9C completed。
 - [x] 9C-9：完成 S3/S4/S5 source lifecycle 与 backup/verify/新空目录 restore non-repair：v11 表/历史事实、session/item linkage、attempt/review/mistake/feedback/cram status 保留，delete/restore/purge/re-index source status 安全降级；专项 `14 passed`、完整 backend `320 passed, 2 skipped`。状态为 `scoped-gates-pass`/`restore-gates-pass`，不代表 9C-10 closeout 或 Phase 9C completed。
-- [x] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口；证据见 [`PHASE9C_ACCEPTANCE_EVIDENCE.md`](PHASE9C_ACCEPTANCE_EVIDENCE.md)。
+- [x] 9C-10：完成 Gate A-J、全量回归、脱敏 evidence、STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX 文档收口；证据见 [`prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md)。
 
 完成声明仅限 deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore；不包含真实 Provider、scheduler/worker、OCR/ASR、Phase 9D 或全局 production `real-pass`。
 
 ### Phase 9D：扩展学习服务（S6/S7，部分立项）
 
-> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 至 9D-8 为 `implemented/backend-pass`，9D-9 为 `browser-pass`，9D-10 为 `backend-pass`，9D-11 为 `closeout-scoped-pass`。总规划、契约、Gate A-L 和限定范围证据见 [`prompts/phase9d/`](prompts/phase9d/) 与 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。
+> 当前状态：9D-0 为 `planned/audit-draft`，结论是只立项 deterministic fake/loopback OCR/ASR、本地脱敏报告和 delivery dry-run；9D-1 为 `planned/contract-frozen`；9D-2 至 9D-8 为 `implemented/backend-pass`，9D-9 为 `browser-pass`，9D-10 为 `backend-pass`，9D-11 为 `closeout-scoped-pass`。总规划、契约、Gate A-L 和限定范围证据见 [`prompts/phase9d/`](prompts/phase9d/) 与 [`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md)。
 
 - [x] 9D-0：完成需求、隐私、数据保留、真实组件证据和运维成本审计；作出部分立项结论并冻结 non-goals。真实 OCR/ASR 与真实 SMTP/飞书外发暂不立项。状态为 `planned/audit-draft`。
 - [x] 9D-1：冻结 capture/transcript/report/delivery dry-run 的实体、状态机、幂等、脱敏、source lifecycle 和 non-repair 契约。状态为 `planned/contract-frozen`，不代表 schema/domain/API/UI 实现。
@@ -249,7 +249,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 9D-8：实现 Phase 9D 最小安全 API contract：S7 capture/transcript 全链路、S6 report/delivery audit；默认 delivery off、live 三重授权仍拒绝、secret/runtime-only、稳定错误、Idempotency-Key、project scope；focused 4 passed，完整 backend 356 passed。状态为 `implemented/backend-pass`；Chromium/UI/lifecycle/restore gates 另由后续子任务验收。
 - [x] 9D-9：实现 desktop/narrow/keyboard/reload/failure/privacy Chromium workspace：S6/S7 采集、转写、报告预览/导出、默认关闭交付和审计 UI；`browser_phase9d.spec.js` 4 passed，相关 UI 回归 15 passed。状态为 `browser-pass`。
 - [x] 9D-10：实现 source lifecycle + backup/restore 门禁：capture material 软删除/硬删除时 source_status 正确降级、历史 transcript/operation/report 不丢失；backup→verify→新空目录 restore 保留全部 S6/S7 事实、不触发 OCR/ASR/报告生成/交付，source status 不被修复。`test_phase9d_backup_restore.py` 4 passed，`test_restore_acceptance.py` 的 v12 read-only check 通过，完整 backend 377 passed。状态为 `backend-pass`；Gate L 已由 9D-11 的 scoped closeout 收口。
-- [x] 9D-11：完成 Gate A-L 的部分立项范围收口、完整 backend/UI 回归、脱敏 evidence 和 STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX/README 同步；证据见 [`PHASE9D_ACCEPTANCE_EVIDENCE.md`](PHASE9D_ACCEPTANCE_EVIDENCE.md)。真实 OCR/ASR provider 与真实 SMTP/飞书外发仍明确不在本次立项范围。
+- [x] 9D-11：完成 Gate A-L 的部分立项范围收口、完整 backend/UI 回归、脱敏 evidence 和 STATUS/TODO/ROADMAP/PROJECT_PROGRESS/INDEX/README 同步；证据见 [`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md)。真实 OCR/ASR provider 与真实 SMTP/飞书外发仍明确不在本次立项范围。
 
 真实 OCR/ASR provider 与真实对外交付必须先在 Composer/Integration 获得独立证据并再次评审；当前部分立项不包含这些能力。
 
