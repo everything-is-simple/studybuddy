@@ -1,6 +1,6 @@
 # A2.2：收缩 `backend/app/main.py`——兼容导出与内嵌 HTML 机械分片
 
-> 这是 A2.X 的第二个独立任务。A2.X 总任务见 [`A2_X_BOUNDED_CORE_SPLIT_PROMPT.md`](A2_X_BOUNDED_CORE_SPLIT_PROMPT.md)，任务编号和路线位置见 [`ROADMAP_CAPABILITIES.md`](../../ROADMAP_CAPABILITIES.md)。
+> 这是 A2.X 的第二个独立任务。A2.X 总任务见 [`A2_X_BOUNDDED_CORE_SPLIT_PROMPT.md`](A2_X_BOUNDDED_CORE_SPLIT_PROMPT.md)，任务编号和路线位置见 [`ROADMAP_CAPABILITIES.md`](../../ROADMAP_CAPABILITIES.md)。
 
 ## 1. 执行位置、阶段与目标
 
