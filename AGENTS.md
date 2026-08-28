@@ -12,6 +12,9 @@ StudyBuddy is a local, single-process study-material management system built aro
 - Keep the repository root limited to the primary entry documents and project metadata.
 - Do not copy implementation code from Composer or Integration projects into the formal system. Re-implement against verified contracts.
 - Do not commit databases, uploaded originals, generated artifacts, secrets, provider keys, paths containing private data, or test-run output.
+- New or substantially rewritten source files (`.py`, `.js`, `.css`, `.html`, `.ps1`, `.json`, `.md`) must not exceed 32 KiB; target 20-30 KiB. A larger file requires explicit user approval before creation.
+- Do not create or relocate a large compatibility, legacy, static, or inline-content file to bypass this limit. `backend/app/main.py` is the temporary non-growing legacy exception while it retains the existing inline UI until the separately approved A3 migration.
+- Run `python backend/scripts/check-source-size.py` before reporting structural work complete.
 
 ## Documentation structure
 

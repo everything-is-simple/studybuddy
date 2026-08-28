@@ -33,7 +33,7 @@ StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地
 
 ### 2.3 变更要求
 
-代码变更必须保持最小范围，并同步：实现、聚焦测试、必要的完整回归、权威状态和 TODO。新增业务表、字段约束或索引时，必须新增或修改 migration，并覆盖新库、升级、幂等、失败 rollback、backup/restore 版本保持测试。不得在业务运行路径中以 ad-hoc `CREATE TABLE IF NOT EXISTS` 代替 migration。
+代码变更必须保持最小范围，并同步：实现、聚焦测试、必要的完整回归、权威状态和 TODO。新增业务表、字段约束或索引时，必须新增或修改 migration，并覆盖新库、升级、幂等、失败 rollback、backup/restore 版本保持测试。不得在业务运行路径中以 ad-hoc `CREATE TABLE IF NOT EXISTS` 代替 migration。新增或实质重写的源码文件必须不超过 32 KiB，目标是 20-30 KiB；超过上限必须先获得明确审批。不得通过新建/搬迁大 compatibility、legacy、static 或 inline-content 文件规避该限制。`backend/app/main.py` 当前内嵌 UI 是 A3 前唯一非增长的历史例外，结构重构必须验证它的 HTML payload 未改变。
 
 ## 3. 测试分层与命令
 
