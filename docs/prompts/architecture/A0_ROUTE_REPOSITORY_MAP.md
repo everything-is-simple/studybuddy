@@ -103,7 +103,13 @@ Before deleting or changing a code, generate an error-code inventory from `HTTPE
 
 A1 adds `backend/app/repositories/` with explicit domain export modules: `connection.py`, `materials.py`, `ai.py`, `plans.py`, `learning.py`, `practice.py`, `capture.py`, `reports.py`, and `tasks.py`. `backend/app/repository.py` remains the compatibility façade and re-exports all 305 public symbols, including legacy private helpers needed by existing transaction monkeypatch tests. To preserve cross-domain helper identity, transaction behavior, and patching semantics, the current A1 implementation bodies remain in `repositories/_legacy.py`; the domain modules are auditable exports, not a claim of complete internal function-body decoupling. No production caller was changed.
 
-## 4. External import/call sites
+## 4. A2 application structure
+
+A2 keeps `backend/app/main.py` as the public compatibility façade and the sole non-growing legacy holder of the existing inline `INDEX_HTML`; no `web_ui.py`, formal static root or new large UI file exists. `backend/app/app_factory.py` owns FastAPI construction, application state and middleware; `backend/app/lifespan.py` owns the unchanged startup sequence; small `schemas/`, helpers and services own their extracted support code. `backend/app/api/registration.py` calls 14 domain route modules in the original registration order: system, material collection, retrieval/Q&A, indexing, tasks, generation, practice, plans, rhythm, notes, learning, capture/reports, material detail and `/`.
+
+The route modules receive an explicit dependency context. `main.py` forwards existing monkeypatch assignments to the factory, route modules, import service and lifespan dependencies so direct test imports continue to behave as before. `backend/scripts/check-source-size.py` enforces a 32 KiB limit for new or substantially rewritten managed source files, forbids growth of pre-existing oversized files, and verifies the inline UI payload hash.
+
+## 5. External import/call sites
 
 Direct imports of `repository` found in production code:
 
@@ -116,7 +122,7 @@ Direct imports of `repository` found in production code:
 
 Test code additionally imports repository functions directly. Preserve all tested public symbols through a re-export façade until a separately accepted API migration.
 
-## 5. Cross-domain seams to preserve
+## 6. Cross-domain seams to preserve
 
 - material source identity → revision/chunks → retrieval/citation → generated card/note/report;
 - capture confirmed transcript → extraction/revision/chunk/FTS search;

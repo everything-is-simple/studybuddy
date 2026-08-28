@@ -97,3 +97,11 @@ A0 基线审计（本文件集）
 A1 实施前重新采集的实际 HEAD 为 `cc7f11f6cb569c1d572e11b23da5f20d0a162c59`，与 Prompt 中的短 SHA 一致；工作区原有用户文档 `docs/prompts/architecture/A1_REPOSITORY_SPLIT_PROMPT.md` 未被撤销。完整后端回归为 **413 passed, 2 skipped**，两个 skip 为 opt-in real-provider smoke；`browser_phase8.spec.js` 为 **3 passed**。公开 repository inventory 为 305 个符号，façade 对比无缺失。
 
 A1 新增 `backend/app/repositories/` 结构：connection、materials、ai、plans、learning、practice、capture、reports、tasks 九个显式域出口；`backend/app/repository.py` 继续作为兼容 façade。为保留现有跨域私有 helper 的 monkeypatch、函数 identity、事务边界和行为等价，当前函数实现暂由 `repositories/_legacy.py` 单一载体承载，域模块提供显式可审计导出；这是限定范围的结构收口，不是内部函数体完全解耦。未修改 `main.py`、前端、schema/migration、storage、provider 或生产调用点。
+
+## A2 重做结果与源码大小门禁
+
+A2 在本地备份旧的未推送大文件尝试后，从 A1 推送基线重做。`backend/app/main.py` 保留为兼容 façade，并保留唯一、非增长的既有 `INDEX_HTML` 字符串；其 HTML payload SHA-256 为 `1e111288010b473ae660c7446be6e1997659d49e0b705fea7ae98916621b728c`，与 A1 基线完全一致。A2 不创建 `web_ui.py`、static root 或任何新的大 UI/legacy 搬运文件，A3 才负责静态前端迁移。
+
+后端应用现在由 `app_factory.py`、`lifespan.py`、`http_errors.py`、`http_helpers.py`、小型 schemas/services 模块和 `api/registration.py` 协作；后者按原顺序调用 14 个小型真实 route 模块。`main.py:create_app`、`main.py:app`、151 条业务路由、启动顺序、错误/detail、JSON/media type 与直接 monkeypatch 兼容路径均保留。新增或实质重写源码实行 32 KiB 上限，`backend/scripts/check-source-size.py` 对新增文件、既有超限文件增长和 `main.py` HTML hash 执行门禁。
+
+A2 重做验证：完整 backend **413 passed, 2 skipped**；完整 18 个 browser specs **52 passed, 1 skipped**；业务路由数 **151**（FastAPI 总路由 155）；所有新增/实质重写模块均低于 20 KiB。
