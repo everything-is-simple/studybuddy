@@ -1,133 +1,68 @@
-"""Compatibility exports for the plans repository domain."""
+"""Domain repository exports."""
 
 from . import _legacy
 
-from ._legacy import (
-    STUDY_TEXT_MAX,
-    STUDY_DESCRIPTION_MAX,
-    STUDY_METADATA_MAX,
-    STUDY_GOAL_PREFIX,
-    STUDY_MODULE_PREFIX,
-    STUDY_PLAN_PREFIX,
-    STUDY_ITEM_PREFIX,
-    STUDY_DEPENDENCY_PREFIX,
-    STUDY_PROGRESS_PREFIX,
-    STUDY_SOURCE_PREFIX,
-    STUDY_PLAN_STATUSES,
-    STUDY_ITEM_STATUSES,
-    STUDY_PROGRESS_EVENTS,
-    STUDY_SOURCE_STATUSES,
-    RHYTHM_CADENCES,
-    RHYTHM_MAX_TARGET_MINUTES,
-    RHYTHM_MAX_ITEM_MINUTES,
-    RHYTHM_MAX_PERIOD_MINUTES,
-    RHYTHM_MAX_ALLOCATION_MINUTES,
-    NOTE_STATUSES,
-    NOTE_PROVENANCES,
-    NOTE_BLOCK_KINDS,
-    NOTE_MAX_TITLE,
-    NOTE_MAX_BLOCK_CONTENT,
-    NOTE_MAX_CONTENT,
-    NOTE_GENERATION_PROMPT_VERSION,
-    create_learning_goal,
-    list_learning_goals,
-    get_learning_goal,
-    archive_learning_goal,
-    update_learning_goal,
-    create_knowledge_module,
-    list_knowledge_modules,
-    get_knowledge_module,
-    update_knowledge_module,
-    archive_knowledge_module,
-    study_progress_summary,
-    create_study_plan,
-    list_study_plans,
-    get_study_plan,
-    update_study_plan,
-    transition_study_plan,
-    create_study_plan_item,
-    update_study_plan_item,
-    archive_study_plan_item,
-    add_study_plan_dependency,
-    remove_study_plan_dependency,
-    append_study_progress_event,
-    list_study_progress_events,
-    create_module_source_link,
-    create_plan_item_source_link,
-    refresh_study_source_links,
-    get_study_source_links,
-    get_rhythm_settings,
-    save_rhythm_settings,
-    create_rhythm_settings,
-    update_rhythm_settings,
-    list_rhythm_allocations,
-    create_rhythm_allocation,
-    update_rhythm_allocation,
-    delete_rhythm_allocation,
-    rhythm_summary,
-)
+STUDY_TEXT_MAX = getattr(_legacy, 'STUDY_TEXT_MAX')
+STUDY_DESCRIPTION_MAX = getattr(_legacy, 'STUDY_DESCRIPTION_MAX')
+STUDY_METADATA_MAX = getattr(_legacy, 'STUDY_METADATA_MAX')
+STUDY_GOAL_PREFIX = getattr(_legacy, 'STUDY_GOAL_PREFIX')
+STUDY_MODULE_PREFIX = getattr(_legacy, 'STUDY_MODULE_PREFIX')
+STUDY_PLAN_PREFIX = getattr(_legacy, 'STUDY_PLAN_PREFIX')
+STUDY_ITEM_PREFIX = getattr(_legacy, 'STUDY_ITEM_PREFIX')
+STUDY_DEPENDENCY_PREFIX = getattr(_legacy, 'STUDY_DEPENDENCY_PREFIX')
+STUDY_PROGRESS_PREFIX = getattr(_legacy, 'STUDY_PROGRESS_PREFIX')
+STUDY_SOURCE_PREFIX = getattr(_legacy, 'STUDY_SOURCE_PREFIX')
+STUDY_PLAN_STATUSES = getattr(_legacy, 'STUDY_PLAN_STATUSES')
+STUDY_ITEM_STATUSES = getattr(_legacy, 'STUDY_ITEM_STATUSES')
+STUDY_PROGRESS_EVENTS = getattr(_legacy, 'STUDY_PROGRESS_EVENTS')
+STUDY_SOURCE_STATUSES = getattr(_legacy, 'STUDY_SOURCE_STATUSES')
+RHYTHM_CADENCES = getattr(_legacy, 'RHYTHM_CADENCES')
+RHYTHM_MAX_TARGET_MINUTES = getattr(_legacy, 'RHYTHM_MAX_TARGET_MINUTES')
+RHYTHM_MAX_ITEM_MINUTES = getattr(_legacy, 'RHYTHM_MAX_ITEM_MINUTES')
+RHYTHM_MAX_PERIOD_MINUTES = getattr(_legacy, 'RHYTHM_MAX_PERIOD_MINUTES')
+RHYTHM_MAX_ALLOCATION_MINUTES = getattr(_legacy, 'RHYTHM_MAX_ALLOCATION_MINUTES')
+NOTE_STATUSES = getattr(_legacy, 'NOTE_STATUSES')
+NOTE_PROVENANCES = getattr(_legacy, 'NOTE_PROVENANCES')
+NOTE_BLOCK_KINDS = getattr(_legacy, 'NOTE_BLOCK_KINDS')
+NOTE_MAX_TITLE = getattr(_legacy, 'NOTE_MAX_TITLE')
+NOTE_MAX_BLOCK_CONTENT = getattr(_legacy, 'NOTE_MAX_BLOCK_CONTENT')
+NOTE_MAX_CONTENT = getattr(_legacy, 'NOTE_MAX_CONTENT')
+NOTE_GENERATION_PROMPT_VERSION = getattr(_legacy, 'NOTE_GENERATION_PROMPT_VERSION')
+create_learning_goal = getattr(_legacy, 'create_learning_goal')
+list_learning_goals = getattr(_legacy, 'list_learning_goals')
+get_learning_goal = getattr(_legacy, 'get_learning_goal')
+archive_learning_goal = getattr(_legacy, 'archive_learning_goal')
+update_learning_goal = getattr(_legacy, 'update_learning_goal')
+create_knowledge_module = getattr(_legacy, 'create_knowledge_module')
+list_knowledge_modules = getattr(_legacy, 'list_knowledge_modules')
+get_knowledge_module = getattr(_legacy, 'get_knowledge_module')
+update_knowledge_module = getattr(_legacy, 'update_knowledge_module')
+archive_knowledge_module = getattr(_legacy, 'archive_knowledge_module')
+study_progress_summary = getattr(_legacy, 'study_progress_summary')
+create_study_plan = getattr(_legacy, 'create_study_plan')
+list_study_plans = getattr(_legacy, 'list_study_plans')
+get_study_plan = getattr(_legacy, 'get_study_plan')
+update_study_plan = getattr(_legacy, 'update_study_plan')
+transition_study_plan = getattr(_legacy, 'transition_study_plan')
+create_study_plan_item = getattr(_legacy, 'create_study_plan_item')
+update_study_plan_item = getattr(_legacy, 'update_study_plan_item')
+archive_study_plan_item = getattr(_legacy, 'archive_study_plan_item')
+add_study_plan_dependency = getattr(_legacy, 'add_study_plan_dependency')
+remove_study_plan_dependency = getattr(_legacy, 'remove_study_plan_dependency')
+append_study_progress_event = getattr(_legacy, 'append_study_progress_event')
+list_study_progress_events = getattr(_legacy, 'list_study_progress_events')
+create_module_source_link = getattr(_legacy, 'create_module_source_link')
+create_plan_item_source_link = getattr(_legacy, 'create_plan_item_source_link')
+refresh_study_source_links = getattr(_legacy, 'refresh_study_source_links')
+get_study_source_links = getattr(_legacy, 'get_study_source_links')
+get_rhythm_settings = getattr(_legacy, 'get_rhythm_settings')
+save_rhythm_settings = getattr(_legacy, 'save_rhythm_settings')
+create_rhythm_settings = getattr(_legacy, 'create_rhythm_settings')
+update_rhythm_settings = getattr(_legacy, 'update_rhythm_settings')
+list_rhythm_allocations = getattr(_legacy, 'list_rhythm_allocations')
+create_rhythm_allocation = getattr(_legacy, 'create_rhythm_allocation')
+update_rhythm_allocation = getattr(_legacy, 'update_rhythm_allocation')
+delete_rhythm_allocation = getattr(_legacy, 'delete_rhythm_allocation')
+rhythm_summary = getattr(_legacy, 'rhythm_summary')
 
-__all__ = [
-    'STUDY_TEXT_MAX',
-    'STUDY_DESCRIPTION_MAX',
-    'STUDY_METADATA_MAX',
-    'STUDY_GOAL_PREFIX',
-    'STUDY_MODULE_PREFIX',
-    'STUDY_PLAN_PREFIX',
-    'STUDY_ITEM_PREFIX',
-    'STUDY_DEPENDENCY_PREFIX',
-    'STUDY_PROGRESS_PREFIX',
-    'STUDY_SOURCE_PREFIX',
-    'STUDY_PLAN_STATUSES',
-    'STUDY_ITEM_STATUSES',
-    'STUDY_PROGRESS_EVENTS',
-    'STUDY_SOURCE_STATUSES',
-    'RHYTHM_CADENCES',
-    'RHYTHM_MAX_TARGET_MINUTES',
-    'RHYTHM_MAX_ITEM_MINUTES',
-    'RHYTHM_MAX_PERIOD_MINUTES',
-    'RHYTHM_MAX_ALLOCATION_MINUTES',
-    'NOTE_STATUSES',
-    'NOTE_PROVENANCES',
-    'NOTE_BLOCK_KINDS',
-    'NOTE_MAX_TITLE',
-    'NOTE_MAX_BLOCK_CONTENT',
-    'NOTE_MAX_CONTENT',
-    'NOTE_GENERATION_PROMPT_VERSION',
-    'create_learning_goal',
-    'list_learning_goals',
-    'get_learning_goal',
-    'archive_learning_goal',
-    'update_learning_goal',
-    'create_knowledge_module',
-    'list_knowledge_modules',
-    'get_knowledge_module',
-    'update_knowledge_module',
-    'archive_knowledge_module',
-    'study_progress_summary',
-    'create_study_plan',
-    'list_study_plans',
-    'get_study_plan',
-    'update_study_plan',
-    'transition_study_plan',
-    'create_study_plan_item',
-    'update_study_plan_item',
-    'archive_study_plan_item',
-    'add_study_plan_dependency',
-    'remove_study_plan_dependency',
-    'append_study_progress_event',
-    'list_study_progress_events',
-    'create_module_source_link',
-    'create_plan_item_source_link',
-    'refresh_study_source_links',
-    'get_study_source_links',
-    'get_rhythm_settings',
-    'save_rhythm_settings',
-    'create_rhythm_settings',
-    'update_rhythm_settings',
-    'list_rhythm_allocations',
-    'create_rhythm_allocation',
-    'update_rhythm_allocation',
-    'delete_rhythm_allocation',
-    'rhythm_summary',
-]
+__all__ = ['STUDY_TEXT_MAX', 'STUDY_DESCRIPTION_MAX', 'STUDY_METADATA_MAX', 'STUDY_GOAL_PREFIX', 'STUDY_MODULE_PREFIX', 'STUDY_PLAN_PREFIX', 'STUDY_ITEM_PREFIX', 'STUDY_DEPENDENCY_PREFIX', 'STUDY_PROGRESS_PREFIX', 'STUDY_SOURCE_PREFIX', 'STUDY_PLAN_STATUSES', 'STUDY_ITEM_STATUSES', 'STUDY_PROGRESS_EVENTS', 'STUDY_SOURCE_STATUSES', 'RHYTHM_CADENCES', 'RHYTHM_MAX_TARGET_MINUTES', 'RHYTHM_MAX_ITEM_MINUTES', 'RHYTHM_MAX_PERIOD_MINUTES', 'RHYTHM_MAX_ALLOCATION_MINUTES', 'NOTE_STATUSES', 'NOTE_PROVENANCES', 'NOTE_BLOCK_KINDS', 'NOTE_MAX_TITLE', 'NOTE_MAX_BLOCK_CONTENT', 'NOTE_MAX_CONTENT', 'NOTE_GENERATION_PROMPT_VERSION', 'create_learning_goal', 'list_learning_goals', 'get_learning_goal', 'archive_learning_goal', 'update_learning_goal', 'create_knowledge_module', 'list_knowledge_modules', 'get_knowledge_module', 'update_knowledge_module', 'archive_knowledge_module', 'study_progress_summary', 'create_study_plan', 'list_study_plans', 'get_study_plan', 'update_study_plan', 'transition_study_plan', 'create_study_plan_item', 'update_study_plan_item', 'archive_study_plan_item', 'add_study_plan_dependency', 'remove_study_plan_dependency', 'append_study_progress_event', 'list_study_progress_events', 'create_module_source_link', 'create_plan_item_source_link', 'refresh_study_source_links', 'get_study_source_links', 'get_rhythm_settings', 'save_rhythm_settings', 'create_rhythm_settings', 'update_rhythm_settings', 'list_rhythm_allocations', 'create_rhythm_allocation', 'update_rhythm_allocation', 'delete_rhythm_allocation', 'rhythm_summary']

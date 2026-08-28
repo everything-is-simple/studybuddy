@@ -1,101 +1,52 @@
-"""Compatibility exports for the connection repository domain."""
+"""Domain repository exports."""
 
 from . import _legacy
 
-from ._legacy import (
-    annotations,
-    hashlib,
-    json,
-    sqlite3,
-    stat,
-    time,
-    uuid,
-    Callable,
-    date,
-    datetime,
-    timedelta,
-    timezone,
-    Path,
-    ZoneInfo,
-    ZoneInfoNotFoundError,
-    ParseResult,
-    CHUNKING_STRATEGY,
-    CHUNKING_VERSION,
-    SourceSpan,
-    chunk_text,
-    EMBEDDING_ENCODING,
-    MAX_EMBEDDING_PAYLOAD_BYTES,
-    EmbeddingError,
-    EmbeddingIdentity,
-    EmbeddingProvider,
-    cosine_similarity,
-    decode_vector,
-    embedding_content_hash,
-    embedding_staleness,
-    encode_vector,
-    acquire_hash_lock,
-    release_hash_lock,
-    MigrationError,
-    assert_schema_version,
-    migrate,
-    CaptureProviderError,
-    CaptureTranscriptionProvider,
-    CaptureTranscriptionRequest,
-    LLMProvider,
-    ProviderError,
-    ProviderRequest,
-    sha256_file,
-    store_original,
-    VALID_STATUSES,
-    connect,
-    utc_now,
-)
+annotations = getattr(_legacy, 'annotations')
+hashlib = getattr(_legacy, 'hashlib')
+json = getattr(_legacy, 'json')
+sqlite3 = getattr(_legacy, 'sqlite3')
+stat = getattr(_legacy, 'stat')
+time = getattr(_legacy, 'time')
+uuid = getattr(_legacy, 'uuid')
+Callable = getattr(_legacy, 'Callable')
+date = getattr(_legacy, 'date')
+datetime = getattr(_legacy, 'datetime')
+timedelta = getattr(_legacy, 'timedelta')
+timezone = getattr(_legacy, 'timezone')
+Path = getattr(_legacy, 'Path')
+ZoneInfo = getattr(_legacy, 'ZoneInfo')
+ZoneInfoNotFoundError = getattr(_legacy, 'ZoneInfoNotFoundError')
+ParseResult = getattr(_legacy, 'ParseResult')
+CHUNKING_STRATEGY = getattr(_legacy, 'CHUNKING_STRATEGY')
+CHUNKING_VERSION = getattr(_legacy, 'CHUNKING_VERSION')
+SourceSpan = getattr(_legacy, 'SourceSpan')
+chunk_text = getattr(_legacy, 'chunk_text')
+EMBEDDING_ENCODING = getattr(_legacy, 'EMBEDDING_ENCODING')
+MAX_EMBEDDING_PAYLOAD_BYTES = getattr(_legacy, 'MAX_EMBEDDING_PAYLOAD_BYTES')
+EmbeddingError = getattr(_legacy, 'EmbeddingError')
+EmbeddingIdentity = getattr(_legacy, 'EmbeddingIdentity')
+EmbeddingProvider = getattr(_legacy, 'EmbeddingProvider')
+cosine_similarity = getattr(_legacy, 'cosine_similarity')
+decode_vector = getattr(_legacy, 'decode_vector')
+embedding_content_hash = getattr(_legacy, 'embedding_content_hash')
+embedding_staleness = getattr(_legacy, 'embedding_staleness')
+encode_vector = getattr(_legacy, 'encode_vector')
+acquire_hash_lock = getattr(_legacy, 'acquire_hash_lock')
+release_hash_lock = getattr(_legacy, 'release_hash_lock')
+MigrationError = getattr(_legacy, 'MigrationError')
+assert_schema_version = getattr(_legacy, 'assert_schema_version')
+migrate = getattr(_legacy, 'migrate')
+CaptureProviderError = getattr(_legacy, 'CaptureProviderError')
+CaptureTranscriptionProvider = getattr(_legacy, 'CaptureTranscriptionProvider')
+CaptureTranscriptionRequest = getattr(_legacy, 'CaptureTranscriptionRequest')
+LLMProvider = getattr(_legacy, 'LLMProvider')
+ProviderError = getattr(_legacy, 'ProviderError')
+ProviderRequest = getattr(_legacy, 'ProviderRequest')
+sha256_file = getattr(_legacy, 'sha256_file')
+store_original = getattr(_legacy, 'store_original')
+VALID_STATUSES = getattr(_legacy, 'VALID_STATUSES')
+connect = getattr(_legacy, 'connect')
+utc_now = getattr(_legacy, 'utc_now')
 
-__all__ = [
-    'annotations',
-    'hashlib',
-    'json',
-    'sqlite3',
-    'stat',
-    'time',
-    'uuid',
-    'Callable',
-    'date',
-    'datetime',
-    'timedelta',
-    'timezone',
-    'Path',
-    'ZoneInfo',
-    'ZoneInfoNotFoundError',
-    'ParseResult',
-    'CHUNKING_STRATEGY',
-    'CHUNKING_VERSION',
-    'SourceSpan',
-    'chunk_text',
-    'EMBEDDING_ENCODING',
-    'MAX_EMBEDDING_PAYLOAD_BYTES',
-    'EmbeddingError',
-    'EmbeddingIdentity',
-    'EmbeddingProvider',
-    'cosine_similarity',
-    'decode_vector',
-    'embedding_content_hash',
-    'embedding_staleness',
-    'encode_vector',
-    'acquire_hash_lock',
-    'release_hash_lock',
-    'MigrationError',
-    'assert_schema_version',
-    'migrate',
-    'CaptureProviderError',
-    'CaptureTranscriptionProvider',
-    'CaptureTranscriptionRequest',
-    'LLMProvider',
-    'ProviderError',
-    'ProviderRequest',
-    'sha256_file',
-    'store_original',
-    'VALID_STATUSES',
-    'connect',
-    'utc_now',
-]
+__all__ = ['annotations', 'hashlib', 'json', 'sqlite3', 'stat', 'time', 'uuid', 'Callable', 'date', 'datetime', 'timedelta', 'timezone', 'Path', 'ZoneInfo', 'ZoneInfoNotFoundError', 'ParseResult', 'CHUNKING_STRATEGY', 'CHUNKING_VERSION', 'SourceSpan', 'chunk_text', 'EMBEDDING_ENCODING', 'MAX_EMBEDDING_PAYLOAD_BYTES', 'EmbeddingError', 'EmbeddingIdentity', 'EmbeddingProvider', 'cosine_similarity', 'decode_vector', 'embedding_content_hash', 'embedding_staleness', 'encode_vector', 'acquire_hash_lock', 'release_hash_lock', 'MigrationError', 'assert_schema_version', 'migrate', 'CaptureProviderError', 'CaptureTranscriptionProvider', 'CaptureTranscriptionRequest', 'LLMProvider', 'ProviderError', 'ProviderRequest', 'sha256_file', 'store_original', 'VALID_STATUSES', 'connect', 'utc_now']

@@ -1,71 +1,37 @@
-"""Compatibility exports for the practice repository domain."""
+"""Domain repository exports."""
 
 from . import _legacy
 
-from ._legacy import (
-    PHASE9C_SESSION_TITLE_MAX,
-    PHASE9C_SESSION_MAX_ITEMS,
-    PHASE9C_MIN_DURATION_SECONDS,
-    PHASE9C_MAX_DURATION_SECONDS,
-    PHASE9C_FEEDBACK_MAX,
-    PHASE9C_CORRECTION_MAX,
-    PHASE9C_SESSION_STATUSES,
-    PHASE9C_MISTAKE_STATUSES,
-    PHASE9C_SOURCE_STATUSES,
-    create_cram_goal,
-    get_cram_goal,
-    list_cram_goals,
-    transition_cram_goal,
-    create_cram_session,
-    get_cram_result,
-    create_practice_session,
-    get_practice_session,
-    list_practice_sessions,
-    get_practice_result,
-    start_practice_session,
-    archive_practice_session,
-    submit_practice_session_item,
-    finish_practice_session,
-    mark_mistake_from_attempt,
-    review_exercise_attempt,
-    add_mistake_feedback,
-    archive_mistake_case,
-    get_mistake_case,
-    list_mistake_cases,
-    redo_mistake_case,
-    list_weak_points,
-)
+PHASE9C_SESSION_TITLE_MAX = getattr(_legacy, 'PHASE9C_SESSION_TITLE_MAX')
+PHASE9C_SESSION_MAX_ITEMS = getattr(_legacy, 'PHASE9C_SESSION_MAX_ITEMS')
+PHASE9C_MIN_DURATION_SECONDS = getattr(_legacy, 'PHASE9C_MIN_DURATION_SECONDS')
+PHASE9C_MAX_DURATION_SECONDS = getattr(_legacy, 'PHASE9C_MAX_DURATION_SECONDS')
+PHASE9C_FEEDBACK_MAX = getattr(_legacy, 'PHASE9C_FEEDBACK_MAX')
+PHASE9C_CORRECTION_MAX = getattr(_legacy, 'PHASE9C_CORRECTION_MAX')
+PHASE9C_SESSION_STATUSES = getattr(_legacy, 'PHASE9C_SESSION_STATUSES')
+PHASE9C_MISTAKE_STATUSES = getattr(_legacy, 'PHASE9C_MISTAKE_STATUSES')
+PHASE9C_SOURCE_STATUSES = getattr(_legacy, 'PHASE9C_SOURCE_STATUSES')
+create_cram_goal = getattr(_legacy, 'create_cram_goal')
+get_cram_goal = getattr(_legacy, 'get_cram_goal')
+list_cram_goals = getattr(_legacy, 'list_cram_goals')
+transition_cram_goal = getattr(_legacy, 'transition_cram_goal')
+create_cram_session = getattr(_legacy, 'create_cram_session')
+get_cram_result = getattr(_legacy, 'get_cram_result')
+create_practice_session = getattr(_legacy, 'create_practice_session')
+get_practice_session = getattr(_legacy, 'get_practice_session')
+list_practice_sessions = getattr(_legacy, 'list_practice_sessions')
+get_practice_result = getattr(_legacy, 'get_practice_result')
+start_practice_session = getattr(_legacy, 'start_practice_session')
+archive_practice_session = getattr(_legacy, 'archive_practice_session')
+submit_practice_session_item = getattr(_legacy, 'submit_practice_session_item')
+finish_practice_session = getattr(_legacy, 'finish_practice_session')
+mark_mistake_from_attempt = getattr(_legacy, 'mark_mistake_from_attempt')
+review_exercise_attempt = getattr(_legacy, 'review_exercise_attempt')
+add_mistake_feedback = getattr(_legacy, 'add_mistake_feedback')
+archive_mistake_case = getattr(_legacy, 'archive_mistake_case')
+get_mistake_case = getattr(_legacy, 'get_mistake_case')
+list_mistake_cases = getattr(_legacy, 'list_mistake_cases')
+redo_mistake_case = getattr(_legacy, 'redo_mistake_case')
+list_weak_points = getattr(_legacy, 'list_weak_points')
 
-__all__ = [
-    'PHASE9C_SESSION_TITLE_MAX',
-    'PHASE9C_SESSION_MAX_ITEMS',
-    'PHASE9C_MIN_DURATION_SECONDS',
-    'PHASE9C_MAX_DURATION_SECONDS',
-    'PHASE9C_FEEDBACK_MAX',
-    'PHASE9C_CORRECTION_MAX',
-    'PHASE9C_SESSION_STATUSES',
-    'PHASE9C_MISTAKE_STATUSES',
-    'PHASE9C_SOURCE_STATUSES',
-    'create_cram_goal',
-    'get_cram_goal',
-    'list_cram_goals',
-    'transition_cram_goal',
-    'create_cram_session',
-    'get_cram_result',
-    'create_practice_session',
-    'get_practice_session',
-    'list_practice_sessions',
-    'get_practice_result',
-    'start_practice_session',
-    'archive_practice_session',
-    'submit_practice_session_item',
-    'finish_practice_session',
-    'mark_mistake_from_attempt',
-    'review_exercise_attempt',
-    'add_mistake_feedback',
-    'archive_mistake_case',
-    'get_mistake_case',
-    'list_mistake_cases',
-    'redo_mistake_case',
-    'list_weak_points',
-]
+__all__ = ['PHASE9C_SESSION_TITLE_MAX', 'PHASE9C_SESSION_MAX_ITEMS', 'PHASE9C_MIN_DURATION_SECONDS', 'PHASE9C_MAX_DURATION_SECONDS', 'PHASE9C_FEEDBACK_MAX', 'PHASE9C_CORRECTION_MAX', 'PHASE9C_SESSION_STATUSES', 'PHASE9C_MISTAKE_STATUSES', 'PHASE9C_SOURCE_STATUSES', 'create_cram_goal', 'get_cram_goal', 'list_cram_goals', 'transition_cram_goal', 'create_cram_session', 'get_cram_result', 'create_practice_session', 'get_practice_session', 'list_practice_sessions', 'get_practice_result', 'start_practice_session', 'archive_practice_session', 'submit_practice_session_item', 'finish_practice_session', 'mark_mistake_from_attempt', 'review_exercise_attempt', 'add_mistake_feedback', 'archive_mistake_case', 'get_mistake_case', 'list_mistake_cases', 'redo_mistake_case', 'list_weak_points']
