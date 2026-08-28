@@ -217,7 +217,7 @@ Phase 10 的总体规划、共用上下文、逐任务 prompts、执行顺序和
 
 ## 后续能力、架构与桌面化路线
 
-Phase 10 的 local v1 scoped closeout 后，项目已批准一条独立的后续路线：先进行行为保持的 `main.py`/`repository.py` 按域拆分和原生静态前端拆分，再按 Composer -> Integration -> Formal 门禁依次推进真实 ASR、真实 OCR、本地报告和真实外发，最后时间盒评估 Tauri Windows 桌面包装。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
+Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分已经完成；项目下一步是原生静态前端拆分，再按 Composer -> Integration -> Formal 门禁依次推进真实 ASR、真实 OCR、本地报告和真实外发，最后时间盒评估 Tauri Windows 桌面包装。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
 
 ## 固定执行顺序
 

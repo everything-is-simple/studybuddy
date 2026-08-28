@@ -9,7 +9,7 @@
 - [`STATUS.md`](STATUS.md)：实现状态与证据索引的权威来源。
 - [`TODO.md`](TODO.md)：唯一可勾选的执行清单。
 - [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：已完成 Phase 与长期阶段、依赖和完成标准。
-- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力补齐、架构拆分、原生前端与桌面化路线图；当前为 `planned`，不是完成证据。
+- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力补齐、原生前端与桌面化路线图；A2.X 核心文件拆分已完成，A3 及能力流水线仍为 `planned`。
 - [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)：项目现状摘要。
 
 ## 使用与竣工
@@ -21,6 +21,7 @@
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构和实施边界。
 - [`MIGRATIONS.md`](MIGRATIONS.md)：schema version、migration runner 与升级规则。
 - [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)：backup / verify / restore 行为边界。
+- [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)：A2.X 核心文件模块化拆分总结、兼容性矩阵和维护指南。
 
 ## 正式验收证据
 

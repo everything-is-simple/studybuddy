@@ -12,10 +12,10 @@ StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地
 
 ### 2.1 分层与所有权
 
-- API、生命周期、HTTP 安全错误和启动顺序归 `backend/app/main.py` 及其边界模块负责；Web 入口为 `create_app`，ASGI 默认对象为 `app`。
+- API、生命周期、HTTP 安全错误和启动顺序由 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/` 及其边界模块负责；`backend/app/main.py` 只提供向后兼容的 `create_app`/`app` façade。
 - operator CLI 的唯一模块入口为 `backend/app/__main__.py`，委托 `backend/app/cli.py:main`；备份、校验、恢复和 schema 查询均保持显式调用。
-- SQLite 连接、查询、事务、业务持久化和一致性归 `backend/app/repository.py` 负责。
-- schema 变化只能通过 `backend/app/migrations/runner.py` 的连续 migration 完成。
+- SQLite 连接、查询、事务、业务持久化和一致性由 `backend/app/repository.py` façade 及 `backend/app/repositories/` 域模块负责。
+- schema 变化只能通过 `backend/app/migrations/runner.py` 的连续 migration 完成；runner 的版本实现位于同目录 `_vNN_*.py` 模块。
 - 原文件路径、hash 校验、临时文件和 containment 归 `backend/app/storage.py` 负责。
 - backup、verify、restore 和 restore acceptance 必须保持 operator 显式调用，不得在启动时自动 repair、backup 或 restore。
 - Provider、embedding、retrieval 和 citation 必须保留稳定错误码、来源绑定和可审计 metadata；AI 生成内容默认是 draft，不得静默覆盖用户确认内容。
@@ -33,7 +33,7 @@ StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地
 
 ### 2.3 变更要求
 
-代码变更必须保持最小范围，并同步：实现、聚焦测试、必要的完整回归、权威状态和 TODO。新增业务表、字段约束或索引时，必须新增或修改 migration，并覆盖新库、升级、幂等、失败 rollback、backup/restore 版本保持测试。不得在业务运行路径中以 ad-hoc `CREATE TABLE IF NOT EXISTS` 代替 migration。新增或实质重写的源码文件必须不超过 32 KiB，目标是 20-30 KiB；超过上限必须先获得明确审批。不得通过新建/搬迁大 compatibility、legacy、static 或 inline-content 文件规避该限制。`backend/app/main.py` 当前内嵌 UI 是 A3 前唯一非增长的历史例外，结构重构必须验证它的 HTML payload 未改变。
+代码变更必须保持最小范围，并同步：实现、聚焦测试、必要的完整回归、权威状态和 TODO。新增业务表、字段约束或索引时，必须新增或修改 migration，并覆盖新库、升级、幂等、失败 rollback、backup/restore 版本保持测试。不得在业务运行路径中以 ad-hoc `CREATE TABLE IF NOT EXISTS` 代替 migration。新增或实质重写的代码文件（`.py`、`.js`、`.css`、`.html`、`.ps1`、`.json`）必须不超过 32 KiB，目标是 20-30 KiB；超过上限必须先获得明确审批。文档文件（`.md`）不受此大小限制约束。不得通过新建/搬迁大 compatibility、legacy、static 或 inline-content 文件规避该限制。A2.X 已完成现有核心文件拆分：`main.py` 的 HTML 位于 `backend/app/templates/index.html`，provider 实现位于 `backend/app/providers/`，migration 版本模块位于 `backend/app/migrations/`，repository 实现位于 `backend/app/repositories/`。所有新代码模块仍必须通过 source-size gate。
 
 ## 3. 测试分层与命令
 
@@ -67,7 +67,7 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 `test-browser.ps1` 每次只接受一个 spec；需要多个 browser spec 时必须分别串行执行。
 
-历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `412 passed, 2 skipped`；当前全 Chromium 为 `52 passed, 3 skipped`，三个 skip 均是显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
+历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `413 passed, 2 skipped`；当前全 Chromium 为 `52 passed, 3 skipped`，三个 skip 均是显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
 
 真实 Provider 仍只能通过目标专用 gate 或 `run-provider-api-acceptance.ps1` 启用，不属于默认门禁。
 

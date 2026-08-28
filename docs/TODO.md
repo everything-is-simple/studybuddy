@@ -1,19 +1,12 @@
 # StudyBuddy TODO 清单
 
-> 更新：2025-01-28（A2.X 系列完成，文档一致性更新已同步）
+> 更新：2026-08-30（Phase 10-9 release candidate、Gate J 与文档收口已同步）
 > 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，完整 backend 为 **413 passed, 2 skipped**；整体阶段性完成度约 **65%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
 ## 已完成（不再作为待办）
 
-- [x] **A2.X 系列：核心文件模块化拆分**（2025-01-28）
-  - [x] A2.1: `repositories/_legacy.py` (379KB) → 18 个实现部分 + runtime + bridge (30KB)
-  - [x] A2.2: `main.py` (157KB) → 969 bytes + `templates/index.html`
-  - [x] A2.3: `migrations/runner.py` (68KB) → 7KB + 13 version modules + helpers
-  - [x] A2.4: `providers.py` (34KB) → 9 focused modules in `providers/` directory
-  - 总体成果：639KB → 48KB (92.6% 减少)，所有模块 ≤ 32 KiB，测试基线保持 413 passed, 2 skipped
-  - 详见：[`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)
 - [x] I1：migration runner、schema version、migration history、原子升级/rollback、v1→v2 升级、backup/restore 版本一致性、operator upgrade runbook。
 - [x] I2：backup、verify-backup、restore staging、恢复后 offline/online 验收、保留/轮换策略文档、restore drill 模板、integrity/manifest 失败隔离流程。
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。

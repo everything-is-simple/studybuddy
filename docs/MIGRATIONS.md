@@ -2,7 +2,7 @@
 
 Current schema version: **13**.
 
-The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The migration runner is `backend/app/migrations/runner.py`.
+The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The execution engine and public migration API remain at `backend/app/migrations/runner.py`; individual migration bodies are maintained in the adjacent `_vNN_*.py` modules, with shared helpers in `_helpers.py`.
 
 ```text
 1 | canonical_material_schema
@@ -19,6 +19,19 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 12 | phase9d_extended_learning_schema
 13 | phase10_operation_task_schema
 ```
+
+## Repository layout
+
+```text
+backend/app/migrations/
+  runner.py                 # execution engine, registry, history and version checks
+  _helpers.py               # schema inspection and shared migration helpers
+  _canonical.py             # canonical schema helper
+  _ai_schema.py             # shared AI schema helper
+  _v01_*.py ... _v13_*.py   # one idempotent body per registered version
+```
+
+Use `runner.py` as the only public execution entry point. Version modules are internal implementation modules and must not be invoked independently by application startup, backup, restore, or read paths.
 
 ## Rules
 
@@ -56,4 +69,4 @@ The command validates; it does not migrate or repair.
 
 ## Upgrade and recovery
 
-Use [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) for the stop, backup, verify, preflight, upgrade, acceptance, and failure-recovery procedure. Backup/restore version checks are described in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md). On any schema/history/integrity/original failure, stop the service, preserve the failed database and verified backup, and restore only into a new empty target. v1 has no runtime read-only serving mode and does not claim real power-loss recovery.
+Use [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) for the stop, backup, verify, preflight, upgrade, acceptance, and failure-recovery procedure. The module split in A2.3 does not change this operator contract: callers use `backend/app/migrations/runner.py`; `_vNN_*.py` files are implementation modules, not independent migration entry points. Backup/restore version checks are described in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md). On any schema/history/integrity/original failure, stop the service, preserve the failed database and verified backup, and restore only into a new empty target. v1 has no runtime read-only serving mode and does not claim real power-loss recovery.
