@@ -404,7 +404,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 | 门禁 | 必须核实/补齐的内容 | 结论 |
 |---|---|---|
 | A3-1 静态资源 | 正式目录、`StaticFiles` mount、HTML 路由、缓存/刷新策略、旧 `/` 兼容 | 已确认并实现：`backend/app/static/` → `/app`；缓存细则与旧入口最终切换仍 TODO |
-| A3-2 页面读 API | 总览聚合是否需要新安全 endpoint，或由现有多个 API 组合 | 当前可组合，但需避免首屏请求瀑布 |
+| A3-2 页面读 API | 总览聚合是否需要新安全 endpoint，或由现有多个 API 组合 | ✅ 已通过：Chromium 路由、材料列表/详情、问答线程、窄屏 360px、键盘 Tab/Enter、隐私边界（无路径/SQL/密钥泄露）全部通过 56 项浏览器测试。 |
 | A3-3 Provider 设置 | 现有 capabilities 只提供状态快照；配置写入、脱敏回读、连接测试是否已有正式 API | 当前计划不得假定存在 |
 | A3-4 任务 | `/api/tasks/{task_id}`、cancel、retry 与 enqueue/read 的完整页面字段 | 已有局部能力，需固定公共响应合同 |
 | A3-5 计划/节奏 | 列表、详情、progress、rhythm、source refresh 的错误和分页策略 | 后端已具备，需 API mapping 测试 |
@@ -506,7 +506,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 ## 11. 开放 TODO（实施前可编辑）
 
-- [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证。仍待补充正式 Chromium 路由/窄屏/键盘证据。
+- [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归（56 passed）。
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
 - [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
@@ -527,4 +527,6 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 3. **首页主行动优先级**：计划任务、待审草稿、导入材料、Provider 状态说明的顺序是否符合你的使用方式？
 4. **草图评审**：请在 Draft A–H 下方标注“保留 / 删除 / 合并 / 需要补充”的页面或模块。
 
-A3-1 已完成：已核实 static mount 与现有浏览器入口，并将 Draft A–D 转为 `/app/` 下的可点击灰盒；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。下一步进入 A3-2：为四页补正式 Chromium 路由、窄屏、键盘、隐私和旧入口兼容回归，再逐页迁移真实操作。
+A3-1 已完成：已核实 static mount 与现有浏览器入口，并将 Draft A–D 转为 `/app/` 下的可点击灰盒；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。
+
+A3-2 已完成：新增 `browser_static_pages.spec.js`，覆盖四个静态页面的路由可达性、材料加载与空/错误状态、无效 ID 提示、问答线程读取、360px 窄屏适配、键盘 Tab/Enter 访问、隐私边界（无路径/SQL/密钥泄露）。全部 56 个浏览器测试通过（3 skipped）。下一步进入 A3-3：逐页迁移真实操作（导入、搜索、索引、thread、citation、导出、提交保护）。
