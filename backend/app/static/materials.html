@@ -1,1 +1,311 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyBuddy · 资料</title><link rel="stylesheet" href="/app/css/app.css"></head><body><div class="app-shell"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header><main class="main"><div class="hero"><div><p class="eyebrow">资料库 · 已验证 API</p><h1>你的学习材料</h1><p class="lead">搜索、查看索引状态，并进入材料详情或问答。</p></div><button class="btn btn-primary hero-action" id="refresh" type="button">刷新列表</button></div><section class="card" data-od-id="materials-list"><div class="section-label"><h2>材料</h2><span id="state" class="muted" role="status" aria-live="polite">加载中…</span></div><div id="error" class="error" role="alert" hidden></div><ul id="items" class="list"></ul></section><p class="footer-note">导入、回收站和完整管理行为暂由 <a href="/">原工作区</a> 提供；正式拆屏将在回归通过后逐页切换。</p></main></div><script src="/app/js/api.js"></script><script src="/app/js/shell.js"></script><script>(function(){const items=document.querySelector('#items'),state=document.querySelector('#state'),error=document.querySelector('#error'),refresh=document.querySelector('#refresh');function text(value){return typeof value==='string'?value:''}async function load(){refresh.disabled=true;state.textContent='加载中…';error.hidden=true;try{const data=await sbApi.json('/api/materials');const rows=Array.isArray(data)?data:Array.isArray(data.items)?data.items:[];items.replaceChildren();if(!rows.length){state.textContent='暂无材料';items.innerHTML='<li class="empty">还没有材料。请从原工作区导入第一份资料。</li>';return}state.textContent=rows.length+' 份材料';rows.forEach(row=>{const id=text(row.id||row.material_id);const name=text(row.original_name||row.display_name||row.name)||'未命名材料';const li=document.createElement('li');const link=document.createElement('a');link.href='/app/material-detail.html?material='+encodeURIComponent(id);link.textContent=name;li.append(link);const badge=document.createElement('span');badge.className='badge';badge.textContent=text(row.status)||'可查看';li.append(badge);items.append(li)})}catch(e){state.textContent='加载失败';error.textContent=sbApi.safeError(e);error.hidden=false}finally{refresh.disabled=false}}refresh.addEventListener('click',load);load()})();</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 资料</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 150ms ease,background 150ms ease}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:#f3f6fc}
+.upload-area input{display:none}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.filters select,.filters input{flex:1;min-width:200px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+.pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:20px}
+.item-actions{display:flex;gap:8px}
+.item-actions button{padding:6px 10px;font-size:14px}
+@media(max-width:640px){
+.filters{flex-direction:column}
+.filters select,.filters input{min-width:0;width:100%}
+.toolbar{flex-direction:column;align-items:stretch}
+.item-actions{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">资料库</p>
+<h1>你的学习材料</h1>
+<p class="lead">导入、搜索、管理和查看所有学习资料。</p>
+</div>
+</div>
+
+<section class="card" data-od-id="materials-upload">
+<h2>导入材料</h2>
+<div class="upload-area" id="upload-area" tabindex="0" role="button" aria-label="点击或拖放文件以导入">
+<input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.doc,.docx">
+<p><strong>点击选择文件</strong>或拖放到此处</p>
+<p class="muted">支持 PDF、TXT、Markdown、Word</p>
+</div>
+<div id="upload-status" class="notice" style="margin-top:16px" hidden role="status" aria-live="polite"></div>
+</section>
+
+<section class="card" data-od-id="materials-filters" style="margin-top:24px">
+<h2>筛选与搜索</h2>
+<div class="filters">
+<select id="status-filter" aria-label="状态筛选">
+<option value="">全部状态</option>
+<option value="available">可用</option>
+<option value="indexing">索引中</option>
+<option value="failed">失败</option>
+</select>
+<input type="search" id="search-input" placeholder="搜索材料名称..." aria-label="搜索材料">
+<button class="btn" id="apply-filters" type="button">应用筛选</button>
+<button class="btn" id="view-deleted" type="button">查看回收站</button>
+</div>
+</section>
+
+<section class="card" data-od-id="materials-list" style="margin-top:24px">
+<div class="toolbar">
+<h2 id="list-title">材料列表</h2>
+<span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
+</div>
+<div id="error" class="error" role="alert" hidden></div>
+<ul id="items" class="list"></ul>
+<div id="pagination" class="pagination" hidden></div>
+</section>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const uploadArea=document.querySelector('#upload-area');
+const fileInput=document.querySelector('#file-input');
+const uploadStatus=document.querySelector('#upload-status');
+const statusFilter=document.querySelector('#status-filter');
+const searchInput=document.querySelector('#search-input');
+const applyFilters=document.querySelector('#apply-filters');
+const viewDeleted=document.querySelector('#view-deleted');
+const items=document.querySelector('#items');
+const state=document.querySelector('#state');
+const error=document.querySelector('#error');
+const pagination=document.querySelector('#pagination');
+const listTitle=document.querySelector('#list-title');
+
+let currentView='active';
+let currentStatus='';
+let currentQuery='';
+let currentPage=0;
+const pageSize=20;
+
+function text(value){return typeof value==='string'?value:''}
+
+uploadArea.addEventListener('click',()=>fileInput.click());
+uploadArea.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click()}});
+
+['dragenter','dragover','dragleave','drop'].forEach(evt=>{
+uploadArea.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation()})
+});
+
+['dragenter','dragover'].forEach(evt=>{
+uploadArea.addEventListener(evt,()=>uploadArea.classList.add('drag-over'))
+});
+
+['dragleave','drop'].forEach(evt=>{
+uploadArea.addEventListener(evt,()=>uploadArea.classList.remove('drag-over'))
+});
+
+uploadArea.addEventListener('drop',e=>{
+const files=e.dataTransfer.files;
+if(files.length)handleUpload(Array.from(files))
+});
+
+fileInput.addEventListener('change',e=>{
+if(e.target.files.length)handleUpload(Array.from(e.target.files))
+});
+
+async function handleUpload(files){
+uploadStatus.hidden=false;
+uploadStatus.className='notice';
+uploadStatus.textContent=`正在上传 ${files.length} 个文件...`;
+fileInput.disabled=true;
+try{
+const result=files.length===1
+?await sbApi.upload('/api/materials',files[0])
+:await sbApi.upload('/api/materials/batch',files);
+const success=result.success||result.items?.filter(i=>i.status==='success').length||0;
+const total=result.total||files.length;
+uploadStatus.className=success===total?'notice':'notice warn';
+uploadStatus.textContent=`已导入 ${success}/${total} 个文件`;
+if(result.items){
+const failed=result.items.filter(i=>i.status!=='success');
+if(failed.length){
+const details=document.createElement('ul');
+details.style.marginTop='8px';
+details.style.textAlign='left';
+failed.forEach(item=>{
+const li=document.createElement('li');
+li.textContent=`${item.original_name}: ${item.error_code||'失败'}`;
+details.append(li)
+});
+uploadStatus.append(details)
+}
+}
+setTimeout(()=>{uploadStatus.hidden=true},8000);
+load()
+}catch(e){
+uploadStatus.className='notice warn';
+uploadStatus.textContent=sbApi.safeError(e)
+}finally{
+fileInput.disabled=false;
+fileInput.value=''
+}
+}
+
+applyFilters.addEventListener('click',()=>{
+currentStatus=statusFilter.value;
+currentQuery=searchInput.value.trim();
+currentPage=0;
+load()
+});
+
+searchInput.addEventListener('keydown',e=>{
+if(e.key==='Enter'){
+e.preventDefault();
+applyFilters.click()
+}
+});
+
+viewDeleted.addEventListener('click',()=>{
+currentView=currentView==='active'?'deleted':'active';
+viewDeleted.textContent=currentView==='active'?'查看回收站':'返回材料列表';
+listTitle.textContent=currentView==='active'?'材料列表':'回收站';
+currentPage=0;
+load()
+});
+
+async function load(){
+state.textContent='加载中…';
+error.hidden=true;
+items.replaceChildren();
+pagination.hidden=true;
+try{
+const params=new URLSearchParams();
+if(currentView==='deleted'){
+params.set('limit',String(pageSize));
+params.set('offset',String(currentPage*pageSize));
+const data=await sbApi.json('/api/materials/deleted?'+params);
+renderPage(data)
+}else{
+if(currentStatus)params.set('status',currentStatus);
+if(currentQuery)params.set('q',currentQuery);
+params.set('limit',String(pageSize));
+params.set('offset',String(currentPage*pageSize));
+const data=await sbApi.json('/api/materials?'+params);
+renderPage(data)
+}
+}catch(e){
+state.textContent='加载失败';
+error.textContent=sbApi.safeError(e);
+error.hidden=false
+}
+}
+
+function renderPage(data){
+const rows=Array.isArray(data)?data:data.items||[];
+const total=data.total||rows.length;
+const hasMore=data.has_more||false;
+if(!rows.length){
+state.textContent='暂无材料';
+items.innerHTML='<li class="empty">还没有材料</li>';
+return
+}
+state.textContent=`显示 ${currentPage*pageSize+1}-${currentPage*pageSize+rows.length}，共 ${total} 份`;
+rows.forEach(row=>{
+const id=text(row.id||row.material_id);
+const name=text(row.original_name||row.display_name||row.name)||'未命名';
+const status=text(row.status)||'unknown';
+const deleted=!!row.deleted_at;
+const li=document.createElement('li');
+const link=document.createElement('a');
+link.href='/app/material-detail.html?material='+encodeURIComponent(id);
+link.textContent=name;
+li.append(link);
+const badge=document.createElement('span');
+badge.className='badge';
+badge.textContent=status;
+li.append(badge);
+if(currentView==='active'&&!deleted){
+const actions=document.createElement('div');
+actions.className='item-actions';
+const del=document.createElement('button');
+del.className='btn';
+del.textContent='删除';
+del.onclick=()=>deleteMaterial(id,name);
+actions.append(del);
+li.append(actions)
+}
+if(currentView==='deleted'||deleted){
+const actions=document.createElement('div');
+actions.className='item-actions';
+const restore=document.createElement('button');
+restore.className='btn btn-primary';
+restore.textContent='恢复';
+restore.onclick=()=>restoreMaterial(id,name);
+actions.append(restore);
+li.append(actions)
+}
+items.append(li)
+});
+if(total>pageSize){
+renderPagination(total,hasMore)
+}
+}
+
+function renderPagination(total,hasMore){
+pagination.hidden=false;
+pagination.replaceChildren();
+const prev=document.createElement('button');
+prev.className='btn';
+prev.textContent='上一页';
+prev.disabled=currentPage===0;
+prev.onclick=()=>{currentPage--;load()};
+pagination.append(prev);
+const info=document.createElement('span');
+info.className='muted';
+info.textContent=`第 ${currentPage+1} 页`;
+pagination.append(info);
+const next=document.createElement('button');
+next.className='btn';
+next.textContent='下一页';
+next.disabled=!hasMore;
+next.onclick=()=>{currentPage++;load()};
+pagination.append(next)
+}
+
+async function deleteMaterial(id,name){
+if(!confirm(`确定删除材料"${name}"吗？`))return;
+try{
+await sbApi.json(`/api/materials/${encodeURIComponent(id)}/purge`,{method:'POST'});
+load()
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+async function restoreMaterial(id,name){
+try{
+await sbApi.json(`/api/materials/${encodeURIComponent(id)}/restore`,{method:'POST'});
+load()
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+load()
+})();
+</script>
+</body>
+</html>

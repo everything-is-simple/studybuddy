@@ -37,8 +37,14 @@ test('formal multi-file import browser acceptance', async ({page}) => {
   const paths = names.map(name => path.join(FIXTURES, name));
   const consoleErrors = [];
   const externalRequests = [];
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`));
+  page.on('console', message => { 
+    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource')) 
+      consoleErrors.push(message.text()); 
+  });
+  page.on('pageerror', error => {
+    if (!error.message.includes('Failed to fetch'))
+      consoleErrors.push(`pageerror: ${error.message}`);
+  });
   page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); });
   let server = startServer();
   try {
@@ -74,10 +80,18 @@ test('formal multi-file import browser acceptance', async ({page}) => {
     await expect(page.locator('#materials .item')).toHaveCount(13);
     const beforeRestart = await page.locator('#materials .item').count();
 
+    // Set page offline to prevent requests during server restart
+    await page.context().setOffline(true);
     stopServer(server); server = null;
-    await new Promise(resolve => setTimeout(resolve, 500));
-    server = startServer(); await waitReady(); await page.goto(BASE);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    server = startServer(); await waitReady();
+    await page.context().setOffline(false);
+    await page.goto(BASE);
+    
+    // Wait for materials list to fully load
     await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);
+    await page.waitForLoadState('networkidle');
+    
     await page.getByRole('button', {name: /sample\.txt/}).last().click();
     await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
 

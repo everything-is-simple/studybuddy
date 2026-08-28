@@ -1,1 +1,200 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyBuddy · 问答</title><link rel="stylesheet" href="/app/css/app.css"></head><body><div class="app-shell"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header><main class="main"><div class="hero"><div><p class="eyebrow">问答 · 引用可追溯</p><h1>围绕材料提问</h1><p class="lead">问答线程、材料范围和引用定位将在本页逐步迁移。</p></div><a class="btn hero-action" href="/app/materials.html">选择材料</a></div><div class="grid"><section class="card span-8" data-od-id="qa-thread"><h2>当前线程</h2><div id="state" class="notice" role="status" aria-live="polite">正在读取线程…</div><div id="thread" class="empty">暂无线程。现有完整问答工作区仍可从原入口使用。</div></section><aside class="card span-4" data-od-id="qa-citation"><h2>引用</h2><p class="muted">回答中的 citation、revision、chunk 和来源失效状态将在迁移时接入。</p><button class="btn" type="button" disabled>定位引用（待迁移）</button></aside></div><p class="footer-note">当前灰盒不会伪造回答、Provider 成功或引用正文。<a href="/">打开原工作区</a></p></main></div><script src="/app/js/api.js"></script><script src="/app/js/shell.js"></script><script>(async function(){const state=document.querySelector('#state'),thread=document.querySelector('#thread');try{const rows=await sbApi.json('/api/qa/threads');const list=Array.isArray(rows)?rows:Array.isArray(rows.items)?rows.items:[];if(list.length){state.textContent='已读取 '+list.length+' 个线程';thread.textContent='线程列表已就绪，详细时间线和问答提交正在迁移。';thread.className='notice'}else{state.textContent='暂无线程';thread.textContent='还没有问答线程。请从原工作区开始一次提问。'}}catch(e){state.textContent=sbApi.safeError(e);state.className='notice warn';thread.textContent='线程读取失败，请重试或返回原工作区。';thread.className='error'}})()</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 问答</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.qa-form{margin-bottom:24px}
+.qa-form textarea{min-height:100px}
+.thread-item{padding:20px 0;border-top:1px solid var(--border)}
+.thread-item:first-child{border-top:0;padding-top:0}
+.thread-meta{color:var(--muted);font-size:14px;margin-bottom:8px}
+.thread-question{font-weight:600;margin-bottom:12px}
+.thread-answer{color:var(--fg);line-height:1.6}
+.citations{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.citation-link{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-size:14px;margin-right:12px}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">问答</p>
+<h1>围绕材料提问</h1>
+<p class="lead">基于已索引材料的智能问答，支持引用追溯。</p>
+</div>
+<a class="btn hero-action" href="/app/materials.html">选择材料</a>
+</div>
+<div class="grid">
+<section class="card span-8" data-od-id="qa-submit">
+<h2>提问</h2>
+<form class="qa-form" id="qa-form">
+<div class="field">
+<label for="question">你的问题</label>
+<textarea id="question" name="question" required placeholder="输入你的问题..." aria-describedby="question-help"></textarea>
+<span id="question-help" class="muted">问答会基于选定的材料范围进行检索</span>
+</div>
+<div class="field">
+<label for="materials">材料范围（可选）</label>
+<input type="text" id="materials" name="materials" placeholder="留空表示所有材料" aria-describedby="materials-help">
+<span id="materials-help" class="muted">输入材料ID，多个用逗号分隔</span>
+</div>
+<div class="field">
+<label for="retrieval-mode">检索模式</label>
+<select id="retrieval-mode" name="retrieval_mode">
+<option value="hybrid">混合检索（推荐）</option>
+<option value="lexical">词法检索</option>
+<option value="vector">向量检索</option>
+</select>
+</div>
+<button class="btn btn-primary" type="submit" id="submit-btn">提交问题</button>
+<div id="submit-status" class="notice" style="margin-top:12px" hidden role="status" aria-live="polite"></div>
+</form>
+</section>
+<aside class="card span-4" data-od-id="qa-config">
+<h2>配置</h2>
+<p class="muted">混合检索结合词法和向量匹配，适合大多数场景。向量检索需要已配置 Embedding Provider。</p>
+<p class="muted" style="margin-top:12px">问答支持幂等提交保护，相同问题不会重复处理。</p>
+</aside>
+</div>
+
+<section class="card" data-od-id="qa-threads" style="margin-top:24px">
+<h2>问答历史</h2>
+<div id="thread-status" class="notice" role="status" aria-live="polite">正在加载线程...</div>
+<div id="threads"></div>
+</section>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const form=document.querySelector('#qa-form');
+const questionInput=document.querySelector('#question');
+const materialsInput=document.querySelector('#materials');
+const modeSelect=document.querySelector('#retrieval-mode');
+const submitBtn=document.querySelector('#submit-btn');
+const submitStatus=document.querySelector('#submit-status');
+const threadStatus=document.querySelector('#thread-status');
+const threads=document.querySelector('#threads');
+
+const materialParam=new URLSearchParams(location.search).get('material');
+if(materialParam)materialsInput.value=materialParam;
+
+form.addEventListener('submit',async e=>{
+e.preventDefault();
+const question=questionInput.value.trim();
+if(!question)return;
+const materialIds=materialsInput.value.trim().split(',').map(s=>s.trim()).filter(Boolean);
+const mode=modeSelect.value;
+submitBtn.disabled=true;
+submitStatus.hidden=false;
+submitStatus.className='notice';
+submitStatus.textContent='正在提交问题...';
+try{
+const payload={
+question,
+material_ids:materialIds.length?materialIds:null,
+retrieval_mode:mode,
+allow_retrieval_fallback:true,
+top_k:5
+};
+const result=await sbSubmit.once('qa-ask',()=>
+sbApi.json('/api/qa/ask',{
+method:'POST',
+headers:{'Content-Type':'application/json','Idempotency-Key':sbApi.idempotencyKey()},
+body:JSON.stringify(payload)
+})
+);
+submitStatus.className='notice';
+submitStatus.textContent='问答已提交，正在生成回答...';
+if(result.answer){
+submitStatus.className='notice';
+submitStatus.textContent='回答已生成';
+questionInput.value='';
+setTimeout(()=>{submitStatus.hidden=true;loadThreads()},2000)
+}else{
+submitStatus.className='notice warn';
+submitStatus.textContent='问答已记录，但回答生成失败或超时'
+}
+}catch(e){
+submitStatus.className='notice warn';
+submitStatus.textContent=sbApi.safeError(e)
+}finally{
+submitBtn.disabled=false
+}
+});
+
+async function loadThreads(){
+threadStatus.textContent='正在加载线程...';
+threadStatus.className='notice';
+threads.replaceChildren();
+try{
+const data=await sbApi.json('/api/qa/threads');
+const list=Array.isArray(data)?data:data.items||[];
+if(!list.length){
+threadStatus.textContent='暂无问答历史';
+return
+}
+threadStatus.hidden=true;
+list.forEach(thread=>{
+const div=document.createElement('div');
+div.className='thread-item';
+const meta=document.createElement('div');
+meta.className='thread-meta';
+meta.textContent=`线程 ${thread.thread_id||'未知'} · ${thread.created_at?new Date(thread.created_at).toLocaleString('zh-CN'):'时间未知'}`;
+div.append(meta);
+const question=document.createElement('div');
+question.className='thread-question';
+question.textContent=thread.question||'问题未知';
+div.append(question);
+if(thread.answer){
+const answer=document.createElement('div');
+answer.className='thread-answer';
+answer.textContent=thread.answer;
+div.append(answer);
+if(thread.citations&&thread.citations.length){
+const citDiv=document.createElement('div');
+citDiv.className='citations';
+const citLabel=document.createElement('span');
+citLabel.className='muted';
+citLabel.textContent='引用来源：';
+citDiv.append(citLabel);
+thread.citations.forEach((cit,idx)=>{
+const link=document.createElement('a');
+link.className='citation-link';
+link.href=`/app/material-detail.html?material=${encodeURIComponent(cit.material_id||'')}#citation-${cit.citation_id||idx}`;
+link.textContent=`[${idx+1}] ${cit.material_name||'材料'}`;
+citDiv.append(link)
+});
+div.append(citDiv)
+}
+}else{
+const pending=document.createElement('div');
+pending.className='muted';
+pending.textContent='回答生成中或失败';
+div.append(pending)
+}
+threads.append(div)
+})
+}catch(e){
+threadStatus.className='notice warn';
+threadStatus.textContent=sbApi.safeError(e)
+}
+}
+
+loadThreads()
+})();
+</script>
+</body>
+</html>

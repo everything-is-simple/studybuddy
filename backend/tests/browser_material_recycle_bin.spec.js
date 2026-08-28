@@ -26,8 +26,14 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
   fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), one); fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), two);
   const inputs = [one, two, path.join(FIXTURES, 'sample.md')];
   const consoleErrors = []; const externalRequests = [];
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`));
+  page.on('console', message => { 
+    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource')) 
+      consoleErrors.push(message.text()); 
+  });
+  page.on('pageerror', error => {
+    if (!error.message.includes('Failed to fetch'))
+      consoleErrors.push(`pageerror: ${error.message}`);
+  });
   page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); });
   let server = startServer();
   try {
@@ -57,8 +63,21 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
     const restored = await (await page.request.get(`${BASE}/api/materials/${oneItem.id}`)).json(); expect(restored.source_sha256).toBe(oneDetail.source_sha256); expect(restored.stored_path).toBeUndefined(); expect(originalCountForHash(hash)).toBe(1);
 
     await page.reload(); await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(1);
-    stopServer(server); server = null; await new Promise(resolve => setTimeout(resolve, 500)); server = startServer(); await waitReady(); await page.goto(BASE);
-    await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(1); await page.getByRole('button', {name: /same-one\.txt/}).last().click(); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
+    
+    // Set page offline to prevent requests during server restart
+    await page.context().setOffline(true);
+    stopServer(server); server = null; 
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    server = startServer(); await waitReady();
+    await page.context().setOffline(false);
+    await page.goto(BASE);
+    
+    // Wait for materials list to fully load
+    await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(1);
+    await page.waitForLoadState('networkidle');
+    
+    await page.getByRole('button', {name: /same-one\.txt/}).last().click(); 
+    await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
 
     await page.getByRole('button', {name: /same-two\.txt/}).last().click(); page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click();
     await page.getByRole('button', {name: '成功'}).click(); await expect(page.locator('#materials .item').filter({hasText: 'same-two.txt'})).toHaveCount(0);

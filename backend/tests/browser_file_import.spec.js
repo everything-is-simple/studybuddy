@@ -110,16 +110,42 @@ function makeBoundaryFiles() {
     expect(exactResponse.status()).toBe(201);
     const overResponse = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'over-50m.txt', mimeType: 'text/plain', buffer: fs.readFileSync(boundary.over)}}});
     expect(overResponse.status()).toBe(413);
-    expect((await (await page.request.get(`${BASE}/api/materials`)).json()).length).toBe(beforeCount + 1);
+    
+    // Read response bodies BEFORE server restart to avoid "Response has been disposed" error
+    const exactStatus = exactResponse.status();
+    const overStatus = overResponse.status();
+    const overDetail = (await overResponse.json()).detail;
+    const afterOverMaterials = (await (await page.request.get(`${BASE}/api/materials`)).json()).length;
+    
+    expect(afterOverMaterials).toBe(beforeCount + 1);
     expect(countFiles(RUN_ROOT, /^\.incoming-/)).toBe(0);
 
     await page.reload();
     await expect(page.locator('#materials .item')).toHaveCount(beforeCount + 1);
     const refreshReadback = true;
     const beforeRestart = await page.locator('#materials .item').count();
-    stopServer(server); server = null; await new Promise(resolve => setTimeout(resolve, 500));
-    server = startServer(); await waitReady(); await page.goto(BASE);
+    
+    // Set page offline to prevent requests during server restart
+    await page.context().setOffline(true);
+    
+    // Stop server and wait longer for clean shutdown
+    stopServer(server); server = null; 
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Start server and wait for full readiness
+    server = startServer(); 
+    await waitReady(); 
+    
+    // Re-enable network and navigate
+    await page.context().setOffline(false);
+    await page.goto(BASE);
+    
+    // Wait for materials list to fully load
     await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);
+    
+    // Additional wait to ensure UI is fully interactive
+    await page.waitForLoadState('networkidle');
+    
     const exactItem = page.getByRole('button', {name: /exact-50m\.txt/});
     await expect(exactItem).toHaveCount(1);
     await exactItem.click();
@@ -132,7 +158,7 @@ function makeBoundaryFiles() {
       python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
       startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8787',
       browser_test_command: 'npx playwright test backend/tests/browser_file_import.spec.js --workers=1 --reporter=line',
-      cases: records, fifty_mib: {limit: LIMIT, exact_status: exactResponse.status(), over_status: overResponse.status(), over_detail: (await overResponse.json()).detail, material_count_before_over: beforeCount + 1, material_count_after_over: (await (await page.request.get(`${BASE}/api/materials`)).json()).length, original_count: countFiles(path.join(RUN_ROOT, 'originals'), /^original$/), temporary_count: countFiles(RUN_ROOT, /^\.incoming-/)},
+      cases: records, fifty_mib: {limit: LIMIT, exact_status: exactStatus, over_status: overStatus, over_detail: overDetail, material_count_before_over: beforeCount + 1, material_count_after_over: afterOverMaterials, original_count: countFiles(path.join(RUN_ROOT, 'originals'), /^original$/), temporary_count: countFiles(RUN_ROOT, /^\.incoming-/)},
       duplicate_hash_reuse: duplicatePayload, database_counts: counts, refresh_readback: refreshReadback, restart_readback: {passed: true, material_count: beforeRestart},
       database_failure_cleanup: true, traversal_filename_rejected: true, browser_console_error_count: consoleErrors.length,
       network: {required: false, called: false}, real_provider_called: false, original_files_saved_by_parser: false,

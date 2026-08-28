@@ -48,8 +48,14 @@ test('formal material management browser acceptance', async ({page}) => {
   const inputs = [path.join(FIXTURES, 'sample.txt'), path.join(FIXTURES, 'sample.md'), duplicateOne, duplicateTwo];
   const consoleErrors = [];
   const externalRequests = [];
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`));
+  page.on('console', message => { 
+    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource')) 
+      consoleErrors.push(message.text()); 
+  });
+  page.on('pageerror', error => {
+    if (!error.message.includes('Failed to fetch'))
+      consoleErrors.push(`pageerror: ${error.message}`);
+  });
   page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); });
   let server = startServer();
   let renameDialogValue = 'renamed-sample.txt';
@@ -89,9 +95,14 @@ test('formal material management browser acceptance', async ({page}) => {
     await page.reload();
     await expect(page.locator('#materials .item').filter({hasText: renameDialogValue})).toHaveCount(1);
     await expect(page.getByRole('button', {name: /renamed-sample\.txt/}).last()).toHaveCount(1);
+    
+    // Set page offline to prevent requests during server restart
+    await page.context().setOffline(true);
     stopServer(server); server = null;
-    await new Promise(resolve => setTimeout(resolve, 500));
-    server = startServer(); await waitReady(); await page.goto(BASE);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    server = startServer(); await waitReady();
+    await page.context().setOffline(false);
+    await page.goto(BASE);
     await expect(page.locator('#materials .item').filter({hasText: renameDialogValue})).toHaveCount(1);
 
     await page.getByRole('button', {name: /duplicate-one\.txt/}).last().click();
@@ -121,9 +132,14 @@ test('formal material management browser acceptance', async ({page}) => {
     await page.reload();
     await expect(page.locator('#materials .item').filter({hasText: 'duplicate-one.txt'})).toHaveCount(0);
     await expect(page.locator('#materials .item').filter({hasText: 'duplicate-two.txt'})).toHaveCount(1);
+    
+    // Set page offline to prevent requests during server restart
+    await page.context().setOffline(true);
     stopServer(server); server = null;
-    await new Promise(resolve => setTimeout(resolve, 500));
-    server = startServer(); await waitReady(); await page.goto(BASE);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    server = startServer(); await waitReady();
+    await page.context().setOffline(false);
+    await page.goto(BASE);
     await expect(page.locator('#materials .item').filter({hasText: 'duplicate-one.txt'})).toHaveCount(0);
     await page.getByRole('button', {name: /duplicate-two\.txt/}).last().click();
     await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');

@@ -86,22 +86,24 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     // ── 3. /app/materials.html ─────────────────────────────────────────────
     await page.goto(`${BASE}/app/materials.html`);
     await expect(page).toHaveTitle(/StudyBuddy.*资料/i);
-    await expect(page.locator('#refresh')).toBeVisible();
+    await expect(page.locator('#upload-area')).toBeVisible();
     await expect(page.locator('#state')).toBeVisible();
     await expect(page.locator('#items')).toBeVisible();
     // State should show something other than an error on clean start
     const stateText = await page.locator('#state').textContent();
-    expect(stateText).toMatch(/加载中|暂无材料|\d+ 份材料/);
+    expect(stateText).toMatch(/加载中|暂无材料|显示.*共.*份/);
     expect(stateText).not.toMatch(/H:/);
     expect(stateText).not.toMatch(/sqlite|SELECT|FROM/);
 
-    // Refresh button is clickable
-    await expect(page.locator('#refresh')).toBeEnabled();
-    await page.locator('#refresh').click();
-    await expect(page.locator('#state')).not.toHaveText('加载中…');
+    // Upload area is interactive
+    await expect(page.locator('#upload-area')).toBeVisible();
+    await expect(page.locator('#file-input')).toBeAttached();
 
-    // Footer note preserves migration boundary
-    await expect(page.locator('.footer-note')).toContainText('原工作区');
+    // Filter and search controls exist
+    await expect(page.locator('#status-filter')).toBeVisible();
+    await expect(page.locator('#search-input')).toBeVisible();
+    await expect(page.locator('#apply-filters')).toBeVisible();
+    await expect(page.locator('#view-deleted')).toBeVisible();
 
     // ── 4. /app/material-detail.html without id ────────────────────────────
     await page.goto(`${BASE}/app/material-detail.html`);
@@ -122,18 +124,20 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     // ── 6. /app/qa.html ────────────────────────────────────────────────────
     await page.goto(`${BASE}/app/qa.html`);
     await expect(page).toHaveTitle(/StudyBuddy.*问答/i);
-    await expect(page.locator('[data-od-id="qa-thread"]')).toBeVisible();
-    // Should show empty or loading state, not crash
-    const qaState = await page.locator('[role="status"]').textContent();
-    expect(qaState).toMatch(/加载中|暂无|条对话/);
-    expect(qaState).not.toMatch(/H:/);
-    expect(qaState).not.toMatch(/sqlite|SELECT|FROM/);
+    await expect(page.locator('#qa-form')).toBeVisible();
+    await expect(page.locator('#question')).toBeVisible();
+    await expect(page.locator('#submit-btn')).toBeVisible();
+    // Thread status should show loading or content
+    const qaThreadStatus = await page.locator('#thread-status').textContent();
+    expect(qaThreadStatus).toMatch(/加载中|暂无|问答历史/);
+    expect(qaThreadStatus).not.toMatch(/H:/);
+    expect(qaThreadStatus).not.toMatch(/sqlite|SELECT|FROM/);
 
     // ── 7. Narrow viewport (360px) ─────────────────────────────────────────
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto(`${BASE}/app/materials.html`);
-    await expect(page.locator('#refresh')).toBeVisible();
-    await expect(page.locator('#refresh')).toBeEnabled();
+    await expect(page.locator('#upload-area')).toBeVisible();
+    await expect(page.locator('#apply-filters')).toBeVisible();
     await expect(page.locator('.brand')).toBeVisible();
     await expect(page.locator('[data-nav] a').first()).toBeVisible();
     // No horizontal scroll

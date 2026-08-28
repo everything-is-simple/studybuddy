@@ -1,1 +1,123 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyBuddy · 材料详情</title><link rel="stylesheet" href="/app/css/app.css"></head><body><div class="app-shell"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header><main class="main"><p class="eyebrow">材料详情 · 灰盒</p><h1 id="title">加载材料…</h1><p id="state" class="muted" role="status" aria-live="polite"></p><div class="grid"><section class="card span-8" data-od-id="material-detail-content"><h2>来源与索引</h2><div id="content" class="stack"><div class="notice">详情数据将从已验证材料 API 读取。完整 revision、导出和生命周期操作仍保留在原工作区，待本页回归后迁移。</div></div></section><aside class="card span-4" data-od-id="material-detail-actions"><h2>下一步</h2><div class="stack"><a id="qa" class="btn btn-primary" href="/app/qa.html">进入问答</a><a class="btn" href="/app/materials.html">返回资料库</a></div></aside></div></main></div><script src="/app/js/api.js"></script><script src="/app/js/shell.js"></script><script>(async function(){const id=new URLSearchParams(location.search).get('material'),title=document.querySelector('#title'),state=document.querySelector('#state'),content=document.querySelector('#content'),qa=document.querySelector('#qa');if(!id){title.textContent='缺少材料标识';state.textContent='请从资料库进入材料详情。';qa.removeAttribute('href');return}qa.href='/app/qa.html?material='+encodeURIComponent(id);try{const row=await sbApi.json('/api/materials/'+encodeURIComponent(id));const name=typeof row.original_name==='string'?row.original_name:(typeof row.display_name==='string'?row.display_name:'材料详情');title.textContent=name;state.textContent='材料已加载';const status=document.createElement('p');status.className='badge badge-success';status.textContent=typeof row.status==='string'?row.status:'可查看';content.append(status)}catch(e){title.textContent='材料不可用';state.textContent=sbApi.safeError(e);state.className='error';content.querySelector('.notice').textContent='该材料可能已删除、恢复中或当前不可访问。请返回资料库重试。'}})()</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 材料详情</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.meta-grid{display:grid;grid-template-columns:120px 1fr;gap:12px;margin-top:16px}
+.meta-grid dt{font-weight:600;color:var(--muted)}
+.meta-grid dd{margin:0}
+.action-group{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){
+.meta-grid{grid-template-columns:1fr}
+.action-group{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<p class="eyebrow">材料详情</p>
+<h1 id="title">加载材料…</h1>
+<p id="state" class="muted" role="status" aria-live="polite"></p>
+<div class="grid">
+<section class="card span-8" data-od-id="material-detail-content">
+<h2>材料信息</h2>
+<div id="content" class="stack">
+<div class="notice">正在加载材料详情...</div>
+</div>
+</section>
+<aside class="card span-4" data-od-id="material-detail-actions">
+<h2>操作</h2>
+<div class="stack">
+<div class="action-group">
+<a id="qa" class="btn btn-primary" href="/app/qa.html">进入问答</a>
+<button id="export-original" class="btn" type="button">下载原文件</button>
+<button id="export-text" class="btn" type="button">导出解析文本</button>
+</div>
+<a class="btn" href="/app/materials.html">返回资料库</a>
+</div>
+</aside>
+</div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(async function(){
+const id=new URLSearchParams(location.search).get('material');
+const title=document.querySelector('#title');
+const state=document.querySelector('#state');
+const content=document.querySelector('#content');
+const qa=document.querySelector('#qa');
+const exportOriginal=document.querySelector('#export-original');
+const exportText=document.querySelector('#export-text');
+
+if(!id){
+title.textContent='缺少材料标识';
+state.textContent='请从资料库进入材料详情。';
+qa.removeAttribute('href');
+exportOriginal.disabled=true;
+exportText.disabled=true;
+return
+}
+
+qa.href='/app/qa.html?material='+encodeURIComponent(id);
+
+try{
+const row=await sbApi.json('/api/materials/'+encodeURIComponent(id));
+const name=typeof row.original_name==='string'?row.original_name:(typeof row.display_name==='string'?row.display_name:'材料详情');
+title.textContent=name;
+state.textContent='材料已加载';
+
+const meta=document.createElement('dl');
+meta.className='meta-grid';
+const addMeta=(label,value)=>{
+const dt=document.createElement('dt');
+dt.textContent=label;
+const dd=document.createElement('dd');
+dd.textContent=value;
+meta.append(dt,dd)
+};
+addMeta('状态',row.status||'未知');
+addMeta('文件类型',row.media_type||'未知');
+addMeta('文本长度',(row.text_length||0)+' 字符');
+addMeta('片段数量',(row.span_count||0)+' 个');
+if(row.indexed_at)addMeta('索引时间',new Date(row.indexed_at).toLocaleString('zh-CN'));
+if(row.warnings&&row.warnings.length){
+const dt=document.createElement('dt');
+dt.textContent='警告';
+const dd=document.createElement('dd');
+dd.className='warn';
+dd.textContent=row.warnings.join('; ');
+meta.append(dt,dd)
+}
+content.replaceChildren(meta);
+
+exportOriginal.onclick=()=>{
+window.location.href=`/api/materials/${encodeURIComponent(id)}/original`
+};
+exportText.onclick=()=>{
+window.location.href=`/api/materials/${encodeURIComponent(id)}/text`
+}
+}catch(e){
+title.textContent='材料不可用';
+state.textContent=sbApi.safeError(e);
+state.className='error';
+content.innerHTML='<div class="notice warn">该材料可能已删除、恢复中或当前不可访问。请返回资料库重试。</div>';
+exportOriginal.disabled=true;
+exportText.disabled=true
+}
+})()
+</script>
+</body>
+</html>
