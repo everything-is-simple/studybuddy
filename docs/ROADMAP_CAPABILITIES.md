@@ -135,6 +135,51 @@ backend/app/
 
 **通过门槛：** API compatibility suite、完整 backend suite、现有 Chromium suite、启动/health/readiness、backup/restore 和 Gate J 回归均通过；`main.py` 只剩薄兼容层或已删除。
 
+### A2.X：A2 完成后、A3 前的核心大文件收缩
+
+**目的：** A2 已完成后，不能把 `_legacy.py`、`runner.py` 和 `main.py` 的剩余体积问题推迟到前端建设之后。三个核心文件，尤其两个超过 100 KiB 的文件，分别立项、分别审计、分别迁移、分别验收；每个文件对应一个明确任务号，避免以“整体重构”掩盖不可控工作量。
+
+**当前源码大文件盘点（2026-08-30）：**
+
+| 任务 | 文件 | 当前大小 | 目标 | 责任边界 |
+|---|---|---:|---:|---|
+| A2.1 | `backend/app/repositories/_legacy.py` | 379,741 B | <= 32 KiB，最终删除或仅保留极薄 glue | 迁移 repository/domain 函数体；保持 `repository.py` 的 305 个公开符号、SQL、事务和 monkeypatch 兼容 |
+| A2.2 | `backend/app/main.py` | 156,889 B | <= 32 KiB | 保留 `create_app`/`app`/兼容导出；既有 inline UI 只做逐字节一致的受控机械分片，不做 A3 前端重构 |
+| A2.3 | `backend/app/migrations/runner.py` | 68,846 B | <= 32 KiB | 将 v1–v13 migration body/DDL 拆到 bounded modules；runner 只保留 registry、事务执行、版本检查和错误边界 |
+| A2.4 | `backend/app/providers.py` | 33,593 B | <= 32 KiB | 在不改变 provider 协议、脱敏、错误码和 registry 行为的前提下拆分 provider adapters/registry |
+
+测试文件、历史/契约文档和已知既有超限文档另行治理，不把测试或文档搬入生产模块来规避源码门禁；本组任务优先处理 `backend/app/` 生产源码。不得再产生新的 `web_ui.py`、`all_migrations.py`、`all_repositories.py` 或其它超大替代文件。
+
+#### A2.1：收缩 `repositories/_legacy.py`
+
+- 先建立 AST 函数、依赖、调用方、域归属和 monkeypatch inventory。
+- 按 connection/common → materials → ai → study → plans/learning → practice → capture → reports → tasks 迁移到已有或新建 bounded domain modules。
+- 每次只搬一个域；不改 SQL、签名、事务、返回值、错误和数据语义；`repository.py` 继续作为完整兼容 façade。
+- 最终 `_legacy.py` 删除，或仅保留 <=32 KiB 的明确兼容 glue；不得复制实现。
+- 通过：public symbol inventory 305/305、无循环导入、repository/transaction/source lifecycle/backup-restore focused tests 与完整 backend regression。
+
+#### A2.2：收缩 `main.py`
+
+- 先固定 151 条业务路由、155 条总路由、公开符号、`create_app`/`app`、CLI/ASGI import 和 `INDEX_HTML` hash。
+- 应用工厂、lifespan、HTTP 映射、schemas、services 和 API routers 已在 A2 拆出；本任务只清理剩余兼容入口与 inline UI 载荷。
+- 允许将现有 `INDEX_HTML` 机械分片为多个 <=32 KiB 的受控源码片段，并在 import 时按固定顺序组装；HTML/CSS/JS 必须逐字节不变。不得引入 static root、页面拆分或新前端框架；这些仍属于 A3。
+- 通过：`main.py` <=32 KiB、HTML hash 不变、route inventory/monkeypatch/startup/health/readiness/browser regression 全部通过。
+
+#### A2.3：收缩 `migrations/runner.py`
+
+- 先固定 `_MIGRATIONS` 的版本、名称、顺序、函数行为和 v13 schema baseline。
+- 将 migration body 按版本组或领域拆入多个 <=32 KiB 模块；runner 只负责注册组装、`BEGIN IMMEDIATE`/rollback、history、`PRAGMA user_version`、inspect/assert 和安全错误。
+- 严禁新增/删除/重编号 migration，严禁改变 DDL、字段、索引、约束、默认值或业务数据语义，严禁 runtime ad-hoc table creation。
+- 通过：new DB、v1–v13 upgrade、重复 migrate、失败 rollback、history/user_version、backup/restore 和完整 backend regression 全部通过。
+
+#### A2.4：收缩 `providers.py`
+
+- 先固定 Provider/Embedding registry、adapter class、错误码、超时、SSE/JSON、Bearer/secret 脱敏和默认 fake-provider 行为 inventory。
+- 按协议/adapter/registry 拆分为 bounded modules；不改变网络默认值、真实 Provider opt-in、原始响应过滤或错误边界。
+- 通过：provider focused tests、API/QA/retrieval/generation browser regression、完整 backend regression 和源码尺寸门禁。
+
+**A2.X 总门禁：** A2.1 → A2.2 → A2.3 → A2.4 依次执行；每个子任务单独提交、单独回退、单独更新 TODO 和 evidence。任一失败立即停止当前子任务，不修改 migration history、不删除数据库/原件、不进入 A3。所有新增/实质重写生产源码 <=32 KiB，目标 20–30 KiB；完整 backend/browser 基线不得下降。A2.X 不等于 A3，不实现正式 static root 或多页前端。
+
 ### A3：执行 frontend-plan F0/F1，建立原生多页应用壳
 
 **目的：** 将 `main.py` 中的测试 workspace 转为可维护、可测试的正式静态资源，而不改变技术栈。
