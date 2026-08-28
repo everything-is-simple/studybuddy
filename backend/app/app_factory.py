@@ -15,6 +15,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .adapters.file_parsers import ParseOptions, parse_file
@@ -162,4 +163,7 @@ def create_app(config: AppConfig | None = None, *, index_html: str) -> FastAPI:
     context = dict(globals())
     context.update({"readiness_snapshot": readiness_snapshot, "INDEX_HTML": index_html})
     register_all_routes(app, context)
+    static_root = Path(__file__).parent / "static"
+    if static_root.is_dir():
+        app.mount("/app", StaticFiles(directory=static_root, html=True), name="frontend")
     return app
