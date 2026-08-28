@@ -1,87 +1,45 @@
-"""Compatibility exports for the ai repository domain."""
+"""Domain repository exports."""
 
 from . import _legacy
 
-from ._legacy import (
-    RETRIEVAL_POLICY_VERSION,
-    CONTEXT_ASSEMBLER_POLICY_VERSION,
-    MAX_CONTEXT_TOKENS,
-    CITATION_KEY_PREFIX,
-    MAX_RETRIEVAL_QUERY_LENGTH,
-    MAX_RETRIEVAL_TOP_K,
-    VECTOR_POLICY_VERSION,
-    HYBRID_POLICY_VERSION,
-    FALLBACK_LEXICAL_POLICY_VERSION,
-    RRF_K,
-    VECTOR_CANDIDATE_POOL,
-    MAX_QA_QUESTION_LENGTH,
-    QA_PROMPT_VERSION,
-    QA_OPERATION_LEASE_SECONDS,
-    get_qa_citation_detail,
-    list_qa_threads,
-    get_qa_thread_history,
-    create_or_get_revision,
-    index_material_revision,
-    reclaim_stale_embedding_operations,
-    create_task_backed_embedding_operation,
-    get_operation_task_public,
-    create_embedding_index_operation,
-    finish_embedding_index_operation,
-    index_embeddings_for_material,
-    verify_embeddings,
-    rebuild_embeddings_for_material,
-    run_hybrid_retrieval,
-    run_vector_retrieval,
-    run_chunk_retrieval,
-    get_material_index_status,
-    reclaim_stale_qa_operations,
-    get_idempotent_qa_response,
-    qa_request_fingerprint,
-    create_qa_request,
-    fail_qa_operation,
-    persist_qa_answer,
-    validate_citation_key,
-    assemble_context,
-)
+RETRIEVAL_POLICY_VERSION = getattr(_legacy, 'RETRIEVAL_POLICY_VERSION')
+CONTEXT_ASSEMBLER_POLICY_VERSION = getattr(_legacy, 'CONTEXT_ASSEMBLER_POLICY_VERSION')
+MAX_CONTEXT_TOKENS = getattr(_legacy, 'MAX_CONTEXT_TOKENS')
+CITATION_KEY_PREFIX = getattr(_legacy, 'CITATION_KEY_PREFIX')
+MAX_RETRIEVAL_QUERY_LENGTH = getattr(_legacy, 'MAX_RETRIEVAL_QUERY_LENGTH')
+MAX_RETRIEVAL_TOP_K = getattr(_legacy, 'MAX_RETRIEVAL_TOP_K')
+VECTOR_POLICY_VERSION = getattr(_legacy, 'VECTOR_POLICY_VERSION')
+HYBRID_POLICY_VERSION = getattr(_legacy, 'HYBRID_POLICY_VERSION')
+FALLBACK_LEXICAL_POLICY_VERSION = getattr(_legacy, 'FALLBACK_LEXICAL_POLICY_VERSION')
+RRF_K = getattr(_legacy, 'RRF_K')
+VECTOR_CANDIDATE_POOL = getattr(_legacy, 'VECTOR_CANDIDATE_POOL')
+MAX_QA_QUESTION_LENGTH = getattr(_legacy, 'MAX_QA_QUESTION_LENGTH')
+QA_PROMPT_VERSION = getattr(_legacy, 'QA_PROMPT_VERSION')
+QA_OPERATION_LEASE_SECONDS = getattr(_legacy, 'QA_OPERATION_LEASE_SECONDS')
+get_qa_citation_detail = getattr(_legacy, 'get_qa_citation_detail')
+list_qa_threads = getattr(_legacy, 'list_qa_threads')
+get_qa_thread_history = getattr(_legacy, 'get_qa_thread_history')
+create_or_get_revision = getattr(_legacy, 'create_or_get_revision')
+index_material_revision = getattr(_legacy, 'index_material_revision')
+reclaim_stale_embedding_operations = getattr(_legacy, 'reclaim_stale_embedding_operations')
+create_task_backed_embedding_operation = getattr(_legacy, 'create_task_backed_embedding_operation')
+get_operation_task_public = getattr(_legacy, 'get_operation_task_public')
+create_embedding_index_operation = getattr(_legacy, 'create_embedding_index_operation')
+finish_embedding_index_operation = getattr(_legacy, 'finish_embedding_index_operation')
+index_embeddings_for_material = getattr(_legacy, 'index_embeddings_for_material')
+verify_embeddings = getattr(_legacy, 'verify_embeddings')
+rebuild_embeddings_for_material = getattr(_legacy, 'rebuild_embeddings_for_material')
+run_hybrid_retrieval = getattr(_legacy, 'run_hybrid_retrieval')
+run_vector_retrieval = getattr(_legacy, 'run_vector_retrieval')
+run_chunk_retrieval = getattr(_legacy, 'run_chunk_retrieval')
+get_material_index_status = getattr(_legacy, 'get_material_index_status')
+reclaim_stale_qa_operations = getattr(_legacy, 'reclaim_stale_qa_operations')
+get_idempotent_qa_response = getattr(_legacy, 'get_idempotent_qa_response')
+qa_request_fingerprint = getattr(_legacy, 'qa_request_fingerprint')
+create_qa_request = getattr(_legacy, 'create_qa_request')
+fail_qa_operation = getattr(_legacy, 'fail_qa_operation')
+persist_qa_answer = getattr(_legacy, 'persist_qa_answer')
+validate_citation_key = getattr(_legacy, 'validate_citation_key')
+assemble_context = getattr(_legacy, 'assemble_context')
 
-__all__ = [
-    'RETRIEVAL_POLICY_VERSION',
-    'CONTEXT_ASSEMBLER_POLICY_VERSION',
-    'MAX_CONTEXT_TOKENS',
-    'CITATION_KEY_PREFIX',
-    'MAX_RETRIEVAL_QUERY_LENGTH',
-    'MAX_RETRIEVAL_TOP_K',
-    'VECTOR_POLICY_VERSION',
-    'HYBRID_POLICY_VERSION',
-    'FALLBACK_LEXICAL_POLICY_VERSION',
-    'RRF_K',
-    'VECTOR_CANDIDATE_POOL',
-    'MAX_QA_QUESTION_LENGTH',
-    'QA_PROMPT_VERSION',
-    'QA_OPERATION_LEASE_SECONDS',
-    'get_qa_citation_detail',
-    'list_qa_threads',
-    'get_qa_thread_history',
-    'create_or_get_revision',
-    'index_material_revision',
-    'reclaim_stale_embedding_operations',
-    'create_task_backed_embedding_operation',
-    'get_operation_task_public',
-    'create_embedding_index_operation',
-    'finish_embedding_index_operation',
-    'index_embeddings_for_material',
-    'verify_embeddings',
-    'rebuild_embeddings_for_material',
-    'run_hybrid_retrieval',
-    'run_vector_retrieval',
-    'run_chunk_retrieval',
-    'get_material_index_status',
-    'reclaim_stale_qa_operations',
-    'get_idempotent_qa_response',
-    'qa_request_fingerprint',
-    'create_qa_request',
-    'fail_qa_operation',
-    'persist_qa_answer',
-    'validate_citation_key',
-    'assemble_context',
-]
+__all__ = ['RETRIEVAL_POLICY_VERSION', 'CONTEXT_ASSEMBLER_POLICY_VERSION', 'MAX_CONTEXT_TOKENS', 'CITATION_KEY_PREFIX', 'MAX_RETRIEVAL_QUERY_LENGTH', 'MAX_RETRIEVAL_TOP_K', 'VECTOR_POLICY_VERSION', 'HYBRID_POLICY_VERSION', 'FALLBACK_LEXICAL_POLICY_VERSION', 'RRF_K', 'VECTOR_CANDIDATE_POOL', 'MAX_QA_QUESTION_LENGTH', 'QA_PROMPT_VERSION', 'QA_OPERATION_LEASE_SECONDS', 'get_qa_citation_detail', 'list_qa_threads', 'get_qa_thread_history', 'create_or_get_revision', 'index_material_revision', 'reclaim_stale_embedding_operations', 'create_task_backed_embedding_operation', 'get_operation_task_public', 'create_embedding_index_operation', 'finish_embedding_index_operation', 'index_embeddings_for_material', 'verify_embeddings', 'rebuild_embeddings_for_material', 'run_hybrid_retrieval', 'run_vector_retrieval', 'run_chunk_retrieval', 'get_material_index_status', 'reclaim_stale_qa_operations', 'get_idempotent_qa_response', 'qa_request_fingerprint', 'create_qa_request', 'fail_qa_operation', 'persist_qa_answer', 'validate_citation_key', 'assemble_context']

@@ -15,8 +15,7 @@ for _name in dir(_legacy):
 class _FacadeModule(types.ModuleType):
     def __setattr__(self, name: str, value: object) -> None:
         super().__setattr__(name, value)
-        if name in _legacy.__dict__:
-            setattr(_legacy, name, value)
+        _legacy.patch_symbol(name, value)
 
 
 sys.modules[__name__].__class__ = _FacadeModule

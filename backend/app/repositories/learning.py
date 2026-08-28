@@ -1,121 +1,62 @@
-"""Compatibility exports for the learning repository domain."""
+"""Domain repository exports."""
 
 from . import _legacy
 
-from ._legacy import (
-    MAX_CARD_TEXT_LENGTH,
-    MAX_CARD_TAGS,
-    MAX_CARD_CITATIONS,
-    MAX_DECK_TITLE_LENGTH,
-    MAX_EXERCISE_PROMPT_LENGTH,
-    MAX_EXERCISE_OPTIONS,
-    create_deck,
-    get_deck,
-    list_decks,
-    list_cards,
-    list_card_citations,
-    create_card,
-    update_card,
-    confirm_card,
-    transition_card,
-    review_card,
-    MAX_EXERCISE_EXPLANATION_LENGTH,
-    MAX_EXERCISE_ANSWER_LENGTH,
-    MAX_GENERATION_TOPIC_LENGTH,
-    MAX_GENERATION_COUNT,
-    GENERATION_PROMPT_VERSION,
-    list_exercise_sets,
-    get_exercise_set,
-    create_exercise_set,
-    create_generation_operation,
-    fail_generation_operation,
-    persist_generated_draft,
-    list_exercises,
-    create_exercise,
-    update_exercise,
-    confirm_exercise,
-    transition_exercise,
-    list_exercise_attempts,
-    submit_exercise_attempt,
-    create_note,
-    create_user_note,
-    list_notes,
-    get_note,
-    update_note,
-    update_note_content,
-    update_note_blocks,
-    create_note_block,
-    update_note_block,
-    delete_note_block,
-    link_note_module,
-    unlink_note_module,
-    create_note_source_link,
-    delete_note_source_link,
-    confirm_note,
-    transition_note,
-    refresh_note_source_links,
-    archive_note,
-    create_note_generation_operation,
-    fail_note_generation_operation,
-    persist_generated_note_draft,
-    generate_note_draft,
-)
+MAX_CARD_TEXT_LENGTH = getattr(_legacy, 'MAX_CARD_TEXT_LENGTH')
+MAX_CARD_TAGS = getattr(_legacy, 'MAX_CARD_TAGS')
+MAX_CARD_CITATIONS = getattr(_legacy, 'MAX_CARD_CITATIONS')
+MAX_DECK_TITLE_LENGTH = getattr(_legacy, 'MAX_DECK_TITLE_LENGTH')
+MAX_EXERCISE_PROMPT_LENGTH = getattr(_legacy, 'MAX_EXERCISE_PROMPT_LENGTH')
+MAX_EXERCISE_OPTIONS = getattr(_legacy, 'MAX_EXERCISE_OPTIONS')
+create_deck = getattr(_legacy, 'create_deck')
+get_deck = getattr(_legacy, 'get_deck')
+list_decks = getattr(_legacy, 'list_decks')
+list_cards = getattr(_legacy, 'list_cards')
+list_card_citations = getattr(_legacy, 'list_card_citations')
+create_card = getattr(_legacy, 'create_card')
+update_card = getattr(_legacy, 'update_card')
+confirm_card = getattr(_legacy, 'confirm_card')
+transition_card = getattr(_legacy, 'transition_card')
+review_card = getattr(_legacy, 'review_card')
+MAX_EXERCISE_EXPLANATION_LENGTH = getattr(_legacy, 'MAX_EXERCISE_EXPLANATION_LENGTH')
+MAX_EXERCISE_ANSWER_LENGTH = getattr(_legacy, 'MAX_EXERCISE_ANSWER_LENGTH')
+MAX_GENERATION_TOPIC_LENGTH = getattr(_legacy, 'MAX_GENERATION_TOPIC_LENGTH')
+MAX_GENERATION_COUNT = getattr(_legacy, 'MAX_GENERATION_COUNT')
+GENERATION_PROMPT_VERSION = getattr(_legacy, 'GENERATION_PROMPT_VERSION')
+list_exercise_sets = getattr(_legacy, 'list_exercise_sets')
+get_exercise_set = getattr(_legacy, 'get_exercise_set')
+create_exercise_set = getattr(_legacy, 'create_exercise_set')
+create_generation_operation = getattr(_legacy, 'create_generation_operation')
+fail_generation_operation = getattr(_legacy, 'fail_generation_operation')
+persist_generated_draft = getattr(_legacy, 'persist_generated_draft')
+list_exercises = getattr(_legacy, 'list_exercises')
+create_exercise = getattr(_legacy, 'create_exercise')
+update_exercise = getattr(_legacy, 'update_exercise')
+confirm_exercise = getattr(_legacy, 'confirm_exercise')
+transition_exercise = getattr(_legacy, 'transition_exercise')
+list_exercise_attempts = getattr(_legacy, 'list_exercise_attempts')
+submit_exercise_attempt = getattr(_legacy, 'submit_exercise_attempt')
+create_note = getattr(_legacy, 'create_note')
+create_user_note = getattr(_legacy, 'create_user_note')
+list_notes = getattr(_legacy, 'list_notes')
+get_note = getattr(_legacy, 'get_note')
+update_note = getattr(_legacy, 'update_note')
+update_note_content = getattr(_legacy, 'update_note_content')
+update_note_blocks = getattr(_legacy, 'update_note_blocks')
+create_note_block = getattr(_legacy, 'create_note_block')
+update_note_block = getattr(_legacy, 'update_note_block')
+delete_note_block = getattr(_legacy, 'delete_note_block')
+link_note_module = getattr(_legacy, 'link_note_module')
+unlink_note_module = getattr(_legacy, 'unlink_note_module')
+create_note_source_link = getattr(_legacy, 'create_note_source_link')
+delete_note_source_link = getattr(_legacy, 'delete_note_source_link')
+confirm_note = getattr(_legacy, 'confirm_note')
+transition_note = getattr(_legacy, 'transition_note')
+refresh_note_source_links = getattr(_legacy, 'refresh_note_source_links')
+archive_note = getattr(_legacy, 'archive_note')
+create_note_generation_operation = getattr(_legacy, 'create_note_generation_operation')
+fail_note_generation_operation = getattr(_legacy, 'fail_note_generation_operation')
+persist_generated_note_draft = getattr(_legacy, 'persist_generated_note_draft')
+generate_note_draft = getattr(_legacy, 'generate_note_draft')
 
-__all__ = [
-    'MAX_CARD_TEXT_LENGTH',
-    'MAX_CARD_TAGS',
-    'MAX_CARD_CITATIONS',
-    'MAX_DECK_TITLE_LENGTH',
-    'MAX_EXERCISE_PROMPT_LENGTH',
-    'MAX_EXERCISE_OPTIONS',
-    'create_deck',
-    'get_deck',
-    'list_decks',
-    'list_cards',
-    'list_card_citations',
-    'create_card',
-    'update_card',
-    'confirm_card',
-    'transition_card',
-    'review_card',
-    'MAX_EXERCISE_EXPLANATION_LENGTH',
-    'MAX_EXERCISE_ANSWER_LENGTH',
-    'MAX_GENERATION_TOPIC_LENGTH',
-    'MAX_GENERATION_COUNT',
-    'GENERATION_PROMPT_VERSION',
-    'list_exercise_sets',
-    'get_exercise_set',
-    'create_exercise_set',
-    'create_generation_operation',
-    'fail_generation_operation',
-    'persist_generated_draft',
-    'list_exercises',
-    'create_exercise',
-    'update_exercise',
-    'confirm_exercise',
-    'transition_exercise',
-    'list_exercise_attempts',
-    'submit_exercise_attempt',
-    'create_note',
-    'create_user_note',
-    'list_notes',
-    'get_note',
-    'update_note',
-    'update_note_content',
-    'update_note_blocks',
-    'create_note_block',
-    'update_note_block',
-    'delete_note_block',
-    'link_note_module',
-    'unlink_note_module',
-    'create_note_source_link',
-    'delete_note_source_link',
-    'confirm_note',
-    'transition_note',
-    'refresh_note_source_links',
-    'archive_note',
-    'create_note_generation_operation',
-    'fail_note_generation_operation',
-    'persist_generated_note_draft',
-    'generate_note_draft',
-]
+__all__ = ['MAX_CARD_TEXT_LENGTH', 'MAX_CARD_TAGS', 'MAX_CARD_CITATIONS', 'MAX_DECK_TITLE_LENGTH', 'MAX_EXERCISE_PROMPT_LENGTH', 'MAX_EXERCISE_OPTIONS', 'create_deck', 'get_deck', 'list_decks', 'list_cards', 'list_card_citations', 'create_card', 'update_card', 'confirm_card', 'transition_card', 'review_card', 'MAX_EXERCISE_EXPLANATION_LENGTH', 'MAX_EXERCISE_ANSWER_LENGTH', 'MAX_GENERATION_TOPIC_LENGTH', 'MAX_GENERATION_COUNT', 'GENERATION_PROMPT_VERSION', 'list_exercise_sets', 'get_exercise_set', 'create_exercise_set', 'create_generation_operation', 'fail_generation_operation', 'persist_generated_draft', 'list_exercises', 'create_exercise', 'update_exercise', 'confirm_exercise', 'transition_exercise', 'list_exercise_attempts', 'submit_exercise_attempt', 'create_note', 'create_user_note', 'list_notes', 'get_note', 'update_note', 'update_note_content', 'update_note_blocks', 'create_note_block', 'update_note_block', 'delete_note_block', 'link_note_module', 'unlink_note_module', 'create_note_source_link', 'delete_note_source_link', 'confirm_note', 'transition_note', 'refresh_note_source_links', 'archive_note', 'create_note_generation_operation', 'fail_note_generation_operation', 'persist_generated_note_draft', 'generate_note_draft']

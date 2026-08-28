@@ -1,71 +1,37 @@
-"""Compatibility exports for the capture repository domain."""
+"""Domain repository exports."""
 
 from . import _legacy
 
-from ._legacy import (
-    PHASE9D_TRANSCRIPTION_OPERATION,
-    PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD,
-    PHASE9D_TRANSCRIPT_MAX_SEGMENTS,
-    PHASE9D_TRANSCRIPT_MAX_TEXT,
-    PHASE9D_REPORT_CONTENT_VERSION,
-    PHASE9D_REPORT_KINDS,
-    PHASE9D_REPORT_EXPORT_FORMATS,
-    PHASE9D_REPORT_PAYLOAD_FIELDS,
-    PHASE9D_CAPTURE_ASSET_TYPES,
-    PHASE9D_CAPTURE_SUFFIXES,
-    PHASE9D_CAPTURE_PARSER_ID,
-    PHASE9D_CAPTURE_PARSER_VERSION,
-    PHASE9D_TRANSCRIPT_PARSER_ID,
-    PHASE9D_TRANSCRIPT_PARSER_VERSION,
-    PHASE9D_DELIVERY_CHANNELS,
-    PHASE9D_DELIVERY_MODES,
-    PHASE9D_SOURCE_STATUSES,
-    PHASE9D_TRANSCRIPTION_ERROR_CODES,
-    create_capture_session,
-    upload_capture_asset,
-    get_capture_session,
-    list_capture_sessions,
-    create_transcription_operation,
-    transcribe_capture_session,
-    get_transcription_operation,
-    list_transcription_operations,
-    complete_transcription_operation,
-    edit_transcript_draft,
-    confirm_transcript_draft,
-    reject_transcript_draft,
-    fail_transcription_operation,
-)
+PHASE9D_TRANSCRIPTION_OPERATION = getattr(_legacy, 'PHASE9D_TRANSCRIPTION_OPERATION')
+PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD = getattr(_legacy, 'PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD')
+PHASE9D_TRANSCRIPT_MAX_SEGMENTS = getattr(_legacy, 'PHASE9D_TRANSCRIPT_MAX_SEGMENTS')
+PHASE9D_TRANSCRIPT_MAX_TEXT = getattr(_legacy, 'PHASE9D_TRANSCRIPT_MAX_TEXT')
+PHASE9D_REPORT_CONTENT_VERSION = getattr(_legacy, 'PHASE9D_REPORT_CONTENT_VERSION')
+PHASE9D_REPORT_KINDS = getattr(_legacy, 'PHASE9D_REPORT_KINDS')
+PHASE9D_REPORT_EXPORT_FORMATS = getattr(_legacy, 'PHASE9D_REPORT_EXPORT_FORMATS')
+PHASE9D_REPORT_PAYLOAD_FIELDS = getattr(_legacy, 'PHASE9D_REPORT_PAYLOAD_FIELDS')
+PHASE9D_CAPTURE_ASSET_TYPES = getattr(_legacy, 'PHASE9D_CAPTURE_ASSET_TYPES')
+PHASE9D_CAPTURE_SUFFIXES = getattr(_legacy, 'PHASE9D_CAPTURE_SUFFIXES')
+PHASE9D_CAPTURE_PARSER_ID = getattr(_legacy, 'PHASE9D_CAPTURE_PARSER_ID')
+PHASE9D_CAPTURE_PARSER_VERSION = getattr(_legacy, 'PHASE9D_CAPTURE_PARSER_VERSION')
+PHASE9D_TRANSCRIPT_PARSER_ID = getattr(_legacy, 'PHASE9D_TRANSCRIPT_PARSER_ID')
+PHASE9D_TRANSCRIPT_PARSER_VERSION = getattr(_legacy, 'PHASE9D_TRANSCRIPT_PARSER_VERSION')
+PHASE9D_DELIVERY_CHANNELS = getattr(_legacy, 'PHASE9D_DELIVERY_CHANNELS')
+PHASE9D_DELIVERY_MODES = getattr(_legacy, 'PHASE9D_DELIVERY_MODES')
+PHASE9D_SOURCE_STATUSES = getattr(_legacy, 'PHASE9D_SOURCE_STATUSES')
+PHASE9D_TRANSCRIPTION_ERROR_CODES = getattr(_legacy, 'PHASE9D_TRANSCRIPTION_ERROR_CODES')
+create_capture_session = getattr(_legacy, 'create_capture_session')
+upload_capture_asset = getattr(_legacy, 'upload_capture_asset')
+get_capture_session = getattr(_legacy, 'get_capture_session')
+list_capture_sessions = getattr(_legacy, 'list_capture_sessions')
+create_transcription_operation = getattr(_legacy, 'create_transcription_operation')
+transcribe_capture_session = getattr(_legacy, 'transcribe_capture_session')
+get_transcription_operation = getattr(_legacy, 'get_transcription_operation')
+list_transcription_operations = getattr(_legacy, 'list_transcription_operations')
+complete_transcription_operation = getattr(_legacy, 'complete_transcription_operation')
+edit_transcript_draft = getattr(_legacy, 'edit_transcript_draft')
+confirm_transcript_draft = getattr(_legacy, 'confirm_transcript_draft')
+reject_transcript_draft = getattr(_legacy, 'reject_transcript_draft')
+fail_transcription_operation = getattr(_legacy, 'fail_transcription_operation')
 
-__all__ = [
-    'PHASE9D_TRANSCRIPTION_OPERATION',
-    'PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD',
-    'PHASE9D_TRANSCRIPT_MAX_SEGMENTS',
-    'PHASE9D_TRANSCRIPT_MAX_TEXT',
-    'PHASE9D_REPORT_CONTENT_VERSION',
-    'PHASE9D_REPORT_KINDS',
-    'PHASE9D_REPORT_EXPORT_FORMATS',
-    'PHASE9D_REPORT_PAYLOAD_FIELDS',
-    'PHASE9D_CAPTURE_ASSET_TYPES',
-    'PHASE9D_CAPTURE_SUFFIXES',
-    'PHASE9D_CAPTURE_PARSER_ID',
-    'PHASE9D_CAPTURE_PARSER_VERSION',
-    'PHASE9D_TRANSCRIPT_PARSER_ID',
-    'PHASE9D_TRANSCRIPT_PARSER_VERSION',
-    'PHASE9D_DELIVERY_CHANNELS',
-    'PHASE9D_DELIVERY_MODES',
-    'PHASE9D_SOURCE_STATUSES',
-    'PHASE9D_TRANSCRIPTION_ERROR_CODES',
-    'create_capture_session',
-    'upload_capture_asset',
-    'get_capture_session',
-    'list_capture_sessions',
-    'create_transcription_operation',
-    'transcribe_capture_session',
-    'get_transcription_operation',
-    'list_transcription_operations',
-    'complete_transcription_operation',
-    'edit_transcript_draft',
-    'confirm_transcript_draft',
-    'reject_transcript_draft',
-    'fail_transcription_operation',
-]
+__all__ = ['PHASE9D_TRANSCRIPTION_OPERATION', 'PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD', 'PHASE9D_TRANSCRIPT_MAX_SEGMENTS', 'PHASE9D_TRANSCRIPT_MAX_TEXT', 'PHASE9D_REPORT_CONTENT_VERSION', 'PHASE9D_REPORT_KINDS', 'PHASE9D_REPORT_EXPORT_FORMATS', 'PHASE9D_REPORT_PAYLOAD_FIELDS', 'PHASE9D_CAPTURE_ASSET_TYPES', 'PHASE9D_CAPTURE_SUFFIXES', 'PHASE9D_CAPTURE_PARSER_ID', 'PHASE9D_CAPTURE_PARSER_VERSION', 'PHASE9D_TRANSCRIPT_PARSER_ID', 'PHASE9D_TRANSCRIPT_PARSER_VERSION', 'PHASE9D_DELIVERY_CHANNELS', 'PHASE9D_DELIVERY_MODES', 'PHASE9D_SOURCE_STATUSES', 'PHASE9D_TRANSCRIPTION_ERROR_CODES', 'create_capture_session', 'upload_capture_asset', 'get_capture_session', 'list_capture_sessions', 'create_transcription_operation', 'transcribe_capture_session', 'get_transcription_operation', 'list_transcription_operations', 'complete_transcription_operation', 'edit_transcript_draft', 'confirm_transcript_draft', 'reject_transcript_draft', 'fail_transcription_operation']

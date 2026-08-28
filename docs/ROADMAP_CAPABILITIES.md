@@ -143,7 +143,7 @@ backend/app/
 
 | 任务 | 文件 | 当前大小 | 目标 | 责任边界 |
 |---|---|---:|---:|---|
-| A2.1 | `backend/app/repositories/_legacy.py` | 379,741 B | <= 32 KiB，最终删除或仅保留极薄 glue | 迁移 repository/domain 函数体；保持 `repository.py` 的 305 个公开符号、SQL、事务和 monkeypatch 兼容 |
+| A2.1 | `backend/app/repositories/_legacy.py` | ~~379,741 B~~ → 29,750 B bridge | ✅ completed | 18部分实现+runtime+bridge；保持305符号、monkeypatch兼容；413 passed |
 | A2.2 | `backend/app/main.py` | 156,889 B | <= 32 KiB | 保留 `create_app`/`app`/兼容导出；既有 inline UI 只做逐字节一致的受控机械分片，不做 A3 前端重构 |
 | A2.3 | `backend/app/migrations/runner.py` | 68,846 B | <= 32 KiB | 将 v1–v13 migration body/DDL 拆到 bounded modules；runner 只保留 registry、事务执行、版本检查和错误边界 |
 | A2.4 | `backend/app/providers.py` | 33,593 B | <= 32 KiB | 在不改变 provider 协议、脱敏、错误码和 registry 行为的前提下拆分 provider adapters/registry |
