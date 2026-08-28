@@ -34,15 +34,12 @@ def _changed_paths(root: Path, base: str) -> list[Path]:
 
 
 def _main_html_sha256(path: Path) -> str | None:
-    source = path.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id == "INDEX_HTML" for target in node.targets
-        ):
-            value = ast.literal_eval(node.value)
-            return hashlib.sha256(value.encode("utf-8")).hexdigest()
-    return None
+    # INDEX_HTML is now loaded from templates/index.html
+    template_path = path.parent / "templates" / "index.html"
+    if not template_path.exists():
+        return None
+    content = template_path.read_text(encoding="utf-8")
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 def main() -> int:
