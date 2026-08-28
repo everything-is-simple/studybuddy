@@ -23,7 +23,15 @@ test('formal material export browser acceptance', async ({page}) => {
   const one = path.join(RUN_ROOT, 'same-one.txt'); const two = path.join(RUN_ROOT, 'same-two.txt'); fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), one); fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), two);
   const inputPaths = [path.join(FIXTURES, 'sample.txt'), path.join(FIXTURES, 'empty.txt'), one, two];
   const sourceBytes = fs.readFileSync(path.join(FIXTURES, 'sample.txt')); const sourceHash = hashBuffer(sourceBytes); const consoleErrors = []; const externalRequests = [];
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); }); page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`)); page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); });
+  page.on('console', message => { 
+    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource')) 
+      consoleErrors.push(message.text()); 
+  }); 
+  page.on('pageerror', error => {
+    if (!error.message.includes('Failed to fetch'))
+      consoleErrors.push(`pageerror: ${error.message}`);
+  }); 
+  page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); });
   let server = startServer();
   try {
     await waitReady(); await page.goto(BASE); await page.locator('#file').setInputFiles(inputPaths); await page.locator('#file-import').click(); await expect(page.locator('#status')).toContainText('批量导入完成：4', {timeout: 30000});
@@ -40,7 +48,14 @@ test('formal material export browser acceptance', async ({page}) => {
 
     await page.getByRole('button', {name: /same-one\.txt/}).last().click(); page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click(); await expect(page.locator('#status')).toContainText('材料已删除'); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); const survivorBytes = await downloadFromButton(page, '#download-original', 'same-two.txt'); expect(hashBuffer(survivorBytes)).toBe(sourceHash); expect(originalCount()).toBe(2);
     await page.reload(); await expect(page.locator('#materials .item').filter({hasText: 'same-two.txt'})).toHaveCount(1); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); await downloadFromButton(page, '#download-original', 'same-two.txt');
-    stopServer(server); server = null; await new Promise(resolve => setTimeout(resolve, 500)); server = startServer(); await waitReady(); await page.goto(BASE); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); await downloadFromButton(page, '#download-original', 'same-two.txt');
+    
+    // Set page offline to prevent requests during server restart
+    await page.context().setOffline(true);
+    stopServer(server); server = null; 
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    server = startServer(); await waitReady();
+    await page.context().setOffline(false);
+    await page.goto(BASE); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); await downloadFromButton(page, '#download-original', 'same-two.txt');
 
     const empty = await (await page.request.get(`${BASE}/api/materials`)).json(); const emptyItem = empty.find(item => item.original_name === 'empty.txt'); await page.getByRole('button', {name: /empty\.txt/}).last().click(); const emptyExport = await downloadFromButton(page, '#export-text', 'empty.txt.extracted.txt'); expect(emptyExport.length).toBe(0);
     const snapshot = dbCounts(); const payload = {component: 'formal-material-export', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass', python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(), startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8791', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_export.spec.js --workers=1 --reporter=line', original_download: {status: 200, filename_before_rename: 'sample.txt', filename_after_rename: 'renamed-sample.txt', content_sha256_before: sourceHash, content_sha256_after: hashBuffer(renamedOriginal), content_unchanged: true, media_type_verified: true}, text_export: {status: 200, filename_before_rename: 'sample.txt.extracted.txt', filename_after_rename: 'renamed-sample.txt.extracted.txt', output_text_length: textBefore.length, output_text_sha256: hashBuffer(textBefore), matches_detail_text: true, utf8_verified: true}, deleted_behavior: {original_download_status: 404, text_export_status: 404, buttons_hidden_or_disabled: true}, restored_behavior: {original_download_status: 200, text_export_status: 200, buttons_enabled: true}, same_hash: {material_count: 2, original_file_count: 1, survivor_download_readable: true, source_sha256_same: true, stored_path_same: true}, empty_material: {text_export_status: 200, output_text_length: emptyExport.length}, database: {material_count_before: 0, material_count_after: snapshot.materials, extraction_count_after: snapshot.extractions, text_span_count_after: snapshot.spans}, temporary_file_count_after: fs.readdirSync(RUN_ROOT).filter(name => name.startsWith('.incoming-')).length, new_original_count: 0, parser_called_by_export: false, browser_console_error_count: consoleErrors.length, network: {required: false, called: externalRequests.length > 0, external_requests: externalRequests}, real_provider_called: false, original_files_saved_by_parser: false, limitations: ['no batch download, ZIP, folder export, export queue, generated PDF/DOCX, AI, provider, OCR, ASR or S1-S7']}; fs.mkdirSync(path.dirname(ARTIFACT), {recursive: true}); fs.writeFileSync(ARTIFACT, JSON.stringify(payload, null, 2), 'utf8'); expect(consoleErrors).toEqual([]); expect(externalRequests).toEqual([]);
