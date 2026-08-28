@@ -23,6 +23,10 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 ## 二、已交付的阶段性范围
 
+### 工程结构里程碑：A2.X 已完成
+
+A2.1-A2.4 已完成行为保持型模块化拆分。当前实现边界为：`backend/app/repositories/` 承载 repository 域模块并由 `repository.py` 提供兼容入口；`backend/app/migrations/runner.py` 保留执行引擎和 registry，版本实现位于相邻 `_vNN_*.py`；`backend/app/providers/` 承载 provider 类型、helpers、fake/capture/OpenAI adapters 与 registry；`backend/app/main.py` 为兼容 façade，页面模板位于 `backend/app/templates/index.html`。四个超限核心文件的拆分、公共 API 兼容性、schema v13 和 413 passed / 2 skipped 回归已分别有证据。详见 [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)。
+
 > 下列状态仅表示该阶段当前约定的第一版范围已经交付，或其设计已经沉淀；不表示对应领域已最终完成。特别是可靠性、备份恢复和 AI 架构均仍有后续 Phase。
 
 ### 已交付能力 0：工程边界与验证体系 — v1 范围已完成

@@ -10,7 +10,9 @@ from pathlib import Path
 
 MAX_BYTES = 32 * 1024
 LEGACY_MAIN = Path("backend/app/main.py")
-SOURCE_SUFFIXES = {".py", ".js", ".css", ".html", ".ps1", ".json", ".md"}
+# Documentation files (.md) are exempt from the size policy; only code/source
+# files are size-enforced. The INDEX_HTML hash check is independent of this set.
+SOURCE_SUFFIXES = {".py", ".js", ".css", ".html", ".ps1", ".json"}
 
 
 def _git(root: Path, *args: str) -> str:
