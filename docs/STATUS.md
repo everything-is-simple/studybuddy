@@ -52,6 +52,17 @@
 
 ## Approved Next Roadmap
 
-[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) records the approved next step: native static frontend delivery under [`frontend-plan.md`](frontend-plan.md), Composer -> Integration -> Formal gates for ASR, OCR, reports and delivery, plus a time-boxed Tauri Windows desktop evaluation. A1/A2 repository and application structure is now closed in the limited compatibility scope documented in `TODO.md`: `backend/app/repositories/` provides repository domain exports; `app_factory.py`, `lifespan.py`, helpers/services/schemas and 14 small `api/` modules provide the backend application boundary; `backend/app/main.py` remains the public façade and the sole non-growing legacy inline-UI exception until A3. New or substantially rewritten source files are constrained to 32 KiB by `backend/scripts/check-source-size.py`; internal repository function-body decoupling and A3 static frontend delivery remain future work. It does not alter the Phase 10 local-v1 completion conclusion, and it is not evidence that any real OCR/ASR/live delivery/desktop package exists.
+[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) records the approved next step: native static frontend delivery under [`frontend-plan.md`](frontend-plan.md), Composer -> Integration -> Formal gates for ASR, OCR, reports and delivery, plus a time-boxed Tauri Windows desktop evaluation.
+
+**A1/A2 Status (2025-01-28)**: A1/A2 repository and application structure refactoring is **completed**. A2.X series (A2.1-A2.4) successfully split 4 oversized core files (639KB total) into modular structure (48KB total), achieving 92.6% reduction while maintaining all public APIs and test baseline (413 passed, 2 skipped). Details:
+
+- **A2.1**: `repositories/_legacy.py` (379KB) → 18 implementation parts + runtime + bridge (30KB)
+- **A2.2**: `main.py` (157KB) → 969 bytes + `templates/index.html`
+- **A2.3**: `migrations/runner.py` (68KB) → 7KB + 13 version modules + helpers
+- **A2.4**: `providers.py` (34KB) → 9 focused modules in `providers/` directory
+
+All modules comply with 32 KiB policy verified by `backend/scripts/check-source-size.py`. Public APIs preserved: `backend/app/repositories/__init__.py` exports 305 symbols, `backend.app.main:create_app` unchanged, all migration and provider imports compatible. See [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md) for complete refactoring summary.
+
+A3 static frontend delivery and further capability gates remain future work. This does not alter the Phase 10 local-v1 completion conclusion, and it is not evidence that any real OCR/ASR/live delivery/desktop package exists.
 
 For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md), and [`TODO.md`](TODO.md).

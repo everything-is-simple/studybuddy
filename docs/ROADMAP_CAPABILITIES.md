@@ -146,7 +146,7 @@ backend/app/
 | A2.1 | `backend/app/repositories/_legacy.py` | ~~379,741 B~~ → 29,750 B bridge | ✅ completed | 18部分实现+runtime+bridge；保持305符号、monkeypatch兼容；413 passed |
 | A2.2 | `backend/app/main.py` | ~~156,889 B~~ → 969 B | ✅ completed | INDEX_HTML 提取到 templates/index.html；保持兼容导出；413 passed |
 | A2.3 | `backend/app/migrations/runner.py` | ~~68,846 B~~ → 7,412 B | ✅ completed | 拆分为 13 个版本模块 + helpers；413 passed |
-| A2.4 | `backend/app/providers.py` | 33,593 B | <= 32 KiB | 在不改变 provider 协议、脱敏、错误码和 registry 行为的前提下拆分 provider adapters/registry |
+| A2.4 | `backend/app/providers.py` | ~~33,593 B~~ → 目录 (9 模块) | ✅ completed | 拆分为职责模块；413 passed |
 
 测试文件、历史/契约文档和已知既有超限文档另行治理，不把测试或文档搬入生产模块来规避源码门禁；本组任务优先处理 `backend/app/` 生产源码。不得再产生新的 `web_ui.py`、`all_migrations.py`、`all_repositories.py` 或其它超大替代文件。
 
