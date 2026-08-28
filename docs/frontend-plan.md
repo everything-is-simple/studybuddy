@@ -2,7 +2,7 @@
 
 > **文档性质**：这是 StudyBuddy 前端的产品设计、信息架构、低保真 draft 草图、接口映射与实施门禁，不是已完成的前端实现声明。
 >
-> **事实基线（2026-08-30）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 413 passed、2 skipped（默认关闭的真实 Provider smoke）。A2.X（repository/main/migrations/providers 的行为保持型拆分）已完成，Phase 9A/9B/9C 已在各自限定范围完成，Phase 9D 的部分立项范围已 scoped closeout，Phase 10 Gate J 已通过。当前根路由仍由 `backend/app/api/web.py` 返回内嵌 `templates/index.html`，正式静态目录与 FastAPI `StaticFiles` mount 尚未建立。
+> **事实基线（2026-08-30；A3-1 已更新）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 413 passed、2 skipped（默认关闭的真实 Provider smoke）。A2.X（repository/main/migrations/providers 的行为保持型拆分）已完成，Phase 9A/9B/9C 已在各自限定范围完成，Phase 9D 的部分立项范围已 scoped closeout，Phase 10 Gate J 已通过。A3-1 已建立 `backend/app/static/` 并由 app factory 挂载到 `/app`；旧根路由 `/` 仍由 `backend/app/api/web.py` 返回内嵌 `templates/index.html`，处于迁移兼容期。
 >
 > **状态判定优先级**：实施状态、测试基线与支持边界以 `STATUS.md` 和 `TODO.md` 为准；`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 规定顺序和门禁；本计划只映射前端行为，不能提升任何后端能力等级。整体完成度百分比仅是阶段性估算，现有历史文档存在 55%–60% 与约 65% 两种口径，A3 实施不依赖该数字。
 
@@ -60,10 +60,10 @@
 
 本节是当前实现快照，不是目标信息架构：
 
-- `/` 由 `backend/app/api/web.py` 直接返回内嵌 `INDEX_HTML`；当前没有 FastAPI `StaticFiles` 挂载，也没有已确认的正式前端根目录。
+- `/` 仍由 `backend/app/api/web.py` 直接返回内嵌 `INDEX_HTML`；A3-1 已确认正式 static root 为 `backend/app/static/`，由 app factory 以 `StaticFiles(directory=..., html=True)` 挂载到 `/app`。
 - 当前只有一个约 240 行 HTML 行结构、约 156 KB 的单页 workspace。页面同时包含材料导入/批量导入、搜索/筛选/分页、回收站、材料详情/下载/导出、Q&A、卡片与练习、学习计划与节奏、练习反馈/冲刺、资料笔记、课堂采集/转写确认、报告预览/导出/交付审计。
 - 当前真实交互通过页面内 `fetch()` 调用后端 API；已保留重复提交保护、幂等键、过期响应保护、失败提示、重试入口、citation 定位、草稿确认/拒绝/归档和文件下载等行为。
-- 当前导航是同页锚点（材料、问答、卡片与练习、练习反馈、学习计划、资料笔记、课堂与报告），不是独立页面路由；没有独立的“今天”聚合首页、任务中心、Provider 配置写入页或系统诊断页。
+- 旧入口导航仍是同页锚点（材料、问答、卡片与练习、练习反馈、学习计划、资料笔记、课堂与报告），不是独立页面路由；A3-1 新增的 `/app/` 灰盒已提供今天、资料、材料详情、问答四个独立页面，但尚未替换旧入口，也没有任务中心、Provider 配置写入页或系统诊断页。
 - 当前样式仍是旧 workspace 的 system sans + 灰蓝色 raw hex 规则，与 Neutral Modern 的 token、组件、accent 使用约束尚未绑定。Neutral Modern 只能作为后续迁移目标，不能在当前产物状态中写成已完成。
 - 当前课堂采集明确触发的是 `deterministic` 转写；报告页面明确展示脱敏快照，delivery 仅允许默认 off/allowlisted dry-run，live 仍固定拒绝。不得把这些 UI 存在误写成真实 ASR 或 live delivery 已通过。
 
@@ -156,7 +156,7 @@
 
 ```text
 <正式静态根目录>/
-├── index.html                     # 今天 / 总览
+├── index.html                     # 今天 / 总览（当前已落地于 backend/app/static/）
 ├── plans.html                     # 目标、模块、计划列表
 ├── plan-detail.html               # 单个计划、items、依赖、进度、节奏
 ├── materials.html                 # 资料库、搜索、索引、回收站入口
@@ -189,7 +189,7 @@
     └── settings.js
 ```
 
-**阻塞门**：在建立上述目录前，必须先完成 A3：确认正式 static root、FastAPI mount、缓存策略和旧 `/` 兼容策略。当前不能假定 `frontend/` 是正式目录，也不能把当前 `backend/app/templates/index.html` 误标为已完成的 `index.html` 总览。
+**A3-1 结果**：正式 static root 已冻结为 `backend/app/static/`，app factory 挂载为 `/app`，当前提供 `index.html`、`materials.html`、`material-detail.html`、`qa.html` 以及共享 `css/app.css`、`js/api.js`、`js/shell.js`。旧 `/` 保留为迁移期兼容入口；缓存头/版本化刷新策略和何时切换 `/` 仍是 TODO。不得把 `/app/index.html` 的灰盒交付误写成四页完整功能迁移。
 
 ## 4. 低保真 draft 草图（先评审任务，再做视觉）
 
@@ -403,7 +403,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 | 门禁 | 必须核实/补齐的内容 | 结论 |
 |---|---|---|
-| A3-1 静态资源 | 正式目录、`StaticFiles` mount、HTML 路由、缓存/刷新策略、旧 `/` 兼容 | 当前未确认，阻塞正式拆屏 |
+| A3-1 静态资源 | 正式目录、`StaticFiles` mount、HTML 路由、缓存/刷新策略、旧 `/` 兼容 | 已确认并实现：`backend/app/static/` → `/app`；缓存细则与旧入口最终切换仍 TODO |
 | A3-2 页面读 API | 总览聚合是否需要新安全 endpoint，或由现有多个 API 组合 | 当前可组合，但需避免首屏请求瀑布 |
 | A3-3 Provider 设置 | 现有 capabilities 只提供状态快照；配置写入、脱敏回读、连接测试是否已有正式 API | 当前计划不得假定存在 |
 | A3-4 任务 | `/api/tasks/{task_id}`、cancel、retry 与 enqueue/read 的完整页面字段 | 已有局部能力，需固定公共响应合同 |
@@ -420,9 +420,9 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 ### A3：正式前端根与核心阅读闭环
 
 1. 冻结 API/行为/旧 workspace 兼容基线。
-2. 确认并挂载唯一正式 static root；停止用 HTMLResponse 承载产品 UI。
-3. 建立 Neutral Modern tokens、应用壳、导航、错误/状态组件。
-4. 先交付 draft：`index.html`、`materials.html`、`material-detail.html`、`qa.html`。
+2. ✅ 确认并挂载唯一正式 static root：`backend/app/static/` → `/app`；旧 `/` 暂保留兼容。
+3. ✅ 建立首版应用壳、共享 API/导航/状态样式；完整 Neutral Modern 迁移仍随页面迁移继续。
+4. ✅ 交付 Draft A–D 灰盒：`index.html`、`materials.html`、`material-detail.html`、`qa.html`。
 5. 迁移导入、搜索、索引、thread、citation、定位、导出和窄屏/键盘行为。
 6. 完成 focused Chromium + keyboard + privacy + narrow gates。
 
@@ -506,8 +506,9 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 ## 11. 开放 TODO（实施前可编辑）
 
-- [ ] **正式 static root**：确认目录、mount、缓存策略和测试入口。
-- [ ] **旧 `/` 入口**：保留只读兼容、重定向，还是逐页迁移后移除？
+- [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证。仍待补充正式 Chromium 路由/窄屏/键盘证据。
+- [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
+- [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
 - [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
 - [ ] **Today 的默认主行动**：按“计划任务 > 待审草稿 > 导入材料 > Provider 状态说明”还是其它优先级？Provider 配置仅在正式写入契约获批后才可作为可执行动作。
@@ -526,4 +527,4 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 3. **首页主行动优先级**：计划任务、待审草稿、导入材料、Provider 状态说明的顺序是否符合你的使用方式？
 4. **草图评审**：请在 Draft A–H 下方标注“保留 / 删除 / 合并 / 需要补充”的页面或模块。
 
-确认后，下一轮按 A3-1 开始：先核实 static mount 与现有浏览器入口，再把 Draft A–D 转为可点击灰盒；不会先宣称任何未验证 Provider、ASR/OCR 或 live delivery 已可用。
+A3-1 已完成：已核实 static mount 与现有浏览器入口，并将 Draft A–D 转为 `/app/` 下的可点击灰盒；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。下一步进入 A3-2：为四页补正式 Chromium 路由、窄屏、键盘、隐私和旧入口兼容回归，再逐页迁移真实操作。
