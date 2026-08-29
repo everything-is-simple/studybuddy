@@ -46,16 +46,16 @@
 - [x] `api.js` 统一解析安全 detail、HTTP status 和 `x-request-id`。
 - [x] `api.js` 增补 Provider、检索、来源、任务、编辑保护、幂等和导出错误映射。
 - [x] A3-FC-1 首轮自动扫描已发现并修复 capture 直连 `fetch`、材料上传和 Q&A 写操作缺少 retry 文案；Q&A 已改用正式的材料级 index 路由。
-- [ ] 为可取消请求统一接入 `AbortSignal`，并验证页面切换不会误更新当前页面。
-- [ ] `shell.js` 补齐报告、任务、系统设置入口，并设计可访问的移动端“更多”导航。
+- [x] 为可取消请求统一接入 `AbortSignal` 入口；`api.js` 自动追踪无外部 signal 的请求，`pagehide` 统一取消；逐页 stale 防护仍由 A3-FC-3 验证。
+- [x] `shell.js` 补齐报告、任务、系统设置入口，并实现可访问的移动端“更多”导航。
 - [x] `app.css` 补齐当前页面已使用的状态 token，消除未定义 CSS 变量。
-- [ ] 将各页面重复的局部状态样式迁移到共享 CSS，减少 inline style 和 raw color。
+- [ ] 将各页面重复的局部状态样式迁移到共享 CSS，减少 inline style 和 raw color；共享状态基础样式已先建立。
 
 ### 页面契约
 
 - [x] 用脚本提取静态页面 endpoint，与 FastAPI route inventory 做存在性比对；脚本：`backend/scripts/audit-frontend-contract.py`。
-- [ ] 对关键资源建立字段/状态 fixture：capture、plan、note、practice、report、task。
-- [ ] 对每个写操作确认 Content-Type、Idempotency-Key、失败重试和重复点击行为。
+- [x] 对关键资源建立字段/状态 fixture：capture、plan、note、practice、report、task。
+- [x] 对每个写操作提供统一 Content-Type、Idempotency-Key、失败重试和重复点击基础策略；逐页行为验证仍由 A3-FC-3 完成。
 - [ ] 统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案。
 - [ ] 删除旧字段名和旧状态判断；禁止页面兼容未知字段而掩盖契约漂移。
 
@@ -67,7 +67,17 @@
 - [ ] 确认所有主操作触控命中区至少 44px，状态不只依赖颜色。
 - [ ] 在视觉迁移前不删除现有行为回归路径。
 
-## 4. 执行顺序与门禁
+## 4. 当前阶段分工
+
+以下工作都属于 **A3-FC 前端契约与架构收口**，但拆成三个可验收子阶段，避免混在一起：
+
+- **A3-FC-1（本轮完成首版）：** 自动扫描 endpoint、直接 fetch、旧字段/状态、CSS token、写操作 retry；建立资源状态 fixture 和自动化测试。
+- **A3-FC-2（共享层）：** 收口 `api.js`、`shell.js`、`app.css`，包括 AbortController、幂等策略、统一状态组件、移动端“更多”导航和共享视觉 token。
+- **A3-FC-3（逐页）：** 按页面检查 response 字段、状态映射、loading/empty/ready/failed/retry、键盘、窄屏和隐私；每页修复后单独回归。
+- **A3-PAGES（依赖 A3-FC-2/3）：** 拆分正式页面，不再把新功能混入旧页面。
+- **A3-VISUAL（最后）：** 只做 Neutral Modern 视觉统一，不改变 API 或业务行为。
+
+## 5. 执行顺序与门禁
 
 1. **A3-FC-1：** 完成页面/API/字段/状态/错误审计表和自动化 route 检查。
 2. **A3-FC-2：** 完成 `api.js`、`shell.js`、`app.css` 共享层收口及 focused tests。

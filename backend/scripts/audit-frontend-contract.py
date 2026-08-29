@@ -13,8 +13,9 @@ API = ROOT / "backend" / "app" / "api"
 ROUTE_RE = re.compile(r'@app\.(get|post|put|patch|delete)\(\s*["\']([^"\']+)')
 URL_RE = re.compile(r"(?P<caller>sbApi\.(?:json|upload)|fetch)\(\s*[`\"'](?P<url>[^`\"']+)")
 IGNORE_LEGACY_FIELDS = {"capture_session_id"}
-OLD_FIELDS = ("capture_session_id", "asset_uploaded")
-OLD_STATES = ("created", "asset_uploaded")
+OLD_FIELDS = ("capture_session_id",)
+OLD_STATES = ("asset_uploaded", "created")
+REQUIRED_RESOURCES = {"capture", "plan", "note", "practice", "report", "task"}
 
 def normalize(url: str) -> str:
     url = url.split("?", 1)[0]
@@ -78,6 +79,14 @@ def audit() -> dict[str, object]:
             findings.append({"kind": "json_without_content_type", "page": path.name, "value": "JSON.stringify without explicit Content-Type"})
         if writes and not has_retry:
             findings.append({"kind": "write_without_retry_signal", "page": path.name, "value": "no retry/refresh signal"})
+    fixture_path = ROOT / "docs" / "frontend-contract-fixtures.json"
+    if not fixture_path.exists():
+        findings.append({"kind": "missing_contract_fixture", "page": "shared", "value": fixture_path.name})
+    else:
+        fixtures = json.loads(fixture_path.read_text(encoding="utf-8"))
+        missing_resources = sorted(REQUIRED_RESOURCES - set(fixtures.get("resources", {})))
+        for resource in missing_resources:
+            findings.append({"kind": "missing_contract_fixture_resource", "page": "shared", "value": resource})
     css = (STATIC / "css" / "app.css").read_text(encoding="utf-8")
     all_css = "\n".join(p.read_text(encoding="utf-8") for p in STATIC.rglob("*") if p.suffix in {".css", ".html"})
     defined = set(re.findall(r"--([\w-]+)\s*:", css))
