@@ -196,7 +196,7 @@ backend/app/
 
 **通过门槛：** `frontend-plan.md` F0/F1 对应页面、挂载和 API 映射已完成；相关 Chromium tests 全通过；不再由内嵌 HTML 提供产品 UI。
 
-### A4：执行 frontend-plan F2/F3，Provider 设置与采集页边界
+### A4：Provider 设置、课堂采集与任务状态页面
 
 **目的：** 在真实 ASR 尚未接入前，先让页面如实表达能力状态，避免 UI 先行宣称可用。
 
@@ -204,10 +204,13 @@ backend/app/
 
 1. 实施 `settings-provider.html`：仅显示后端 capability、安全配置状态、保存/验证的分离操作和安全错误；密钥输入后清空，永不回读或持久化到浏览器。
 2. 实施 `capture.html`：上传、operation/task 状态、draft 编辑、confirm/reject/archive 和 source lifecycle 显示；未通过 ASR 门禁时必须禁用真实转写动作并说明原因。
-3. 为每个页面补齐 loading/empty/error/success、键盘、窄屏、reload、privacy DOM 和失败重试测试。
-4. 真实 ASR adapter 只有在 B1-B3 通过后才能从“候选”变为可选能力；前端由 capabilities 驱动，不硬编码工具路径或模型名。
+3. 实施 `tasks.html`：显示 embedding_index enqueue/read/retry/cancel；其它操作显示“尚未接入任务运行器”。
+4. 为每个页面补齐 loading/empty/error/success、键盘、窄屏、reload、privacy DOM 和失败重试测试。
+5. 真实 ASR adapter 只有在 B1-B3 通过后才能从“候选”变为可选能力；前端由 capabilities 驱动，不硬编码工具路径或模型名。
 
-**通过门槛：** F2/F3 的已批准 UI 范围可在 fake/loopback 或真实已验证能力下演示；未验证能力不会显示为已连接或可执行。
+**通过门槛：** 已批准 UI 范围可在 fake/loopback 或真实已验证能力下演示；未验证能力不会显示为已连接或可执行。
+
+**备注：** 本阶段对应 frontend-plan.md 中的 A4，是静态前端 A3 的直接继续。
 
 ### B0：组件库统一准备与证据治理
 
