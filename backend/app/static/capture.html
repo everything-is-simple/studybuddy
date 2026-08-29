@@ -5,31 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · 课堂采集</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
-<style>
-.session-grid{display:grid;gap:16px;margin-top:16px}
-.session-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
-.session-header{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:12px}
-.session-header h3{margin:0;font-size:18px}
-.session-meta{font-size:14px;color:var(--muted);margin-bottom:12px}
-.session-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.session-actions button{padding:8px 14px;font-size:14px}
-.upload-section{margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
-.upload-area{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color 150ms ease,background 150ms ease}
-.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:#f3f6fc}
-.upload-area input{display:none}
-.draft-editor{margin-top:16px}
-.draft-editor textarea{width:100%;min-height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical}
-.transcript-view{background:var(--bg);padding:16px;border-radius:8px;margin-top:12px;white-space:pre-wrap;font-family:var(--mono);font-size:14px;line-height:1.6}
-.asr-notice{border-left:3px solid var(--warn);padding:12px 16px;background:#fffbf0;margin-top:16px}
-.capability-gate{border-left:3px solid var(--danger);padding:12px 16px;background:#fff5f5;margin-top:16px}
-.filters{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.filters label{display:flex;align-items:center;gap:6px;font-size:14px}
-@media(max-width:640px){
-.session-header{flex-direction:column;align-items:stretch}
-.session-actions{flex-direction:column}
-.session-actions button{width:100%}
-}
-</style>
 </head>
 <body>
 <div class="app-shell">
