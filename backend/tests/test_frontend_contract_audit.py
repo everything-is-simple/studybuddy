@@ -42,6 +42,15 @@ def test_shared_state_contract_exposes_fixture_statuses():
             assert status in source
 
 
+def test_learning_pages_use_shared_state_mapping_for_status_output():
+    for name in ("plans.html", "notes.html", "cards.html", "exercises.html", "practice.html"):
+        source = (ROOT / "backend" / "app" / "static" / name).read_text(encoding="utf-8")
+        assert "sbState.label(" in source, name
+    for name in ("plans.html", "notes.html", "cards.html", "exercises.html"):
+        source = (ROOT / "backend" / "app" / "static" / name).read_text(encoding="utf-8")
+        assert "sbState.source(" in source, name
+
+
 def test_static_write_pages_use_shared_request_layer():
     findings = load_auditor().audit()["pages"]
     for page in findings:
