@@ -48,6 +48,7 @@
 - [x] A3-FC-1 首轮自动扫描已发现并修复 capture 直连 `fetch`、材料上传和 Q&A 写操作缺少 retry 文案；Q&A 已改用正式的材料级 index 路由。
 - [x] 为可取消请求统一接入 `AbortSignal` 入口；`api.js` 自动追踪无外部 signal 的请求，`pagehide` 统一取消；逐页 stale 防护仍由 A3-FC-3 验证。
 - [x] `shell.js` 补齐报告、任务、系统设置入口，并实现可访问的移动端“更多”导航。
+- [x] 新增 `css/tokens.css` 作为唯一设计 token 来源，所有 14 个静态页面已加载；`app.css` 不再重复声明 token。
 - [x] `app.css` 补齐当前页面已使用的状态 token，消除未定义 CSS 变量。
 - [ ] 将各页面重复的局部状态样式迁移到共享 CSS，减少 inline style 和 raw color；共享状态基础样式已先建立。
 

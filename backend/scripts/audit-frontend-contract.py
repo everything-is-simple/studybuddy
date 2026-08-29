@@ -88,8 +88,9 @@ def audit() -> dict[str, object]:
         for resource in missing_resources:
             findings.append({"kind": "missing_contract_fixture_resource", "page": "shared", "value": resource})
     css = (STATIC / "css" / "app.css").read_text(encoding="utf-8")
+    token_css = (STATIC / "css" / "tokens.css").read_text(encoding="utf-8") if (STATIC / "css" / "tokens.css").exists() else ""
     all_css = "\n".join(p.read_text(encoding="utf-8") for p in STATIC.rglob("*") if p.suffix in {".css", ".html"})
-    defined = set(re.findall(r"--([\w-]+)\s*:", css))
+    defined = set(re.findall(r"--([\w-]+)\s*:", css + token_css))
     used = set(re.findall(r"var\(--([\w-]+)\)", all_css))
     undefined = sorted(used - defined)
     for token in undefined:
