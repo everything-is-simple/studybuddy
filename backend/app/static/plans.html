@@ -51,7 +51,7 @@
 <div id="module-status" class="notice" role="status" aria-live="polite">正在加载模块...</div>
 <ul id="modules" class="module-list"></ul>
 
-<button class="btn" id="refresh-all" type="button" class="mt-16">刷新数据</button>
+<button class="btn mt-16" id="refresh-all" type="button">刷新数据</button>
 </section>
 
 <section class="card span-8" data-od-id="plans-main">
@@ -78,15 +78,18 @@ const planDetail=document.querySelector('#plan-detail');
 const refreshAll=document.querySelector('#refresh-all');
 
 let selectedPlanId=null;
+let generation=0;
 
 function text(value){return typeof value==='string'?value:''}
 
-async function loadGoals(){
+async function loadGoals(run){
+const current=run||++generation;
 goalStatus.textContent='正在加载目标...';
 goalStatus.className='notice';
 goals.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/goals');
+const data=await sbApi.json('/api/study/goals',{signal:pageRequest.signal});
+if(current!==generation)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 goalStatus.textContent='暂无目标';
@@ -98,15 +101,14 @@ items.forEach(goal=>{
 const li=document.createElement('li');
 li.className='goal-item';
 const title=document.createElement('div');
-title.style.fontWeight='600';
-title.style.fontSize='14px';
+title.className='item-title';
 title.textContent=text(goal.title)||'未命名目标';
 li.append(title);
 if(goal.status){
 const badge=document.createElement('span');
 badge.className='status-badge '+(goal.status||'draft');
-badge.textContent=goal.status;
-badge.style.fontSize='11px';
+badge.textContent=sbState.label(goal.status);
+badge.classList.add('badge-compact');
 title.append(badge)
 }
 goals.append(li)
@@ -117,12 +119,14 @@ goalStatus.textContent=sbApi.safeError(e)
 }
 }
 
-async function loadModules(){
+async function loadModules(run){
+const current=run||generation;
 moduleStatus.textContent='正在加载模块...';
 moduleStatus.className='notice';
 modules.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/modules');
+const data=await sbApi.json('/api/study/modules',{signal:pageRequest.signal});
+if(current!==generation)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 moduleStatus.textContent='暂无模块';
@@ -134,15 +138,13 @@ items.forEach(mod=>{
 const li=document.createElement('li');
 li.className='module-item';
 const title=document.createElement('div');
-title.style.fontWeight='600';
-title.style.fontSize='14px';
+title.className='item-title';
 title.textContent=text(mod.name)||'未命名模块';
 li.append(title);
 if(mod.description){
 const desc=document.createElement('div');
 desc.className='muted';
-desc.style.fontSize='12px';
-desc.style.marginTop='4px';
+desc.className='muted item-description';
 desc.textContent=text(mod.description);
 li.append(desc)
 }
@@ -154,13 +156,15 @@ moduleStatus.textContent=sbApi.safeError(e)
 }
 }
 
-async function loadPlans(){
+async function loadPlans(run){
+const current=run||generation;
 planStatus.textContent='正在加载计划...';
 planStatus.className='notice';
 plans.replaceChildren();
 planDetail.hidden=true;
 try{
-const data=await sbApi.json('/api/study/plans');
+const data=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
+if(current!==generation)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 planStatus.textContent='暂无学习计划';
@@ -172,19 +176,18 @@ const li=document.createElement('li');
 li.className='plan-item';
 if(plan.id===selectedPlanId)li.classList.add('selected');
 const title=document.createElement('div');
-title.style.fontWeight='600';
+title.className='item-title';
 title.textContent=text(plan.title)||'未命名计划';
 li.append(title);
 const meta=document.createElement('div');
 meta.className='muted';
-meta.style.marginTop='4px';
+meta.classList.add('item-meta');
 meta.textContent=`${plan.item_count||0} 个项目`;
 li.append(meta);
 const badge=document.createElement('span');
 badge.className='status-badge '+(plan.status||'draft');
-badge.textContent=plan.status||'draft';
-badge.style.marginTop='8px';
-badge.style.display='inline-block';
+badge.textContent=sbState.label(plan.status||'draft');
+badge.classList.add('badge-spaced');
 li.append(badge);
 li.onclick=()=>selectPlan(plan.id);
 plans.append(li)
@@ -203,7 +206,7 @@ document.querySelectorAll('.plan-item').forEach(el=>{
 el.classList.toggle('selected',el.onclick.toString().includes(planId))
 });
 try{
-const plan=await sbApi.json(`/api/study/plans/${encodeURIComponent(planId)}`);
+const plan=await sbApi.json(`/api/study/plans/${encodeURIComponent(planId)}`,{signal:pageRequest.signal});
 planDetail.replaceChildren();
 const title=document.createElement('h3');
 title.textContent=text(plan.title);
@@ -215,7 +218,7 @@ planDetail.append(desc)
 }
 const itemsTitle=document.createElement('h4');
 itemsTitle.textContent='计划项目';
-itemsTitle.style.marginTop='16px';
+
 planDetail.append(itemsTitle);
 const itemsContainer=document.createElement('div');
 itemsContainer.className='plan-items';
@@ -231,13 +234,13 @@ const entry=document.createElement('div');
 entry.className='plan-item-entry';
 if(item.completed)entry.classList.add('completed');
 const itemTitle=document.createElement('div');
-itemTitle.style.fontWeight='600';
+itemTitle.className='item-title';
 itemTitle.textContent=text(item.title)||'未命名项';
 entry.append(itemTitle);
 if(item.source_link_status&&item.source_link_status!=='valid'){
 const source=document.createElement('div');
 source.className='source-link '+(item.source_link_status||'');
-source.textContent='来源: '+item.source_link_status;
+source.textContent='来源: '+sbState.source(item.source_link_status);
 entry.append(source)
 }
 itemsContainer.append(entry)
@@ -249,15 +252,9 @@ planDetail.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 }
 }
 
-refreshAll.addEventListener('click',()=>{
-loadGoals();
-loadModules();
-loadPlans()
-});
-
-loadGoals();
-loadModules();
-loadPlans()
+function refresh(){const run=++generation;loadGoals(run);loadModules(run);loadPlans(run)}
+refreshAll.addEventListener('click',refresh);
+refresh()
 })();
 </script>
 </body>

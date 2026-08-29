@@ -44,7 +44,7 @@
 <h2>笔记列表</h2>
 <div id="note-status" class="notice" role="status" aria-live="polite">正在加载笔记...</div>
 <ul id="notes" class="note-list"></ul>
-<button class="btn" id="refresh-notes" type="button" class="mt-12">刷新列表</button>
+<button class="btn mt-12" id="refresh-notes" type="button">刷新列表</button>
 </section>
 
 <section class="card span-8" data-od-id="notes-detail">
@@ -68,6 +68,7 @@ const detailStatus=document.querySelector('#detail-status');
 const noteDetail=document.querySelector('#note-detail');
 
 let selectedNoteId=null;
+let generation=0;
 
 function text(value){return typeof value==='string'?value:''}
 
@@ -82,7 +83,9 @@ noteStatus.textContent='正在加载笔记...';
 noteStatus.className='notice';
 notes.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/notes');
+const run=++generation;
+const data=await sbApi.json('/api/study/notes',{signal:pageRequest.signal});
+if(run!==generation)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 noteStatus.textContent='暂无笔记';
@@ -98,7 +101,7 @@ title.style.fontWeight='600';
 title.textContent=text(note.title)||'未命名笔记';
 const type=document.createElement('span');
 type.className='note-type '+(note.note_type||'user');
-type.textContent=typeLabels[note.note_type]||note.note_type;
+type.textContent=typeLabels[note.note_type]||sbState.label(note.note_type);
 title.append(type);
 li.append(title);
 const meta=document.createElement('div');
@@ -131,7 +134,7 @@ document.querySelectorAll('.note-item').forEach(el=>{
 el.classList.toggle('selected',el.onclick.toString().includes(noteId))
 });
 try{
-const note=await sbApi.json(`/api/study/notes/${encodeURIComponent(noteId)}`);
+const note=await sbApi.json(`/api/study/notes/${encodeURIComponent(noteId)}`,{signal:pageRequest.signal});
 detailStatus.hidden=true;
 const container=document.createElement('div');
 const type=document.createElement('div');
@@ -187,7 +190,7 @@ if(note.source_citation_status&&note.source_citation_status!=='valid'){
 const source=document.createElement('div');
 source.className='citation-status '+(note.source_citation_status||'');
 source.style.marginTop='8px';
-source.textContent='来源状态: '+note.source_citation_status;
+source.textContent='来源状态: '+sbState.source(note.source_citation_status);
 container.append(source)
 }
 if(note.note_type==='ai_draft'){

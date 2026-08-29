@@ -42,14 +42,14 @@
 <h2>练习会话</h2>
 <div id="session-status" class="notice" role="status" aria-live="polite">正在加载练习会话...</div>
 <ul id="sessions" class="session-list"></ul>
-<button class="btn" id="refresh-sessions" type="button" class="mt-12">刷新列表</button>
+<button class="btn mt-12" id="refresh-sessions" type="button">刷新列表</button>
 </section>
 
 <section class="card span-6" data-od-id="practice-mistakes">
 <h2>错题库</h2>
 <div id="mistake-status" class="notice" role="status" aria-live="polite">正在加载错题...</div>
 <ul id="mistakes" class="mistake-list"></ul>
-<button class="btn" id="refresh-mistakes" type="button" class="mt-12">刷新</button>
+<button class="btn mt-12" id="refresh-mistakes" type="button">刷新</button>
 </section>
 
 <section class="card span-12" data-od-id="practice-detail" hidden>
@@ -74,6 +74,8 @@ const detailSection=document.querySelector('[data-od-id="practice-detail"]');
 const detailTitle=document.querySelector('#detail-title');
 const detailContent=document.querySelector('#detail-content');
 
+let sessionGeneration=0;
+let mistakeGeneration=0;
 function text(value){return typeof value==='string'?value:''}
 
 async function loadSessions(){
@@ -81,7 +83,9 @@ sessionStatus.textContent='正在加载练习会话...';
 sessionStatus.className='notice';
 sessions.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/practice-sessions');
+const run=++sessionGeneration;
+const data=await sbApi.json('/api/study/practice-sessions',{signal:pageRequest.signal});
+if(run!==sessionGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 sessionStatus.textContent='暂无练习会话';
@@ -96,7 +100,7 @@ title.style.fontWeight='600';
 title.textContent=text(session.title)||'练习会话';
 const status=document.createElement('span');
 status.className='status-badge '+(session.status||'draft');
-status.textContent=session.status||'draft';
+status.textContent=sbState.label(session.status||'draft');
 title.append(status);
 li.append(title);
 const meta=document.createElement('div');
@@ -117,11 +121,13 @@ sessionStatus.textContent=sbApi.safeError(e)
 }
 
 async function loadMistakes(){
+const run=++mistakeGeneration;
 mistakeStatus.textContent='正在加载错题...';
 mistakeStatus.className='notice';
 mistakes.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/mistakes');
+const data=await sbApi.json('/api/study/mistakes',{signal:pageRequest.signal});
+if(run!==mistakeGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 mistakeStatus.textContent='暂无错题记录';
@@ -164,7 +170,7 @@ detailSection.hidden=false;
 detailTitle.textContent='会话详情';
 detailContent.innerHTML='<div class="notice">正在加载会话详情...</div>';
 try{
-const session=await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}`);
+const session=await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}`,{signal:pageRequest.signal});
 detailContent.replaceChildren();
 const container=document.createElement('div');
 container.className='session-detail';
@@ -177,7 +183,7 @@ status.style.marginTop='8px';
 status.innerHTML='<strong>状态：</strong>';
 const statusBadge=document.createElement('span');
 statusBadge.className='status-badge '+(session.status||'draft');
-statusBadge.textContent=session.status||'draft';
+statusBadge.textContent=sbState.label(session.status||'draft');
 status.append(statusBadge);
 container.append(status);
 if(session.deadline){
@@ -229,7 +235,7 @@ alert(sbApi.safeError(e))
 
 async function viewResult(sessionId){
 try{
-const result=await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}/result`);
+const result=await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}/result`,{signal:pageRequest.signal});
 detailContent.replaceChildren();
 const container=document.createElement('div');
 container.className='session-detail';
