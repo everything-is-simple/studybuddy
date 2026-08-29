@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 10-9、A3/A4 与 A3-FC-3-2 已同步）
-> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，当前 backend 基线为 **421 passed, 2 skipped**，浏览器基线为 **112 passed, 3 skipped**；整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为，不代表完整产品化页面架构或 Neutral Modern 视觉系统已经完成。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 更新：2026-08-30（Phase 10-9、A3/A4、A3-FC-3-2 与 A3-PAGES 首批页面已同步）
+> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，当前 backend 基线为 **421 passed, 2 skipped**，浏览器基线为 **117 passed, 3 skipped**；整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为，不代表完整产品化页面架构或 Neutral Modern 视觉系统已经完成。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -296,7 +296,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A3：执行 [`frontend-plan.md`](frontend-plan.md) A3：建立唯一正式 static root、原生应用壳以及核心页面；完成已覆盖范围的 browser/keyboard/narrow/privacy 门禁。
 - [x] A4：执行 [`frontend-plan.md`](frontend-plan.md) A4：Provider 设置、课堂采集与任务状态页面；接入已验证 API，如实表达能力边界。
 - [x] A3-FC：前端契约与架构收口。A3-FC-1 自动 endpoint/route/字段/token/retry 审计和 fixture、A3-FC-2 共享请求层与移动导航、A3-FC-3-2 全部 14 个静态页面的能力冻结、failure/retry 证据索引、状态/来源生命周期、360–1920、键盘、隐私 DOM、契约/治理测试均已完成。证据见 `frontend-static-capability-matrix.md` 与 `frontend-static-failure-retry-matrix.md`；已通过 backend `421 passed, 2 skipped`、browser `112 passed, 3 skipped` 和 A3-FC 专项 `17 passed`。此关闭不等于 A3-PAGES/A3-VISUAL 完成；`legacy_only`/`not_exposed`/`a3_pages` 能力仍冻结，不将 `/legacy` 证据写成静态页迁移。
-- [ ] A3-PAGES：在 A3-FC-3 第二轮通过后，按 frontend-plan 拆分并验收 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 在替代页具备回退证据前继续作为兼容入口。每页必须有 loading/empty/ready/failed/retry、窄屏、键盘、隐私 DOM 测试。
+- [x] A3-PAGES：已按 frontend-plan 拆分并验收 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。已覆盖缺少标识、loading/empty/ready/failed/retry、来源生命周期、导航回退、只读边界、360–1920、键盘和隐私 DOM；完整 browser `117 passed, 3 skipped`，专项页面/矩阵 browser `13 passed`。现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 继续作为兼容入口；本项不迁移后端仍未批准的写操作、报告导出/审计、Provider 配置写入或密钥保存。
 - [ ] A3-VISUAL：在 A3-FC-3 第二轮和 A3-PAGES 通过后完成 Neutral Modern token/组件/响应式视觉迁移；将剩余页面局部 CSS 收敛为 card/button/badge/notice/dialog/focus/grid 组件，并完成 360–1920 视觉矩阵；不以视觉改版替代功能契约测试。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
 - [ ] B1：真实 ASR 候选（whisper.cpp/FunASR/SenseVoice）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；真实 smoke 必须 explicit opt-in。

@@ -510,8 +510,8 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
 - [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 14 个静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项完成不代表 A3-PAGES/A3-VISUAL 完成。
 - [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
-- [ ] **正式页面拆分（A3-PAGES）**：仅在 A3-FC-3 第二轮通过后，补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页有回退证据前保持现有混合页面入口。
-- [ ] **Neutral Modern 视觉迁移（A3-VISUAL）**：仅在 A3-PAGES 通过后完成 token、组件、响应式、焦点和状态视觉统一，并收敛剩余局部 CSS。
+- [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；完整 browser `117 passed, 3 skipped`，专项证据 `13 passed`。不代表报告导出/审计、练习写操作或 Provider 配置写入已迁移。
+- [ ] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；下一步完成 token、组件、响应式、焦点和状态视觉统一，并收敛剩余局部 CSS。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
 - [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
