@@ -173,7 +173,7 @@ status.style.marginTop='8px';
 status.innerHTML='<strong>状态：</strong>';
 const statusBadge=document.createElement('span');
 statusBadge.className='status-badge '+(capture.status||'draft');
-statusBadge.textContent=capture.status||'draft';
+statusBadge.textContent=sbState.label(capture.status||'draft');
 status.append(statusBadge);
 container.append(status);
 if(capture.capture_type){
@@ -296,7 +296,7 @@ const status=document.createElement('div');
 status.style.marginTop='12px';
 status.innerHTML='<strong>当前模式：</strong>';
 const statusText=document.createElement('span');
-statusText.textContent=audit.mode||'off';
+statusText.textContent=sbState.label(audit.mode||'off');
 status.append(statusText);
 container.append(status);
 const info=document.createElement('div');
