@@ -74,6 +74,8 @@ const cardDetail=document.querySelector('#card-detail');
 const cards=document.querySelector('#cards');
 
 let selectedDeckId=null;
+let deckGeneration=0;
+let cardGeneration=0;
 
 function text(value){return typeof value==='string'?value:''}
 
@@ -82,7 +84,9 @@ deckStatus.textContent='正在加载卡片组...';
 deckStatus.className='notice';
 decks.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/decks');
+const run=++deckGeneration;
+const data=await sbApi.json('/api/study/decks',{signal:pageRequest.signal});
+if(run!==deckGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 deckStatus.textContent='暂无卡片组';
@@ -97,7 +101,7 @@ const meta=document.createElement('div');
 meta.className='deck-meta';
 const info=document.createElement('div');
 const title=document.createElement('div');
-title.style.fontWeight='600';
+title.className='item-title';
 title.textContent=text(deck.title)||'未命名卡片组';
 info.append(title);
 const count=document.createElement('div');
@@ -107,7 +111,7 @@ info.append(count);
 meta.append(info);
 const badge=document.createElement('span');
 badge.className='status-badge '+(deck.status||'draft');
-badge.textContent=deck.status||'draft';
+badge.textContent=sbState.label(deck.status||'draft');
 meta.append(badge);
 li.append(meta);
 li.onclick=()=>selectDeck(deck.id,deck.title);
@@ -132,7 +136,9 @@ document.querySelectorAll('.deck-item').forEach(el=>{
 el.classList.toggle('selected',el.onclick.toString().includes(deckId))
 });
 try{
-const data=await sbApi.json(`/api/study/decks/${encodeURIComponent(deckId)}/cards`);
+const run=++cardGeneration;
+const data=await sbApi.json(`/api/study/decks/${encodeURIComponent(deckId)}/cards`,{signal:pageRequest.signal});
+if(run!==cardGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 cardStatus.textContent='该卡片组暂无卡片';
@@ -147,19 +153,19 @@ const meta=document.createElement('div');
 meta.className='card-meta';
 const info=document.createElement('div');
 const question=document.createElement('div');
-question.style.fontWeight='600';
+question.className='item-title';
 question.textContent=text(card.front)||'问题';
 info.append(question);
 if(card.source_status){
 const source=document.createElement('div');
 source.className='source-status '+(card.source_status==='valid'?'':'stale unavailable'.includes(card.source_status)?card.source_status:'');
-source.textContent='来源: '+card.source_status;
+source.textContent='来源: '+sbState.source(card.source_status);
 info.append(source)
 }
 meta.append(info);
 const badge=document.createElement('span');
 badge.className='status-badge '+(card.status||'draft');
-badge.textContent=card.status||'draft';
+badge.textContent=sbState.label(card.status||'draft');
 meta.append(badge);
 li.append(meta);
 if(card.back){
@@ -183,7 +189,7 @@ cardStatus.hidden=false;
 cardStatus.textContent='正在加载卡片详情...';
 cardStatus.className='notice';
 try{
-const card=await sbApi.json(`/api/study/cards/${encodeURIComponent(cardId)}`);
+const card=await sbApi.json(`/api/study/cards/${encodeURIComponent(cardId)}`,{signal:pageRequest.signal});
 cardStatus.hidden=true;
 const container=document.createElement('div');
 const front=document.createElement('div');
@@ -194,20 +200,20 @@ front.append(frontText);
 container.append(front);
 const back=document.createElement('div');
 back.innerHTML='<strong>答案：</strong>';
-back.style.marginTop='12px';
+back.className='mt-12';
 const backText=document.createElement('span');
 backText.textContent=text(card.back);
 back.append(backText);
 container.append(back);
 if(card.citation_keys&&card.citation_keys.length){
 const citations=document.createElement('div');
-citations.style.marginTop='12px';
+citations.className='mt-12';
 citations.innerHTML='<strong>引用来源：</strong>';
 card.citation_keys.forEach(key=>{
 const link=document.createElement('a');
 link.href='#';
 link.textContent=key;
-link.style.marginLeft='8px';
+link.className='citation-link';
 link.onclick=e=>{e.preventDefault();alert('Citation: '+key)};
 citations.append(link)
 });

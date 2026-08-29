@@ -72,6 +72,8 @@ const exerciseDetail=document.querySelector('#exercise-detail');
 const exercises=document.querySelector('#exercises');
 
 let selectedSetId=null;
+let setGeneration=0;
+let exerciseGeneration=0;
 
 function text(value){return typeof value==='string'?value:''}
 
@@ -86,7 +88,9 @@ setStatus.textContent='正在加载练习集...';
 setStatus.className='notice';
 sets.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/exercise-sets');
+const run=++setGeneration;
+const data=await sbApi.json('/api/study/exercise-sets',{signal:pageRequest.signal});
+if(run!==setGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 setStatus.textContent='暂无练习集';
@@ -98,19 +102,18 @@ const li=document.createElement('li');
 li.className='set-item';
 if(set.id===selectedSetId)li.classList.add('selected');
 const title=document.createElement('div');
-title.style.fontWeight='600';
+title.className='item-title';
 title.textContent=text(set.title)||'未命名练习集';
 li.append(title);
 const meta=document.createElement('div');
 meta.className='muted';
-meta.style.marginTop='4px';
+meta.classList.add('item-meta');
 meta.textContent=`${set.exercise_count||0} 道题`;
 li.append(meta);
 const badge=document.createElement('span');
 badge.className='status-badge '+(set.status||'draft');
-badge.textContent=set.status||'draft';
-badge.style.marginTop='8px';
-badge.style.display='inline-block';
+badge.textContent=sbState.label(set.status||'draft');
+badge.classList.add('badge-spaced');
 li.append(badge);
 li.onclick=()=>selectSet(set.id,set.title);
 sets.append(li)
@@ -134,7 +137,9 @@ document.querySelectorAll('.set-item').forEach(el=>{
 el.classList.toggle('selected',el.onclick.toString().includes(setId))
 });
 try{
-const data=await sbApi.json(`/api/study/exercise-sets/${encodeURIComponent(setId)}/exercises`);
+const run=++exerciseGeneration;
+const data=await sbApi.json(`/api/study/exercise-sets/${encodeURIComponent(setId)}/exercises`,{signal:pageRequest.signal});
+if(run!==exerciseGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 exerciseStatus.textContent='该练习集暂无题目';
@@ -149,27 +154,24 @@ const meta=document.createElement('div');
 meta.className='exercise-meta';
 const info=document.createElement('div');
 const prompt=document.createElement('div');
-prompt.style.fontWeight='600';
+prompt.className='item-title';
 prompt.textContent=text(exercise.prompt)||'题目';
 info.append(prompt);
 const type=document.createElement('span');
 type.className='exercise-type';
 type.textContent=typeLabels[exercise.exercise_type]||exercise.exercise_type;
-type.style.marginTop='4px';
-type.style.display='inline-block';
+type.className='exercise-type item-description';
 info.append(type);
 meta.append(info);
 const badge=document.createElement('span');
 badge.className='status-badge '+(exercise.status||'draft');
-badge.textContent=exercise.status||'draft';
+badge.textContent=sbState.label(exercise.status||'draft');
 meta.append(badge);
 li.append(meta);
 if(exercise.source_status&&exercise.source_status!=='valid'){
 const source=document.createElement('div');
-source.className='muted';
-source.style.marginTop='8px';
-source.style.color=exercise.source_status==='stale'?'var(--warn)':'var(--error)';
-source.textContent='来源: '+exercise.source_status;
+source.className='source-link '+(exercise.source_status||'');
+source.textContent='来源: '+sbState.source(exercise.source_status);
 li.append(source)
 }
 li.onclick=()=>viewExercise(exercise.id);
@@ -187,7 +189,7 @@ exerciseStatus.hidden=false;
 exerciseStatus.textContent='正在加载题目详情...';
 exerciseStatus.className='notice';
 try{
-const exercise=await sbApi.json(`/api/study/exercises/${encodeURIComponent(exerciseId)}`);
+const exercise=await sbApi.json(`/api/study/exercises/${encodeURIComponent(exerciseId)}`,{signal:pageRequest.signal});
 exerciseStatus.hidden=true;
 const container=document.createElement('div');
 const prompt=document.createElement('div');
@@ -197,7 +199,7 @@ promptText.textContent=text(exercise.prompt);
 prompt.append(promptText);
 container.append(prompt);
 const type=document.createElement('div');
-type.style.marginTop='8px';
+type.className='mt-8';
 type.innerHTML='<strong>类型：</strong>';
 const typeText=document.createElement('span');
 typeText.textContent=typeLabels[exercise.exercise_type]||exercise.exercise_type;
@@ -205,7 +207,7 @@ type.append(typeText);
 container.append(type);
 if(exercise.exercise_type==='multiple_choice'&&exercise.options){
 const options=document.createElement('div');
-options.style.marginTop='8px';
+options.className='mt-8';
 options.innerHTML='<strong>选项：</strong>';
 const ol=document.createElement('ol');
 exercise.options.forEach(opt=>{
@@ -217,22 +219,22 @@ options.append(ol);
 container.append(options)
 }
 const status=document.createElement('div');
-status.style.marginTop='8px';
+status.className='mt-8';
 status.innerHTML='<strong>状态：</strong>';
 const statusBadge=document.createElement('span');
 statusBadge.className='status-badge '+(exercise.status||'draft');
-statusBadge.textContent=exercise.status||'draft';
+statusBadge.textContent=sbState.label(exercise.status||'draft');
 status.append(statusBadge);
 container.append(status);
 if(exercise.citation_keys&&exercise.citation_keys.length){
 const citations=document.createElement('div');
-citations.style.marginTop='12px';
+citations.className='mt-12';
 citations.innerHTML='<strong>引用来源：</strong>';
 exercise.citation_keys.forEach(key=>{
 const link=document.createElement('a');
 link.href='#';
 link.textContent=key;
-link.style.marginLeft='8px';
+link.className='citation-link';
 link.onclick=e=>{e.preventDefault();alert('Citation: '+key)};
 citations.append(link)
 });
@@ -240,7 +242,7 @@ container.append(citations)
 }
 if(exercise.status==='draft'){
 const actions=document.createElement('div');
-actions.style.marginTop='16px';
+actions.className='mt-16';
 const confirmBtn=document.createElement('button');
 confirmBtn.className='btn btn-primary';
 confirmBtn.textContent='确认题目';
