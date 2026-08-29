@@ -5,23 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · 练习集</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
-<style>
-.set-list,.exercise-list{list-style:none;padding:0;margin:0}
-.set-item,.exercise-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer;transition:background 150ms}
-.set-item:hover,.exercise-item:hover{background:var(--bg-muted)}
-.set-item.selected{border-color:var(--accent);background:var(--bg-muted)}
-.exercise-meta{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.status-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600}
-.status-badge.draft{background:var(--warn-bg);color:var(--warn)}
-.status-badge.ready{background:var(--success-bg);color:var(--success)}
-.status-badge.rejected{background:var(--error-bg);color:var(--error)}
-.status-badge.archived{background:var(--muted-bg);color:var(--muted)}
-.exercise-type{font-size:12px;padding:2px 6px;border-radius:4px;background:var(--bg-muted)}
-.exercise-detail{margin-top:12px;padding:12px;background:var(--bg-muted);border-radius:8px}
-@media(max-width:640px){
-.exercise-meta{flex-direction:column;align-items:flex-start}
-}
-</style>
 </head>
 <body>
 <div class="app-shell">
