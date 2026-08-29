@@ -113,7 +113,7 @@ providerStatus.textContent=`AI Provider: ${provider}/${model} (${data.llm_verifi
 }
 }catch(e){
 providerStatus.className='notice warn';
-providerStatus.textContent='AI Provider 状态检查失败'
+providerStatus.textContent='AI Provider 状态检查失败，可刷新重试'
 }
 }
 
@@ -129,18 +129,14 @@ submitStatus.className='notice';
 submitStatus.textContent='正在建立索引...';
 try{
 for(const mid of materialIds){
-await sbApi.json('/api/ai-index',{
-method:'POST',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({material_id:mid})
-})
+await sbApi.json(`/api/materials/${encodeURIComponent(mid)}/ai-index`,{method:'POST'})
 }
 submitStatus.className='notice';
 submitStatus.textContent='索引建立完成';
 setTimeout(()=>submitStatus.hidden=true,3000)
 }catch(e){
 submitStatus.className='notice warn';
-submitStatus.textContent=sbApi.safeError(e)
+submitStatus.textContent=sbApi.safeError(e)+' 可重试。'
 }finally{
 indexBtn.disabled=false
 }
@@ -184,7 +180,7 @@ submitStatus.textContent='问答已记录，但回答生成失败或超时'
 }
 }catch(e){
 submitStatus.className='notice warn';
-submitStatus.textContent=sbApi.safeError(e)
+submitStatus.textContent=sbApi.safeError(e)+' 可重试。'
 }finally{
 submitBtn.disabled=false
 }

@@ -45,6 +45,7 @@
 - [x] `api.js` 对字符串 JSON body 自动补 `Content-Type: application/json`；保留调用方显式 header。
 - [x] `api.js` 统一解析安全 detail、HTTP status 和 `x-request-id`。
 - [x] `api.js` 增补 Provider、检索、来源、任务、编辑保护、幂等和导出错误映射。
+- [x] A3-FC-1 首轮自动扫描已发现并修复 capture 直连 `fetch`、材料上传和 Q&A 写操作缺少 retry 文案；Q&A 已改用正式的材料级 index 路由。
 - [ ] 为可取消请求统一接入 `AbortSignal`，并验证页面切换不会误更新当前页面。
 - [ ] `shell.js` 补齐报告、任务、系统设置入口，并设计可访问的移动端“更多”导航。
 - [x] `app.css` 补齐当前页面已使用的状态 token，消除未定义 CSS 变量。
@@ -52,7 +53,7 @@
 
 ### 页面契约
 
-- [ ] 用脚本提取静态页面 endpoint，与 FastAPI route inventory 做存在性比对。
+- [x] 用脚本提取静态页面 endpoint，与 FastAPI route inventory 做存在性比对；脚本：`backend/scripts/audit-frontend-contract.py`。
 - [ ] 对关键资源建立字段/状态 fixture：capture、plan、note、practice、report、task。
 - [ ] 对每个写操作确认 Content-Type、Idempotency-Key、失败重试和重复点击行为。
 - [ ] 统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案。

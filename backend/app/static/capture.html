@@ -241,7 +241,7 @@ alert(sbApi.safeError(e))
 }
 }
 
-function renderSessionDetail(data){const captureId=data.id||data.capture_session_id;
+function renderSessionDetail(data){const captureId=data.id;
 sessionDetailContent.innerHTML='';
 
 const title=document.createElement('h2');
@@ -335,16 +335,7 @@ statusEl.hidden=false;
 statusEl.className='notice';
 statusEl.textContent=`正在上传 ${file.name}...`;
 try{
-const formData=new FormData();
-formData.append('file',file);
-const result=await fetch(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/upload`,{
-method:'POST',
-body:formData
-});
-if(!result.ok){
-const err=await result.json().catch(()=>({}));
-throw new Error(err.detail||'upload_failed')
-}
+await sbApi.upload(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/upload`,file);
 statusEl.className='notice';
 statusEl.textContent='上传成功！';
 setTimeout(()=>{
