@@ -73,14 +73,19 @@ const detailSection=document.querySelector('[data-od-id="classroom-detail"]');
 const detailTitle=document.querySelector('#detail-title');
 const detailContent=document.querySelector('#detail-content');
 
+let captureGeneration=0;
+let reportGeneration=0;
+let detailGeneration=0;
 function text(value){return typeof value==='string'?value:''}
 
 async function loadCaptures(){
+const generation=++captureGeneration;
 captureStatus.textContent='正在加载采集会话...';
 captureStatus.className='notice';
 captures.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/capture-sessions');
+const data=await sbApi.json('/api/study/capture-sessions',{signal:pageRequest.signal});
+if(generation!==captureGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 captureStatus.textContent='暂无采集会话';
@@ -91,17 +96,15 @@ items.forEach(capture=>{
 const li=document.createElement('li');
 li.className='capture-item';
 const title=document.createElement('div');
-title.style.fontWeight='600';
+title.className='item-title';
 title.textContent=text(capture.title)||'未命名会话';
 const status=document.createElement('span');
 status.className='status-badge '+(capture.status||'draft');
-status.textContent=capture.status||'draft';
+status.textContent=sbState.label(capture.status||'draft');
 title.append(status);
 li.append(title);
 const meta=document.createElement('div');
-meta.className='muted';
-meta.style.marginTop='4px';
-meta.style.fontSize='12px';
+meta.className='muted item-meta';
 if(capture.capture_type){
 meta.textContent='类型: '+(capture.capture_type==='deterministic'?'确定性转写':'loopback 转写')
 }
@@ -116,11 +119,13 @@ captureStatus.textContent=sbApi.safeError(e)
 }
 
 async function loadReports(){
+const generation=++reportGeneration;
 reportStatus.textContent='正在加载报告...';
 reportStatus.className='notice';
 reports.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/reports');
+const data=await sbApi.json('/api/study/reports',{signal:pageRequest.signal});
+if(generation!==reportGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 reportStatus.textContent='暂无报告';
@@ -131,13 +136,11 @@ items.forEach(report=>{
 const li=document.createElement('li');
 li.className='report-item';
 const title=document.createElement('div');
-title.style.fontWeight='600';
+title.className='item-title';
 title.textContent=text(report.title)||'学习报告';
 li.append(title);
 const meta=document.createElement('div');
-meta.className='muted';
-meta.style.marginTop='4px';
-meta.style.fontSize='12px';
+meta.className='muted item-meta';
 if(report.created_at){
 meta.textContent='创建: '+new Date(report.created_at).toLocaleString('zh-CN')
 }
@@ -152,11 +155,13 @@ reportStatus.textContent=sbApi.safeError(e)
 }
 
 async function viewCapture(captureId){
+const generation=++detailGeneration;
 detailSection.hidden=false;
 detailTitle.textContent='采集会话详情';
 detailContent.innerHTML='<div class="notice">正在加载采集详情...</div>';
 try{
-const capture=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`);
+const capture=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`,{signal:pageRequest.signal});
+if(generation!==detailGeneration)return;
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
@@ -202,7 +207,7 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 
 async function viewTranscript(captureId){
 try{
-const transcript=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript`);
+const transcript=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript`,{signal:pageRequest.signal});
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
@@ -242,7 +247,7 @@ detailSection.hidden=false;
 detailTitle.textContent='学习报告';
 detailContent.innerHTML='<div class="notice">正在加载报告...</div>';
 try{
-const report=await sbApi.json(`/api/study/reports/${encodeURIComponent(reportId)}`);
+const report=await sbApi.json(`/api/study/reports/${encodeURIComponent(reportId)}`,{signal:pageRequest.signal});
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
@@ -281,7 +286,7 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 
 async function viewDeliveryAudit(){
 try{
-const audit=await sbApi.json('/api/study/reports');
+const audit=await sbApi.json('/api/study/reports',{signal:pageRequest.signal});
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
