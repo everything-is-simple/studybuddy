@@ -58,9 +58,9 @@
 - [x] 用脚本提取静态页面 endpoint，与 FastAPI route inventory 做存在性比对；脚本：`backend/scripts/audit-frontend-contract.py`。
 - [x] 对关键资源建立字段/状态 fixture：capture、plan、note、practice、report、task。
 - [x] 对每个写操作提供统一 Content-Type、Idempotency-Key、失败重试和重复点击基础策略；核心三页已完成逐页回归。
-- [ ] **A3-FC-3 第二轮**：统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案，并完成所有现有页面的剩余 `sbState` 迁移。
+- [ ] **A3-FC-3 第二轮**：统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案，并完成所有现有页面的剩余 `sbState` 迁移；学习页面首批 lifecycle/source 状态矩阵已通过，采集/报告/系统页面仍待补齐。
 - [x] 删除核心三页旧字段名和旧状态判断；禁止页面兼容未知字段而掩盖契约漂移。
-- [ ] **A3-FC-3 第二轮**：为每个现有页面补齐 stale/failure/source-lifecycle、360–1920 宽度、键盘与隐私 DOM 浏览器矩阵；这是关闭 A3-FC 的唯一剩余行为门禁。
+- [ ] **A3-FC-3 第二轮**：为每个现有页面补齐 stale/failure/source-lifecycle、360–1920 宽度、键盘与隐私 DOM 浏览器矩阵；学习页面的 360–1920 与安全失败矩阵已通过，采集/报告/系统页面仍待补齐；这是关闭 A3-FC 的唯一剩余行为门禁。
 
 ### 后续阶段边界
 

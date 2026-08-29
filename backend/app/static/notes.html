@@ -72,11 +72,6 @@ let generation=0;
 
 function text(value){return typeof value==='string'?value:''}
 
-const typeLabels={
-user:'用户笔记',
-ai_draft:'AI 草稿',
-confirmed:'已确认'
-};
 
 async function loadNotes(){
 noteStatus.textContent='正在加载笔记...';
@@ -97,17 +92,15 @@ const li=document.createElement('li');
 li.className='note-item';
 if(note.id===selectedNoteId)li.classList.add('selected');
 const title=document.createElement('div');
-title.style.fontWeight='600';
+title.className='item-title';
 title.textContent=text(note.title)||'未命名笔记';
 const type=document.createElement('span');
 type.className='note-type '+(note.note_type||'user');
-type.textContent=typeLabels[note.note_type]||sbState.label(note.note_type);
+type.textContent=sbState.label(note.note_type);
 title.append(type);
 li.append(title);
 const meta=document.createElement('div');
-meta.className='muted';
-meta.style.marginTop='4px';
-meta.style.fontSize='12px';
+meta.className='muted item-meta';
 if(note.material_name){
 meta.textContent='材料: '+text(note.material_name)
 }else{
@@ -141,12 +134,12 @@ const type=document.createElement('div');
 type.innerHTML='<strong>类型：</strong>';
 const typeBadge=document.createElement('span');
 typeBadge.className='note-type '+(note.note_type||'user');
-typeBadge.textContent=typeLabels[note.note_type]||note.note_type;
+typeBadge.textContent=sbState.label(note.note_type);
 type.append(typeBadge);
 container.append(type);
 if(note.material_name){
 const material=document.createElement('div');
-material.style.marginTop='8px';
+material.className='mt-8';
 material.innerHTML='<strong>关联材料：</strong>';
 const materialLink=document.createElement('span');
 materialLink.textContent=text(note.material_name);
@@ -155,7 +148,7 @@ container.append(material)
 }
 if(note.module_name){
 const module=document.createElement('div');
-module.style.marginTop='8px';
+module.className='mt-8';
 module.innerHTML='<strong>知识模块：</strong>';
 const moduleName=document.createElement('span');
 moduleName.textContent=text(note.module_name);
@@ -164,7 +157,7 @@ container.append(module)
 }
 if(note.content){
 const content=document.createElement('div');
-content.style.marginTop='16px';
+content.className='mt-16';
 content.innerHTML='<strong>笔记内容：</strong>';
 const contentText=document.createElement('div');
 contentText.className='note-content';
@@ -174,7 +167,7 @@ container.append(content)
 }
 if(note.citation_keys&&note.citation_keys.length){
 const citations=document.createElement('div');
-citations.style.marginTop='16px';
+citations.className='mt-16';
 citations.innerHTML='<strong>引用来源：</strong><br>';
 note.citation_keys.forEach(key=>{
 const link=document.createElement('a');
@@ -189,13 +182,13 @@ container.append(citations)
 if(note.source_citation_status&&note.source_citation_status!=='valid'){
 const source=document.createElement('div');
 source.className='citation-status '+(note.source_citation_status||'');
-source.style.marginTop='8px';
+source.classList.add('mt-8');
 source.textContent='来源状态: '+sbState.source(note.source_citation_status);
 container.append(source)
 }
 if(note.note_type==='ai_draft'){
 const actions=document.createElement('div');
-actions.style.marginTop='16px';
+actions.className='mt-16';
 const confirmBtn=document.createElement('button');
 confirmBtn.className='btn btn-primary';
 confirmBtn.textContent='确认笔记';
@@ -213,7 +206,7 @@ detailStatus.textContent=sbApi.safeError(e)
 async function confirmNote(noteId){
 if(!confirm('确认此 AI 生成的笔记草稿？确认后将转为已确认笔记。'))return;
 try{
-await sbApi.json(`/api/study/notes/${encodeURIComponent(noteId)}/confirm`,{method:'POST'});
+await sbApi.json(`/api/study/notes/${encodeURIComponent(noteId)}/confirm`,{method:'POST',signal:pageRequest.signal});
 alert('笔记已确认');
 loadNotes();
 selectNote(noteId,null)
