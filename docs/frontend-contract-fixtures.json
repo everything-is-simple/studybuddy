@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "purpose": "Stable frontend display contract fixtures; values mirror the backend domain contracts and are not fake runtime data.",
+  "resources": {
+    "capture": {
+      "endpoint": "/api/study/capture-sessions",
+      "identity": "id",
+      "states": ["draft", "uploaded", "transcribing", "pending_review", "confirmed", "rejected", "archived"],
+      "source_states": ["valid", "stale", "source_deleted", "source_unavailable"]
+    },
+    "plan": {
+      "endpoint": "/api/study/plans",
+      "identity": "id",
+      "states": ["draft", "confirmed", "active", "paused", "completed", "archived"],
+      "item_states": ["pending", "in_progress", "completed", "skipped", "archived"]
+    },
+    "note": {
+      "endpoint": "/api/study/notes",
+      "identity": "id",
+      "states": ["draft", "confirmed", "archived"],
+      "source_states": ["valid", "stale", "source_deleted", "source_unavailable"]
+    },
+    "practice": {
+      "endpoint": "/api/study/practice-sessions",
+      "identity": "id",
+      "states": ["draft", "active", "finished", "expired", "archived"],
+      "review_states": ["pending_review", "correct", "incorrect", "uncertain"]
+    },
+    "report": {
+      "endpoint": "/api/study/reports",
+      "identity": "id",
+      "states": ["draft", "ready", "archived"],
+      "delivery_states": ["off", "dry_run", "blocked", "failed", "succeeded"]
+    },
+    "task": {
+      "endpoint": "/api/tasks/{task_id}",
+      "identity": "id",
+      "states": ["pending", "running", "succeeded", "failed", "cancel_requested", "cancelled", "stale"]
+    }
+  },
+  "write_policy": {
+    "idempotency_header": "Idempotency-Key",
+    "safe_default": true,
+    "exceptions": ["GET", "HEAD", "OPTIONS", "DELETE when endpoint does not accept a key"]
+  }
+}
