@@ -5,26 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · Provider 设置</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
-<style>
-.capability-grid{display:grid;gap:16px}
-.capability-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
-.capability-header{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:12px}
-.capability-header h3{margin:0}
-.capability-status{display:flex;align-items:center;gap:8px;font-size:14px}
-.capability-status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.capability-status.available::before{background:var(--success)}
-.capability-status.unavailable::before{background:var(--danger)}
-.capability-meta{display:grid;gap:8px;font-size:14px;color:var(--muted)}
-.capability-meta dt{font-weight:600;color:var(--fg)}
-.capability-meta dd{margin:0}
-.config-notice{border-left:3px solid var(--warn);padding:12px 16px;background:#fffbf0;margin-top:16px}
-.skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%);background-size:200% 100%;animation:skeleton 1.5s ease-in-out infinite}
-@keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.skeleton-text{height:1em;border-radius:4px;margin:4px 0}
-@media(max-width:640px){
-.capability-header{flex-direction:column;align-items:stretch}
-}
-</style>
 </head>
 <body>
 <div class="app-shell">

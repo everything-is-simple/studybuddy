@@ -5,18 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · 课堂采集与报告</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
-<style>
-.capture-list,.report-list{list-style:none;padding:0;margin:0}
-.capture-item,.report-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer;transition:background 150ms}
-.capture-item:hover,.report-item:hover{background:var(--bg-muted)}
-.capture-item.selected,.report-item.selected{border-color:var(--accent);background:var(--bg-muted)}
-.status-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-left:8px}
-.status-badge.draft{background:var(--warn-bg);color:var(--warn)}
-.status-badge.confirmed{background:var(--success-bg);color:var(--success)}
-.transcript-box{margin-top:16px;padding:12px;background:var(--bg-muted);border-radius:8px;white-space:pre-wrap;max-height:400px;overflow-y:auto}
-.uncertain-mark{background:var(--warn-bg);color:var(--warn);padding:2px 4px;border-radius:2px}
-.delivery-status{margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:8px}
-</style>
 </head>
 <body>
 <div class="app-shell">
