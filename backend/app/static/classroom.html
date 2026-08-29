@@ -176,6 +176,7 @@ statusBadge.className='status-badge '+(capture.status||'draft');
 statusBadge.textContent=sbState.label(capture.status||'draft');
 status.append(statusBadge);
 container.append(status);
+if(capture.source_status){const source=document.createElement('div');source.className='source-link '+capture.source_status;source.textContent='来源状态：'+sbState.source(capture.source_status);container.append(source)}
 if(capture.capture_type){
 const type=document.createElement('div');
 type.style.marginTop='8px';
