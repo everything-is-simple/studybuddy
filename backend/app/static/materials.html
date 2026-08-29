@@ -44,9 +44,15 @@
 <section class="card" data-od-id="materials-upload">
 <h2>导入材料</h2>
 <div class="upload-area" id="upload-area" tabindex="0" role="button" aria-label="点击或拖放文件以导入">
-<input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.doc,.docx">
+<input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.doc,.docx,.pptx">
 <p><strong>点击选择文件</strong>或拖放到此处</p>
-<p class="muted">支持 PDF、TXT、Markdown、Word</p>
+<p class="muted">支持 PDF、TXT、Markdown、Word、PowerPoint</p>
+</div>
+<div style="margin-top:12px">
+<label>
+<input type="file" id="folder-input" webkitdirectory style="display:none">
+<button class="btn" type="button" id="folder-btn">选择文件夹导入</button>
+</label>
 </div>
 <div id="upload-status" class="notice" style="margin-top:16px" hidden role="status" aria-live="polite"></div>
 </section>
@@ -83,6 +89,8 @@
 (function(){
 const uploadArea=document.querySelector('#upload-area');
 const fileInput=document.querySelector('#file-input');
+const folderInput=document.querySelector('#folder-input');
+const folderBtn=document.querySelector('#folder-btn');
 const uploadStatus=document.querySelector('#upload-status');
 const statusFilter=document.querySelector('#status-filter');
 const searchInput=document.querySelector('#search-input');
@@ -105,6 +113,8 @@ function text(value){return typeof value==='string'?value:''}
 uploadArea.addEventListener('click',()=>fileInput.click());
 uploadArea.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click()}});
 
+folderBtn.addEventListener('click',()=>folderInput.click());
+
 ['dragenter','dragover','dragleave','drop'].forEach(evt=>{
 uploadArea.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation()})
 });
@@ -123,6 +133,10 @@ if(files.length)handleUpload(Array.from(files))
 });
 
 fileInput.addEventListener('change',e=>{
+if(e.target.files.length)handleUpload(Array.from(e.target.files))
+});
+
+folderInput.addEventListener('change',e=>{
 if(e.target.files.length)handleUpload(Array.from(e.target.files))
 });
 
@@ -288,7 +302,7 @@ pagination.append(next)
 async function deleteMaterial(id,name){
 if(!confirm(`确定删除材料"${name}"吗？`))return;
 try{
-await sbApi.json(`/api/materials/${encodeURIComponent(id)}/purge`,{method:'POST'});
+await sbApi.json(`/api/materials/${encodeURIComponent(id)}`,{method:'DELETE'});
 load()
 }catch(e){
 alert(sbApi.safeError(e))

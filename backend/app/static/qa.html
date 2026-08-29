@@ -38,6 +38,7 @@
 <div class="grid">
 <section class="card span-8" data-od-id="qa-submit">
 <h2>提问</h2>
+<div id="provider-status" class="notice" role="status" aria-live="polite">正在检查 AI Provider 状态...</div>
 <form class="qa-form" id="qa-form">
 <div class="field">
 <label for="question">你的问题</label>
@@ -57,6 +58,7 @@
 <option value="vector">向量检索</option>
 </select>
 </div>
+<button class="btn" type="button" id="index-btn" style="margin-right:8px">索引当前材料</button>
 <button class="btn btn-primary" type="submit" id="submit-btn">提交问题</button>
 <div id="submit-status" class="notice" style="margin-top:12px" hidden role="status" aria-live="polite"></div>
 </form>
@@ -79,10 +81,12 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const providerStatus=document.querySelector('#provider-status');
 const form=document.querySelector('#qa-form');
 const questionInput=document.querySelector('#question');
 const materialsInput=document.querySelector('#materials');
 const modeSelect=document.querySelector('#retrieval-mode');
+const indexBtn=document.querySelector('#index-btn');
 const submitBtn=document.querySelector('#submit-btn');
 const submitStatus=document.querySelector('#submit-status');
 const threadStatus=document.querySelector('#thread-status');
@@ -90,6 +94,57 @@ const threads=document.querySelector('#threads');
 
 const materialParam=new URLSearchParams(location.search).get('material');
 if(materialParam)materialsInput.value=materialParam;
+
+async function checkCapabilities(){
+try{
+const data=await sbApi.json('/api/ai/capabilities');
+const status=data.llm_status||'not_configured';
+const provider=data.llm_provider||'unknown';
+const model=data.llm_model||'unknown';
+if(status==='not_configured'){
+providerStatus.className='notice warn';
+providerStatus.textContent='AI Provider 未配置，问答功能不可用'
+}else if(status==='demo'){
+providerStatus.className='notice';
+providerStatus.textContent=`当前使用 ${provider}/${model} (演示模式)`
+}else{
+providerStatus.className='notice';
+providerStatus.textContent=`AI Provider: ${provider}/${model} (${data.llm_verification_status||'unverified'})`
+}
+}catch(e){
+providerStatus.className='notice warn';
+providerStatus.textContent='AI Provider 状态检查失败'
+}
+}
+
+indexBtn.addEventListener('click',async ()=>{
+const materialIds=materialsInput.value.trim().split(',').map(s=>s.trim()).filter(Boolean);
+if(!materialIds.length){
+alert('请先指定要索引的材料 ID');
+return
+}
+indexBtn.disabled=true;
+submitStatus.hidden=false;
+submitStatus.className='notice';
+submitStatus.textContent='正在建立索引...';
+try{
+for(const mid of materialIds){
+await sbApi.json('/api/ai-index',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({material_id:mid})
+})
+}
+submitStatus.className='notice';
+submitStatus.textContent='索引建立完成';
+setTimeout(()=>submitStatus.hidden=true,3000)
+}catch(e){
+submitStatus.className='notice warn';
+submitStatus.textContent=sbApi.safeError(e)
+}finally{
+indexBtn.disabled=false
+}
+});
 
 form.addEventListener('submit',async e=>{
 e.preventDefault();
@@ -193,7 +248,8 @@ threadStatus.textContent=sbApi.safeError(e)
 }
 }
 
-loadThreads()
+loadThreads();
+checkCapabilities()
 })();
 </script>
 </body>

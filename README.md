@@ -12,7 +12,7 @@ StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统
 
 **本地单机 v1 已完成生产化和上线收口**，范围严格限于 local single-process / single-instance / SQLite / local-disk：Phase 10 Gates A-J 已通过，release candidate 已在隔离 data root 完成启动、导入、索引、学习路径、显式任务、backup、verify、restore、重启和 diagnostics 演练。runner 仍只由显式 API/CLI 调用，启动/backup/restore/read 不自动执行；只有 approved `embedding_index` 接入 runner，Q&A、generation、OCR/ASR、report/delivery 未接入。该完成不代表多用户、认证授权、云同步、协作、多进程共享 data root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 或全局 production `real-pass`。证据和 prompts 见 [`docs/prompts/phase10/`](docs/prompts/phase10/)。
 
-**当前测试基线（2026-08-30）**：后端 `413 passed, 2 skipped`；前端 `57 passed, 3 skipped`；所有 skip 均为 opt-in 真实 provider 测试。完整测试套件 100% 通过，代码、测试、治理文档与设计文档保持一致。
+**当前测试基线（2026-08-30）**：后端 `413 passed, 2 skipped`；前端 `63 passed, 3 skipped`；所有 skip 均为 opt-in 真实 provider 测试。完整测试套件 100% 通过，代码、测试、治理文档与设计文档保持一致。
 
 **A2.X 系列完成 (2025-01-28)**: 4 个超限核心文件（repositories/_legacy.py, main.py, migrations/runner.py, providers.py）已拆分为模块化结构，从 639KB 减少到 48KB（92.6% 减少），所有模块 ≤ 32 KiB。测试基线保持 413 passed, 2 skipped，所有公共 API 保持向后兼容。详见 [`docs/prompts/architecture/A2_X_SERIES_SUMMARY.md`](docs/prompts/architecture/A2_X_SERIES_SUMMARY.md)。
 

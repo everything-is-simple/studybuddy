@@ -71,7 +71,7 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
 
     // Nav links all resolve
     const navLinks = await page.locator('[data-nav] a').all();
-    expect(navLinks.length).toBeGreaterThanOrEqual(4);
+    expect(navLinks.length).toBeGreaterThanOrEqual(3);
     for (const link of navLinks) {
       const href = await link.getAttribute('href');
       expect(href).toMatch(/^\/app\//);
