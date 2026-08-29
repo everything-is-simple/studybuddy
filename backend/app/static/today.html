@@ -5,26 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · 今天</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
-<style>
-.task-list{list-style:none;padding:0;margin:0}
-.task-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.task-item.completed{opacity:0.6;background:var(--bg-muted)}
-.task-meta{flex:1}
-.task-title{font-weight:600;margin-bottom:4px}
-.task-source{color:var(--muted);font-size:14px}
-.task-status{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600}
-.task-status.valid{background:var(--success-bg);color:var(--success)}
-.task-status.stale{background:var(--warn-bg);color:var(--warn)}
-.task-status.unavailable{background:var(--error-bg);color:var(--error)}
-.rhythm-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
-.rhythm-card{padding:16px;border:1px solid var(--border);border-radius:8px;text-align:center}
-.rhythm-value{font-size:32px;font-weight:700;color:var(--accent);margin-bottom:4px}
-.rhythm-label{color:var(--muted);font-size:14px}
-@media(max-width:640px){
-.task-item{flex-direction:column;align-items:flex-start}
-.rhythm-summary{grid-template-columns:1fr}
-}
-</style>
 </head>
 <body>
 <div class="app-shell">
