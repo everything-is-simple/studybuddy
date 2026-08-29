@@ -69,6 +69,10 @@ pending_review / uncertain
 
 优先完成：`plans.html`、`notes.html`、`cards.html`、`exercises.html`、`capture.html`、`classroom.html`。未迁移写操作只记为 `legacy_only`，不以测试 mock 伪造静态页成功路径。
 
+## 失败与重试证据
+
+[`frontend-static-failure-retry-matrix.md`](frontend-static-failure-retry-matrix.md) 是静态页失败、重试和安全 evidence 的唯一索引。它只为 `static_verified` 的已暴露能力建立 browser evidence；`legacy_only`、`not_exposed` 与 `a3_pages` 明确为 deferred，不能用 `/legacy` 或后端存在替代静态页证据。
+
 ## 进入 A3-PAGES 的门槛
 
 只有以下同时成立，才可开始页面拆分：

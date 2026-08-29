@@ -139,6 +139,7 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     await expect(page.locator('#upload-area')).toBeVisible();
     await expect(page.locator('#apply-filters')).toBeVisible();
     await expect(page.locator('.brand')).toBeVisible();
+    await page.getByRole('button', {name: '更多'}).press('Enter');
     await expect(page.locator('[data-nav] a').first()).toBeVisible();
     // No horizontal scroll
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
