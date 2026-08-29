@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 学习计划</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.plan-list,.goal-list,.module-list{list-style:none;padding:0;margin:0}
+.plan-item,.goal-item,.module-item{padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:background 150ms}
+.plan-item:hover,.goal-item:hover,.module-item:hover{background:var(--bg-muted)}
+.plan-item.selected{border-color:var(--accent);background:var(--bg-muted)}
+.status-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-left:8px}
+.status-badge.draft{background:var(--warn-bg);color:var(--warn)}
+.status-badge.active{background:var(--success-bg);color:var(--success)}
+.status-badge.completed{background:var(--muted-bg);color:var(--muted)}
+.plan-detail{margin-top:16px}
+.plan-items{margin-top:12px}
+.plan-item-entry{padding:8px;border-left:3px solid var(--border);margin-bottom:8px;padding-left:12px}
+.plan-item-entry.completed{opacity:0.6;border-color:var(--success)}
+.source-link{font-size:12px;color:var(--muted);margin-top:4px}
+.source-link.stale{color:var(--warn)}
+.source-link.unavailable{color:var(--error)}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">学习计划</p>
+<h1>目标与计划</h1>
+<p class="lead">管理学习目标、知识模块和学习计划。</p>
+</div>
+</div>
+
+<div class="grid">
+<section class="card span-4" data-od-id="plans-sidebar">
+<h3>学习目标</h3>
+<div id="goal-status" class="notice" role="status" aria-live="polite">正在加载目标...</div>
+<ul id="goals" class="goal-list"></ul>
+
+<h3 style="margin-top:24px">知识模块</h3>
+<div id="module-status" class="notice" role="status" aria-live="polite">正在加载模块...</div>
+<ul id="modules" class="module-list"></ul>
+
+<button class="btn" id="refresh-all" type="button" style="margin-top:16px">刷新数据</button>
+</section>
+
+<section class="card span-8" data-od-id="plans-main">
+<h2>学习计划</h2>
+<div id="plan-status" class="notice" role="status" aria-live="polite">正在加载计划...</div>
+<ul id="plans" class="plan-list"></ul>
+<div id="plan-detail" class="plan-detail" hidden></div>
+</section>
+</div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const goalStatus=document.querySelector('#goal-status');
+const goals=document.querySelector('#goals');
+const moduleStatus=document.querySelector('#module-status');
+const modules=document.querySelector('#modules');
+const planStatus=document.querySelector('#plan-status');
+const plans=document.querySelector('#plans');
+const planDetail=document.querySelector('#plan-detail');
+const refreshAll=document.querySelector('#refresh-all');
+
+let selectedPlanId=null;
+
+function text(value){return typeof value==='string'?value:''}
+
+async function loadGoals(){
+goalStatus.textContent='正在加载目标...';
+goalStatus.className='notice';
+goals.replaceChildren();
+try{
+const data=await sbApi.json('/api/learning/goals');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+goalStatus.textContent='暂无目标';
+goalStatus.className='notice muted';
+return
+}
+goalStatus.hidden=true;
+items.forEach(goal=>{
+const li=document.createElement('li');
+li.className='goal-item';
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.style.fontSize='14px';
+title.textContent=text(goal.title)||'未命名目标';
+li.append(title);
+if(goal.status){
+const badge=document.createElement('span');
+badge.className='status-badge '+(goal.status||'draft');
+badge.textContent=goal.status;
+badge.style.fontSize='11px';
+title.append(badge)
+}
+goals.append(li)
+})
+}catch(e){
+goalStatus.className='notice warn';
+goalStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function loadModules(){
+moduleStatus.textContent='正在加载模块...';
+moduleStatus.className='notice';
+modules.replaceChildren();
+try{
+const data=await sbApi.json('/api/learning/modules');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+moduleStatus.textContent='暂无模块';
+moduleStatus.className='notice muted';
+return
+}
+moduleStatus.hidden=true;
+items.forEach(mod=>{
+const li=document.createElement('li');
+li.className='module-item';
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.style.fontSize='14px';
+title.textContent=text(mod.name)||'未命名模块';
+li.append(title);
+if(mod.description){
+const desc=document.createElement('div');
+desc.className='muted';
+desc.style.fontSize='12px';
+desc.style.marginTop='4px';
+desc.textContent=text(mod.description);
+li.append(desc)
+}
+modules.append(li)
+})
+}catch(e){
+moduleStatus.className='notice warn';
+moduleStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function loadPlans(){
+planStatus.textContent='正在加载计划...';
+planStatus.className='notice';
+plans.replaceChildren();
+planDetail.hidden=true;
+try{
+const data=await sbApi.json('/api/learning/plans');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+planStatus.textContent='暂无学习计划';
+return
+}
+planStatus.hidden=true;
+items.forEach(plan=>{
+const li=document.createElement('li');
+li.className='plan-item';
+if(plan.id===selectedPlanId)li.classList.add('selected');
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.textContent=text(plan.title)||'未命名计划';
+li.append(title);
+const meta=document.createElement('div');
+meta.className='muted';
+meta.style.marginTop='4px';
+meta.textContent=`${plan.item_count||0} 个项目`;
+li.append(meta);
+const badge=document.createElement('span');
+badge.className='status-badge '+(plan.status||'draft');
+badge.textContent=plan.status||'draft';
+badge.style.marginTop='8px';
+badge.style.display='inline-block';
+li.append(badge);
+li.onclick=()=>selectPlan(plan.id);
+plans.append(li)
+})
+}catch(e){
+planStatus.className='notice warn';
+planStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function selectPlan(planId){
+selectedPlanId=planId;
+planDetail.hidden=false;
+planDetail.innerHTML='<div class="notice">正在加载计划详情...</div>';
+document.querySelectorAll('.plan-item').forEach(el=>{
+el.classList.toggle('selected',el.onclick.toString().includes(planId))
+});
+try{
+const plan=await sbApi.json(`/api/learning/plans/${encodeURIComponent(planId)}`);
+planDetail.replaceChildren();
+const title=document.createElement('h3');
+title.textContent=text(plan.title);
+planDetail.append(title);
+if(plan.description){
+const desc=document.createElement('p');
+desc.textContent=text(plan.description);
+planDetail.append(desc)
+}
+const itemsTitle=document.createElement('h4');
+itemsTitle.textContent='计划项目';
+itemsTitle.style.marginTop='16px';
+planDetail.append(itemsTitle);
+const itemsContainer=document.createElement('div');
+itemsContainer.className='plan-items';
+const itemsData=await sbApi.json(`/api/learning/plans/${encodeURIComponent(planId)}/items`);
+const items=Array.isArray(itemsData)?itemsData:itemsData.items||[];
+if(!items.length){
+const empty=document.createElement('div');
+empty.className='muted';
+empty.textContent='暂无计划项';
+itemsContainer.append(empty)
+}else{
+items.forEach(item=>{
+const entry=document.createElement('div');
+entry.className='plan-item-entry';
+if(item.completed)entry.classList.add('completed');
+const itemTitle=document.createElement('div');
+itemTitle.style.fontWeight='600';
+itemTitle.textContent=text(item.title)||'未命名项';
+entry.append(itemTitle);
+if(item.source_link_status&&item.source_link_status!=='valid'){
+const source=document.createElement('div');
+source.className='source-link '+(item.source_link_status||'');
+source.textContent='来源: '+item.source_link_status;
+entry.append(source)
+}
+itemsContainer.append(entry)
+})
+}
+planDetail.append(itemsContainer)
+}catch(e){
+planDetail.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+}
+}
+
+refreshAll.addEventListener('click',()=>{
+loadGoals();
+loadModules();
+loadPlans()
+});
+
+loadGoals();
+loadModules();
+loadPlans()
+})();
+</script>
+</body>
+</html>
