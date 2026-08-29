@@ -223,10 +223,11 @@ backend/app/
 3. 收口 `js/api.js`：字符串 JSON body 自动补 `Content-Type`、统一解析安全错误、保存 request ID、扩展稳定错误码映射，并为可取消请求预留 AbortSignal 入口。
 4. 收口 `css/app.css`：补齐所有页面使用的 token，消除未定义 CSS 变量；统一 badge、notice、button、focus、grid 和移动端导航样式。
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
-6. 逐页补充 loading/empty/ready/failed/retry、`role=status`/`role=alert`、重复提交保护、stale response 和安全 DOM 测试。
-7. 通过后再执行页面拆分：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面拆分期间保持现有页面可回退，不改变 API 语义。
+6. A3-FC-3 分两轮执行：首轮已完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮只补齐每页剩余状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。
+7. A3-FC-3 第二轮通过后再执行页面拆分：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面拆分期间保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
+8. 页面拆分和行为门禁通过后，才由 A3-VISUAL 收敛剩余局部 CSS，并完成 Neutral Modern card/button/badge/notice/dialog/focus/grid 与 360–1920 视觉矩阵；视觉任务不得改变 API 或业务行为。
 
-**通过门槛：** 前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、窄屏 360/390、键盘、错误恢复和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 同步。A3-FC 通过前，不开始 B0/B1 正式能力接入，也不进行大规模视觉重写。
+**通过门槛：** A3-FC 只以第二轮页面行为矩阵完成为准：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 同步。A3-FC 通过前，不开始 B0/B1 正式能力接入，也不开始 A3-PAGES/A3-VISUAL 的功能或视觉重写。
 
 ### B0：组件库统一准备与证据治理
 

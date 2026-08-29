@@ -508,10 +508,10 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 - [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归。
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
-- [ ] **前端契约审计**：新增 `docs/frontend-contract-audit.md` 与 `backend/scripts/audit-frontend-contract.py`；首轮已扫描 14 个页面/152 条路由并修复 4 类问题，仍需完成字段 fixture、状态覆盖和浏览器回归。未完成前不得宣称 frontend-plan 全部符合。
-- [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。页面上下文切换后的状态正确性进入 A3-FC-3。
-- [ ] **正式页面拆分**：补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；保持现有页面回退。
-- [ ] **Neutral Modern 视觉迁移**：共享层和页面契约通过后，完成 token、组件、响应式、焦点和状态视觉统一。
+- [ ] **前端契约审计（A3-FC-3 第二轮）**：首轮已扫描并审计全部 14 个静态页面；剩余仅为每页的状态映射补齐，以及 stale/failure/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵。未完成前不得宣称 frontend-plan 全部符合。
+- [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
+- [ ] **正式页面拆分（A3-PAGES）**：仅在 A3-FC-3 第二轮通过后，补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页有回退证据前保持现有混合页面入口。
+- [ ] **Neutral Modern 视觉迁移（A3-VISUAL）**：仅在 A3-PAGES 通过后完成 token、组件、响应式、焦点和状态视觉统一，并收敛剩余局部 CSS。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
 - [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
