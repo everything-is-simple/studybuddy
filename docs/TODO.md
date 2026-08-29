@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-30（Phase 10-9 release candidate、Gate J 与文档收口已同步）
-> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，完整 backend 为 **413 passed, 2 skipped**；整体阶段性完成度约 **65%**。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 更新：2026-08-30（Phase 10-9、A3/A4 与前端契约收口任务已同步）
+> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13，当前 backend 基线为 **414 passed, 2 skipped**，浏览器基线为 **91 passed, 3 skipped**；整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为，不代表完整产品化页面架构或 Neutral Modern 视觉系统已经完成。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)、[`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -13,7 +13,7 @@
 - [x] A3-4：静态前端核心页面 API 集成完成（材料、材料详情、问答、今天四个页面）
 - [x] A3-5：学习功能页面完成（cards/exercises/plans/notes/practice/classroom 六个页面，覆盖 Phase 8/9A/9B/9C/9D）
 - [x] A3-6：根路由迁移完成，`/` 重定向到 `/app/today.html`，`/legacy` 保留旧 UI 兼容性
-- [x] A3：静态前端迁移完成，10 个页面全部接入后端 API，测试基线 413 + 84 passed
+- [x] A3：静态前端迁移及限定范围浏览器验收完成；不等于完整 frontend-plan 页面架构和视觉系统完成
 - [x] E2E 用户流程测试：10 个端到端测试场景，覆盖导入、问答、学习、导航、错误恢复等完整用户旅程
 
 ## 基础设施收尾已完成（v1 时间盒收口）
@@ -293,8 +293,11 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A3-4：将后端 API 集成到静态前端核心页面，完成 Chromium 验收（materials/detail/qa/today 四个页面）。
 - [x] A3-5：新增学习功能页面并接入后端 API（cards/exercises/plans/notes/practice/classroom 六个页面）。
 - [x] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
-- [x] A3：执行 [`frontend-plan.md`](frontend-plan.md) A3：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
+- [x] A3：执行 [`frontend-plan.md`](frontend-plan.md) A3：建立唯一正式 static root、原生应用壳以及核心页面；完成已覆盖范围的 browser/keyboard/narrow/privacy 门禁。
 - [x] A4：执行 [`frontend-plan.md`](frontend-plan.md) A4：Provider 设置、课堂采集与任务状态页面；接入已验证 API，如实表达能力边界。
+- [ ] A3-FC：前端契约与架构收口：逐页 API/字段/状态/错误/安全审计，形成机器可检验清单；修复共享 api.js 的 JSON headers、错误码映射、request ID/取消策略；补齐 CSS tokens、统一状态组件、导航和移动端壳。不得在此任务引入新业务能力。
+- [ ] A3-PAGES：按 frontend-plan 拆分并验收 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；每页必须有 loading/empty/ready/failed/retry、窄屏、键盘、隐私 DOM 测试。
+- [ ] A3-VISUAL：在 A3-FC 和 A3-PAGES 通过后完成 Neutral Modern token/组件/响应式视觉迁移；不以视觉改版替代功能契约测试。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
 - [ ] B1：真实 ASR 候选（whisper.cpp/FunASR/SenseVoice）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；真实 smoke 必须 explicit opt-in。
 - [ ] B2：真实 OCR 候选（RapidOCR/PaddleOCR/CapsWriter）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；结果必须 draft-first 并需用户确认。

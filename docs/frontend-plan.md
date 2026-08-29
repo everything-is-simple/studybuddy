@@ -506,8 +506,12 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 ## 11. 开放 TODO（实施前可编辑）
 
-- [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归（56 passed）。
+- [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归。
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
+- [ ] **前端契约审计**：新增 `docs/frontend-contract-audit.md`，逐页核对 endpoint、method、Content-Type、字段、状态、错误、重试、窄屏、键盘和隐私；未完成前不得宣称 frontend-plan 全部符合。
+- [ ] **共享层收口**：统一 `js/api.js`、`js/shell.js`、`css/app.css` 的 headers、错误码、request ID、取消入口、状态组件、token 和移动端导航。
+- [ ] **正式页面拆分**：补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；保持现有页面回退。
+- [ ] **Neutral Modern 视觉迁移**：共享层和页面契约通过后，完成 token、组件、响应式、焦点和状态视觉统一。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
 - [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
@@ -527,6 +531,6 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 3. **首页主行动优先级**：计划任务、待审草稿、导入材料、Provider 状态说明的顺序是否符合你的使用方式？
 4. **草图评审**：请在 Draft A–H 下方标注“保留 / 删除 / 合并 / 需要补充”的页面或模块。
 
-A3-1 已完成：已核实 static mount 与现有浏览器入口，并将 Draft A–D 转为 `/app/` 下的可点击灰盒；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。
+A3-1 已完成：已核实 static mount 与现有浏览器入口，并将 Draft A–D 转为 `/app/` 下的可点击灰盒；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。当前进入前端契约与架构收口，不把现有灰盒测试结果等同于完整产品化完成。
 
 A3-2 已完成：新增 `browser_static_pages.spec.js`，覆盖四个静态页面的路由可达性、材料加载与空/错误状态、无效 ID 提示、问答线程读取、360px 窄屏适配、键盘 Tab/Enter 访问、隐私边界（无路径/SQL/密钥泄露）。全部 56 个浏览器测试通过（3 skipped）。下一步进入 A3-3：逐页迁移真实操作（导入、搜索、索引、thread、citation、导出、提交保护）。

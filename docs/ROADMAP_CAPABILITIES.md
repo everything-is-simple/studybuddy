@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`planned`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。
+> 状态：`in_progress / frontend-contract-closure`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前先执行 A3-FC 前端契约与架构收口，再推进页面拆分和视觉迁移。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -211,6 +211,22 @@ backend/app/
 **通过门槛：** 已批准 UI 范围可在 fake/loopback 或真实已验证能力下演示；未验证能力不会显示为已连接或可执行。
 
 **备注：** 本阶段对应 frontend-plan.md 中的 A4，是静态前端 A3 的直接继续。
+
+### A3-FC：前端契约与架构收口（当前执行任务）
+
+**目的：** 在继续扩展页面或引入真实能力之前，消除静态前端的字段漂移、状态漂移、错误映射不一致和视觉 token 分裂问题。该任务不引入新业务能力、不修改 schema、不引入 React/Vue/Vite。
+
+**工作包：**
+
+1. 建立 `docs/frontend-contract-audit.md`，逐页记录页面路由、API、method、Content-Type、请求字段、响应字段、状态机、错误码、重试、窄屏、键盘和隐私断言。
+2. 对照后端路由自动检查页面调用的 endpoint 是否存在；对关键 response 字段和状态值建立 contract fixtures，禁止继续使用旧字段名。
+3. 收口 `js/api.js`：字符串 JSON body 自动补 `Content-Type`、统一解析安全错误、保存 request ID、扩展稳定错误码映射，并为可取消请求预留 AbortSignal 入口。
+4. 收口 `css/app.css`：补齐所有页面使用的 token，消除未定义 CSS 变量；统一 badge、notice、button、focus、grid 和移动端导航样式。
+5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
+6. 逐页补充 loading/empty/ready/failed/retry、`role=status`/`role=alert`、重复提交保护、stale response 和安全 DOM 测试。
+7. 通过后再执行页面拆分：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面拆分期间保持现有页面可回退，不改变 API 语义。
+
+**通过门槛：** 前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、窄屏 360/390、键盘、错误恢复和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 同步。A3-FC 通过前，不开始 B0/B1 正式能力接入，也不进行大规模视觉重写。
 
 ### B0：组件库统一准备与证据治理
 
