@@ -12,6 +12,8 @@
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。
 - [x] A3-4：静态前端核心页面 API 集成完成（材料、材料详情、问答、今天四个页面）
 - [x] A3-5：学习功能页面完成（cards/exercises/plans/notes/practice/classroom 六个页面，覆盖 Phase 8/9A/9B/9C/9D）
+- [x] A3-6：根路由迁移完成，`/` 重定向到 `/app/today.html`，`/legacy` 保留旧 UI 兼容性
+- [x] A3：静态前端迁移完成，10 个页面全部接入后端 API，测试基线 413 + 78 passed
 
 ## 基础设施收尾已完成（v1 时间盒收口）
 
@@ -289,9 +291,8 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A3-3：验证静态页面操作 UI 元素存在性。
 - [x] A3-4：将后端 API 集成到静态前端核心页面，完成 Chromium 验收（materials/detail/qa/today 四个页面）。
 - [x] A3-5：新增学习功能页面并接入后端 API（cards/exercises/plans/notes/practice/classroom 六个页面）。
-- [ ] A3-5：新增卡片/练习/计划/笔记/课堂/报告页面，接入 Phase 8/9A/9B/9C/9D API。
-- [ ] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
-- [ ] A3：执行 [`frontend-plan.md`](frontend-plan.md) F0/F1：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
+- [x] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
+- [x] A3：执行 [`frontend-plan.md`](frontend-plan.md) F0/F1：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
 - [ ] A4：执行 `frontend-plan.md` F2/F3 的批准部分：Provider 设置与采集页的真实状态表达；未通过 ASR 门禁时不开放真实转写。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
 - [ ] B1：真实 ASR 候选（whisper.cpp/FunASR/SenseVoice）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；真实 smoke 必须 explicit opt-in。
