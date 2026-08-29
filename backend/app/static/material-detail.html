@@ -56,6 +56,7 @@
 (async function(){
 const pageRequest=sbApi.setPageScope('material-detail');
 const id=new URLSearchParams(location.search).get('material');
+const source=sbApi.scope('material-detail');
 const title=document.querySelector('#title');
 const state=document.querySelector('#state');
 const content=document.querySelector('#content');
@@ -75,7 +76,7 @@ return
 qa.href='/app/qa.html?material='+encodeURIComponent(id);
 
 try{
-const row=await sbApi.json('/api/materials/'+encodeURIComponent(id));
+const row=await sbApi.json('/api/materials/'+encodeURIComponent(id),{signal:source.signal});
 const name=typeof row.original_name==='string'?row.original_name:(typeof row.display_name==='string'?row.display_name:'材料详情');
 title.textContent=name;
 state.textContent='材料已加载';
@@ -89,7 +90,7 @@ const dd=document.createElement('dd');
 dd.textContent=value;
 meta.append(dt,dd)
 };
-addMeta('状态',row.status||'未知');
+addMeta('状态',sbState.label(row.status));
 addMeta('文件类型',row.media_type||'未知');
 addMeta('文本长度',(row.text_length||0)+' 字符');
 addMeta('片段数量',(row.span_count||0)+' 个');
