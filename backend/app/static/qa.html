@@ -70,7 +70,7 @@
 </aside>
 </div>
 
-<section class="card" data-od-id="qa-threads" class="mt-24">
+<section class="card mt-24" data-od-id="qa-threads">
 <h2>问答历史</h2>
 <div id="thread-status" class="notice" role="status" aria-live="polite">正在加载线程...</div>
 <div id="threads"></div>
@@ -91,6 +91,7 @@ const indexBtn=document.querySelector('#index-btn');
 const submitBtn=document.querySelector('#submit-btn');
 const submitStatus=document.querySelector('#submit-status');
 const threadStatus=document.querySelector('#thread-status');
+let threadGeneration=0;
 const threads=document.querySelector('#threads');
 
 const materialParam=new URLSearchParams(location.search).get('material');
@@ -188,12 +189,14 @@ submitBtn.disabled=false
 });
 
 async function loadThreads(){
+const generation=++threadGeneration;
 threadStatus.textContent='正在加载线程...';
 threadStatus.className='notice';
 threads.replaceChildren();
 try{
 const data=await sbApi.json('/api/qa/threads');
 const list=Array.isArray(data)?data:data.items||[];
+if(generation!==threadGeneration)return;
 if(!list.length){
 threadStatus.textContent='暂无问答历史';
 return

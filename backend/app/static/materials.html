@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
 <style>
 .upload-area{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 150ms ease,background 150ms ease}
-.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:#f3f6fc}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:var(--surface-muted)}
 .upload-area input{display:none}
 .filters{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters select,.filters input{flex:1;min-width:200px}
@@ -57,7 +57,7 @@
 <div id="upload-status" class="notice mt-16" hidden role="status" aria-live="polite"></div>
 </section>
 
-<section class="card" data-od-id="materials-filters" class="mt-24">
+<section class="card mt-24" data-od-id="materials-filters">
 <h2>筛选与搜索</h2>
 <div class="filters">
 <select id="status-filter" aria-label="状态筛选">
@@ -72,7 +72,7 @@
 </div>
 </section>
 
-<section class="card" data-od-id="materials-list" class="mt-24">
+<section class="card mt-24" data-od-id="materials-list">
 <div class="toolbar">
 <h2 id="list-title">材料列表</h2>
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
@@ -108,6 +108,7 @@ let currentStatus='';
 let currentQuery='';
 let currentPage=0;
 const pageSize=20;
+let loadGeneration=0;
 
 function text(value){return typeof value==='string'?value:''}
 
@@ -158,8 +159,7 @@ if(result.items){
 const failed=result.items.filter(i=>i.status!=='success');
 if(failed.length){
 const details=document.createElement('ul');
-details.style.marginTop='8px';
-details.style.textAlign='left';
+details.className='upload-failures';
 failed.forEach(item=>{
 const li=document.createElement('li');
 li.textContent=`${item.original_name}: ${item.error_code||'失败'}`;
@@ -201,6 +201,7 @@ load()
 });
 
 async function load(){
+const generation=++loadGeneration;
 state.textContent='加载中…';
 error.hidden=true;
 items.replaceChildren();
@@ -211,6 +212,7 @@ if(currentView==='deleted'){
 params.set('limit',String(pageSize));
 params.set('offset',String(currentPage*pageSize));
 const data=await sbApi.json('/api/materials/deleted?'+params);
+if(generation!==loadGeneration)return;
 renderPage(data)
 }else{
 if(currentStatus)params.set('status',currentStatus);
@@ -218,6 +220,7 @@ if(currentQuery)params.set('q',currentQuery);
 params.set('limit',String(pageSize));
 params.set('offset',String(currentPage*pageSize));
 const data=await sbApi.json('/api/materials?'+params);
+if(generation!==loadGeneration)return;
 renderPage(data)
 }
 }catch(e){
@@ -249,7 +252,7 @@ link.textContent=name;
 li.append(link);
 const badge=document.createElement('span');
 badge.className='badge';
-badge.textContent=status;
+badge.textContent=sbState.label(status);
 li.append(badge);
 if(currentView==='active'&&!deleted){
 const actions=document.createElement('div');

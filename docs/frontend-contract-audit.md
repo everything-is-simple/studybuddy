@@ -57,9 +57,9 @@
 
 - [x] 用脚本提取静态页面 endpoint，与 FastAPI route inventory 做存在性比对；脚本：`backend/scripts/audit-frontend-contract.py`。
 - [x] 对关键资源建立字段/状态 fixture：capture、plan、note、practice、report、task。
-- [x] 对每个写操作提供统一 Content-Type、Idempotency-Key、失败重试和重复点击基础策略；逐页行为验证仍由 A3-FC-3 完成。
-- [ ] 统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案。
-- [ ] 删除旧字段名和旧状态判断；禁止页面兼容未知字段而掩盖契约漂移。
+- [x] 对每个写操作提供统一 Content-Type、Idempotency-Key、失败重试和重复点击基础策略；核心三页已完成逐页回归。
+- [ ] 统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案；共享字典已建立，核心三页仍需逐项替换。
+- [x] 删除核心三页旧字段名和旧状态判断；禁止页面兼容未知字段而掩盖契约漂移。
 
 ### 视觉与可访问性
 
@@ -83,7 +83,7 @@
 
 1. **A3-FC-1：** 完成页面/API/字段/状态/错误审计表和自动化 route 检查。
 2. **A3-FC-2：** 完成 `api.js`、`shell.js`、`app.css` 共享层收口及 focused tests。
-3. **A3-FC-3：** 补齐页面状态、失败恢复、重复提交、stale、键盘、窄屏和隐私测试。
+3. **A3-FC-3：** 先完成核心阅读闭环 `materials → material-detail → qa`，再按同一清单处理其余页面；本轮核心三页的 empty/error/missing-id/provider/stale/窄屏基础测试已通过。
 4. **A3-PAGES：** 按任务拆分缺失页面，每页单独接入正式 API，不新增临时端点。
 5. **A3-VISUAL：** 共享层和行为门禁通过后，完成 Neutral Modern 视觉统一。
 6. **收口：** 运行完整 backend、完整 browser、源码尺寸和 diff 检查，并同步 `frontend-plan.md`、`TODO.md`、`ROADMAP_CAPABILITIES.md`、`STATUS.md`。
