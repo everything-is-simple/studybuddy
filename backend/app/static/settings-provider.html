@@ -48,11 +48,11 @@
 <h2>配置说明</h2>
 <div class="config-notice">
 <p><strong>注意：</strong>Provider 配置写入契约尚未完成批准。</p>
-<p style="margin-top:8px;margin-bottom:0">当前页面仅显示后端配置的能力状态，不支持在浏览器中修改 Provider 配置、保存密钥或执行连接测试。</p>
+<p class="mt-8 mb-0">当前页面仅显示后端配置的能力状态，不支持在浏览器中修改 Provider 配置、保存密钥或执行连接测试。</p>
 </div>
 </section>
 
-<section class="card" style="margin-top:24px" data-od-id="provider-capabilities">
+<section class="card mt-24" data-od-id="provider-capabilities">
 <div class="section-label">
 <h2>能力状态</h2>
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
@@ -60,15 +60,15 @@
 <div id="error" class="error" role="alert" hidden></div>
 <div id="loading" aria-hidden="true">
 <div class="capability-card skeleton">
-<div class="skeleton-text" style="width:40%"></div>
-<div class="skeleton-text" style="width:60%;margin-top:12px"></div>
-<div class="skeleton-text" style="width:80%"></div>
+<div class="skeleton-text skeleton-40"></div>
+<div class="skeleton-text skeleton-60"></div>
+<div class="skeleton-text skeleton-80"></div>
 </div>
 </div>
 <div id="capabilities" class="capability-grid" hidden></div>
 </section>
 
-<section class="card" style="margin-top:24px" data-od-id="provider-health">
+<section class="card mt-24" data-od-id="provider-health">
 <h2>系统健康状态</h2>
 <div id="health-status" role="status" aria-live="polite">
 <p class="muted">检查中…</p>
@@ -80,6 +80,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('settings-provider');
 const state=document.querySelector('#state');
 const error=document.querySelector('#error');
 const loading=document.querySelector('#loading');

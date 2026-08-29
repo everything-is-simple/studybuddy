@@ -47,11 +47,11 @@
 <div id="goal-status" class="notice" role="status" aria-live="polite">正在加载目标...</div>
 <ul id="goals" class="goal-list"></ul>
 
-<h3 style="margin-top:24px">知识模块</h3>
+<h3 class="mt-24">知识模块</h3>
 <div id="module-status" class="notice" role="status" aria-live="polite">正在加载模块...</div>
 <ul id="modules" class="module-list"></ul>
 
-<button class="btn" id="refresh-all" type="button" style="margin-top:16px">刷新数据</button>
+<button class="btn" id="refresh-all" type="button" class="mt-16">刷新数据</button>
 </section>
 
 <section class="card span-8" data-od-id="plans-main">
@@ -67,6 +67,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('plans');
 const goalStatus=document.querySelector('#goal-status');
 const goals=document.querySelector('#goals');
 const moduleStatus=document.querySelector('#module-status');

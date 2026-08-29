@@ -59,10 +59,11 @@ def audit() -> dict[str, object]:
         direct_fetch = [c["raw"] for c in calls if c["direct_fetch"]]
         writes = bool(re.search(r"method\s*:\s*['\"](?:POST|PUT|PATCH|DELETE)|sbApi\.upload", text, re.I))
         has_retry = bool(re.search(r"retry|重试|refresh|刷新", text, re.I))
+        has_scope = "sbApi.scope(" in text or "sbApi.setPageScope(" in text
         json_without_header = bool(re.search(r"fetch\([\s\S]{0,500}?body\s*:\s*JSON\.stringify", text, re.I) and not re.search(r"Content-Type['\"]?\s*:\s*['\"]application/json", text, re.I))
         page = {"page": path.name, "api_calls": sorted({c["path"] for c in calls}), "missing_routes": missing,
                 "direct_fetch": sorted(set(direct_fetch)), "writes": writes, "has_retry_signal": has_retry,
-                "json_without_content_type": json_without_header,
+                "json_without_content_type": json_without_header, "has_scope": has_scope,
                 "old_fields": sorted(set(x for x in OLD_FIELDS if x in text)),
                 "old_states": sorted(set(x for x in OLD_STATES if re.search(rf"['\"]{re.escape(x)}['\"]", text)))}
         pages.append(page)
@@ -77,6 +78,8 @@ def audit() -> dict[str, object]:
             findings.append({"kind": "legacy_state", "page": path.name, "value": key})
         if json_without_header:
             findings.append({"kind": "json_without_content_type", "page": path.name, "value": "JSON.stringify without explicit Content-Type"})
+        if calls and not has_scope:
+            findings.append({"kind": "missing_request_scope", "page": path.name, "value": "page API calls are not cancelled on context change"})
         if writes and not has_retry:
             findings.append({"kind": "write_without_retry_signal", "page": path.name, "value": "no retry/refresh signal"})
     fixture_path = ROOT / "docs" / "frontend-contract-fixtures.json"
@@ -108,9 +111,9 @@ def markdown(data: dict[str, object]) -> str:
         lines.append(f"| `{item['kind']}` | `{item['page']}` | `{item['value']}` |")
     if not data["findings"]:
         lines.append("| — | — | 未发现问题 |")
-    lines += ["", "## 页面扫描", "", "| 页面 | API 数 | 直接 fetch | 写操作 | retry 信号 |", "|---|---:|---|---|---|"]
+    lines += ["", "## 页面扫描", "", "| 页面 | API 数 | 直接 fetch | 写操作 | retry 信号 | scope |", "|---|---:|---|---|---|---|"]
     for page in data["pages"]:
-        lines.append(f"| `{page['page']}` | {len(page['api_calls'])} | {'是' if page['direct_fetch'] else '否'} | {'是' if page['writes'] else '否'} | {'是' if page['has_retry_signal'] else '否'} |")
+        lines.append(f"| `{page['page']}` | {len(page['api_calls'])} | {'是' if page['direct_fetch'] else '否'} | {'是' if page['writes'] else '否'} | {'是' if page['has_retry_signal'] else '否'} | {'是' if page['has_scope'] else '否'} |")
     return "\n".join(lines) + "\n"
 
 def main() -> int:

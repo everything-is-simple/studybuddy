@@ -20,6 +20,7 @@ def test_static_frontend_contract_has_no_mechanical_findings():
     assert data["summary"]["finding_count"] == 0
     assert data["summary"]["undefined_css_tokens"] == []
     assert all(not page["direct_fetch"] for page in data["pages"])
+    assert all(page["has_scope"] for page in data["pages"] if page["api_calls"])
 
 
 def test_frontend_contract_fixtures_define_required_resource_states():
@@ -38,3 +39,4 @@ def test_static_write_pages_use_shared_request_layer():
     for page in findings:
         if page["writes"]:
             assert not page["direct_fetch"], page["page"]
+            assert page["has_scope"], page["page"]

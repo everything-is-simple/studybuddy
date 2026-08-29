@@ -54,6 +54,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (async function(){
+const pageRequest=sbApi.setPageScope('material-detail');
 const id=new URLSearchParams(location.search).get('material');
 const title=document.querySelector('#title');
 const state=document.querySelector('#state');

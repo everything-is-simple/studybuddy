@@ -48,16 +48,16 @@
 <p><strong>点击选择文件</strong>或拖放到此处</p>
 <p class="muted">支持 PDF、TXT、Markdown、Word、PowerPoint</p>
 </div>
-<div style="margin-top:12px">
+<div class="mt-12">
 <label>
-<input type="file" id="folder-input" webkitdirectory style="display:none">
+<input type="file" id="folder-input" webkitdirectory class="file-input-hidden">
 <button class="btn" type="button" id="folder-btn">选择文件夹导入</button>
 </label>
 </div>
-<div id="upload-status" class="notice" style="margin-top:16px" hidden role="status" aria-live="polite"></div>
+<div id="upload-status" class="notice mt-16" hidden role="status" aria-live="polite"></div>
 </section>
 
-<section class="card" data-od-id="materials-filters" style="margin-top:24px">
+<section class="card" data-od-id="materials-filters" class="mt-24">
 <h2>筛选与搜索</h2>
 <div class="filters">
 <select id="status-filter" aria-label="状态筛选">
@@ -72,7 +72,7 @@
 </div>
 </section>
 
-<section class="card" data-od-id="materials-list" style="margin-top:24px">
+<section class="card" data-od-id="materials-list" class="mt-24">
 <div class="toolbar">
 <h2 id="list-title">材料列表</h2>
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
@@ -87,6 +87,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('materials');
 const uploadArea=document.querySelector('#upload-area');
 const fileInput=document.querySelector('#file-input');
 const folderInput=document.querySelector('#folder-input');

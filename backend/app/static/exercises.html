@@ -46,7 +46,7 @@
 <h2>练习集</h2>
 <div id="set-status" class="notice" role="status" aria-live="polite">正在加载练习集...</div>
 <ul id="sets" class="set-list"></ul>
-<button class="btn" id="refresh-sets" type="button" style="margin-top:12px">刷新列表</button>
+<button class="btn" id="refresh-sets" type="button" class="mt-12">刷新列表</button>
 </section>
 
 <section class="card span-8" data-od-id="exercises-detail">
@@ -62,6 +62,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('exercises');
 const setStatus=document.querySelector('#set-status');
 const sets=document.querySelector('#sets');
 const refreshSets=document.querySelector('#refresh-sets');
