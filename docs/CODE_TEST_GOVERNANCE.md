@@ -42,21 +42,21 @@ StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地
 默认后端门禁不调用真实网络、不使用真实 Provider、不写入仓库内数据库或原文件。统一入口是：
 
 ```powershell
-powershell -NoProfile -File .\backend\scripts\test-backend.ps1
+powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\test-backend.ps1
 ```
 
-等价的直接命令为：
+如需绕过统一 runner，直接命令必须指定可写的测试临时目录并禁用仓库 cache provider：
 
 ```text
-C:\miniconda\py310\python.exe -m pytest backend/tests/ -q
+C:\miniconda\py310\python.exe -m pytest backend/tests/ -q --basetemp=H:\studybuddy-test\runs\pytest-basetemp -p no:cacheprovider
 ```
 
-Bash/Cygwin 等价路径为 `/cygdrive/c/miniconda/py310/python -m pytest backend/tests/ -q`。
+Bash/Cygwin 等价路径为 `/cygdrive/c/miniconda/py310/python -m pytest backend/tests/ -q --basetemp=/cygdrive/h/studybuddy-test/runs/pytest-basetemp -p no:cacheprovider`。可用 `STUDYBUDDY_PYTEST_BASETEMP` 覆盖统一 runner 的临时目录；该目录只用于可删除的 pytest 临时文件，不能指向任何 live `data_root` 或 backup 目录。
 
-浏览器门禁必须串行执行，并通过统一入口指定 spec：
+浏览器门禁必须串行执行，并通过统一入口指定 spec（如本机策略拦截脚本，同样使用 `-ExecutionPolicy Bypass`）：
 
 ```powershell
-powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_qa.spec.js
+powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\test-browser.ps1 browser_qa.spec.js
 ```
 
 Phase 8 Cards/Exercises 改动的最小浏览器门禁为：
@@ -67,7 +67,7 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 `test-browser.ps1` 每次只接受一个 spec；需要多个 browser spec 时必须分别串行执行。
 
-历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `413 passed, 2 skipped`（verified 2026-08-30）；当前全 Chromium 为 `84 passed, 3 skipped`（verified 2026-08-30，包含 A3-4 静态前端核心页面 6 个测试 + A3-5 学习功能页面 9 个测试 + A3-6 迁移 6 个测试 + E2E 用户流程 10 个测试），所有 skip 均是显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
+历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `414 passed, 2 skipped`（verified 2026-08-29）；当前 Chromium 基线为 `91 passed, 3 skipped`（共 94 项，包含 A4 专项）；3 个 skip 均为显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
 
 真实 Provider 仍只能通过目标专用 gate 或 `run-provider-api-acceptance.ps1` 启用，不属于默认门禁。
 

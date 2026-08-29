@@ -47,13 +47,13 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
   try {
     await waitReady();
 
-    // ── 1. Root / still returns full workspace ──────────────────────────────
+    // ── 1. Root / uses the migrated static frontend ────────────────────────
     await page.goto(BASE);
+    expect(page.url()).toMatch(/\/app\/today\.html$/);
     await expect(page).toHaveTitle(/StudyBuddy/i);
-    await expect(page.locator('#file')).toBeVisible();
-    const workspaceHtml = await page.content();
-    expect(workspaceHtml).toContain('文件导入');
-    expect(workspaceHtml).not.toContain('A3-1');
+    await expect(page.locator('.app-shell')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('你的学习日程');
+    await expect(page.locator('nav[data-nav]')).toBeVisible();
     stopServer(server); server = null;
     await new Promise(r => setTimeout(r, 500));
     server = startServer();

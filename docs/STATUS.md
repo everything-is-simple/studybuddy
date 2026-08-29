@@ -1,15 +1,15 @@
 # StudyBuddy Status
 
-> 更新：2026-08-30（Phase 10-9 release candidate、Gate J 与文档收口已同步；测试基线已验证；A3 静态前端迁移完成；E2E 用户测试完成）。当前整体阶段性估算为 **65% 左右**：Phase 9A/9B/9C 在明确范围内完成，Phase 9D 部分立项范围已完成收口，Phase 10 已完成 10-0 至 10-9；完整 StudyBuddy 尚未达到全局 `real-pass`。
+> 更新：2026-08-29（A4 页面已提交；后端基线已重新验证；浏览器全套回归已在本机 Chromium 验证）。当前整体阶段性估算为 **65% 左右**：Phase 9A/9B/9C 在明确范围内完成，Phase 9D 部分立项范围已完成收口，Phase 10 已完成 10-0 至 10-9；完整 StudyBuddy 尚未达到全局 `real-pass`。
 >
-> **当前测试基线（2026-08-30）**：后端 `413 passed, 2 skipped`；前端 `84 passed, 3 skipped`；所有 skip 均为 opt-in 真实 provider 测试。完整测试套件 100% 通过，代码、测试、治理文档与设计文档保持一致。
+> **当前测试基线（2026-08-29）**：后端 `414 passed, 2 skipped`；前端 `91 passed, 3 skipped`；完整浏览器套件共 94 项（包含 A4 专项），3 个 skip 均为 opt-in 真实 Provider UI smoke；后端 2 个 skip 均为 opt-in 真实 Provider smoke。
 >
 > **当前同步快照：** 正式 schema 为 v13；Phase 9C 整体已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成，Phase 9A 和 Phase 9B 均已分别在限定范围内完成。Phase 9D-0 已完成 `planned/audit-draft` 并作出部分立项结论，9D-1 已完成 `planned/contract-frozen`，9D-2 至 9D-8 达到 `implemented/backend-pass`，9D-9 达到 `browser-pass`，9D-10 达到 `backend-pass`，9D-11 达到 `closeout-scoped-pass`。9D-7 提供默认关闭的 allowlisted dry-run 与 live 拒绝，9D-8 提供 S6/S7 最小安全 API，9D-9 提供桌面/窄屏/键盘/reload/failure/privacy workspace，9D-10 验证 source lifecycle 与 backup/restore non-repair。限定范围 evidence 见 [`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md)。脱敏证据见 [`prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md)、[`prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md)、[`prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md) 和 [`prompts/phase9d/`](prompts/phase9d/)。这不代表 Phase 9D completed、真实 OCR/ASR、真实对外交付、scheduler/worker、系统级 screen reader 或全局 production `real-pass`。
 
 | Area | Status | Evidence |
 |---|---|---|
-| Current backend regression baseline | 413 passed, 2 skipped | `python -m pytest backend/tests/ -q`; 2 skips are opt-in real-provider smoke; verified 2026-08-30 |
-| Current frontend regression baseline | 84 passed, 3 skipped | `npm run test:browser`; 3 skips are opt-in real-provider browser tests; verified 2026-08-30 |
+| Current backend regression baseline | 414 passed, 2 skipped | `test-backend.ps1` / equivalent pytest command; both skips are opt-in real-provider smoke; verified 2026-08-29 |
+| Current frontend regression baseline | 91 passed, 3 skipped | `npx playwright test --workers=1 --reporter=line`; 3 skips are opt-in real-provider UI smoke; verified 2026-08-29 |
 | A3-4 static frontend core pages | implemented / browser-pass | materials.html, material-detail.html, qa.html, today.html fully integrated with backend APIs; browser_static_core.spec.js 6 passed |
 | A3-5 learning feature pages | implemented / browser-pass | cards.html, exercises.html, plans.html, notes.html, practice.html, classroom.html integrated with Phase 8/9A/9B/9C/9D APIs; browser_learning_pages.spec.js 9 passed |
 | A3-6 root route migration | implemented / browser-pass | Root route redirects to /app/today.html, legacy UI preserved at /legacy; browser_migration.spec.js 6 passed |
@@ -61,7 +61,7 @@
 
 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) records the approved next step: native static frontend delivery under [`frontend-plan.md`](frontend-plan.md), Composer -> Integration -> Formal gates for ASR, OCR, reports and delivery, plus a time-boxed Tauri Windows desktop evaluation.
 
-**A1/A2 Status (2025-01-28)**: A1/A2 repository and application structure refactoring is **completed**. A2.X series (A2.1-A2.4) successfully split 4 oversized core files (639KB total) into modular structure (48KB total), achieving 92.6% reduction while maintaining all public APIs and test baseline (413 passed, 2 skipped). Details:
+**A1/A2 Status (2025-01-28)**: A1/A2 repository and application structure refactoring is **completed**. A2.X series (A2.1-A2.4) successfully split 4 oversized core files (639KB total) into modular structure (48KB total), achieving 92.6% reduction while maintaining all public APIs. The historical A2.X regression evidence is 413 passed, 2 skipped; the current post-A4 baseline is 414 passed, 2 skipped; the unrestricted run also passed all symlink scenarios. Details:
 
 - **A2.1**: `repositories/_legacy.py` (379KB) → 18 implementation parts + runtime + bridge (30KB)
 - **A2.2**: `main.py` (157KB) → 969 bytes + `templates/index.html`
@@ -70,6 +70,6 @@
 
 All modules comply with 32 KiB policy verified by `backend/scripts/check-source-size.py`. Public APIs preserved: `backend/app/repositories/__init__.py` exports 305 symbols, `backend.app.main:create_app` unchanged, all migration and provider imports compatible. See [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md) for complete refactoring summary.
 
-A3 static frontend delivery and further capability gates remain future work. This does not alter the Phase 10 local-v1 completion conclusion, and it is not evidence that any real OCR/ASR/live delivery/desktop package exists.
+A3 static frontend delivery and A4 page delivery are completed in the declared scope; B0-B4 and D0-D1 capability gates remain future work. This does not alter the Phase 10 local-v1 completion conclusion, and it is not evidence that any real OCR/ASR/live delivery/desktop package exists.
 
 For the authoritative project status and task order, see [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md), [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md), [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md), and [`TODO.md`](TODO.md).

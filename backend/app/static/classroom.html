@@ -79,7 +79,7 @@ captureStatus.textContent='正在加载采集会话...';
 captureStatus.className='notice';
 captures.replaceChildren();
 try{
-const data=await sbApi.json('/api/learning/captures');
+const data=await sbApi.json('/api/study/capture-sessions');
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 captureStatus.textContent='暂无采集会话';
@@ -119,7 +119,7 @@ reportStatus.textContent='正在加载报告...';
 reportStatus.className='notice';
 reports.replaceChildren();
 try{
-const data=await sbApi.json('/api/learning/reports');
+const data=await sbApi.json('/api/study/reports');
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 reportStatus.textContent='暂无报告';
@@ -155,7 +155,7 @@ detailSection.hidden=false;
 detailTitle.textContent='采集会话详情';
 detailContent.innerHTML='<div class="notice">正在加载采集详情...</div>';
 try{
-const capture=await sbApi.json(`/api/learning/captures/${encodeURIComponent(captureId)}`);
+const capture=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`);
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
@@ -201,7 +201,7 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 
 async function viewTranscript(captureId){
 try{
-const transcript=await sbApi.json(`/api/learning/captures/${encodeURIComponent(captureId)}/transcript`);
+const transcript=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript`);
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
@@ -227,7 +227,7 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 async function confirmCapture(captureId){
 if(!confirm('确认此转写结果？确认后可作为学习材料。'))return;
 try{
-await sbApi.json(`/api/learning/captures/${encodeURIComponent(captureId)}/confirm`,{method:'POST'});
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/confirm`,{method:'POST'});
 alert('转写已确认');
 loadCaptures();
 viewCapture(captureId)
@@ -241,7 +241,7 @@ detailSection.hidden=false;
 detailTitle.textContent='学习报告';
 detailContent.innerHTML='<div class="notice">正在加载报告...</div>';
 try{
-const report=await sbApi.json(`/api/learning/reports/${encodeURIComponent(reportId)}`);
+const report=await sbApi.json(`/api/study/reports/${encodeURIComponent(reportId)}`);
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');
@@ -280,7 +280,7 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 
 async function viewDeliveryAudit(){
 try{
-const audit=await sbApi.json('/api/learning/delivery-audit');
+const audit=await sbApi.json('/api/study/reports');
 detailContent.replaceChildren();
 const container=document.createElement('div');
 const title=document.createElement('div');

@@ -41,7 +41,7 @@ test.afterEach(() => {
 });
 
 test('P6-D exposes navigation semantics and stays usable on narrow screens', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await expect(page.locator('header')).toBeVisible();
   await expect(page.locator('nav[aria-label="主要视图"]')).toBeVisible();
   await expect(page.locator('main#main-content')).toBeVisible();
@@ -69,7 +69,7 @@ test('P6-D exposes navigation semantics and stays usable on narrow screens', asy
 });
 
 test('P6-D preserves focus through citation dialog and exposes page-level failure state', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await upload(page, 'focus.txt', 'Focus returns after citation dialog and errors remain visible in page status.');
   await page.locator('#open-qa').click();
   await page.locator('#qa-index').click();

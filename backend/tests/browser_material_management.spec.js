@@ -61,7 +61,7 @@ test('formal material management browser acceptance', async ({page}) => {
   let renameDialogValue = 'renamed-sample.txt';
   try {
     await waitReady();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await page.locator('#file').setInputFiles(inputs);
     await page.locator('#file-import').click();
     await expect(page.locator('#status')).toContainText('批量导入完成：4', {timeout: 30000});
@@ -102,7 +102,7 @@ test('formal material management browser acceptance', async ({page}) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     server = startServer(); await waitReady();
     await page.context().setOffline(false);
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await expect(page.locator('#materials .item').filter({hasText: renameDialogValue})).toHaveCount(1);
 
     await page.getByRole('button', {name: /duplicate-one\.txt/}).last().click();
@@ -139,7 +139,7 @@ test('formal material management browser acceptance', async ({page}) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     server = startServer(); await waitReady();
     await page.context().setOffline(false);
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await expect(page.locator('#materials .item').filter({hasText: 'duplicate-one.txt'})).toHaveCount(0);
     await page.getByRole('button', {name: /duplicate-two\.txt/}).last().click();
     await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
@@ -165,4 +165,4 @@ test('formal material management browser acceptance', async ({page}) => {
 });
 
 test('formal material mutation request safety acceptance', async ({page}) => {
-  fs.rmSync(RUN_ROOT,{recursive:true,force:true});const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));let server=startServer();let release;try{await waitReady();await page.goto(BASE);await page.locator('#file').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await page.getByRole('button',{name:/sample\.txt/}).last().click();await page.route(`${BASE}/api/materials/*`,async route=>{if(route.request().method()==='PATCH'){return route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'})}await route.continue()});page.once('dialog',d=>{expect(d.type()).toBe('prompt');d.accept('failed-rename.txt')});await page.getByRole('button',{name:'重命名'}).click();await expect(page.locator('#status')).toHaveText('重命名失败');await expect(page.locator('#title')).toHaveText('sample.txt');await page.unroute(`${BASE}/api/materials/*`);let count=0;await page.route(`${BASE}/api/materials/*`,async route=>{if(route.request().method()==='DELETE'){count++;await new Promise(resolve=>{release=resolve});return route.fulfill({status:204})}await route.continue()});page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除',exact:true}).click();await page.getByRole('button',{name:'删除',exact:true}).dispatchEvent('click');await expect(page.locator('#delete')).toBeDisabled();expect(count).toBe(1);release();await expect(page.locator('#title')).toHaveText('选择材料');expect(errors).toEqual([])}finally{if(release)release();await page.unroute(`${BASE}/api/materials/*`).catch(()=>{});stopServer(server)}});
+  fs.rmSync(RUN_ROOT,{recursive:true,force:true});const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));let server=startServer();let release;try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await page.getByRole('button',{name:/sample\.txt/}).last().click();await page.route(`${BASE}/api/materials/*`,async route=>{if(route.request().method()==='PATCH'){return route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'})}await route.continue()});page.once('dialog',d=>{expect(d.type()).toBe('prompt');d.accept('failed-rename.txt')});await page.getByRole('button',{name:'重命名'}).click();await expect(page.locator('#status')).toHaveText('重命名失败');await expect(page.locator('#title')).toHaveText('sample.txt');await page.unroute(`${BASE}/api/materials/*`);let count=0;await page.route(`${BASE}/api/materials/*`,async route=>{if(route.request().method()==='DELETE'){count++;await new Promise(resolve=>{release=resolve});return route.fulfill({status:204})}await route.continue()});page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除',exact:true}).click();await page.getByRole('button',{name:'删除',exact:true}).dispatchEvent('click');await expect(page.locator('#delete')).toBeDisabled();expect(count).toBe(1);release();await expect(page.locator('#title')).toHaveText('选择材料');expect(errors).toEqual([])}finally{if(release)release();await page.unroute(`${BASE}/api/materials/*`).catch(()=>{});stopServer(server)}});

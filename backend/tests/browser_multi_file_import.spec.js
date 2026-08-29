@@ -49,7 +49,7 @@ test('formal multi-file import browser acceptance', async ({page}) => {
   let server = startServer();
   try {
     await waitReady();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await page.locator('#file').setInputFiles(paths);
     await page.locator('#file-import').click();
     await page.waitForTimeout(1000);
@@ -86,7 +86,7 @@ test('formal multi-file import browser acceptance', async ({page}) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     server = startServer(); await waitReady();
     await page.context().setOffline(false);
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     
     // Wait for materials list to fully load
     await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);

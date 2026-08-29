@@ -69,7 +69,7 @@ test.afterEach(async () => {
 });
 
 test('P6-E completes import to citation, source location, navigation, refresh and export', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await upload(page, 'p6e-primary.txt', 'P6-E synthetic source: retrieval and citation establish the complete workflow result.');
   await expect(page.locator('#qa-status')).toContainText('请先建立 AI 索引');
   await establishIndex(page);
@@ -103,7 +103,7 @@ test('P6-E completes import to citation, source location, navigation, refresh an
 });
 
 test('P6-E distinguishes retrieval empty and unconfigured Provider without unsafe output', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await upload(page, 'p6e-empty.txt', 'Only indexed source words are present here.');
   await establishIndex(page);
   await page.locator('#qa-question').fill('absent-token-p6e');
@@ -122,7 +122,7 @@ test('P6-E distinguishes retrieval empty and unconfigured Provider without unsaf
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   server = startServer('');
   await ready();
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await upload(page, 'p6e-unconfigured.txt', 'Provider is intentionally not configured for this safe failure path.');
   await establishIndex(page);
   await page.locator('#qa-question').fill('Provider intentionally configured');
@@ -135,7 +135,7 @@ test('P6-E distinguishes retrieval empty and unconfigured Provider without unsaf
 });
 
 test('P6-E preserves retry, idempotent UI and stale thread context', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await upload(page, 'p6e-failure.txt', 'P6-E retry and stale response synthetic source.');
   await establishIndex(page);
   await page.locator('#qa-question').fill('retry stale response');
@@ -177,7 +177,7 @@ test('P6-E preserves retry, idempotent UI and stale thread context', async ({pag
 });
 
 test('P6-E marks deleted source unavailable and prevents unsafe export', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await upload(page, 'p6e-source.txt', 'P6-E source lifecycle citation text.');
   await establishIndex(page);
   await page.locator('#qa-question').fill('source lifecycle citation');

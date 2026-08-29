@@ -59,7 +59,7 @@ function makeBoundaryFiles() {
   let server = startServer();
   try {
     await waitReady();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await expect(page.getByRole('heading', {name: 'StudyBuddy 文件导入'})).toBeVisible();
     await expect(page.locator('#file')).toBeVisible();
 
@@ -138,7 +138,7 @@ function makeBoundaryFiles() {
     
     // Re-enable network and navigate
     await page.context().setOffline(false);
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     
     // Wait for materials list to fully load
     await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);

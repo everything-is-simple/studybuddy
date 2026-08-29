@@ -123,6 +123,22 @@ def test_s7_api_flow_scope_idempotency_and_privacy(tmp_path: Path):
         ).status_code == 404
 
 
+def test_capture_session_can_start_from_a_new_empty_data_root(tmp_path: Path):
+    root = tmp_path / "empty-data"
+    with TestClient(create_app(AppConfig(data_root=root, project_id=PROJECT_ID))) as client:
+        created = client.post(
+            "/api/study/capture-sessions",
+            json={
+                "asset_kind": "audio",
+                "original_name": "first-lesson.mp3",
+                "media_type": "audio/mpeg",
+            },
+        )
+
+    assert created.status_code == 201, created.text
+    assert created.json()["project_id"] == PROJECT_ID
+
+
 def test_s7_api_reject_path_and_input_boundaries(tmp_path: Path):
     with _client(tmp_path) as client:
         capture_id, _ = _capture_ready(client)

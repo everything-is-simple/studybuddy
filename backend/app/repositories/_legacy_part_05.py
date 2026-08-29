@@ -337,8 +337,10 @@ def create_capture_session(connection: sqlite3.Connection, *, project_id: str,
         raise ValueError("capture_asset_type_not_supported")
     capture_id, now = f"capture_session_{uuid.uuid4().hex}", utc_now()
     with connection:
-        if not _study_project_exists(connection, project_id):
-            raise ValueError("project_scope_violation")
+        connection.execute(
+            "INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)",
+            (project_id, "Default project", now),
+        )
         source_status = None
         status = "draft"
         if material_id is not None:
@@ -366,4 +368,3 @@ def create_capture_session(connection: sqlite3.Connection, *, project_id: str,
         except sqlite3.IntegrityError as exc:
             raise ValueError("capture_invalid_state") from exc
     return get_capture_session(connection, project_id=project_id, capture_session_id=capture_id) or {}
-

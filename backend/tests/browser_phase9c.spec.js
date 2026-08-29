@@ -48,7 +48,7 @@ test('Phase 9C S3 workspace starts, submits, results, reloads and preserves priv
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const exerciseId = await createExercise(page);
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await page.getByRole('link', {name: '练习反馈'}).click();
   await expect(page.locator('#phase9c')).toBeVisible();
   await expect(page.locator('#phase9c-session-list')).toContainText('尚无限时练习');
@@ -82,7 +82,7 @@ test('Phase 9C S3 workspace starts, submits, results, reloads and preserves priv
 test('Phase 9C S4/S5 workspace exposes feedback and safe failure paths', async ({page}) => {
   const exerciseId = await createExercise(page, 'short_answer');
   const goalId = await createGoal(page);
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await page.getByRole('link', {name: '练习反馈'}).click();
   await expect(page.locator('#phase9c')).toBeVisible();
   await page.locator('#phase9c-refresh').click();
@@ -106,7 +106,7 @@ test('Phase 9C S4/S5 workspace exposes feedback and safe failure paths', async (
 });
 
 test('Phase 9C default provider remains safe and retryable', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await page.getByRole('link', {name: '练习反馈'}).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#phase9c')).toBeVisible();

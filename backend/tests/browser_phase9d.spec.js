@@ -74,7 +74,7 @@ test.afterEach(stop);
 test('Phase 9D S7 capture workspace uploads, transcribes, confirms and recovers safely', async ({page}) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await bootstrapProject(page);
   await page.getByRole('link', {name: '课堂与报告'}).click();
   await expect(page.locator('#phase9d')).toBeVisible();
@@ -119,7 +119,7 @@ test('Phase 9D S7 capture workspace uploads, transcribes, confirms and recovers 
 });
 
 test('Phase 9D S7 failure, retry boundary and archive gate stay safe', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await bootstrapProject(page);
   await page.getByRole('link', {name: '课堂与报告'}).click();
   await createCaptureViaUi(page);
@@ -151,7 +151,7 @@ test('Phase 9D S7 failure, retry boundary and archive gate stay safe', async ({p
 });
 
 test('Phase 9D S6 report preview, default-off delivery and safe audit', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await bootstrapProject(page);
   await page.getByRole('link', {name: '课堂与报告'}).click();
   await page.locator('#phase9d-period-start').fill('2026-01-15');
@@ -181,7 +181,7 @@ test('Phase 9D S6 explicit dry-run is visible and never reports sent', async ({p
   stop();
   server = startServer('dry_run');
   await ready();
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await bootstrapProject(page);
   await page.getByRole('link', {name: '课堂与报告'}).click();
   await page.locator('#phase9d-period-start').fill('2026-01-15');

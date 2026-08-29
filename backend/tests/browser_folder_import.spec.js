@@ -35,7 +35,7 @@ test('formal folder import browser acceptance', async ({page}) => {
   page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); if (request.url().endsWith('/api/materials/batch') && request.method() === 'POST') batchRequests++; });
   let server = startServer();
   try {
-    await waitReady(); await page.goto(BASE);
+    await waitReady(); await page.goto(`${BASE}/legacy`);
     const folder = page.locator('#folder');
     await expect(folder).toHaveAttribute('type', 'file'); await expect(folder).toHaveAttribute('multiple', ''); await expect(folder).toHaveAttribute('webkitdirectory', '');
     await expect(page.locator('#file')).toHaveAttribute('multiple', ''); await expect(page.locator('#folder-import')).toBeVisible();

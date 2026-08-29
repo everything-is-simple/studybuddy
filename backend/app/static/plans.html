@@ -85,7 +85,7 @@ goalStatus.textContent='正在加载目标...';
 goalStatus.className='notice';
 goals.replaceChildren();
 try{
-const data=await sbApi.json('/api/learning/goals');
+const data=await sbApi.json('/api/study/goals');
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 goalStatus.textContent='暂无目标';
@@ -121,7 +121,7 @@ moduleStatus.textContent='正在加载模块...';
 moduleStatus.className='notice';
 modules.replaceChildren();
 try{
-const data=await sbApi.json('/api/learning/modules');
+const data=await sbApi.json('/api/study/modules');
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 moduleStatus.textContent='暂无模块';
@@ -159,7 +159,7 @@ planStatus.className='notice';
 plans.replaceChildren();
 planDetail.hidden=true;
 try{
-const data=await sbApi.json('/api/learning/plans');
+const data=await sbApi.json('/api/study/plans');
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 planStatus.textContent='暂无学习计划';
@@ -202,7 +202,7 @@ document.querySelectorAll('.plan-item').forEach(el=>{
 el.classList.toggle('selected',el.onclick.toString().includes(planId))
 });
 try{
-const plan=await sbApi.json(`/api/learning/plans/${encodeURIComponent(planId)}`);
+const plan=await sbApi.json(`/api/study/plans/${encodeURIComponent(planId)}`);
 planDetail.replaceChildren();
 const title=document.createElement('h3');
 title.textContent=text(plan.title);
@@ -218,8 +218,7 @@ itemsTitle.style.marginTop='16px';
 planDetail.append(itemsTitle);
 const itemsContainer=document.createElement('div');
 itemsContainer.className='plan-items';
-const itemsData=await sbApi.json(`/api/learning/plans/${encodeURIComponent(planId)}/items`);
-const items=Array.isArray(itemsData)?itemsData:itemsData.items||[];
+const items=Array.isArray(plan.items)?plan.items:[];
 if(!items.length){
 const empty=document.createElement('div');
 empty.className='muted';

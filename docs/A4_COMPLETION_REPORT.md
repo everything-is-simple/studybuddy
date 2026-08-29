@@ -1,7 +1,7 @@
 # A4 前端页面完成报告
 
 ## 完成日期
-2026-08-30
+2026-08-29
 
 ## 实施范围
 
@@ -126,12 +126,13 @@ python backend/scripts/check-source-size.py
 ```bash
 C:\miniconda\py310\python.exe -m pytest backend/tests/
 ```
-✅ 通过：413 passed, 2 skipped
+✅ 通过：414 passed, 2 skipped（2 个真实 Provider smoke 默认跳过）
 
 ### 浏览器验证
-- ✅ `http://127.0.0.1:8787/app/settings-provider.html` — 200 OK
-- ✅ `http://127.0.0.1:8787/app/capture.html` — 200 OK
-- ✅ `http://127.0.0.1:8787/app/tasks.html` — 200 OK
+- ✅ `/app/settings-provider.html` — 200 OK（本轮本地 HTTP 合约检查）
+- ✅ `/app/capture.html` — 200 OK（本轮本地 HTTP 合约检查）
+- ✅ `/app/tasks.html` — 200 OK（本轮本地 HTTP 合约检查）
+- ✅ Chromium 完整回归：94 项中 91 passed、3 skipped；3 个 skip 均为 opt-in 真实 Provider UI smoke。A4 专项 `browser_a4.spec.js`：3 passed。
 
 ### API 集成验证
 - ✅ `/api/ai/capabilities` — 正确显示 Provider 状态

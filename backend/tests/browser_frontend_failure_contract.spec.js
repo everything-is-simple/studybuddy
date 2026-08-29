@@ -11,7 +11,7 @@ test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}
 test.afterEach(() => { if (server && !server.killed) server.kill(); server = null; });
 const forbidden = ['stored_path', 'traceback', 'database is locked', 'C:/secret', 'internal backend text'];
 async function assertSafe(page){const text=(await page.locator('body').innerText()).toLowerCase();for(const value of forbidden)expect(text).not.toContain(value.toLowerCase())}
-async function load(page){await page.goto(BASE);await expect(page.locator('#status')).toBeVisible()}
+async function load(page){await page.goto(`${BASE}/legacy`);await expect(page.locator('#status')).toBeVisible()}
 
 test('single import failure restores controls and followup succeeds',async({page})=>{const errors=[];page.on('pageerror',e=>errors.push(e));let fail=true;await page.route('**/api/materials',async route=>fail?route.fulfill({status:500,contentType:'application/json',body:JSON.stringify({detail:'material_persist_failed',path:'C:/secret',trace:'fake'})}):route.continue());await load(page);await page.locator('#file').setInputFiles(fixture);await page.locator('#file-import').click();await expect(page.locator('#status')).toHaveText('导入失败');await expect(page.locator('#file-import')).toBeEnabled();await assertSafe(page);fail=false;await page.locator('#file').setInputFiles(fixture);await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成');expect(errors).toHaveLength(0)})
 

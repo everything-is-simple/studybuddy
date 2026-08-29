@@ -70,15 +70,18 @@ function text(value){return typeof value==='string'?value:''}
 
 async function loadSummary(){
 try{
-const data=await sbApi.json('/api/learning/rhythm/summary');
-if(data.total_items!==undefined){
+const plansData=await sbApi.json('/api/study/plans');
+const plans=Array.isArray(plansData)?plansData:plansData.items||[];
+const plan=plans.find(item=>item.status==='active')||plans[0];
+if(plan){
+const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/summary`);
 summaryStatus.hidden=true;
 summary.hidden=false;
 const cards=[
-{label:'今日任务',value:data.today_count||0},
-{label:'已完成',value:data.completed_count||0},
-{label:'待处理',value:data.pending_count||0},
-{label:'本周进度',value:Math.round((data.weekly_progress||0)*100)+'%'}
+{label:'当前计划',value:text(plan.title)||'未命名计划'},
+{label:'已完成',value:data.item_projection?.completed_count||plan.progress?.completed_count||0},
+{label:'待处理',value:data.item_projection?.pending_count||plan.progress?.pending_count||0},
+{label:'来源提醒',value:data.source_warning_count||plan.progress?.source_warning_count||0}
 ];
 summary.replaceChildren();
 cards.forEach(card=>{
@@ -105,8 +108,10 @@ summaryStatus.textContent=sbApi.safeError(e)
 
 async function loadTasks(){
 try{
-const data=await sbApi.json('/api/learning/rhythm/timeline');
-const items=Array.isArray(data)?data:data.items||[];
+const plansData=await sbApi.json('/api/study/plans');
+const plans=Array.isArray(plansData)?plansData:plansData.items||[];
+const plan=plans.find(item=>item.status==='active')||plans[0];
+const items=plan&&Array.isArray(plan.items)?plan.items.filter(item=>item.status!=='archived'):[];
 if(!items.length){
 taskStatus.textContent='今日暂无任务';
 taskStatus.className='notice';
@@ -124,8 +129,8 @@ title.textContent=text(item.title||item.item_title||'未命名任务');
 meta.append(title);
 const source=document.createElement('div');
 source.className='task-source';
-const sourceStatus=text(item.source_status||'valid');
-source.innerHTML=`来源: ${text(item.material_name||'未知材料')} · <span class="task-status ${sourceStatus}">${sourceStatus}</span>`;
+const sourceStatus=text(item.source_link_status||item.source_status||'valid');
+source.textContent=`来源状态: ${sourceStatus}`;
 meta.append(source);
 li.append(meta);
 const action=document.createElement('a');

@@ -184,6 +184,9 @@ def test_repository_has_one_executable_test_contract():
     assert browser_runner.is_file()
     assert cli_entry.is_file()
     assert "from .cli import main" in cli_entry.read_text(encoding="utf-8")
+    backend_runner_text = backend_runner.read_text(encoding="utf-8")
+    assert "--basetemp=$baseTemp" in backend_runner_text
+    assert "no:cacheprovider" in backend_runner_text
     assert "'--workers=1'" in browser_runner.read_text(encoding="utf-8")
 
 
@@ -198,6 +201,8 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
 
     allowed_core_docs = {
         "ARCHITECTURE.md",
+        "A4_COMPLETION_REPORT.md",
+        "A4_SUMMARY.md",
         "BACKUP_RESTORE.md",
         "CODE_TEST_GOVERNANCE.md",
         "INDEX.md",
