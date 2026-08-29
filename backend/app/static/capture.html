@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 课堂采集</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.session-grid{display:grid;gap:16px;margin-top:16px}
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.session-header{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:12px}
+.session-header h3{margin:0;font-size:18px}
+.session-meta{font-size:14px;color:var(--muted);margin-bottom:12px}
+.session-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.session-actions button{padding:8px 14px;font-size:14px}
+.upload-section{margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color 150ms ease,background 150ms ease}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:#f3f6fc}
+.upload-area input{display:none}
+.draft-editor{margin-top:16px}
+.draft-editor textarea{width:100%;min-height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical}
+.transcript-view{background:var(--bg);padding:16px;border-radius:8px;margin-top:12px;white-space:pre-wrap;font-family:var(--mono);font-size:14px;line-height:1.6}
+.asr-notice{border-left:3px solid var(--warn);padding:12px 16px;background:#fffbf0;margin-top:16px}
+.capability-gate{border-left:3px solid var(--danger);padding:12px 16px;background:#fff5f5;margin-top:16px}
+.filters{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.filters label{display:flex;align-items:center;gap:6px;font-size:14px}
+@media(max-width:640px){
+.session-header{flex-direction:column;align-items:stretch}
+.session-actions{flex-direction:column}
+.session-actions button{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">课堂采集</p>
+<h1>采集与转写</h1>
+<p class="lead">上传音频/视频，查看转写草稿，确认或编辑后转为学习材料。</p>
+</div>
+<div class="hero-action">
+<button class="btn btn-primary" id="new-session-btn" type="button">新建采集会话</button>
+</div>
+</div>
+
+<section class="card" data-od-id="capture-asr-status">
+<h2>转写能力状态</h2>
+<div class="asr-notice">
+<p><strong>注意：</strong>真实 ASR（语音识别）功能尚未通过 B1 门禁验证。</p>
+<p style="margin-top:8px;margin-bottom:0">当前仅支持 fake/loopback 转写流程用于测试和演示。上传的音频文件会保存，但转写结果为模拟数据。</p>
+</div>
+</section>
+
+<section class="card" style="margin-top:24px" data-od-id="capture-sessions">
+<div class="section-label">
+<h2>采集会话</h2>
+<span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
+</div>
+<div class="filters">
+<label>
+<input type="checkbox" id="include-archived">
+<span>显示已归档</span>
+</label>
+<button class="btn" id="refresh-btn" type="button">刷新</button>
+</div>
+<div id="error" class="error" role="alert" hidden></div>
+<div id="sessions" class="session-grid"></div>
+<div id="empty" class="empty" hidden>还没有采集会话</div>
+</section>
+
+<!-- New Session Modal (simplified inline for now) -->
+<dialog id="new-session-dialog" style="max-width:500px;border:1px solid var(--border);border-radius:12px;padding:24px">
+<h2 style="margin-top:0">新建采集会话</h2>
+<form id="new-session-form">
+<div class="field">
+<label for="asset-kind">类型</label>
+<select id="asset-kind" required>
+<option value="audio">音频</option>
+<option value="video">视频</option>
+</select>
+</div>
+<div class="field" style="margin-top:16px">
+<label for="original-name">名称</label>
+<input type="text" id="original-name" placeholder="例：第三章课堂讲解" required>
+</div>
+<div class="field" style="margin-top:16px">
+<label for="media-type">媒体类型</label>
+<input type="text" id="media-type" placeholder="例：audio/mp3" value="audio/mp3">
+</div>
+<div style="display:flex;gap:12px;margin-top:24px">
+<button type="submit" class="btn btn-primary">创建</button>
+<button type="button" class="btn" id="cancel-dialog-btn">取消</button>
+</div>
+</form>
+</dialog>
+
+<!-- Session Detail Modal -->
+<dialog id="session-detail-dialog" style="max-width:800px;width:90vw;border:1px solid var(--border);border-radius:12px;padding:24px">
+<div id="session-detail-content"></div>
+<div style="margin-top:24px">
+<button type="button" class="btn" id="close-detail-btn">关闭</button>
+</div>
+</dialog>
+
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const state=document.querySelector('#state');
+const error=document.querySelector('#error');
+const sessions=document.querySelector('#sessions');
+const empty=document.querySelector('#empty');
+const includeArchived=document.querySelector('#include-archived');
+const refreshBtn=document.querySelector('#refresh-btn');
+const newSessionBtn=document.querySelector('#new-session-btn');
+const newSessionDialog=document.querySelector('#new-session-dialog');
+const newSessionForm=document.querySelector('#new-session-form');
+const cancelDialogBtn=document.querySelector('#cancel-dialog-btn');
+const sessionDetailDialog=document.querySelector('#session-detail-dialog');
+const sessionDetailContent=document.querySelector('#session-detail-content');
+const closeDetailBtn=document.querySelector('#close-detail-btn');
+
+let currentSessions=[];
+
+function text(value){return typeof value==='string'?value:''}
+
+async function load(){
+state.textContent='加载中…';
+error.hidden=true;
+sessions.replaceChildren();
+empty.hidden=true;
+try{
+const params=new URLSearchParams();
+params.set('include_archived',includeArchived.checked?'true':'false');
+params.set('limit','100');
+const data=await sbApi.json('/api/study/capture-sessions?'+params);
+currentSessions=data.items||[];
+if(currentSessions.length===0){
+state.textContent='暂无会话';
+empty.hidden=false
+}else{
+state.textContent=`共 ${currentSessions.length} 个会话`;
+renderSessions(currentSessions)
+}
+}catch(e){
+state.textContent='加载失败';
+error.textContent=sbApi.safeError(e);
+error.hidden=false
+}
+}
+
+function renderSessions(items){
+sessions.replaceChildren();
+items.forEach(item=>{
+const card=createSessionCard(item);
+sessions.append(card)
+})
+}
+
+function createSessionCard(item){
+const card=document.createElement('div');
+card.className='session-card';
+
+const header=document.createElement('div');
+header.className='session-header';
+
+const h3=document.createElement('h3');
+h3.textContent=text(item.original_name)||'未命名';
+header.append(h3);
+
+const badge=document.createElement('span');
+badge.className='badge';
+badge.textContent=text(item.status)||'unknown';
+header.append(badge);
+
+card.append(header);
+
+const meta=document.createElement('div');
+meta.className='session-meta';
+meta.textContent=`类型：${text(item.asset_kind)||'未知'} · 创建于 ${formatDate(item.created_at)}`;
+card.append(meta);
+
+if(item.transcript_drafts&&item.transcript_drafts.length>0){
+const draft=item.transcript_drafts[0];
+const preview=document.createElement('div');
+preview.className='transcript-view';
+const previewText=text(draft.text).slice(0,200);
+preview.textContent=previewText+(previewText.length<text(draft.text).length?'...':'');
+card.append(preview)
+}
+
+const actions=document.createElement('div');
+actions.className='session-actions';
+
+const viewBtn=document.createElement('button');
+viewBtn.className='btn btn-primary';
+viewBtn.textContent='查看详情';
+viewBtn.onclick=()=>viewSession(item.capture_session_id);
+actions.append(viewBtn);
+
+if(item.status==='asset_uploaded'){
+const transcribeBtn=document.createElement('button');
+transcribeBtn.className='btn';
+transcribeBtn.textContent='转写（fake）';
+transcribeBtn.onclick=()=>transcribeSession(item.capture_session_id);
+actions.append(transcribeBtn)
+}
+
+card.append(actions);
+
+return card
+}
+
+function formatDate(iso){
+if(!iso)return'未知';
+try{
+return new Date(iso).toLocaleString('zh-CN')
+}catch(e){
+return iso
+}
+}
+
+async function viewSession(captureId){
+try{
+const data=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`);
+renderSessionDetail(data);
+sessionDetailDialog.showModal()
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+function renderSessionDetail(data){
+sessionDetailContent.innerHTML='';
+
+const title=document.createElement('h2');
+title.style.marginTop='0';
+title.textContent=text(data.original_name)||'未命名';
+sessionDetailContent.append(title);
+
+const meta=document.createElement('div');
+meta.className='session-meta';
+meta.innerHTML=`
+<p>状态：<strong>${text(data.status)}</strong></p>
+<p>类型：${text(data.asset_kind)} · 媒体：${text(data.media_type)}</p>
+<p>创建于：${formatDate(data.created_at)}</p>
+`;
+sessionDetailContent.append(meta);
+
+if(data.status==='created'&&!data.asset_uploaded_at){
+const uploadSection=document.createElement('div');
+uploadSection.className='upload-section';
+uploadSection.innerHTML=`
+<h3>上传文件</h3>
+<div class="upload-area" id="upload-area-${data.capture_session_id}">
+<input type="file" id="file-input-${data.capture_session_id}" accept="audio/*,video/*">
+<p><strong>点击选择文件</strong>或拖放到此处</p>
+</div>
+<div id="upload-status-${data.capture_session_id}" class="notice" style="margin-top:12px" hidden></div>
+`;
+sessionDetailContent.append(uploadSection);
+
+setTimeout(()=>{
+const uploadArea=document.querySelector(`#upload-area-${data.capture_session_id}`);
+const fileInput=document.querySelector(`#file-input-${data.capture_session_id}`);
+const uploadStatus=document.querySelector(`#upload-status-${data.capture_session_id}`);
+if(uploadArea&&fileInput){
+uploadArea.onclick=()=>fileInput.click();
+fileInput.onchange=()=>{
+if(fileInput.files.length)uploadFile(data.capture_session_id,fileInput.files[0],uploadStatus)
+}
+}
+},100)
+}
+
+if(data.transcript_drafts&&data.transcript_drafts.length>0){
+data.transcript_drafts.forEach(draft=>{
+const draftSection=document.createElement('div');
+draftSection.className='draft-editor';
+draftSection.innerHTML=`
+<h3>转写草稿 · ${text(draft.draft_status)}</h3>
+<div class="transcript-view">${text(draft.text)||'(空)'}</div>
+`;
+
+if(draft.draft_status==='pending_review'){
+const editArea=document.createElement('textarea');
+editArea.value=text(draft.text);
+editArea.placeholder='编辑转写内容...';
+draftSection.append(editArea);
+
+const btnGroup=document.createElement('div');
+btnGroup.style.marginTop='12px';
+btnGroup.style.display='flex';
+btnGroup.style.gap='8px';
+
+const saveBtn=document.createElement('button');
+saveBtn.className='btn';
+saveBtn.textContent='保存编辑';
+saveBtn.onclick=()=>editDraft(data.capture_session_id,draft.draft_id,editArea.value);
+btnGroup.append(saveBtn);
+
+const confirmBtn=document.createElement('button');
+confirmBtn.className='btn btn-primary';
+confirmBtn.textContent='确认';
+confirmBtn.onclick=()=>confirmDraft(data.capture_session_id,draft.draft_id);
+btnGroup.append(confirmBtn);
+
+const rejectBtn=document.createElement('button');
+rejectBtn.className='btn';
+rejectBtn.textContent='拒绝';
+rejectBtn.onclick=()=>rejectDraft(data.capture_session_id,draft.draft_id);
+btnGroup.append(rejectBtn);
+
+draftSection.append(btnGroup)
+}
+
+sessionDetailContent.append(draftSection)
+})
+}
+}
+
+async function uploadFile(captureId,file,statusEl){
+statusEl.hidden=false;
+statusEl.className='notice';
+statusEl.textContent=`正在上传 ${file.name}...`;
+try{
+const formData=new FormData();
+formData.append('file',file);
+const result=await fetch(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/upload`,{
+method:'POST',
+body:formData
+});
+if(!result.ok){
+const err=await result.json().catch(()=>({}));
+throw new Error(err.detail||'upload_failed')
+}
+statusEl.className='notice';
+statusEl.textContent='上传成功！';
+setTimeout(()=>{
+sessionDetailDialog.close();
+load()
+},1500)
+}catch(e){
+statusEl.className='notice warn';
+statusEl.textContent=sbApi.safeError(e)
+}
+}
+
+async function transcribeSession(captureId){
+if(!confirm('确定使用 fake 转写吗？（真实 ASR 尚未接入）'))return;
+try{
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcribe`,{method:'POST'});
+alert('转写已触发（fake）');
+load()
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+async function editDraft(captureId,draftId,text){
+try{
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript/edit`,{
+method:'POST',
+body:JSON.stringify({draft_id:draftId,text})
+});
+alert('草稿已保存');
+viewSession(captureId)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+async function confirmDraft(captureId,draftId){
+if(!confirm('确认此转写草稿？确认后将转为正式材料。'))return;
+try{
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/confirm`,{
+method:'POST',
+body:JSON.stringify({draft_id:draftId})
+});
+alert('草稿已确认');
+sessionDetailDialog.close();
+load()
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+async function rejectDraft(captureId,draftId){
+if(!confirm('拒绝此转写草稿？'))return;
+try{
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/reject`,{
+method:'POST',
+body:JSON.stringify({draft_id:draftId})
+});
+alert('草稿已拒绝');
+viewSession(captureId)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+newSessionBtn.onclick=()=>newSessionDialog.showModal();
+cancelDialogBtn.onclick=()=>newSessionDialog.close();
+closeDetailBtn.onclick=()=>sessionDetailDialog.close();
+
+newSessionForm.onsubmit=async(e)=>{
+e.preventDefault();
+const assetKind=document.querySelector('#asset-kind').value;
+const originalName=document.querySelector('#original-name').value;
+const mediaType=document.querySelector('#media-type').value;
+try{
+await sbApi.json('/api/study/capture-sessions',{
+method:'POST',
+body:JSON.stringify({asset_kind:assetKind,original_name:originalName,media_type:mediaType})
+});
+newSessionDialog.close();
+newSessionForm.reset();
+load()
+}catch(e){
+alert(sbApi.safeError(e))
+}
+};
+
+includeArchived.onchange=load;
+refreshBtn.onclick=load;
+
+load()
+})();
+</script>
+</body>
+</html>
