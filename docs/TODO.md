@@ -294,7 +294,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A3-5：新增学习功能页面并接入后端 API（cards/exercises/plans/notes/practice/classroom 六个页面）。
 - [x] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
 - [x] A3：执行 [`frontend-plan.md`](frontend-plan.md) A3：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
-- [ ] A4：执行 [`frontend-plan.md`](frontend-plan.md) A4：Provider 设置、课堂采集与任务状态页面；接入已验证 API，如实表达能力边界。
+- [x] A4：执行 [`frontend-plan.md`](frontend-plan.md) A4：Provider 设置、课堂采集与任务状态页面；接入已验证 API，如实表达能力边界。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
 - [ ] B1：真实 ASR 候选（whisper.cpp/FunASR/SenseVoice）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；真实 smoke 必须 explicit opt-in。
 - [ ] B2：真实 OCR 候选（RapidOCR/PaddleOCR/CapsWriter）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；结果必须 draft-first 并需用户确认。

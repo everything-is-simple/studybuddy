@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 任务状态</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.task-grid{display:grid;gap:16px;margin-top:16px}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.task-header{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:12px}
+.task-header h3{margin:0;font-size:18px;font-family:var(--mono)}
+.task-meta{display:grid;gap:6px;font-size:14px;color:var(--muted);margin-bottom:12px}
+.task-meta dt{font-weight:600;color:var(--fg)}
+.task-meta dd{margin:0;font-family:var(--mono)}
+.task-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.task-actions button{padding:8px 14px;font-size:14px}
+.task-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:600;font-family:var(--mono)}
+.task-status.pending{background:#f3f6fc;color:var(--accent)}
+.task-status.running{background:#fffbf0;color:#806000}
+.task-status.success{background:#f0fdf4;color:var(--success)}
+.task-status.failed{background:#fff5f5;color:var(--danger)}
+.task-status.cancelled{background:var(--bg);color:var(--muted)}
+.task-notice{border-left:3px solid var(--accent);padding:12px 16px;background:#f3f6fc;margin-top:16px}
+.filters{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.filters select{min-width:160px}
+.progress-bar{width:100%;height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--accent);transition:width 300ms ease}
+@media(max-width:640px){
+.task-header{flex-direction:column;align-items:stretch}
+.task-actions{flex-direction:column}
+.task-actions button{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">系统监控</p>
+<h1>任务状态</h1>
+<p class="lead">查看后台任务的运行状态、重试和取消操作。</p>
+</div>
+</div>
+
+<section class="card" data-od-id="task-capability-notice">
+<h2>任务运行器状态</h2>
+<div class="task-notice">
+<p><strong>当前支持的任务类型：</strong></p>
+<ul style="margin:8px 0 0 20px;padding:0">
+<li><code style="font-family:var(--mono);background:var(--bg);padding:2px 6px;border-radius:4px">embedding_index</code> — 材料向量索引（已验证）</li>
+</ul>
+<p style="margin-top:12px;margin-bottom:0"><strong>其它任务类型显示为"尚未接入任务运行器"。</strong></p>
+</div>
+</section>
+
+<section class="card" style="margin-top:24px" data-od-id="task-list">
+<div class="section-label">
+<h2>任务列表</h2>
+<span id="state" class="muted" role="status" aria-live="polite">说明</span>
+</div>
+<div class="filters">
+<select id="status-filter" aria-label="状态筛选">
+<option value="">全部状态</option>
+<option value="pending">等待中</option>
+<option value="running">运行中</option>
+<option value="success">已完成</option>
+<option value="failed">失败</option>
+<option value="cancelled">已取消</option>
+</select>
+<button class="btn" id="apply-filters" type="button">应用筛选</button>
+<button class="btn" id="refresh-btn" type="button">刷新</button>
+</div>
+<div id="error" class="error" role="alert" hidden></div>
+<div id="tasks" class="task-grid"></div>
+<div id="info" class="notice" style="margin-top:16px">
+<p><strong>说明：</strong>当前页面仅展示通过材料详情页、问答页面等触发的 <code>embedding_index</code> 任务。</p>
+<p style="margin-top:8px;margin-bottom:0">如需查看具体任务，请通过触发任务的功能入口（如材料索引、问答）访问，或在地址栏输入 <code>/app/tasks.html?task_id=&lt;任务ID&gt;</code>。</p>
+</div>
+</section>
+
+<section class="card" style="margin-top:24px" data-od-id="task-detail" id="task-detail-section" hidden>
+<div class="section-label">
+<h2>任务详情</h2>
+<span id="detail-state" class="muted" role="status" aria-live="polite"></span>
+</div>
+<div id="detail-error" class="error" role="alert" hidden></div>
+<div id="task-detail"></div>
+</section>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const state=document.querySelector('#state');
+const error=document.querySelector('#error');
+const tasks=document.querySelector('#tasks');
+const info=document.querySelector('#info');
+const statusFilter=document.querySelector('#status-filter');
+const applyFilters=document.querySelector('#apply-filters');
+const refreshBtn=document.querySelector('#refresh-btn');
+
+const taskDetailSection=document.querySelector('#task-detail-section');
+const detailState=document.querySelector('#detail-state');
+const detailError=document.querySelector('#detail-error');
+const taskDetail=document.querySelector('#task-detail');
+
+const urlParams=new URLSearchParams(window.location.search);
+const taskId=urlParams.get('task_id');
+
+function text(value){return typeof value==='string'?value:''}
+
+if(taskId){
+info.hidden=true;
+taskDetailSection.hidden=false;
+loadTaskDetail(taskId);
+setInterval(()=>loadTaskDetail(taskId),3000)
+}else{
+state.textContent='当前无全局任务列表'
+}
+
+async function loadTaskDetail(id){
+detailState.textContent='加载中…';
+detailError.hidden=true;
+taskDetail.replaceChildren();
+try{
+const data=await sbApi.json(`/api/tasks/${encodeURIComponent(id)}`);
+detailState.textContent='已加载';
+renderTaskDetail(data)
+}catch(e){
+detailState.textContent='加载失败';
+detailError.textContent=sbApi.safeError(e);
+detailError.hidden=false
+}
+}
+
+function renderTaskDetail(data){
+taskDetail.replaceChildren();
+
+const card=document.createElement('div');
+card.className='task-card';
+
+const header=document.createElement('div');
+header.className='task-header';
+
+const h3=document.createElement('h3');
+h3.textContent=text(data.task_id).slice(0,12)+'...';
+h3.title=text(data.task_id);
+header.append(h3);
+
+const statusBadge=createStatusBadge(data.status);
+header.append(statusBadge);
+
+card.append(header);
+
+const dl=document.createElement('dl');
+dl.className='task-meta';
+
+addMeta(dl,'任务类型',text(data.kind)||'未知');
+addMeta(dl,'状态',text(data.status)||'未知');
+if(data.created_at)addMeta(dl,'创建于',formatDate(data.created_at));
+if(data.started_at)addMeta(dl,'开始于',formatDate(data.started_at));
+if(data.completed_at)addMeta(dl,'完成于',formatDate(data.completed_at));
+if(data.error_code)addMeta(dl,'错误码',text(data.error_code));
+if(data.retries)addMeta(dl,'重试次数',String(data.retries));
+
+card.append(dl);
+
+if(data.progress!=null&&data.progress>=0&&data.progress<=100){
+const progressBar=document.createElement('div');
+progressBar.className='progress-bar';
+const progressFill=document.createElement('div');
+progressFill.className='progress-fill';
+progressFill.style.width=data.progress+'%';
+progressBar.append(progressFill);
+card.append(progressBar);
+
+const progressLabel=document.createElement('p');
+progressLabel.className='muted';
+progressLabel.style.fontSize='13px';
+progressLabel.style.marginTop='4px';
+progressLabel.textContent=`进度：${data.progress}%`;
+card.append(progressLabel)
+}
+
+const actions=document.createElement('div');
+actions.className='task-actions';
+
+if(data.status==='pending'||data.status==='running'){
+const cancelBtn=document.createElement('button');
+cancelBtn.className='btn';
+cancelBtn.textContent='取消';
+cancelBtn.onclick=()=>cancelTask(data.task_id);
+actions.append(cancelBtn)
+}
+
+if(data.status==='failed'||data.status==='cancelled'){
+const retryBtn=document.createElement('button');
+retryBtn.className='btn btn-primary';
+retryBtn.textContent='重试';
+retryBtn.onclick=()=>retryTask(data.task_id);
+actions.append(retryBtn)
+}
+
+card.append(actions);
+
+taskDetail.append(card)
+}
+
+function createStatusBadge(status){
+const badge=document.createElement('span');
+badge.className='task-status '+status;
+const statusMap={
+pending:'等待中',
+running:'运行中',
+success:'已完成',
+failed:'失败',
+cancelled:'已取消'
+};
+badge.textContent=statusMap[status]||status;
+return badge
+}
+
+function addMeta(dl,key,value){
+const dt=document.createElement('dt');
+dt.textContent=key;
+const dd=document.createElement('dd');
+dd.textContent=value;
+dl.append(dt,dd)
+}
+
+function formatDate(iso){
+if(!iso)return'未知';
+try{
+return new Date(iso).toLocaleString('zh-CN')
+}catch(e){
+return iso
+}
+}
+
+async function cancelTask(id){
+if(!confirm('确定取消此任务吗？'))return;
+try{
+await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/cancel`,{method:'POST'});
+alert('任务已取消');
+loadTaskDetail(id)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+async function retryTask(id){
+if(!confirm('确定重试此任务吗？'))return;
+try{
+await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/retry`,{method:'POST'});
+alert('任务已加入重试队列');
+loadTaskDetail(id)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+refreshBtn.onclick=()=>{
+if(taskId){
+loadTaskDetail(taskId)
+}
+};
+
+applyFilters.onclick=()=>{
+// Future: filter implementation when we have a list endpoint
+alert('筛选功能待实现：当前仅支持单任务查看')
+}
+})();
+</script>
+</body>
+</html>
