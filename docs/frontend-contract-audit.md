@@ -67,7 +67,11 @@
 - **A3-PAGES：** `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html` 的正式任务页拆分及其独立回归。现有混合页面在替代页具备回退证据前继续可用。
 - **A3-VISUAL：** 所有页面使用 Neutral Modern tokens；将剩余局部 CSS 收敛为 card、button、badge、notice、dialog、focus、grid 组件；完成 360–1920 视觉和触控命中区验收。它不属于 A3-FC-3 的行为收口。
 
-## 4. 当前阶段分工
+## 4. 静态页能力冻结
+
+`frontend-static-capability-matrix.md` 是 A3-FC-3-2 的唯一静态页面能力口径。它将每项能力明确为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`，防止把旧 `/legacy` 或后端 API 证据错误写成 `/app` 已迁移操作。
+
+## 5. 当前阶段分工
 
 以下工作都属于 **A3-FC 前端契约与架构收口**，但拆成三个可验收子阶段，避免混在一起：
 
@@ -77,7 +81,7 @@
 - **A3-PAGES（依赖 A3-FC-3 第二轮）：** 拆分正式页面，不再把新功能混入旧页面。
 - **A3-VISUAL（依赖 A3-PAGES）：** 只做 Neutral Modern 视觉统一和剩余局部 CSS 收敛，不改变 API 或业务行为。
 
-## 5. 执行顺序与门禁
+## 6. 执行顺序与门禁
 
 1. **A3-FC-1：** 完成页面/API/字段/状态/错误审计表和自动化 route 检查。
 2. **A3-FC-2：** 完成 `api.js`、`shell.js`、`app.css` 共享层收口及 focused tests。
@@ -86,7 +90,7 @@
 5. **A3-VISUAL：** A3-PAGES 通过后完成 Neutral Modern 视觉统一和局部 CSS 收敛。
 6. **收口：** 运行完整 backend、完整 browser、源码尺寸和 diff 检查，并同步 `frontend-plan.md`、`TODO.md`、`ROADMAP_CAPABILITIES.md`、`STATUS.md`。
 
-## 5. 明确不在本阶段
+## 7. 明确不在本阶段
 
 - 不引入 React/Vue/Vite；
 - 不修改 schema、migration、后端业务语义或错误码；
