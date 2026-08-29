@@ -261,7 +261,7 @@ sessionDetailContent.append(title);
 const meta=document.createElement('div');
 meta.className='session-meta';
 meta.replaceChildren();
-[['状态',sbState.label(data.status)],['类型',`${text(data.asset_kind)} · 媒体：${text(data.media_type)}`],['创建于',formatDate(data.created_at)]].forEach(([label,value])=>{const p=document.createElement('p');p.append(document.createTextNode(label+'：'));const strong=document.createElement('strong');strong.textContent=value;p.append(strong);meta.append(p)});
+[['状态',sbState.label(data.status)],['类型',`${text(data.asset_kind)} · 媒体：${text(data.media_type)}`],['创建于',formatDate(data.created_at)],...(data.source_status?[['来源状态',sbState.source(data.source_status)]]:[])].forEach(([label,value])=>{const p=document.createElement('p');p.append(document.createTextNode(label+'：'));const strong=document.createElement('strong');strong.textContent=value;p.append(strong);meta.append(p)});
 sessionDetailContent.append(meta);
 
 if(data.status==='draft'&&!data.material_id){
