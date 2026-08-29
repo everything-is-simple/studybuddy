@@ -297,12 +297,14 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A4：执行 [`frontend-plan.md`](frontend-plan.md) A4：Provider 设置、课堂采集与任务状态页面；接入已验证 API，如实表达能力边界。
 - [x] A3-FC：前端契约与架构收口。A3-FC-1 自动 endpoint/route/字段/token/retry 审计和 fixture、A3-FC-2 共享请求层与移动导航、A3-FC-3-2 全部 14 个静态页面的能力冻结、failure/retry 证据索引、状态/来源生命周期、360–1920、键盘、隐私 DOM、契约/治理测试均已完成。证据见 `frontend-static-capability-matrix.md` 与 `frontend-static-failure-retry-matrix.md`；已通过 backend `421 passed, 2 skipped`、browser `112 passed, 3 skipped` 和 A3-FC 专项 `17 passed`。此关闭不等于 A3-PAGES/A3-VISUAL 完成；`legacy_only`/`not_exposed`/`a3_pages` 能力仍冻结，不将 `/legacy` 证据写成静态页迁移。
 - [x] A3-PAGES：已按 frontend-plan 拆分并验收 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。已覆盖缺少标识、loading/empty/ready/failed/retry、来源生命周期、导航回退、只读边界、360–1920、键盘和隐私 DOM；完整 browser `117 passed, 3 skipped`，专项页面/矩阵 browser `13 passed`。现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 继续作为兼容入口；本项不迁移后端仍未批准的写操作、报告导出/审计、Provider 配置写入或密钥保存。
-- [ ] A3-VISUAL：在 A3-FC-3 第二轮和 A3-PAGES 通过后完成 Neutral Modern token/组件/响应式视觉迁移；将剩余页面局部 CSS 收敛为 card/button/badge/notice/dialog/focus/grid 组件，并完成 360–1920 视觉矩阵；不以视觉改版替代功能契约测试。
+- [ ] A3-VISUAL：当前下一步。完成 Neutral Modern token/组件/响应式视觉迁移；将剩余页面局部 CSS 收敛为 card/button/badge/notice/dialog/focus/grid 组件，并完成 360–1920 视觉矩阵；不以视觉改版替代功能契约测试，不改 API、写操作范围或业务语义。
+- [ ] Practice workflow 页面切片：在 A3-VISUAL 后单独冻结并迁移 `practice-session.html` 的逐题作答、submit、finish、result、mistake redo 等现有后端契约。必须先定义状态、答案 key 隐私、幂等、重复点击、stale response、失败/retry 和 browser evidence；不得复制 `/legacy` 实现或扩大真实能力声明。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
+- [ ] B3：报告能力切片。在 B0/B3 适用门禁完成后，迁移 `reports.html` 的脱敏导出和完整审计工作区；保持 report projection、`delivery=off`、allowlisted dry-run、append-only audit，绝不把 dry-run 标为已发送，也不自动批准 live delivery。
+- [ ] B4：QQ SMTP、飞书 Webhook 分别完成 Composer smoke -> Integration -> Formal dry-run/live 门禁；live 默认关闭、逐次确认、allowlist 和 explicit opt-in。
+- [ ] Provider 配置写入切片：仅在后端批准安全配置写入/验证契约后评审。浏览器不得保存、回显或持久化密钥；需要明确的 secret 生命周期、connection-test 错误脱敏、权限/运行边界和独立 browser evidence。当前 `settings.html`/`settings-provider.html` 保持只读。
 - [ ] B1：真实 ASR 候选（whisper.cpp/FunASR/SenseVoice）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；真实 smoke 必须 explicit opt-in。
 - [ ] B2：真实 OCR 候选（RapidOCR/PaddleOCR/CapsWriter）完成 Composer smoke -> Integration -> Formal 契约/独立实现/测试/证据；结果必须 draft-first 并需用户确认。
-- [ ] B3：report-core 完成 Composer smoke -> Integration -> Formal 本地脱敏 report projection/export 与 `reports.html`；不自动批准外发。
-- [ ] B4：QQ SMTP、飞书 Webhook 分别完成 Composer smoke -> Integration -> Formal dry-run/live 门禁；live 默认关闭、逐次确认、allowlist 和 explicit opt-in。
 - [ ] D0：冻结 Tauri 威胁模型、FastAPI sidecar 生命周期、单实例/data root/端口/升级/日志/secret 边界；先完成 Windows 开发 spike。
 - [ ] D1：时间盒完成 Tauri Windows 最小安装包；隔离环境验证启动、单实例、导入、fake Q&A、退出/重启、backup/restore 与脱敏日志。系统托盘、开机启动、文件关联均为可选后续子任务。
 - [ ] D2：macOS 仅在具备构建、签名/notarization、权限和实际验收环境后单独立项。

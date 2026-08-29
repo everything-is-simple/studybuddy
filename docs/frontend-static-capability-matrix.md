@@ -78,6 +78,13 @@ pending_review / uncertain
 
 [`frontend-static-failure-retry-matrix.md`](frontend-static-failure-retry-matrix.md) 是静态页失败、重试和安全 evidence 的唯一索引。它只为 `static_verified` 的已暴露能力建立 browser evidence；`legacy_only`、`not_exposed` 与 `a3_pages` 明确为 deferred，不能用 `/legacy` 或后端存在替代静态页证据。
 
+## 后续冻结能力的处理规则
+
+- `legacy_only`：只在 A3-VISUAL 之后按一项能力一份页面/路径、状态/隐私合同和 browser evidence 的方式迁移；不复制 `/legacy` 实现，也不以 API 存在替代静态页证据。
+- `not_exposed`：保持不暴露。必须先获得安全、稳定的公共后端契约，再单独评审 UI；不得用 mock 或静态文案伪造可执行成功。
+- practice workflow（逐题作答、submit、finish、redo）是首个后续行为切片，须先冻结答案 key 隐私、幂等、stale response、失败/retry。
+- report export/audit 只在 B3 gate 后扩展，持续显示 `delivery=off`、dry-run 和 append-only audit 边界；Provider 写入仅在安全写入/验证契约批准后另行立项，浏览器永不保存、回显或持久化密钥。
+
 ## 进入 A3-PAGES 的门槛
 
 只有以下同时成立，才可开始页面拆分：
