@@ -117,6 +117,8 @@ const taskDetail=document.querySelector('#task-detail');
 
 const urlParams=new URLSearchParams(window.location.search);
 const taskId=urlParams.get('task_id');
+let detailGeneration=0;
+let pollTimer=null;
 
 function text(value){return typeof value==='string'?value:''}
 
@@ -124,17 +126,20 @@ if(taskId){
 info.hidden=true;
 taskDetailSection.hidden=false;
 loadTaskDetail(taskId);
-setInterval(()=>loadTaskDetail(taskId),3000)
+pollTimer=setInterval(()=>loadTaskDetail(taskId),3000);
+window.addEventListener('pagehide',()=>clearInterval(pollTimer),{once:true})
 }else{
 state.textContent='当前无全局任务列表'
 }
 
 async function loadTaskDetail(id){
+const generation=++detailGeneration;
 detailState.textContent='加载中…';
 detailError.hidden=true;
 taskDetail.replaceChildren();
 try{
-const data=await sbApi.json(`/api/tasks/${encodeURIComponent(id)}`);
+const data=await sbApi.json(`/api/tasks/${encodeURIComponent(id)}`,{signal:pageRequest.signal});
+if(generation!==detailGeneration)return;
 detailState.textContent='已加载';
 renderTaskDetail(data)
 }catch(e){
@@ -167,7 +172,7 @@ const dl=document.createElement('dl');
 dl.className='task-meta';
 
 addMeta(dl,'任务类型',text(data.kind)||'未知');
-addMeta(dl,'状态',text(data.status)||'未知');
+addMeta(dl,'状态',sbState.label(data.status));
 if(data.created_at)addMeta(dl,'创建于',formatDate(data.created_at));
 if(data.started_at)addMeta(dl,'开始于',formatDate(data.started_at));
 if(data.completed_at)addMeta(dl,'完成于',formatDate(data.completed_at));
@@ -182,13 +187,13 @@ progressBar.className='progress-bar';
 const progressFill=document.createElement('div');
 progressFill.className='progress-fill';
 progressFill.style.width=data.progress+'%';
+progressFill.setAttribute('role','progressbar');progressFill.setAttribute('aria-valuemin','0');progressFill.setAttribute('aria-valuemax','100');progressFill.setAttribute('aria-valuenow',String(data.progress));
 progressBar.append(progressFill);
 card.append(progressBar);
 
 const progressLabel=document.createElement('p');
 progressLabel.className='muted';
-progressLabel.style.fontSize='13px';
-progressLabel.style.marginTop='4px';
+progressLabel.classList.add('item-meta');
 progressLabel.textContent=`进度：${data.progress}%`;
 card.append(progressLabel)
 }
@@ -227,7 +232,7 @@ success:'已完成',
 failed:'失败',
 cancelled:'已取消'
 };
-badge.textContent=statusMap[status]||status;
+badge.textContent=statusMap[status]||sbState.label(status);
 return badge
 }
 
@@ -251,7 +256,7 @@ return iso
 async function cancelTask(id){
 if(!confirm('确定取消此任务吗？'))return;
 try{
-await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/cancel`,{method:'POST'});
+await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/cancel`,{method:'POST',signal:pageRequest.signal});
 alert('任务已取消');
 loadTaskDetail(id)
 }catch(e){
@@ -262,7 +267,7 @@ alert(sbApi.safeError(e))
 async function retryTask(id){
 if(!confirm('确定重试此任务吗？'))return;
 try{
-await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/retry`,{method:'POST'});
+await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/retry`,{method:'POST',signal:pageRequest.signal});
 alert('任务已加入重试队列');
 loadTaskDetail(id)
 }catch(e){
