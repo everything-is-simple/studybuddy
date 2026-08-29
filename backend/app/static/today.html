@@ -50,7 +50,7 @@
 <div id="summary" class="rhythm-summary" hidden></div>
 </section>
 
-<section class="card" data-od-id="today-tasks" class="mt-24">
+<section class="card mt-24" data-od-id="today-tasks">
 <h2>今日任务</h2>
 <div id="task-status" class="notice" role="status" aria-live="polite">正在加载任务列表...</div>
 <ul id="tasks" class="task-list"></ul>
@@ -66,16 +66,19 @@ const summaryStatus=document.querySelector('#summary-status');
 const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
 const tasks=document.querySelector('#tasks');
+let loadGeneration=0;
 
 function text(value){return typeof value==='string'?value:''}
 
-async function loadSummary(){
+async function loadSummary(generation){
 try{
-const plansData=await sbApi.json('/api/study/plans');
+const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
+if(generation!==loadGeneration)return;
 const plans=Array.isArray(plansData)?plansData:plansData.items||[];
 const plan=plans.find(item=>item.status==='active')||plans[0];
 if(plan){
-const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/summary`);
+const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/summary`,{signal:pageRequest.signal});
+if(generation!==loadGeneration)return;
 summaryStatus.hidden=true;
 summary.hidden=false;
 const cards=[
@@ -107,9 +110,10 @@ summaryStatus.textContent=sbApi.safeError(e)
 }
 }
 
-async function loadTasks(){
+async function loadTasks(generation){
 try{
-const plansData=await sbApi.json('/api/study/plans');
+const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
+if(generation!==loadGeneration)return;
 const plans=Array.isArray(plansData)?plansData:plansData.items||[];
 const plan=plans.find(item=>item.status==='active')||plans[0];
 const items=plan&&Array.isArray(plan.items)?plan.items.filter(item=>item.status!=='archived'):[];
@@ -131,7 +135,7 @@ meta.append(title);
 const source=document.createElement('div');
 source.className='task-source';
 const sourceStatus=text(item.source_link_status||item.source_status||'valid');
-source.textContent=`来源状态: ${sourceStatus}`;
+source.textContent=`来源状态: ${sbState.source(sourceStatus)}`;
 meta.append(source);
 li.append(meta);
 const action=document.createElement('a');
@@ -148,7 +152,8 @@ taskStatus.textContent=sbApi.safeError(e)
 }
 }
 
-await Promise.all([loadSummary(),loadTasks()])
+const generation=++loadGeneration;
+await Promise.all([loadSummary(generation),loadTasks(generation)])
 })();
 </script>
 </body>
