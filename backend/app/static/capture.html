@@ -94,7 +94,7 @@
 </div>
 <div class="field" style="margin-top:16px">
 <label for="media-type">媒体类型</label>
-<input type="text" id="media-type" placeholder="例：audio/mp3" value="audio/mp3">
+<input type="text" id="media-type" placeholder="例：audio/mpeg" value="audio/mpeg">
 </div>
 <div style="display:flex;gap:12px;margin-top:24px">
 <button type="submit" class="btn btn-primary">创建</button>
@@ -206,14 +206,14 @@ actions.className='session-actions';
 const viewBtn=document.createElement('button');
 viewBtn.className='btn btn-primary';
 viewBtn.textContent='查看详情';
-viewBtn.onclick=()=>viewSession(item.capture_session_id);
+viewBtn.onclick=()=>viewSession(item.id);
 actions.append(viewBtn);
 
-if(item.status==='asset_uploaded'){
+if(item.status==='uploaded'){
 const transcribeBtn=document.createElement('button');
 transcribeBtn.className='btn';
 transcribeBtn.textContent='转写（fake）';
-transcribeBtn.onclick=()=>transcribeSession(item.capture_session_id);
+transcribeBtn.onclick=()=>transcribeSession(item.id);
 actions.append(transcribeBtn)
 }
 
@@ -241,7 +241,7 @@ alert(sbApi.safeError(e))
 }
 }
 
-function renderSessionDetail(data){
+function renderSessionDetail(data){const captureId=data.id||data.capture_session_id;
 sessionDetailContent.innerHTML='';
 
 const title=document.createElement('h2');
@@ -258,27 +258,27 @@ meta.innerHTML=`
 `;
 sessionDetailContent.append(meta);
 
-if(data.status==='created'&&!data.asset_uploaded_at){
+if(data.status==='draft'&&!data.material_id){
 const uploadSection=document.createElement('div');
 uploadSection.className='upload-section';
 uploadSection.innerHTML=`
 <h3>上传文件</h3>
-<div class="upload-area" id="upload-area-${data.capture_session_id}">
-<input type="file" id="file-input-${data.capture_session_id}" accept="audio/*,video/*">
+<div class="upload-area" id="upload-area-${captureId}">
+<input type="file" id="file-input-${captureId}" accept="audio/*,video/*">
 <p><strong>点击选择文件</strong>或拖放到此处</p>
 </div>
-<div id="upload-status-${data.capture_session_id}" class="notice" style="margin-top:12px" hidden></div>
+<div id="upload-status-${captureId}" class="notice" style="margin-top:12px" hidden></div>
 `;
 sessionDetailContent.append(uploadSection);
 
 setTimeout(()=>{
-const uploadArea=document.querySelector(`#upload-area-${data.capture_session_id}`);
-const fileInput=document.querySelector(`#file-input-${data.capture_session_id}`);
-const uploadStatus=document.querySelector(`#upload-status-${data.capture_session_id}`);
+const uploadArea=document.querySelector(`#upload-area-${captureId}`);
+const fileInput=document.querySelector(`#file-input-${captureId}`);
+const uploadStatus=document.querySelector(`#upload-status-${captureId}`);
 if(uploadArea&&fileInput){
 uploadArea.onclick=()=>fileInput.click();
 fileInput.onchange=()=>{
-if(fileInput.files.length)uploadFile(data.capture_session_id,fileInput.files[0],uploadStatus)
+if(fileInput.files.length)uploadFile(captureId,fileInput.files[0],uploadStatus)
 }
 }
 },100)
@@ -307,19 +307,19 @@ btnGroup.style.gap='8px';
 const saveBtn=document.createElement('button');
 saveBtn.className='btn';
 saveBtn.textContent='保存编辑';
-saveBtn.onclick=()=>editDraft(data.capture_session_id,draft.draft_id,editArea.value);
+saveBtn.onclick=()=>editDraft(captureId,draft.draft_id,editArea.value);
 btnGroup.append(saveBtn);
 
 const confirmBtn=document.createElement('button');
 confirmBtn.className='btn btn-primary';
 confirmBtn.textContent='确认';
-confirmBtn.onclick=()=>confirmDraft(data.capture_session_id,draft.draft_id);
+confirmBtn.onclick=()=>confirmDraft(captureId,draft.draft_id);
 btnGroup.append(confirmBtn);
 
 const rejectBtn=document.createElement('button');
 rejectBtn.className='btn';
 rejectBtn.textContent='拒绝';
-rejectBtn.onclick=()=>rejectDraft(data.capture_session_id,draft.draft_id);
+rejectBtn.onclick=()=>rejectDraft(captureId,draft.draft_id);
 btnGroup.append(rejectBtn);
 
 draftSection.append(btnGroup)
@@ -422,6 +422,7 @@ const mediaType=document.querySelector('#media-type').value;
 try{
 await sbApi.json('/api/study/capture-sessions',{
 method:'POST',
+headers:{'content-type':'application/json'},
 body:JSON.stringify({asset_kind:assetKind,original_name:originalName,media_type:mediaType})
 });
 newSessionDialog.close();

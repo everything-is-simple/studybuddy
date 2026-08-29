@@ -9,8 +9,10 @@
 - [`STATUS.md`](STATUS.md)：实现状态与证据索引的权威来源。
 - [`TODO.md`](TODO.md)：唯一可勾选的执行清单。
 - [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：已完成 Phase 与长期阶段、依赖和完成标准。
-- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力补齐、原生前端与桌面化路线图；A2.X 核心文件拆分已完成，A3 及能力流水线仍为 `planned`。
+- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力补齐、原生前端与桌面化路线图；A2.X、A3、A4 已完成声明范围，B0-B4 与 D0-D1 能力流水线仍为 `planned`。
 - [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)：项目现状摘要。
+- [`A4_COMPLETION_REPORT.md`](A4_COMPLETION_REPORT.md)：Provider 设置、课堂采集与任务状态页面的 A4 交付记录。
+- [`A4_SUMMARY.md`](A4_SUMMARY.md)：A4 页面范围、验证与能力边界摘要。
 
 ## 使用与竣工
 

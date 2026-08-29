@@ -60,7 +60,7 @@ test('Phase 9A plan workspace completes draft, dependency, activation, progress 
     if (message.type() === 'error' && !message.text().includes('Failed to load resource')) errors.push(message.text());
   });
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await createGoalAndPlan(page);
   await page.locator('#plan-item-title').fill('读取事务日志');
   await page.locator('#plan-item-add').click();
@@ -95,7 +95,7 @@ test('Phase 9A plan workspace completes draft, dependency, activation, progress 
 });
 
 test('Phase 9A source lifecycle refresh is explicit and safe', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   const upload = await page.request.post(`${BASE}/api/materials`, {
     multipart: {file: {name: 'lifecycle.txt', mimeType: 'text/plain', buffer: Buffer.from('Lifecycle browser source text.')}},
   });
@@ -142,7 +142,7 @@ test('Phase 9A source lifecycle refresh is explicit and safe', async ({page}) =>
 });
 
 test('Phase 9A plan workspace handles safe failure, retry, keyboard and narrow viewport', async ({page}) => {
-  await page.goto(BASE);
+  await page.goto(`${BASE}/legacy`);
   await page.getByRole('link', {name: '学习计划'}).click();
   await page.route('**/api/study/goals', route => route.fulfill({status: 500, contentType: 'application/json', body: JSON.stringify({detail: 'private_backend_error'})}));
   await page.locator('#plan-refresh').click();

@@ -47,7 +47,7 @@ test.afterEach(stop);
 test('Phase 9B S1 rhythm workspace saves, adjusts, completes and recovers server state', async ({page}) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(BASE); await createActivePlan(page);
+  await page.goto(`${BASE}/legacy`); await createActivePlan(page);
   await expect(page.locator('#rhythm-workspace')).toContainText('尚未设置节奏');
   await page.locator('#rhythm-cadence').selectOption('weekly');
   await page.locator('#rhythm-timezone').fill('Asia/Shanghai');
@@ -73,7 +73,7 @@ test('Phase 9B S1 rhythm workspace saves, adjusts, completes and recovers server
 });
 
 test('Phase 9B S2 workspace generates a cited draft, edits, confirms, archives and reloads', async ({page}) => {
-  await page.goto(BASE); const materialId = await uploadAndIndex(page);
+  await page.goto(`${BASE}/legacy`); const materialId = await uploadAndIndex(page);
   await page.getByRole('link', {name: '资料笔记'}).click();
   await page.locator('#note-title').fill('用户观察'); await page.locator('#note-content').fill('这是用户笔记。'); await page.locator('#note-create').click();
   await expect(page.locator('#notes-status')).toHaveText('用户笔记已创建');
@@ -101,7 +101,7 @@ test('Phase 9B S2 workspace generates a cited draft, edits, confirms, archives a
 });
 
 test('Phase 9B workspace keeps failure, stale citation, malformed response, duplicate and narrow paths safe', async ({page}) => {
-  await page.goto(BASE); const materialId = await uploadAndIndex(page, 'failure-notes.txt');
+  await page.goto(`${BASE}/legacy`); const materialId = await uploadAndIndex(page, 'failure-notes.txt');
   await page.getByRole('link', {name: '资料笔记'}).click();
   await page.route('**/api/study/notes/generate', route => route.fulfill({status: 503, contentType: 'application/json', body: JSON.stringify({detail: 'study_note_provider_not_configured'})}));
   await page.locator('#note-topic').fill('controlled'); await page.locator('#note-generate').click();

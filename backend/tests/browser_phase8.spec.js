@@ -24,7 +24,7 @@ test.beforeEach(async () => { fs.rmSync(RUN_ROOT,{recursive:true,force:true}); s
 test.afterEach(stop);
 
 test('Phase 8 fake path generates, edits, confirms and reviews cited card across refresh', async ({page}) => {
-  await page.goto(BASE); await uploadAndIndex(page); await createDeck(page); await generate(page);
+  await page.goto(`${BASE}/legacy`); await uploadAndIndex(page); await createDeck(page); await generate(page);
   await expect(page.locator('#study-detail')).toContainText('草稿');
   await expect(page.locator('#study-detail')).toContainText('查看引用');
   await expect(page.locator('body')).not.toContainText('answer_key');
@@ -36,7 +36,7 @@ test('Phase 8 fake path generates, edits, confirms and reviews cited card across
 });
 
 test('Phase 8 exercise UI drafts, confirms, grades and keeps answer key private', async ({page}) => {
-  await page.goto(BASE); await uploadAndIndex(page,'exercise.txt'); await page.locator('#nav-study').click();
+  await page.goto(`${BASE}/legacy`); await uploadAndIndex(page,'exercise.txt'); await page.locator('#nav-study').click();
   await page.locator('#exercise-set-title').fill('Exercises'); await page.locator('#exercise-set-create').click();
   await page.locator('#study-topic').fill('stable learning result'); await page.locator('#study-exercise-type').selectOption('multiple_choice'); await page.locator('#study-generate').click();
   await expect(page.locator('#study-status')).toContainText('已生成'); await expect(page.locator('body')).not.toContainText('answer_key');
@@ -45,7 +45,7 @@ test('Phase 8 exercise UI drafts, confirms, grades and keeps answer key private'
 });
 
 test('Phase 8 handles provider, stale generation and citation-unavailable failures safely', async ({page}) => {
-  await page.goto(BASE); await uploadAndIndex(page,'failure.txt'); await createDeck(page,'Failures');
+  await page.goto(`${BASE}/legacy`); await uploadAndIndex(page,'failure.txt'); await createDeck(page,'Failures');
   await page.route('**/api/study/decks/*/generate', route=>route.fulfill({status:503,contentType:'application/json',body:'{"detail":"provider_not_configured"}'}));
   await page.locator('#study-topic').fill('controlled'); await page.locator('#study-generate').click(); await expect(page.locator('#study-status')).toContainText('生成草稿失败'); await expect(page.locator('#study-generate')).toBeEnabled(); await page.unroute('**/api/study/decks/*/generate');
   await generate(page); const cite=page.getByRole('button',{name:'查看引用'}); await cite.click(); await expect(page.locator('#study-status')).toContainText('已定位引用来源');

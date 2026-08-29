@@ -43,7 +43,7 @@ test('Provider status is explicit and safe in demo mode', async ({page}) => {
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await expect(page.locator('#provider-status-title')).toContainText('演示模式');
     await expect(page.locator('#provider-status-detail')).toContainText('deterministic/demo');
     await expect(page.locator('#provider-status-detail')).not.toContainText('Authorization');
@@ -57,7 +57,7 @@ test('Provider status reports unconfigured runtime safely', async ({page}) => {
   let server = startServer('');
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await expect(page.locator('#provider-status-title')).toContainText('尚未配置');
     await expect(page.locator('#provider-status-detail')).toContainText('材料管理仍可使用');
   } finally { stop(server); }
@@ -68,7 +68,7 @@ test('Q&A thread workspace creates and switches conversations', async ({page}) =
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await upload(page, 'thread-workspace.txt', 'Thread workspace source establishes a stable answer.');
     await page.locator('#ai-index').click();
     await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
@@ -94,7 +94,7 @@ test('P6-C keeps material, Q&A citation and export context connected', async ({p
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await page.locator('#file').setInputFiles([
       {name: 'context-alpha.txt', mimeType: 'text/plain', buffer: Buffer.from('Context alpha contains the citation export evidence.')},
       {name: 'context-beta.txt', mimeType: 'text/plain', buffer: Buffer.from('Context beta is a second selectable material.')},
@@ -149,7 +149,7 @@ test('Q&A UI requires explicit indexing and locates citations', async ({page}) =
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await upload(page, 'qa.txt', 'Trusted citation evidence establishes the answer.');
     await expect(page.locator('#qa-status')).toContainText('请先建立 AI 索引');
     await expect(page.locator('#qa-ask')).toBeDisabled();
@@ -173,7 +173,7 @@ test('Q&A UI supports multi-material scope, history, citation detail and narrow 
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await page.locator('#file').setInputFiles([
       {name: 'alpha.txt', mimeType: 'text/plain', buffer: Buffer.from('Alpha material establishes the first answer source.')},
       {name: 'beta.txt', mimeType: 'text/plain', buffer: Buffer.from('Beta material establishes the second answer source.')},
@@ -207,7 +207,7 @@ test('Q&A UI safely handles provider failure, retry and duplicate clicks', async
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await upload(page, 'provider-failure.txt', 'Trusted citation evidence establishes the answer.');
     await page.locator('#ai-index').click();
     await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
@@ -255,7 +255,7 @@ test('Q&A UI maps rate-limit and unavailable errors safely', async ({page}) => {
   let server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await upload(page, 'provider-errors.txt', 'Trusted citation evidence establishes the answer.');
     await page.locator('#ai-index').click();
     await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
@@ -283,7 +283,7 @@ test('opt-in targeted Provider browser path shows answer and locates citation', 
   let server = startServer(target);
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await upload(page, 'provider-ui-smoke.txt', 'Synthetic study note: the controlled experiment establishes a stable result.');
     await page.locator('#ai-index').click();
     await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');
@@ -306,7 +306,7 @@ test('Q&A UI safely reports an unconfigured provider', async ({page}) => {
   let server = startServer('');
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await upload(page, 'provider.txt', 'Trusted citation evidence establishes the answer.');
     await page.locator('#ai-index').click();
     await expect(page.locator('#qa-status')).toContainText('AI 索引已建立');

@@ -81,7 +81,7 @@ noteStatus.textContent='正在加载笔记...';
 noteStatus.className='notice';
 notes.replaceChildren();
 try{
-const data=await sbApi.json('/api/learning/notes');
+const data=await sbApi.json('/api/study/notes');
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 noteStatus.textContent='暂无笔记';
@@ -130,7 +130,7 @@ document.querySelectorAll('.note-item').forEach(el=>{
 el.classList.toggle('selected',el.onclick.toString().includes(noteId))
 });
 try{
-const note=await sbApi.json(`/api/learning/notes/${encodeURIComponent(noteId)}`);
+const note=await sbApi.json(`/api/study/notes/${encodeURIComponent(noteId)}`);
 detailStatus.hidden=true;
 const container=document.createElement('div');
 const type=document.createElement('div');
@@ -209,7 +209,7 @@ detailStatus.textContent=sbApi.safeError(e)
 async function confirmNote(noteId){
 if(!confirm('确认此 AI 生成的笔记草稿？确认后将转为已确认笔记。'))return;
 try{
-await sbApi.json(`/api/learning/notes/${encodeURIComponent(noteId)}/confirm`,{method:'POST'});
+await sbApi.json(`/api/study/notes/${encodeURIComponent(noteId)}/confirm`,{method:'POST'});
 alert('笔记已确认');
 loadNotes();
 selectNote(noteId,null)

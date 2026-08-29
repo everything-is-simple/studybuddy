@@ -35,7 +35,7 @@ async function runTarget({page, expectedProvider, expectedModel}) {
   const server = startServer();
   try {
     await ready();
-    await page.goto(BASE);
+    await page.goto(`${BASE}/legacy`);
     await page.locator('#file').setInputFiles({
       name: 'p6e-real-synthetic.txt',
       mimeType: 'text/plain',

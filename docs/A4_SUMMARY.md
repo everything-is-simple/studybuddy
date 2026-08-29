@@ -56,7 +56,7 @@ python backend/scripts/check-source-size.py
 ```bash
 C:\miniconda\py310\python.exe -m pytest backend/tests/
 ```
-✅ **413 passed, 2 skipped** — 无破坏性变更
+✅ **414 passed, 2 skipped** — 无破坏性变更；2 个真实 Provider smoke 默认跳过
 
 ### 页面可访问性
 - ✅ `http://127.0.0.1:8787/app/settings-provider.html` — 200 OK
@@ -181,7 +181,7 @@ A4 完成后，按照 ROADMAP 顺序推进：
 - **新增页面**: 3 个
 - **新增代码**: ~29 KB
 - **API 端点**: 6 个已集成
-- **测试覆盖**: 413 passed (无新增失败)
+- **测试覆盖**: 后端 414 passed, 2 skipped；浏览器 91 passed, 3 skipped（共 94 项，含 A4 专项；3 个 skip 均为 opt-in 真实 Provider UI smoke）
 - **设计一致性**: 100% 遵循 Neutral Modern
 
 ## ✨ 亮点

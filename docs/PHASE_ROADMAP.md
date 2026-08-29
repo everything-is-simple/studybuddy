@@ -1,6 +1,6 @@
 # StudyBuddy Phase 路线图与进度报告
 
-> 更新：2026-08-30（Phase 10-9 release candidate、Gate J 与文档收口后）
+> 更新：2026-08-29（A4 页面已提交；当前后端基线已重新验证；浏览器本轮受 Chromium 启动权限限制）
 > 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `TODO.md` 为准。
 >
 > `real-pass` 只表示有真实用户路径和验收证据的局部能力通过，**不代表整个 StudyBuddy 已达到全局生产级 real-pass**。

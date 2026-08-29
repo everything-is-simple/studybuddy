@@ -41,7 +41,7 @@ async function uploadAndIndex(page) {
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   const server = startServer(true);
   try {
-    await ready(); await page.goto(BASE); await uploadAndIndex(page);
+    await ready(); await page.goto(`${BASE}/legacy`); await uploadAndIndex(page);
     for (const mode of ['lexical', 'vector', 'hybrid']) {
       await page.locator('#qa-retrieval-mode').selectOption(mode);
       await page.locator('#qa-question').fill('retrieval mode evidence');
@@ -57,7 +57,7 @@ test('hybrid fallback is visible and vector mode remains explicit failure', asyn
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   const server = startServer(false);
   try {
-    await ready(); await page.goto(BASE); await uploadAndIndex(page);
+    await ready(); await page.goto(`${BASE}/legacy`); await uploadAndIndex(page);
     await page.locator('#qa-retrieval-mode').selectOption('hybrid');
     await page.locator('#qa-question').fill('retrieval mode evidence');
     await page.locator('#qa-ask').click();
