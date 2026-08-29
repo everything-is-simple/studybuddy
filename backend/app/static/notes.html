@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 资料笔记</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.note-list{list-style:none;padding:0;margin:0}
+.note-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer;transition:background 150ms}
+.note-item:hover{background:var(--bg-muted)}
+.note-item.selected{border-color:var(--accent);background:var(--bg-muted)}
+.note-type{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-left:8px}
+.note-type.user{background:var(--success-bg);color:var(--success)}
+.note-type.ai_draft{background:var(--warn-bg);color:var(--warn)}
+.note-type.confirmed{background:var(--success-bg);color:var(--success)}
+.note-content{margin-top:12px;padding:12px;background:var(--bg-muted);border-radius:8px;white-space:pre-wrap}
+.citation-link{font-size:12px;color:var(--accent);margin-right:8px}
+.citation-status{font-size:12px;color:var(--muted)}
+.citation-status.stale{color:var(--warn)}
+.citation-status.unavailable{color:var(--error)}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">资料笔记</p>
+<h1>学习笔记</h1>
+<p class="lead">管理用户笔记和 AI 生成的学习笔记草稿。</p>
+</div>
+</div>
+
+<div class="grid">
+<section class="card span-4" data-od-id="notes-list">
+<h2>笔记列表</h2>
+<div id="note-status" class="notice" role="status" aria-live="polite">正在加载笔记...</div>
+<ul id="notes" class="note-list"></ul>
+<button class="btn" id="refresh-notes" type="button" style="margin-top:12px">刷新列表</button>
+</section>
+
+<section class="card span-8" data-od-id="notes-detail">
+<h2 id="note-title">选择笔记</h2>
+<div id="detail-status" class="notice" role="status" aria-live="polite" hidden></div>
+<div id="note-detail" class="stack"></div>
+</section>
+</div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const noteStatus=document.querySelector('#note-status');
+const notes=document.querySelector('#notes');
+const refreshNotes=document.querySelector('#refresh-notes');
+const noteTitle=document.querySelector('#note-title');
+const detailStatus=document.querySelector('#detail-status');
+const noteDetail=document.querySelector('#note-detail');
+
+let selectedNoteId=null;
+
+function text(value){return typeof value==='string'?value:''}
+
+const typeLabels={
+user:'用户笔记',
+ai_draft:'AI 草稿',
+confirmed:'已确认'
+};
+
+async function loadNotes(){
+noteStatus.textContent='正在加载笔记...';
+noteStatus.className='notice';
+notes.replaceChildren();
+try{
+const data=await sbApi.json('/api/learning/notes');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+noteStatus.textContent='暂无笔记';
+return
+}
+noteStatus.hidden=true;
+items.forEach(note=>{
+const li=document.createElement('li');
+li.className='note-item';
+if(note.id===selectedNoteId)li.classList.add('selected');
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.textContent=text(note.title)||'未命名笔记';
+const type=document.createElement('span');
+type.className='note-type '+(note.note_type||'user');
+type.textContent=typeLabels[note.note_type]||note.note_type;
+title.append(type);
+li.append(title);
+const meta=document.createElement('div');
+meta.className='muted';
+meta.style.marginTop='4px';
+meta.style.fontSize='12px';
+if(note.material_name){
+meta.textContent='材料: '+text(note.material_name)
+}else{
+meta.textContent='无关联材料'
+}
+li.append(meta);
+li.onclick=()=>selectNote(note.id,note.title);
+notes.append(li)
+})
+}catch(e){
+noteStatus.className='notice warn';
+noteStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function selectNote(noteId,title){
+selectedNoteId=noteId;
+noteTitle.textContent=text(title)||'笔记详情';
+detailStatus.hidden=false;
+detailStatus.textContent='正在加载笔记详情...';
+detailStatus.className='notice';
+noteDetail.replaceChildren();
+document.querySelectorAll('.note-item').forEach(el=>{
+el.classList.toggle('selected',el.onclick.toString().includes(noteId))
+});
+try{
+const note=await sbApi.json(`/api/learning/notes/${encodeURIComponent(noteId)}`);
+detailStatus.hidden=true;
+const container=document.createElement('div');
+const type=document.createElement('div');
+type.innerHTML='<strong>类型：</strong>';
+const typeBadge=document.createElement('span');
+typeBadge.className='note-type '+(note.note_type||'user');
+typeBadge.textContent=typeLabels[note.note_type]||note.note_type;
+type.append(typeBadge);
+container.append(type);
+if(note.material_name){
+const material=document.createElement('div');
+material.style.marginTop='8px';
+material.innerHTML='<strong>关联材料：</strong>';
+const materialLink=document.createElement('span');
+materialLink.textContent=text(note.material_name);
+material.append(materialLink);
+container.append(material)
+}
+if(note.module_name){
+const module=document.createElement('div');
+module.style.marginTop='8px';
+module.innerHTML='<strong>知识模块：</strong>';
+const moduleName=document.createElement('span');
+moduleName.textContent=text(note.module_name);
+module.append(moduleName);
+container.append(module)
+}
+if(note.content){
+const content=document.createElement('div');
+content.style.marginTop='16px';
+content.innerHTML='<strong>笔记内容：</strong>';
+const contentText=document.createElement('div');
+contentText.className='note-content';
+contentText.textContent=text(note.content);
+content.append(contentText);
+container.append(content)
+}
+if(note.citation_keys&&note.citation_keys.length){
+const citations=document.createElement('div');
+citations.style.marginTop='16px';
+citations.innerHTML='<strong>引用来源：</strong><br>';
+note.citation_keys.forEach(key=>{
+const link=document.createElement('a');
+link.className='citation-link';
+link.href='#';
+link.textContent=key;
+link.onclick=e=>{e.preventDefault();alert('Citation: '+key)};
+citations.append(link)
+});
+container.append(citations)
+}
+if(note.source_citation_status&&note.source_citation_status!=='valid'){
+const source=document.createElement('div');
+source.className='citation-status '+(note.source_citation_status||'');
+source.style.marginTop='8px';
+source.textContent='来源状态: '+note.source_citation_status;
+container.append(source)
+}
+if(note.note_type==='ai_draft'){
+const actions=document.createElement('div');
+actions.style.marginTop='16px';
+const confirmBtn=document.createElement('button');
+confirmBtn.className='btn btn-primary';
+confirmBtn.textContent='确认笔记';
+confirmBtn.onclick=()=>confirmNote(noteId);
+actions.append(confirmBtn);
+container.append(actions)
+}
+noteDetail.append(container)
+}catch(e){
+detailStatus.className='notice warn';
+detailStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function confirmNote(noteId){
+if(!confirm('确认此 AI 生成的笔记草稿？确认后将转为已确认笔记。'))return;
+try{
+await sbApi.json(`/api/learning/notes/${encodeURIComponent(noteId)}/confirm`,{method:'POST'});
+alert('笔记已确认');
+loadNotes();
+selectNote(noteId,null)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+refreshNotes.addEventListener('click',loadNotes);
+loadNotes()
+})();
+</script>
+</body>
+</html>

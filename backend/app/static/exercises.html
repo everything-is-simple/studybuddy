@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 练习集</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.set-list,.exercise-list{list-style:none;padding:0;margin:0}
+.set-item,.exercise-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer;transition:background 150ms}
+.set-item:hover,.exercise-item:hover{background:var(--bg-muted)}
+.set-item.selected{border-color:var(--accent);background:var(--bg-muted)}
+.exercise-meta{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.status-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.status-badge.draft{background:var(--warn-bg);color:var(--warn)}
+.status-badge.ready{background:var(--success-bg);color:var(--success)}
+.status-badge.rejected{background:var(--error-bg);color:var(--error)}
+.status-badge.archived{background:var(--muted-bg);color:var(--muted)}
+.exercise-type{font-size:12px;padding:2px 6px;border-radius:4px;background:var(--bg-muted)}
+.exercise-detail{margin-top:12px;padding:12px;background:var(--bg-muted);border-radius:8px}
+@media(max-width:640px){
+.exercise-meta{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">练习集</p>
+<h1>练习题库</h1>
+<p class="lead">查看和管理练习题目，支持选择题、判断题和简答题。</p>
+</div>
+</div>
+
+<div class="grid">
+<section class="card span-4" data-od-id="exercises-sets">
+<h2>练习集</h2>
+<div id="set-status" class="notice" role="status" aria-live="polite">正在加载练习集...</div>
+<ul id="sets" class="set-list"></ul>
+<button class="btn" id="refresh-sets" type="button" style="margin-top:12px">刷新列表</button>
+</section>
+
+<section class="card span-8" data-od-id="exercises-detail">
+<h2 id="set-title">选择练习集</h2>
+<div id="exercise-status" class="notice" role="status" aria-live="polite" hidden></div>
+<div id="exercise-detail" class="stack"></div>
+<ul id="exercises" class="exercise-list" hidden></ul>
+</section>
+</div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const setStatus=document.querySelector('#set-status');
+const sets=document.querySelector('#sets');
+const refreshSets=document.querySelector('#refresh-sets');
+const setTitle=document.querySelector('#set-title');
+const exerciseStatus=document.querySelector('#exercise-status');
+const exerciseDetail=document.querySelector('#exercise-detail');
+const exercises=document.querySelector('#exercises');
+
+let selectedSetId=null;
+
+function text(value){return typeof value==='string'?value:''}
+
+const typeLabels={
+multiple_choice:'选择题',
+true_false:'判断题',
+short_answer:'简答题'
+};
+
+async function loadSets(){
+setStatus.textContent='正在加载练习集...';
+setStatus.className='notice';
+sets.replaceChildren();
+try{
+const data=await sbApi.json('/api/study/exercise-sets');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+setStatus.textContent='暂无练习集';
+return
+}
+setStatus.hidden=true;
+items.forEach(set=>{
+const li=document.createElement('li');
+li.className='set-item';
+if(set.id===selectedSetId)li.classList.add('selected');
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.textContent=text(set.title)||'未命名练习集';
+li.append(title);
+const meta=document.createElement('div');
+meta.className='muted';
+meta.style.marginTop='4px';
+meta.textContent=`${set.exercise_count||0} 道题`;
+li.append(meta);
+const badge=document.createElement('span');
+badge.className='status-badge '+(set.status||'draft');
+badge.textContent=set.status||'draft';
+badge.style.marginTop='8px';
+badge.style.display='inline-block';
+li.append(badge);
+li.onclick=()=>selectSet(set.id,set.title);
+sets.append(li)
+})
+}catch(e){
+setStatus.className='notice warn';
+setStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function selectSet(setId,title){
+selectedSetId=setId;
+setTitle.textContent=text(title)||'练习详情';
+exerciseStatus.hidden=false;
+exerciseStatus.textContent='正在加载练习...';
+exerciseStatus.className='notice';
+exerciseDetail.replaceChildren();
+exercises.replaceChildren();
+exercises.hidden=true;
+document.querySelectorAll('.set-item').forEach(el=>{
+el.classList.toggle('selected',el.onclick.toString().includes(setId))
+});
+try{
+const data=await sbApi.json(`/api/study/exercise-sets/${encodeURIComponent(setId)}/exercises`);
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+exerciseStatus.textContent='该练习集暂无题目';
+return
+}
+exerciseStatus.hidden=true;
+exercises.hidden=false;
+items.forEach(exercise=>{
+const li=document.createElement('li');
+li.className='exercise-item';
+const meta=document.createElement('div');
+meta.className='exercise-meta';
+const info=document.createElement('div');
+const prompt=document.createElement('div');
+prompt.style.fontWeight='600';
+prompt.textContent=text(exercise.prompt)||'题目';
+info.append(prompt);
+const type=document.createElement('span');
+type.className='exercise-type';
+type.textContent=typeLabels[exercise.exercise_type]||exercise.exercise_type;
+type.style.marginTop='4px';
+type.style.display='inline-block';
+info.append(type);
+meta.append(info);
+const badge=document.createElement('span');
+badge.className='status-badge '+(exercise.status||'draft');
+badge.textContent=exercise.status||'draft';
+meta.append(badge);
+li.append(meta);
+if(exercise.source_status&&exercise.source_status!=='valid'){
+const source=document.createElement('div');
+source.className='muted';
+source.style.marginTop='8px';
+source.style.color=exercise.source_status==='stale'?'var(--warn)':'var(--error)';
+source.textContent='来源: '+exercise.source_status;
+li.append(source)
+}
+li.onclick=()=>viewExercise(exercise.id);
+exercises.append(li)
+})
+}catch(e){
+exerciseStatus.className='notice warn';
+exerciseStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function viewExercise(exerciseId){
+exerciseDetail.replaceChildren();
+exerciseStatus.hidden=false;
+exerciseStatus.textContent='正在加载题目详情...';
+exerciseStatus.className='notice';
+try{
+const exercise=await sbApi.json(`/api/study/exercises/${encodeURIComponent(exerciseId)}`);
+exerciseStatus.hidden=true;
+const container=document.createElement('div');
+const prompt=document.createElement('div');
+prompt.innerHTML='<strong>题目：</strong>';
+const promptText=document.createElement('span');
+promptText.textContent=text(exercise.prompt);
+prompt.append(promptText);
+container.append(prompt);
+const type=document.createElement('div');
+type.style.marginTop='8px';
+type.innerHTML='<strong>类型：</strong>';
+const typeText=document.createElement('span');
+typeText.textContent=typeLabels[exercise.exercise_type]||exercise.exercise_type;
+type.append(typeText);
+container.append(type);
+if(exercise.exercise_type==='multiple_choice'&&exercise.options){
+const options=document.createElement('div');
+options.style.marginTop='8px';
+options.innerHTML='<strong>选项：</strong>';
+const ol=document.createElement('ol');
+exercise.options.forEach(opt=>{
+const li=document.createElement('li');
+li.textContent=text(opt);
+ol.append(li)
+});
+options.append(ol);
+container.append(options)
+}
+const status=document.createElement('div');
+status.style.marginTop='8px';
+status.innerHTML='<strong>状态：</strong>';
+const statusBadge=document.createElement('span');
+statusBadge.className='status-badge '+(exercise.status||'draft');
+statusBadge.textContent=exercise.status||'draft';
+status.append(statusBadge);
+container.append(status);
+if(exercise.citation_keys&&exercise.citation_keys.length){
+const citations=document.createElement('div');
+citations.style.marginTop='12px';
+citations.innerHTML='<strong>引用来源：</strong>';
+exercise.citation_keys.forEach(key=>{
+const link=document.createElement('a');
+link.href='#';
+link.textContent=key;
+link.style.marginLeft='8px';
+link.onclick=e=>{e.preventDefault();alert('Citation: '+key)};
+citations.append(link)
+});
+container.append(citations)
+}
+if(exercise.status==='draft'){
+const actions=document.createElement('div');
+actions.style.marginTop='16px';
+const confirmBtn=document.createElement('button');
+confirmBtn.className='btn btn-primary';
+confirmBtn.textContent='确认题目';
+confirmBtn.onclick=()=>confirmExercise(exerciseId);
+actions.append(confirmBtn);
+container.append(actions)
+}
+exerciseDetail.append(container)
+}catch(e){
+exerciseStatus.className='notice warn';
+exerciseStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function confirmExercise(exerciseId){
+if(!confirm('确认此题目？确认后不可编辑。'))return;
+try{
+await sbApi.json(`/api/study/exercises/${encodeURIComponent(exerciseId)}/confirm`,{method:'POST'});
+alert('题目已确认');
+viewExercise(exerciseId)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+refreshSets.addEventListener('click',loadSets);
+loadSets()
+})();
+</script>
+</body>
+</html>

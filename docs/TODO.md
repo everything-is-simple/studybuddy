@@ -11,6 +11,7 @@
 - [x] I2：backup、verify-backup、restore staging、恢复后 offline/online 验收、保留/轮换策略文档、restore drill 模板、integrity/manifest 失败隔离流程。
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。
 - [x] A3-4：静态前端核心页面 API 集成完成（材料、材料详情、问答、今天四个页面）
+- [x] A3-5：学习功能页面完成（cards/exercises/plans/notes/practice/classroom 六个页面，覆盖 Phase 8/9A/9B/9C/9D）
 
 ## 基础设施收尾已完成（v1 时间盒收口）
 
@@ -287,6 +288,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A3-2：实现今天/资料/详情/问答四个 Draft A-D 灰盒页面。
 - [x] A3-3：验证静态页面操作 UI 元素存在性。
 - [x] A3-4：将后端 API 集成到静态前端核心页面，完成 Chromium 验收（materials/detail/qa/today 四个页面）。
+- [x] A3-5：新增学习功能页面并接入后端 API（cards/exercises/plans/notes/practice/classroom 六个页面）。
 - [ ] A3-5：新增卡片/练习/计划/笔记/课堂/报告页面，接入 Phase 8/9A/9B/9C/9D API。
 - [ ] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
 - [ ] A3：执行 [`frontend-plan.md`](frontend-plan.md) F0/F1：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。

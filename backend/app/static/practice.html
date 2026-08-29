@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 练习与反馈</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.session-list,.mistake-list{list-style:none;padding:0;margin:0}
+.session-item,.mistake-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+.session-item{cursor:pointer;transition:background 150ms}
+.session-item:hover{background:var(--bg-muted)}
+.status-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-left:8px}
+.status-badge.draft{background:var(--warn-bg);color:var(--warn)}
+.status-badge.active{background:var(--success-bg);color:var(--success)}
+.status-badge.finished{background:var(--muted-bg);color:var(--muted)}
+.status-badge.expired{background:var(--error-bg);color:var(--error)}
+.session-detail{margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg-muted)}
+.mistake-fact{padding:12px;background:var(--bg);border-radius:8px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">练习与反馈</p>
+<h1>限时练习与错题复盘</h1>
+<p class="lead">参与限时练习会话，查看错题库和薄弱知识点。</p>
+</div>
+</div>
+
+<div class="grid">
+<section class="card span-6" data-od-id="practice-sessions">
+<h2>练习会话</h2>
+<div id="session-status" class="notice" role="status" aria-live="polite">正在加载练习会话...</div>
+<ul id="sessions" class="session-list"></ul>
+<button class="btn" id="refresh-sessions" type="button" style="margin-top:12px">刷新列表</button>
+</section>
+
+<section class="card span-6" data-od-id="practice-mistakes">
+<h2>错题库</h2>
+<div id="mistake-status" class="notice" role="status" aria-live="polite">正在加载错题...</div>
+<ul id="mistakes" class="mistake-list"></ul>
+<button class="btn" id="refresh-mistakes" type="button" style="margin-top:12px">刷新</button>
+</section>
+
+<section class="card span-12" data-od-id="practice-detail" hidden>
+<h2 id="detail-title">会话详情</h2>
+<div id="detail-content"></div>
+</section>
+</div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const sessionStatus=document.querySelector('#session-status');
+const sessions=document.querySelector('#sessions');
+const refreshSessions=document.querySelector('#refresh-sessions');
+const mistakeStatus=document.querySelector('#mistake-status');
+const mistakes=document.querySelector('#mistakes');
+const refreshMistakes=document.querySelector('#refresh-mistakes');
+const detailSection=document.querySelector('[data-od-id="practice-detail"]');
+const detailTitle=document.querySelector('#detail-title');
+const detailContent=document.querySelector('#detail-content');
+
+function text(value){return typeof value==='string'?value:''}
+
+async function loadSessions(){
+sessionStatus.textContent='正在加载练习会话...';
+sessionStatus.className='notice';
+sessions.replaceChildren();
+try{
+const data=await sbApi.json('/api/study/practice-sessions');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+sessionStatus.textContent='暂无练习会话';
+return
+}
+sessionStatus.hidden=true;
+items.forEach(session=>{
+const li=document.createElement('li');
+li.className='session-item';
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.textContent=text(session.title)||'练习会话';
+const status=document.createElement('span');
+status.className='status-badge '+(session.status||'draft');
+status.textContent=session.status||'draft';
+title.append(status);
+li.append(title);
+const meta=document.createElement('div');
+meta.className='muted';
+meta.style.marginTop='4px';
+meta.style.fontSize='12px';
+if(session.deadline){
+meta.textContent='截止: '+new Date(session.deadline).toLocaleString('zh-CN')
+}
+li.append(meta);
+li.onclick=()=>viewSession(session.id);
+sessions.append(li)
+})
+}catch(e){
+sessionStatus.className='notice warn';
+sessionStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function loadMistakes(){
+mistakeStatus.textContent='正在加载错题...';
+mistakeStatus.className='notice';
+mistakes.replaceChildren();
+try{
+const data=await sbApi.json('/api/study/mistakes');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+mistakeStatus.textContent='暂无错题记录';
+return
+}
+mistakeStatus.hidden=true;
+items.forEach(mistake=>{
+const li=document.createElement('li');
+li.className='mistake-item';
+const question=document.createElement('div');
+question.style.fontWeight='600';
+question.textContent=text(mistake.question)||'题目';
+li.append(question);
+const fact=document.createElement('div');
+fact.className='mistake-fact';
+fact.style.marginTop='8px';
+fact.innerHTML='<strong>错误原因：</strong><br>';
+const reason=document.createElement('span');
+reason.textContent=text(mistake.mistake_fact)||'未记录';
+fact.append(reason);
+li.append(fact);
+if(mistake.weak_point){
+const weak=document.createElement('div');
+weak.className='muted';
+weak.style.marginTop='8px';
+weak.style.fontSize='12px';
+weak.textContent='薄弱点: '+text(mistake.weak_point);
+li.append(weak)
+}
+mistakes.append(li)
+})
+}catch(e){
+mistakeStatus.className='notice warn';
+mistakeStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function viewSession(sessionId){
+detailSection.hidden=false;
+detailTitle.textContent='会话详情';
+detailContent.innerHTML='<div class="notice">正在加载会话详情...</div>';
+try{
+const session=await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}`);
+detailContent.replaceChildren();
+const container=document.createElement('div');
+container.className='session-detail';
+const title=document.createElement('div');
+title.innerHTML='<strong>标题：</strong>';
+title.append(document.createTextNode(text(session.title)));
+container.append(title);
+const status=document.createElement('div');
+status.style.marginTop='8px';
+status.innerHTML='<strong>状态：</strong>';
+const statusBadge=document.createElement('span');
+statusBadge.className='status-badge '+(session.status||'draft');
+statusBadge.textContent=session.status||'draft';
+status.append(statusBadge);
+container.append(status);
+if(session.deadline){
+const deadline=document.createElement('div');
+deadline.style.marginTop='8px';
+deadline.innerHTML='<strong>截止时间：</strong>';
+deadline.append(document.createTextNode(new Date(session.deadline).toLocaleString('zh-CN')));
+container.append(deadline)
+}
+if(session.status==='draft'){
+const actions=document.createElement('div');
+actions.style.marginTop='16px';
+const startBtn=document.createElement('button');
+startBtn.className='btn btn-primary';
+startBtn.textContent='开始练习';
+startBtn.onclick=()=>startSession(sessionId);
+actions.append(startBtn);
+container.append(actions)
+}else if(session.status==='active'){
+const info=document.createElement('div');
+info.className='notice';
+info.style.marginTop='16px';
+info.textContent='会话进行中，请在截止时间前提交答案。';
+container.append(info)
+}else if(session.status==='finished'){
+const resultBtn=document.createElement('button');
+resultBtn.className='btn';
+resultBtn.style.marginTop='16px';
+resultBtn.textContent='查看结果';
+resultBtn.onclick=()=>viewResult(sessionId);
+container.append(resultBtn)
+}
+detailContent.append(container)
+}catch(e){
+detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+}
+}
+
+async function startSession(sessionId){
+if(!confirm('开始此练习会话？开始后将有时间限制。'))return;
+try{
+await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}/start`,{method:'POST'});
+alert('会话已开始');
+viewSession(sessionId)
+}catch(e){
+alert(sbApi.safeError(e))
+}
+}
+
+async function viewResult(sessionId){
+try{
+const result=await sbApi.json(`/api/study/practice-sessions/${encodeURIComponent(sessionId)}/result`);
+detailContent.replaceChildren();
+const container=document.createElement('div');
+container.className='session-detail';
+const title=document.createElement('div');
+title.innerHTML='<strong>练习结果</strong>';
+container.append(title);
+const score=document.createElement('div');
+score.style.marginTop='12px';
+score.style.fontSize='20px';
+score.style.fontWeight='600';
+score.textContent=`得分: ${result.score||0} / ${result.total||0}`;
+container.append(score);
+if(result.grading_note){
+const note=document.createElement('div');
+note.className='muted';
+note.style.marginTop='8px';
+note.textContent=text(result.grading_note);
+container.append(note)
+}
+detailContent.append(container)
+}catch(e){
+detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+}
+}
+
+refreshSessions.addEventListener('click',loadSessions);
+refreshMistakes.addEventListener('click',loadMistakes);
+loadSessions();
+loadMistakes()
+})();
+</script>
+</body>
+</html>

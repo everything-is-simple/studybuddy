@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 卡片复习</title>
+<link rel="stylesheet" href="/app/css/app.css">
+<style>
+.deck-list,.card-list{list-style:none;padding:0;margin:0}
+.deck-item,.card-item{padding:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer;transition:background 150ms}
+.deck-item:hover,.card-item:hover{background:var(--bg-muted)}
+.deck-item.selected{border-color:var(--accent);background:var(--bg-muted)}
+.deck-meta,.card-meta{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.status-badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.status-badge.draft{background:var(--warn-bg);color:var(--warn)}
+.status-badge.ready{background:var(--success-bg);color:var(--success)}
+.status-badge.archived{background:var(--muted-bg);color:var(--muted)}
+.source-status{font-size:12px;color:var(--muted)}
+.source-status.stale{color:var(--warn)}
+.source-status.unavailable{color:var(--error)}
+.card-content{margin-top:12px;padding:12px;background:var(--bg-muted);border-radius:8px}
+.review-form{margin-top:16px}
+@media(max-width:640px){
+.deck-meta,.card-meta{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div>
+</header>
+<main class="main">
+<div class="hero">
+<div>
+<p class="eyebrow">卡片复习</p>
+<h1>学习卡片组</h1>
+<p class="lead">查看和复习学习卡片，巩固知识点。</p>
+</div>
+</div>
+
+<div class="grid">
+<section class="card span-4" data-od-id="cards-decks">
+<h2>卡片组</h2>
+<div id="deck-status" class="notice" role="status" aria-live="polite">正在加载卡片组...</div>
+<ul id="decks" class="deck-list"></ul>
+<button class="btn" id="refresh-decks" type="button" style="margin-top:12px">刷新列表</button>
+</section>
+
+<section class="card span-8" data-od-id="cards-detail">
+<h2 id="deck-title">选择卡片组</h2>
+<div id="card-status" class="notice" role="status" aria-live="polite" hidden></div>
+<div id="card-detail" class="stack"></div>
+<ul id="cards" class="card-list" hidden></ul>
+</section>
+</div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const deckStatus=document.querySelector('#deck-status');
+const decks=document.querySelector('#decks');
+const refreshDecks=document.querySelector('#refresh-decks');
+const deckTitle=document.querySelector('#deck-title');
+const cardStatus=document.querySelector('#card-status');
+const cardDetail=document.querySelector('#card-detail');
+const cards=document.querySelector('#cards');
+
+let selectedDeckId=null;
+
+function text(value){return typeof value==='string'?value:''}
+
+async function loadDecks(){
+deckStatus.textContent='正在加载卡片组...';
+deckStatus.className='notice';
+decks.replaceChildren();
+try{
+const data=await sbApi.json('/api/study/decks');
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+deckStatus.textContent='暂无卡片组';
+return
+}
+deckStatus.hidden=true;
+items.forEach(deck=>{
+const li=document.createElement('li');
+li.className='deck-item';
+if(deck.id===selectedDeckId)li.classList.add('selected');
+const meta=document.createElement('div');
+meta.className='deck-meta';
+const info=document.createElement('div');
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.textContent=text(deck.title)||'未命名卡片组';
+info.append(title);
+const count=document.createElement('div');
+count.className='muted';
+count.textContent=`${deck.card_count||0} 张卡片`;
+info.append(count);
+meta.append(info);
+const badge=document.createElement('span');
+badge.className='status-badge '+(deck.status||'draft');
+badge.textContent=deck.status||'draft';
+meta.append(badge);
+li.append(meta);
+li.onclick=()=>selectDeck(deck.id,deck.title);
+decks.append(li)
+})
+}catch(e){
+deckStatus.className='notice warn';
+deckStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function selectDeck(deckId,title){
+selectedDeckId=deckId;
+deckTitle.textContent=text(title)||'卡片详情';
+cardStatus.hidden=false;
+cardStatus.textContent='正在加载卡片...';
+cardStatus.className='notice';
+cardDetail.replaceChildren();
+cards.replaceChildren();
+cards.hidden=true;
+document.querySelectorAll('.deck-item').forEach(el=>{
+el.classList.toggle('selected',el.onclick.toString().includes(deckId))
+});
+try{
+const data=await sbApi.json(`/api/study/decks/${encodeURIComponent(deckId)}/cards`);
+const items=Array.isArray(data)?data:data.items||[];
+if(!items.length){
+cardStatus.textContent='该卡片组暂无卡片';
+return
+}
+cardStatus.hidden=true;
+cards.hidden=false;
+items.forEach(card=>{
+const li=document.createElement('li');
+li.className='card-item';
+const meta=document.createElement('div');
+meta.className='card-meta';
+const info=document.createElement('div');
+const question=document.createElement('div');
+question.style.fontWeight='600';
+question.textContent=text(card.front)||'问题';
+info.append(question);
+if(card.source_status){
+const source=document.createElement('div');
+source.className='source-status '+(card.source_status==='valid'?'':'stale unavailable'.includes(card.source_status)?card.source_status:'');
+source.textContent='来源: '+card.source_status;
+info.append(source)
+}
+meta.append(info);
+const badge=document.createElement('span');
+badge.className='status-badge '+(card.status||'draft');
+badge.textContent=card.status||'draft';
+meta.append(badge);
+li.append(meta);
+if(card.back){
+const content=document.createElement('div');
+content.className='card-content';
+content.textContent=text(card.back);
+li.append(content)
+}
+li.onclick=()=>viewCard(card.id);
+cards.append(li)
+})
+}catch(e){
+cardStatus.className='notice warn';
+cardStatus.textContent=sbApi.safeError(e)
+}
+}
+
+async function viewCard(cardId){
+cardDetail.replaceChildren();
+cardStatus.hidden=false;
+cardStatus.textContent='正在加载卡片详情...';
+cardStatus.className='notice';
+try{
+const card=await sbApi.json(`/api/study/cards/${encodeURIComponent(cardId)}`);
+cardStatus.hidden=true;
+const container=document.createElement('div');
+const front=document.createElement('div');
+front.innerHTML='<strong>问题：</strong>';
+const frontText=document.createElement('span');
+frontText.textContent=text(card.front);
+front.append(frontText);
+container.append(front);
+const back=document.createElement('div');
+back.innerHTML='<strong>答案：</strong>';
+back.style.marginTop='12px';
+const backText=document.createElement('span');
+backText.textContent=text(card.back);
+back.append(backText);
+container.append(back);
+if(card.citation_keys&&card.citation_keys.length){
+const citations=document.createElement('div');
+citations.style.marginTop='12px';
+citations.innerHTML='<strong>引用来源：</strong>';
+card.citation_keys.forEach(key=>{
+const link=document.createElement('a');
+link.href='#';
+link.textContent=key;
+link.style.marginLeft='8px';
+link.onclick=e=>{e.preventDefault();alert('Citation: '+key)};
+citations.append(link)
+});
+container.append(citations)
+}
+cardDetail.append(container)
+}catch(e){
+cardStatus.className='notice warn';
+cardStatus.textContent=sbApi.safeError(e)
+}
+}
+
+refreshDecks.addEventListener('click',loadDecks);
+loadDecks()
+})();
+</script>
+</body>
+</html>

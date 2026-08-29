@@ -67,7 +67,7 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 `test-browser.ps1` 每次只接受一个 spec；需要多个 browser spec 时必须分别串行执行。
 
-历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `413 passed, 2 skipped`（verified 2026-08-30）；当前全 Chromium 为 `63 passed, 3 skipped`（verified 2026-08-30，包含 A3-4 静态前端核心页面 6 个测试），所有 skip 均是显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
+历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `413 passed, 2 skipped`（verified 2026-08-30）；当前全 Chromium 为 `72 passed, 3 skipped`（verified 2026-08-30，包含 A3-4 静态前端核心页面 6 个测试 + A3-5 学习功能页面 9 个测试），所有 skip 均是显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
 
 真实 Provider 仍只能通过目标专用 gate 或 `run-provider-api-acceptance.ps1` 启用，不属于默认门禁。
 
