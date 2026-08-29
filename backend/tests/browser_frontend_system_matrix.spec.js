@@ -1,0 +1,18 @@
+const { test, expect } = require('@playwright/test');
+const { spawn } = require('child_process');
+const fs = require('fs');
+
+const ROOT = 'H:/studybuddy-test/runs/frontend-system-matrix';
+const PORT = 8828;
+const BASE = `http://127.0.0.1:${PORT}`;
+let server;
+function startServer(provider='fake'){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT};if(provider)env.STUDYBUDDY_AI_PROVIDER=provider;else delete env.STUDYBUDDY_AI_PROVIDER;delete env.STUDYBUDDY_AI_MODEL;delete env.STUDYBUDDY_AI_BASE_URL;delete env.STUDYBUDDY_AI_API_KEY;return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
+async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:15000}).toBe(true)}
+test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=startServer();await ready()});test.afterEach(()=>{if(server&&!server.killed)server.kill();server=null});
+const widths=[360,390,430,600,768,820,1024,1366,1440,1920];
+
+test('system boundary pages remain responsive and keyboard accessible across the viewport matrix',async({page})=>{for(const name of ['capture.html','classroom.html','tasks.html','settings-provider.html'])for(const width of widths){await page.setViewportSize({width,height:844});await page.goto(`${BASE}/app/${name}`);await expect(page.locator('main')).toBeVisible();await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);if(width<=920){const toggle=page.getByRole('button',{name:'更多'});await toggle.press('Enter');await expect(page.locator('#primary-navigation')).toHaveClass(/is-open/)}await page.keyboard.press('Tab');await expect(page.locator(':focus-visible')).toHaveCount(1)}});
+
+test('capture and classroom labels distinguish draft, review, and delivery boundaries',async({page})=>{await page.route('**/api/study/capture-sessions?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items:[{id:'capture-1',original_name:'安全采集',status:'pending_review',asset_kind:'audio',created_at:'2026-01-01T00:00:00Z'}]})}));await page.goto(`${BASE}/app/capture.html`);await expect(page.locator('#sessions')).toContainText('待人工复核');await page.unrouteAll({behavior:'ignoreErrors'});await page.route('**/api/study/capture-sessions',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([])}));await page.route('**/api/study/reports',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([])}));await page.goto(`${BASE}/app/classroom.html`);await expect(page.locator('#capture-status')).toContainText('暂无采集会话');await expect(page.locator('#report-status')).toContainText('暂无报告');await expect(page.locator('body')).not.toContainText('已发送')});
+
+test('tasks and provider failures stay safe and provider does not expose configuration writes',async({page})=>{await page.goto(`${BASE}/app/tasks.html?task_id=invalid-task`);await expect(page.locator('#detail-state')).toHaveText('加载失败');await expect(page.locator('#detail-error')).not.toContainText('invalid-task');await page.route('**/api/ai/capabilities',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'private_provider_error',path:'C:/secret',token:'hidden'})}));await page.goto(`${BASE}/app/settings-provider.html`);await expect(page.locator('#state')).toHaveText('加载失败');await expect(page.locator('body')).not.toContainText(/private_provider_error|C:\/|token/i);await expect(page.locator('input[type="password"]')).toHaveCount(0)});
