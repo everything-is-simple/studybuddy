@@ -34,6 +34,14 @@ def test_frontend_contract_fixtures_define_required_resource_states():
         assert resource["states"]
 
 
+def test_shared_state_contract_exposes_fixture_statuses():
+    source = (ROOT / "backend" / "app" / "static" / "js" / "state.js").read_text(encoding="utf-8")
+    fixtures = json.loads(FIXTURES.read_text(encoding="utf-8"))
+    for resource in fixtures["resources"].values():
+        for status in resource["states"]:
+            assert status in source
+
+
 def test_static_write_pages_use_shared_request_layer():
     findings = load_auditor().audit()["pages"]
     for page in findings:
