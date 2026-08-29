@@ -502,7 +502,13 @@ def test_purge_active_and_missing_return_404(tmp_path: Path):
 
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
-        page = client.get("/")
+        # Root now redirects to /app/today.html
+        root = client.get("/", follow_redirects=False)
+        assert root.status_code == 302
+        assert root.headers["location"] == "/app/today.html"
+        
+        # Legacy UI still available at /legacy
+        page = client.get("/legacy")
         assert page.status_code == 200
         assert 'type="file" multiple' in page.text
         assert "/api/materials/batch" in page.text
