@@ -58,19 +58,19 @@
 <option value="vector">向量检索</option>
 </select>
 </div>
-<button class="btn" type="button" id="index-btn" style="margin-right:8px">索引当前材料</button>
+<button class="btn mr-8" type="button" id="index-btn">索引当前材料</button>
 <button class="btn btn-primary" type="submit" id="submit-btn">提交问题</button>
-<div id="submit-status" class="notice" style="margin-top:12px" hidden role="status" aria-live="polite"></div>
+<div id="submit-status" class="notice mt-12" hidden role="status" aria-live="polite"></div>
 </form>
 </section>
 <aside class="card span-4" data-od-id="qa-config">
 <h2>配置</h2>
 <p class="muted">混合检索结合词法和向量匹配，适合大多数场景。向量检索需要已配置 Embedding Provider。</p>
-<p class="muted" style="margin-top:12px">问答支持幂等提交保护，相同问题不会重复处理。</p>
+<p class="muted mt-12">问答支持幂等提交保护，相同问题不会重复处理。</p>
 </aside>
 </div>
 
-<section class="card" data-od-id="qa-threads" style="margin-top:24px">
+<section class="card" data-od-id="qa-threads" class="mt-24">
 <h2>问答历史</h2>
 <div id="thread-status" class="notice" role="status" aria-live="polite">正在加载线程...</div>
 <div id="threads"></div>
@@ -81,6 +81,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('qa');
 const providerStatus=document.querySelector('#provider-status');
 const form=document.querySelector('#qa-form');
 const questionInput=document.querySelector('#question');

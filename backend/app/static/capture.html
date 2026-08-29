@@ -56,11 +56,11 @@
 <h2>转写能力状态</h2>
 <div class="asr-notice">
 <p><strong>注意：</strong>真实 ASR（语音识别）功能尚未通过 B1 门禁验证。</p>
-<p style="margin-top:8px;margin-bottom:0">当前仅支持 fake/loopback 转写流程用于测试和演示。上传的音频文件会保存，但转写结果为模拟数据。</p>
+<p class="mt-8 mb-0">当前仅支持 fake/loopback 转写流程用于测试和演示。上传的音频文件会保存，但转写结果为模拟数据。</p>
 </div>
 </section>
 
-<section class="card" style="margin-top:24px" data-od-id="capture-sessions">
+<section class="card mt-24" data-od-id="capture-sessions">
 <div class="section-label">
 <h2>采集会话</h2>
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
@@ -78,8 +78,8 @@
 </section>
 
 <!-- New Session Modal (simplified inline for now) -->
-<dialog id="new-session-dialog" style="max-width:500px;border:1px solid var(--border);border-radius:12px;padding:24px">
-<h2 style="margin-top:0">新建采集会话</h2>
+<dialog id="new-session-dialog" class="dialog dialog-small">
+<h2>新建采集会话</h2>
 <form id="new-session-form">
 <div class="field">
 <label for="asset-kind">类型</label>
@@ -88,15 +88,15 @@
 <option value="video">视频</option>
 </select>
 </div>
-<div class="field" style="margin-top:16px">
+<div class="field mt-16">
 <label for="original-name">名称</label>
 <input type="text" id="original-name" placeholder="例：第三章课堂讲解" required>
 </div>
-<div class="field" style="margin-top:16px">
+<div class="field mt-16">
 <label for="media-type">媒体类型</label>
 <input type="text" id="media-type" placeholder="例：audio/mpeg" value="audio/mpeg">
 </div>
-<div style="display:flex;gap:12px;margin-top:24px">
+<div class="stack-actions">
 <button type="submit" class="btn btn-primary">创建</button>
 <button type="button" class="btn" id="cancel-dialog-btn">取消</button>
 </div>
@@ -104,9 +104,9 @@
 </dialog>
 
 <!-- Session Detail Modal -->
-<dialog id="session-detail-dialog" style="max-width:800px;width:90vw;border:1px solid var(--border);border-radius:12px;padding:24px">
+<dialog id="session-detail-dialog" class="dialog dialog-wide">
 <div id="session-detail-content"></div>
-<div style="margin-top:24px">
+<div class="mt-24">
 <button type="button" class="btn" id="close-detail-btn">关闭</button>
 </div>
 </dialog>
@@ -117,6 +117,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('capture');
 const state=document.querySelector('#state');
 const error=document.querySelector('#error');
 const sessions=document.querySelector('#sessions');
@@ -267,7 +268,7 @@ uploadSection.innerHTML=`
 <input type="file" id="file-input-${captureId}" accept="audio/*,video/*">
 <p><strong>点击选择文件</strong>或拖放到此处</p>
 </div>
-<div id="upload-status-${captureId}" class="notice" style="margin-top:12px" hidden></div>
+<div id="upload-status-${captureId}" class="notice mt-12" hidden></div>
 `;
 sessionDetailContent.append(uploadSection);
 

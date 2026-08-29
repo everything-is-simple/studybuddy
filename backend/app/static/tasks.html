@@ -55,14 +55,14 @@
 <h2>任务运行器状态</h2>
 <div class="task-notice">
 <p><strong>当前支持的任务类型：</strong></p>
-<ul style="margin:8px 0 0 20px;padding:0">
-<li><code style="font-family:var(--mono);background:var(--bg);padding:2px 6px;border-radius:4px">embedding_index</code> — 材料向量索引（已验证）</li>
+<ul class="list-indented">
+<li><code class="code-inline">embedding_index</code> — 材料向量索引（已验证）</li>
 </ul>
-<p style="margin-top:12px;margin-bottom:0"><strong>其它任务类型显示为"尚未接入任务运行器"。</strong></p>
+<p class="mt-12 mb-0"><strong>其它任务类型显示为"尚未接入任务运行器"。</strong></p>
 </div>
 </section>
 
-<section class="card" style="margin-top:24px" data-od-id="task-list">
+<section class="card mt-24" data-od-id="task-list">
 <div class="section-label">
 <h2>任务列表</h2>
 <span id="state" class="muted" role="status" aria-live="polite">说明</span>
@@ -81,13 +81,13 @@
 </div>
 <div id="error" class="error" role="alert" hidden></div>
 <div id="tasks" class="task-grid"></div>
-<div id="info" class="notice" style="margin-top:16px">
+<div id="info" class="notice mt-16">
 <p><strong>说明：</strong>当前页面仅展示通过材料详情页、问答页面等触发的 <code>embedding_index</code> 任务。</p>
-<p style="margin-top:8px;margin-bottom:0">如需查看具体任务，请通过触发任务的功能入口（如材料索引、问答）访问，或在地址栏输入 <code>/app/tasks.html?task_id=&lt;任务ID&gt;</code>。</p>
+<p class="mt-8 mb-0">如需查看具体任务，请通过触发任务的功能入口（如材料索引、问答）访问，或在地址栏输入 <code>/app/tasks.html?task_id=&lt;任务ID&gt;</code>。</p>
 </div>
 </section>
 
-<section class="card" style="margin-top:24px" data-od-id="task-detail" id="task-detail-section" hidden>
+<section class="card mt-24" data-od-id="task-detail" id="task-detail-section" hidden>
 <div class="section-label">
 <h2>任务详情</h2>
 <span id="detail-state" class="muted" role="status" aria-live="polite"></span>
@@ -101,6 +101,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
+const pageRequest=sbApi.setPageScope('tasks');
 const state=document.querySelector('#state');
 const error=document.querySelector('#error');
 const tasks=document.querySelector('#tasks');

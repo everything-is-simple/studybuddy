@@ -50,7 +50,7 @@
 <div id="summary" class="rhythm-summary" hidden></div>
 </section>
 
-<section class="card" data-od-id="today-tasks" style="margin-top:24px">
+<section class="card" data-od-id="today-tasks" class="mt-24">
 <h2>今日任务</h2>
 <div id="task-status" class="notice" role="status" aria-live="polite">正在加载任务列表...</div>
 <ul id="tasks" class="task-list"></ul>
@@ -61,6 +61,7 @@
 <script src="/app/js/shell.js"></script>
 <script>
 (async function(){
+const pageRequest=sbApi.setPageScope('today');
 const summaryStatus=document.querySelector('#summary-status');
 const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
