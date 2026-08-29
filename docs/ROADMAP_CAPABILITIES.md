@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`in_progress / frontend-contract-closure`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前先执行 A3-FC 前端契约与架构收口，再推进页面拆分和视觉迁移。
+> 状态：`A3-FC closed / A3-PAGES next`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前先执行 A3-FC 前端契约与架构收口，再推进页面拆分和视觉迁移。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -212,7 +212,7 @@ backend/app/
 
 **备注：** 本阶段对应 frontend-plan.md 中的 A4，是静态前端 A3 的直接继续。
 
-### A3-FC：前端契约与架构收口（当前执行任务）
+### A3-FC：前端契约与架构收口（已完成，声明范围内）
 
 **目的：** 在继续扩展页面或引入真实能力之前，消除静态前端的字段漂移、状态漂移、错误映射不一致和视觉 token 分裂问题。该任务不引入新业务能力、不修改 schema、不引入 React/Vue/Vite。
 
@@ -223,11 +223,11 @@ backend/app/
 3. 收口 `js/api.js`：字符串 JSON body 自动补 `Content-Type`、统一解析安全错误、保存 request ID、扩展稳定错误码映射，并为可取消请求预留 AbortSignal 入口。
 4. 收口 `css/app.css`：补齐所有页面使用的 token，消除未定义 CSS 变量；统一 badge、notice、button、focus、grid 和移动端导航样式。
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
-6. A3-FC-3 分两轮执行：首轮已完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮只补齐每页剩余状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。
+6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3 第二轮通过后再执行页面拆分：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面拆分期间保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
 8. 页面拆分和行为门禁通过后，才由 A3-VISUAL 收敛剩余局部 CSS，并完成 Neutral Modern card/button/badge/notice/dialog/focus/grid 与 360–1920 视觉矩阵；视觉任务不得改变 API 或业务行为。
 
-**通过门槛：** A3-FC 只以第二轮页面行为矩阵完成为准：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 同步。A3-FC 通过前，不开始 B0/B1 正式能力接入，也不开始 A3-PAGES/A3-VISUAL 的功能或视觉重写。
+**通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表 `legacy_only`/`not_exposed`/`a3_pages` 能力已迁移；A3-PAGES/A3-VISUAL 仍按后续任务执行。
 
 ### B0：组件库统一准备与证据治理
 
