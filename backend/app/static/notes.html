@@ -107,7 +107,9 @@ meta.textContent='材料: '+text(note.material_name)
 meta.textContent='无关联材料'
 }
 li.append(meta);
+li.setAttribute('role','button');li.setAttribute('tabindex','0');
 li.onclick=()=>selectNote(note.id,note.title);
+li.onkeydown=(event)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectNote(note.id,note.title)}};
 notes.append(li)
 })
 }catch(e){
@@ -118,6 +120,7 @@ noteStatus.textContent=sbApi.safeError(e)
 
 async function selectNote(noteId,title){
 selectedNoteId=noteId;
+if(new URLSearchParams(location.search).get('note_id')!==noteId){history.replaceState({},'',`/app/notes.html?note_id=${encodeURIComponent(noteId)}`)}
 noteTitle.textContent=text(title)||'笔记详情';
 detailStatus.hidden=false;
 detailStatus.textContent='正在加载笔记详情...';

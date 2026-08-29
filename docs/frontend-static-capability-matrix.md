@@ -24,15 +24,20 @@
 | `material-detail.html` | 从详情触发索引 | `legacy_only` | 后端正式路由存在；当前静态页只提供读取、导出和问答跳转。 |
 | `qa.html` | 材料范围、同步问答、材料级索引、history | `static_verified` | static-core/QA browser tests；同步请求不是后台任务。 |
 | `qa.html` | citation 详情/正文定位 | `legacy_only` | 后端和旧 workspace 有证据；静态页当前只提供材料详情链接，未迁移正式 citation detail 面板。 |
-| `plans.html` | 目标、模块、计划列表和详情读取、状态/来源显示 | `static_verified` | learning/matrix browser tests。 |
+| `plans.html` | 目标、模块、计划列表和详情读取、状态/来源显示 | `static_verified` | learning/matrix browser tests；详情选择会保留 `plan_id` 上下文。 |
+| `plan-detail.html` | 独立计划详情、项目状态和来源状态读取、缺少标识/失败重试 | `static_verified` | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`；不新增后端能力。 |
 | `plans.html` | 创建/编辑目标、模块、计划、依赖、进度、节奏 | `legacy_only` | 已有后端和旧 workspace 契约；静态页未迁移写操作。 |
-| `notes.html` | 列表、详情、笔记类型/来源状态、AI 草稿确认 | `static_verified` | learning/state-matrix browser tests。 |
+| `notes.html` | 列表、详情、笔记类型/来源状态、AI 草稿确认 | `static_verified` | learning/state-matrix browser tests；详情选择会保留 `note_id` 上下文。 |
+| `note-detail.html` | 独立笔记详情、内容/引用/来源状态读取、缺少标识/失败重试 | `static_verified` | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`；不新增后端能力。 |
 | `notes.html` | 创建、编辑、生成、拒绝、归档、来源刷新、导出 | `legacy_only` | 后端和旧 workspace 契约已存在；静态页仅迁移确认读取路径。 |
 | `cards.html` | 卡组/卡片读取、draft/来源状态、引用键展示 | `static_verified` | learning/state-matrix browser tests。 |
 | `cards.html` | 创建、生成、编辑、确认、拒绝、归档、复习 | `legacy_only` | 后端和旧 workspace 契约已存在，未迁移到静态页。 |
 | `exercises.html` | 练习集/题目读取、draft/来源状态、题目确认 | `static_verified` | learning/state-matrix browser tests。 |
 | `exercises.html` | 创建、生成、编辑、拒绝、归档、作答/attempt | `legacy_only` | 后端和旧 workspace 契约已存在，未迁移到静态页。 |
 | `practice.html` | 会话、结果、错题读取、练习会话启动 | `static_verified` | learning browser tests；状态和读取边界已审计。 |
+| `practice-session.html` | 独立练习会话详情读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；写操作仍由兼容页边界承载。 |
+| `practice-result.html` | 独立练习结果读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；不暴露答案 key。 |
+| `review.html` | 独立错题与薄弱点读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；不新增复盘写操作。 |
 | `practice.html` | 创建会话、逐题作答、finish、反馈、redo、冲刺 | `legacy_only` | 后端和旧 workspace 契约已存在，未迁移到静态页。 |
 | `capture.html` | fake/loopback 会话创建、上传、fake 转写、草稿编辑、确认、拒绝 | `static_verified` | A4/Phase 9D browser tests；真实 ASR 仍未通过 B1。 |
 | `capture.html` | archive | `not_exposed` | 正式 API 固定返回 `capture_invalid_state`；不能伪造归档成功控件。 |
@@ -42,8 +47,8 @@
 | `tasks.html` | 全局任务列表/筛选 | `not_exposed` | 后端没有全局 task-list API；页面不得伪造列表。 |
 | `settings-provider.html` | capabilities/readiness 只读状态 | `static_verified` | A4/system-matrix tests。 |
 | `settings-provider.html` | Provider 配置写入、密钥保存、连接测试 | `not_exposed` | 后端没有获批的安全配置写入契约；浏览器不得保存或回显密钥。 |
-| `reports.html` | 独立报告、导出、审计页面 | `a3_pages` | 当前由 `classroom.html` 兼容入口承载。 |
-| `settings.html` | 独立系统设置页 | `a3_pages` | 当前由 `settings-provider.html` 与 `tasks.html` 分担只读边界。 |
+| `reports.html` | 独立报告列表、脱敏摘要读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；导出/审计扩展仍按后续能力边界处理。 |
+| `settings.html` | 独立系统设置只读聚合、Provider/就绪状态跳转 | `static_verified` | `browser_frontend_static_baseline.spec.js`；不开放配置写入或密钥保存。 |
 
 ## A3-FC-3-2 收口要求
 

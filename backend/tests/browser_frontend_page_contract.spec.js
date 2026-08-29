@@ -10,6 +10,12 @@ function startServer(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backe
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:15000}).toBe(true)}
 test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=startServer();await ready()});test.afterEach(()=>{if(server&&!server.killed)server.kill();server=null});
 
+test('plan detail page exposes missing identity and safe failure states', async ({page}) => {
+  await page.goto(`${BASE}/app/plan-detail.html`);
+  await expect(page.locator('#plan-status')).toContainText('缺少计划标识');
+  await expect(page.locator('body')).not.toContainText(/H:\\|SELECT|traceback|secret|token/i);
+});
+
 test('materials page exposes safe empty and failure states',async({page})=>{await page.goto(`${BASE}/app/materials.html`);await expect(page.locator('#state')).toHaveText('暂无材料');await page.route('**/api/materials?*',route=>route.fulfill({status:500,contentType:'application/json',body:JSON.stringify({detail:'private_error',path:'C:/secret'})}));await page.click('#apply-filters');await expect(page.locator('#error')).toBeVisible();await expect(page.locator('#error')).not.toContainText('private_error');await expect(page.locator('body')).not.toContainText('C:/secret')});
 test('material detail reports missing identity safely',async({page})=>{await page.goto(`${BASE}/app/material-detail.html`);await expect(page.locator('#state')).toContainText('请从资料库进入');await expect(page.locator('#export-original')).toBeDisabled();await expect(page.locator('#export-text')).toBeDisabled()});
 test('qa page exposes empty history and safe provider state',async({page})=>{await page.goto(`${BASE}/app/qa.html`);await expect(page.locator('#thread-status')).toHaveText('暂无问答历史');await expect(page.locator('#provider-status')).not.toContainText('正在检查');await expect(page.locator('#question')).toBeVisible()});

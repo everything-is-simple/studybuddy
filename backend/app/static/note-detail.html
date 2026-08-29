@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 笔记详情</title>
+<link rel="stylesheet" href="/app/css/tokens.css">
+<link rel="stylesheet" href="/app/css/app.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar"><div class="topbar-inner">
+<a class="brand" href="/app/today.html">StudyBuddy</a>
+<nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div></header>
+<main class="main">
+<div class="hero"><div>
+<p class="eyebrow">资料笔记 · 详情</p>
+<h1 id="page-title">笔记详情</h1>
+<p class="lead">查看笔记类型、内容、引用和来源状态。</p>
+</div><a class="btn" href="/app/notes.html">返回笔记</a></div>
+<section class="card" aria-labelledby="page-title">
+<div id="note-status" class="notice" role="status" aria-live="polite">正在加载笔记…</div>
+<div id="note-detail" hidden></div>
+<button id="retry-note" class="btn" type="button" hidden>重试</button>
+</section>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/state.js"></script>
+<script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const params=new URLSearchParams(location.search);const noteId=params.get('note_id')||params.get('id');
+const pageRequest=sbApi.setPageScope('note-detail');const status=document.querySelector('#note-status');const detail=document.querySelector('#note-detail');const retry=document.querySelector('#retry-note');let generation=0;
+function text(value){return typeof value==='string'?value:''}
+function showStatus(message,kind){status.hidden=false;status.className='notice'+(kind?' '+kind:'');status.textContent=message}
+function field(label,value){const row=document.createElement('div');row.className='detail-row';const name=document.createElement('strong');name.textContent=label+'：';row.append(name,document.createTextNode(text(value)));return row}
+function render(note){detail.replaceChildren();const title=document.createElement('h2');title.textContent=text(note.title)||'未命名笔记';detail.append(title);detail.append(field('类型',sbState.label(note.note_type||'user')));if(note.material_name)detail.append(field('关联材料',note.material_name));if(note.module_name)detail.append(field('知识模块',note.module_name));if(note.content){const content=document.createElement('div');content.className='detail-block';content.append(field('笔记内容',''));const body=document.createElement('div');body.className='note-content';body.textContent=text(note.content);content.append(body);detail.append(content)}if(Array.isArray(note.citation_keys)&&note.citation_keys.length){const citations=document.createElement('div');citations.className='detail-block';citations.append(field('引用来源',''));note.citation_keys.forEach(key=>{const item=document.createElement('span');item.className='citation-link';item.textContent=text(key);citations.append(item)});detail.append(citations)}if(note.source_citation_status&&note.source_citation_status!=='valid'){const source=document.createElement('div');source.className='notice warn';source.textContent='来源状态：'+sbState.source(note.source_citation_status);detail.append(source)}detail.hidden=false}
+async function load(){const run=++generation;if(!noteId){showStatus('缺少笔记标识，无法加载详情','error');retry.hidden=true;return}showStatus('正在加载笔记…');retry.hidden=true;detail.hidden=true;try{const note=await sbApi.json('/api/study/notes/'+encodeURIComponent(noteId),{signal:pageRequest.signal});if(run!==generation)return;render(note);status.hidden=true}catch(error){if(run!==generation)return;showStatus(sbApi.safeError(error),'error');retry.hidden=false}}
+retry.addEventListener('click',load);load();
+})();
+</script>
+</body>
+</html>
