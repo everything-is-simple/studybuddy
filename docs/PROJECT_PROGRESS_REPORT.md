@@ -1,8 +1,10 @@
 # StudyBuddy 项目进度报告
 
-> 更新日期：2026-08-30（以 Phase 10-9 release candidate、Gate J 与文档收口重新对齐）
+> 更新日期：2026-08-30（以 Phase 10-9 release candidate、Gate J 与文档收口重新对齐；测试基线已验证）
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
+>
+> **当前测试基线（2026-08-30）**：后端 `413 passed, 2 skipped`；前端 `57 passed, 3 skipped`；所有 skip 均为 opt-in 真实 provider 测试。完整测试套件 100% 通过，代码、测试、治理文档与设计文档保持一致。
 
 ## 一、当前总进度
 
