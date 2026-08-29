@@ -509,7 +509,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 - [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归。
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
 - [ ] **前端契约审计**：新增 `docs/frontend-contract-audit.md` 与 `backend/scripts/audit-frontend-contract.py`；首轮已扫描 14 个页面/152 条路由并修复 4 类问题，仍需完成字段 fixture、状态覆盖和浏览器回归。未完成前不得宣称 frontend-plan 全部符合。
-- [ ] **共享层收口**：统一 `js/api.js`、`js/shell.js`、`css/app.css` 的 headers、错误码、request ID、取消入口、状态组件、token 和移动端导航；本轮已完成共享层基础，仍需逐页验证 AbortSignal、状态组件和局部 CSS 迁移。
+- [ ] **共享层收口**：统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、错误码、request ID、取消入口、状态组件、token 和移动端导航；本轮已完成请求生命周期、状态基础、token 独立文件和移动端导航，仍需逐页验证 AbortSignal、状态组件和局部 CSS 迁移。
 - [ ] **正式页面拆分**：补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；保持现有页面回退。
 - [ ] **Neutral Modern 视觉迁移**：共享层和页面契约通过后，完成 token、组件、响应式、焦点和状态视觉统一。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
