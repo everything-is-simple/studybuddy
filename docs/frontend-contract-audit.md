@@ -69,7 +69,7 @@
 
 ## 4. 静态页能力冻结
 
-`frontend-static-capability-matrix.md` 是 A3-FC-3-2 的唯一静态页面能力口径。它将每项能力明确为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`，防止把旧 `/legacy` 或后端 API 证据错误写成 `/app` 已迁移操作。
+`frontend-static-capability-matrix.md` 是 A3-FC-3-2 的唯一静态页面能力口径；`frontend-static-failure-retry-matrix.md` 是失败、重试和安全 browser evidence 的唯一索引。两者共同防止把旧 `/legacy` 或后端 API 证据错误写成 `/app` 已迁移操作。
 
 ## 5. 当前阶段分工
 
