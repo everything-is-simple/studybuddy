@@ -295,7 +295,7 @@ revision → chunks → retrieval → citations → Q&A
 - [x] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
 - [x] A3：执行 [`frontend-plan.md`](frontend-plan.md) A3：建立唯一正式 static root、原生应用壳以及核心页面；完成已覆盖范围的 browser/keyboard/narrow/privacy 门禁。
 - [x] A4：执行 [`frontend-plan.md`](frontend-plan.md) A4：Provider 设置、课堂采集与任务状态页面；接入已验证 API，如实表达能力边界。
-- [ ] A3-FC：前端契约与架构收口。A3-FC-1 自动 endpoint/route/字段/token/retry 审计和 fixture 已完成；A3-FC-2 共享请求层、自动幂等、scope/取消、状态基础、token 和移动导航已完成；A3-FC-3 首轮已审计全部现有静态页面。剩余仅属于 A3-FC-3 第二轮：逐页完成剩余状态显示到 `sbState` 的迁移，并补齐每页 stale/failure/source-lifecycle、360–1920 响应式、键盘、隐私 DOM 浏览器矩阵。不得在此任务引入新业务能力。
+- [ ] A3-FC：前端契约与架构收口。A3-FC-1 自动 endpoint/route/字段/token/retry 审计和 fixture 已完成；A3-FC-2 共享请求层、自动幂等、scope/取消、状态基础、token 和移动导航已完成；A3-FC-3 首轮已审计全部现有静态页面。A3-FC-3-2 已建立 `frontend-static-capability-matrix.md`，将 `/app` 能力冻结为 `static_verified` / `legacy_only` / `not_exposed` / `a3_pages`；剩余仅为按矩阵补齐每页状态显示、stale/failure/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器证据。不得在此任务引入新业务能力或把 `/legacy` 证据写成静态页已迁移操作。
 - [ ] A3-PAGES：在 A3-FC-3 第二轮通过后，按 frontend-plan 拆分并验收 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 在替代页具备回退证据前继续作为兼容入口。每页必须有 loading/empty/ready/failed/retry、窄屏、键盘、隐私 DOM 测试。
 - [ ] A3-VISUAL：在 A3-FC-3 第二轮和 A3-PAGES 通过后完成 Neutral Modern token/组件/响应式视觉迁移；将剩余页面局部 CSS 收敛为 card/button/badge/notice/dialog/focus/grid 组件，并完成 360–1920 视觉矩阵；不以视觉改版替代功能契约测试。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。

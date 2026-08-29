@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "backend" / "scripts" / "audit-frontend-contract.py"
 FIXTURES = ROOT / "docs" / "frontend-contract-fixtures.json"
+CAPABILITY_MATRIX = ROOT / "docs" / "frontend-static-capability-matrix.md"
 
 
 def load_auditor():
@@ -32,6 +33,14 @@ def test_frontend_contract_fixtures_define_required_resource_states():
         assert resource["endpoint"].startswith("/api/")
         assert resource["identity"] == "id"
         assert resource["states"]
+
+
+def test_static_capability_matrix_declares_all_current_pages():
+    matrix = CAPABILITY_MATRIX.read_text(encoding="utf-8")
+    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
+        assert f"`{name}`" in matrix
+    for state in ("static_verified", "legacy_only", "not_exposed", "a3_pages"):
+        assert f"`{state}`" in matrix
 
 
 def test_shared_state_contract_exposes_fixture_statuses():
