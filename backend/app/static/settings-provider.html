@@ -90,13 +90,16 @@ const healthStatus=document.querySelector('#health-status');
 function text(value){return typeof value==='string'?value:''}
 function bool(value){return value===true}
 
+let loadGeneration=0;
 async function load(){
+const generation=++loadGeneration;
 state.textContent='加载中…';
 error.hidden=true;
 loading.hidden=false;
 capabilities.hidden=true;
 try{
-const data=await sbApi.json('/api/ai/capabilities');
+const data=await sbApi.json('/api/ai/capabilities',{signal:pageRequest.signal});
+if(generation!==loadGeneration)return;
 renderCapabilities(data);
 state.textContent='已加载';
 loading.hidden=true;
@@ -201,11 +204,11 @@ return parts.length?parts.join('、'):'无明确声明'
 
 async function checkHealth(){
 try{
-const data=await sbApi.json('/api/readiness');
-healthStatus.innerHTML='<p class="badge badge-success">✓ 系统就绪</p>'
+const data=await sbApi.json('/api/readiness',{signal:pageRequest.signal});
+healthStatus.replaceChildren();const badge=document.createElement('p');badge.className='badge badge-success';badge.textContent='系统就绪';healthStatus.append(badge)
 }catch(e){
 const msg=sbApi.safeError(e);
-healthStatus.innerHTML=`<p class="badge badge-warn">⚠ ${msg}</p>`
+healthStatus.replaceChildren();const badge=document.createElement('p');badge.className='badge badge-warn';badge.textContent=msg;healthStatus.append(badge)
 }
 }
 
