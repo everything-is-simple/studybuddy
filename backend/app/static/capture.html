@@ -133,11 +133,15 @@ const sessionDetailContent=document.querySelector('#session-detail-content');
 const closeDetailBtn=document.querySelector('#close-detail-btn');
 
 let currentSessions=[];
+let loadGeneration=0;
+let detailGeneration=0;
 
 function text(value){return typeof value==='string'?value:''}
 
 async function load(){
+const generation=++loadGeneration;
 state.textContent='加载中…';
+empty.hidden=true;
 error.hidden=true;
 sessions.replaceChildren();
 empty.hidden=true;
@@ -145,7 +149,8 @@ try{
 const params=new URLSearchParams();
 params.set('include_archived',includeArchived.checked?'true':'false');
 params.set('limit','100');
-const data=await sbApi.json('/api/study/capture-sessions?'+params);
+const data=await sbApi.json('/api/study/capture-sessions?'+params,{signal:pageRequest.signal});
+if(generation!==loadGeneration)return;
 currentSessions=data.items||[];
 if(currentSessions.length===0){
 state.textContent='暂无会话';
@@ -155,6 +160,7 @@ state.textContent=`共 ${currentSessions.length} 个会话`;
 renderSessions(currentSessions)
 }
 }catch(e){
+if(e.name==='AbortError')return;
 state.textContent='加载失败';
 error.textContent=sbApi.safeError(e);
 error.hidden=false
@@ -182,7 +188,7 @@ header.append(h3);
 
 const badge=document.createElement('span');
 badge.className='badge';
-badge.textContent=text(item.status)||'unknown';
+badge.textContent=sbState.label(item.status,'未知状态');
 header.append(badge);
 
 card.append(header);
@@ -233,12 +239,14 @@ return iso
 }
 
 async function viewSession(captureId){
+const generation=++detailGeneration;
 try{
-const data=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`);
+const data=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`,{signal:pageRequest.signal});
+if(generation!==detailGeneration)return;
 renderSessionDetail(data);
 sessionDetailDialog.showModal()
 }catch(e){
-alert(sbApi.safeError(e))
+if(e.name!=='AbortError')alert(sbApi.safeError(e))
 }
 }
 
@@ -252,11 +260,8 @@ sessionDetailContent.append(title);
 
 const meta=document.createElement('div');
 meta.className='session-meta';
-meta.innerHTML=`
-<p>状态：<strong>${text(data.status)}</strong></p>
-<p>类型：${text(data.asset_kind)} · 媒体：${text(data.media_type)}</p>
-<p>创建于：${formatDate(data.created_at)}</p>
-`;
+meta.replaceChildren();
+[['状态',sbState.label(data.status)],['类型',`${text(data.asset_kind)} · 媒体：${text(data.media_type)}`],['创建于',formatDate(data.created_at)]].forEach(([label,value])=>{const p=document.createElement('p');p.append(document.createTextNode(label+'：'));const strong=document.createElement('strong');strong.textContent=value;p.append(strong);meta.append(p)});
 sessionDetailContent.append(meta);
 
 if(data.status==='draft'&&!data.material_id){
@@ -289,10 +294,7 @@ if(data.transcript_drafts&&data.transcript_drafts.length>0){
 data.transcript_drafts.forEach(draft=>{
 const draftSection=document.createElement('div');
 draftSection.className='draft-editor';
-draftSection.innerHTML=`
-<h3>转写草稿 · ${text(draft.draft_status)}</h3>
-<div class="transcript-view">${text(draft.text)||'(空)'}</div>
-`;
+const draftTitle=document.createElement('h3');draftTitle.textContent='转写草稿 · '+sbState.label(draft.draft_status);draftSection.append(draftTitle);const draftView=document.createElement('div');draftView.className='transcript-view';draftView.textContent=text(draft.text)||'(空)';draftSection.append(draftView);
 
 if(draft.draft_status==='pending_review'){
 const editArea=document.createElement('textarea');
@@ -301,9 +303,7 @@ editArea.placeholder='编辑转写内容...';
 draftSection.append(editArea);
 
 const btnGroup=document.createElement('div');
-btnGroup.style.marginTop='12px';
-btnGroup.style.display='flex';
-btnGroup.style.gap='8px';
+btnGroup.className='stack-actions mt-12';
 
 const saveBtn=document.createElement('button');
 saveBtn.className='btn';
@@ -344,26 +344,27 @@ sessionDetailDialog.close();
 load()
 },1500)
 }catch(e){
+if(e.name==='AbortError')return;
 statusEl.className='notice warn';
-statusEl.textContent=sbApi.safeError(e)
+statusEl.textContent=sbApi.safeError(e)+' 可重试。'
 }
 }
 
 async function transcribeSession(captureId){
 if(!confirm('确定使用 fake 转写吗？（真实 ASR 尚未接入）'))return;
 try{
-await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcribe`,{method:'POST'});
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcribe`,{method:'POST',signal:pageRequest.signal});
 alert('转写已触发（fake）');
 load()
 }catch(e){
-alert(sbApi.safeError(e))
+if(e.name!=='AbortError')alert(sbApi.safeError(e))
 }
 }
 
 async function editDraft(captureId,draftId,text){
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript/edit`,{
-method:'POST',
+method:'POST',signal:pageRequest.signal,
 body:JSON.stringify({draft_id:draftId,text})
 });
 alert('草稿已保存');
@@ -377,7 +378,7 @@ async function confirmDraft(captureId,draftId){
 if(!confirm('确认此转写草稿？确认后将转为正式材料。'))return;
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/confirm`,{
-method:'POST',
+method:'POST',signal:pageRequest.signal,
 body:JSON.stringify({draft_id:draftId})
 });
 alert('草稿已确认');
@@ -392,7 +393,7 @@ async function rejectDraft(captureId,draftId){
 if(!confirm('拒绝此转写草稿？'))return;
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/reject`,{
-method:'POST',
+method:'POST',signal:pageRequest.signal,
 body:JSON.stringify({draft_id:draftId})
 });
 alert('草稿已拒绝');
@@ -413,7 +414,7 @@ const originalName=document.querySelector('#original-name').value;
 const mediaType=document.querySelector('#media-type').value;
 try{
 await sbApi.json('/api/study/capture-sessions',{
-method:'POST',
+method:'POST',signal:pageRequest.signal,
 headers:{'content-type':'application/json'},
 body:JSON.stringify({asset_kind:assetKind,original_name:originalName,media_type:mediaType})
 });
