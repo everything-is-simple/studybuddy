@@ -229,6 +229,13 @@ backend/app/
 
 **通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表 `legacy_only`/`not_exposed`/`a3_pages` 能力已迁移；A3-PAGES/A3-VISUAL 仍按后续任务执行。
 
+### 后续前端能力切片（A3-VISUAL 之后，按顺序）
+
+1. **Practice workflow**：独立迁移逐题作答、提交、finish、结果和 redo；先冻结既有 API 的状态、答案 key 隐私、幂等、失败/retry、stale response 与 browser evidence。不得机械复制 `/legacy`，也不改变 API 语义。
+2. **B3 reports/export/audit**：在 B3 gate 后扩展 `reports.html` 的脱敏导出和审计工作区；维持 report projection、`delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍属于 B4。
+3. **Provider 配置写入**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在后端形成安全写入/验证契约后单独立项；浏览器不得保存、回显或持久化密钥，且必须具备脱敏 connection-test failure 和独立 browser evidence。
+4. **`legacy_only` / `not_exposed`**：以 `docs/frontend-static-capability-matrix.md` 为来源逐项立项。`legacy_only` 需独立页面/路径和 browser evidence；`not_exposed` 在存在安全公共契约前保持不暴露，不得用 mock 伪造成功。
+
 ### B0：组件库统一准备与证据治理
 
 **目的：** 为 ASR、OCR、报告、外发建立一致的入库和测试标准。
