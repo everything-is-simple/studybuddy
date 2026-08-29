@@ -38,7 +38,7 @@ def test_frontend_contract_fixtures_define_required_resource_states():
 
 def test_static_capability_matrix_declares_all_current_pages():
     matrix = CAPABILITY_MATRIX.read_text(encoding="utf-8")
-    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
+    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "plan-detail.html", "note-detail.html", "practice-session.html", "practice-result.html", "review.html", "reports.html", "settings.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
         assert f"`{name}`" in matrix
     for state in ("static_verified", "legacy_only", "not_exposed", "a3_pages"):
         assert f"`{state}`" in matrix
@@ -46,7 +46,7 @@ def test_static_capability_matrix_declares_all_current_pages():
 
 def test_static_failure_matrix_covers_all_current_pages():
     matrix = FAILURE_MATRIX.read_text(encoding="utf-8")
-    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
+    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "plan-detail.html", "note-detail.html", "practice-session.html", "practice-result.html", "review.html", "reports.html", "settings.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
         assert f"`{name}`" in matrix
     for status in ("covered", "baseline", "deferred"):
         assert f"{status}" in matrix

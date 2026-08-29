@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 练习会话</title>
+<link rel="stylesheet" href="/app/css/tokens.css">
+<link rel="stylesheet" href="/app/css/app.css">
+</head>
+<body>
+<div class="app-shell"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/today.html">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header>
+<main class="main"><div class="hero"><div><p class="eyebrow">练习 · 会话</p><h1 id="page-title">练习会话</h1><p class="lead">查看会话状态和练习项目。</p></div><a class="btn" href="/app/practice.html">返回练习</a></div><section class="card" aria-labelledby="page-title"><div id="session-status" class="notice" role="status" aria-live="polite">正在加载会话…</div><div id="session-detail" hidden></div><button id="retry-session" class="btn" type="button" hidden>重试</button></section></main></div>
+<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script>
+<script>(function(){const id=new URLSearchParams(location.search).get('session_id')||new URLSearchParams(location.search).get('id');const request=sbApi.setPageScope('practice-session');const status=document.querySelector('#session-status');const detail=document.querySelector('#session-detail');const retry=document.querySelector('#retry-session');let generation=0;function show(message,kind){status.hidden=false;status.className='notice'+(kind?' '+kind:'');status.textContent=message}function render(data){detail.replaceChildren();const title=document.createElement('h2');title.textContent=typeof data.title==='string'?data.title:'练习会话';detail.append(title);const state=document.createElement('p');state.textContent='状态：'+sbState.label(data.status||'draft');detail.append(state);if(data.deadline){const deadline=document.createElement('p');deadline.textContent='截止：'+new Date(data.deadline).toLocaleString('zh-CN');detail.append(deadline)}detail.hidden=false}async function load(){const run=++generation;if(!id){show('缺少会话标识，无法加载详情','error');return}show('正在加载会话…');retry.hidden=true;detail.hidden=true;try{const data=await sbApi.json('/api/study/practice-sessions/'+encodeURIComponent(id),{signal:request.signal});if(run!==generation)return;render(data);status.hidden=true}catch(error){if(run!==generation)return;show(sbApi.safeError(error),'error');retry.hidden=false}}retry.onclick=load;load()})();</script>
+</body></html>

@@ -174,6 +174,8 @@ planStatus.hidden=true;
 items.forEach(plan=>{
 const li=document.createElement('li');
 li.className='plan-item';
+li.setAttribute('role','button');
+li.setAttribute('tabindex','0');
 if(plan.id===selectedPlanId)li.classList.add('selected');
 const title=document.createElement('div');
 title.className='item-title';
@@ -190,6 +192,7 @@ badge.textContent=sbState.label(plan.status||'draft');
 badge.classList.add('badge-spaced');
 li.append(badge);
 li.onclick=()=>selectPlan(plan.id);
+li.onkeydown=(event)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPlan(plan.id)}};
 plans.append(li)
 })
 }catch(e){
@@ -200,6 +203,7 @@ planStatus.textContent=sbApi.safeError(e)
 
 async function selectPlan(planId){
 selectedPlanId=planId;
+if(new URLSearchParams(location.search).get('plan_id')!==planId){history.replaceState({},'',`/app/plans.html?plan_id=${encodeURIComponent(planId)}`)}
 planDetail.hidden=false;
 planDetail.innerHTML='<div class="notice">正在加载计划详情...</div>';
 document.querySelectorAll('.plan-item').forEach(el=>{

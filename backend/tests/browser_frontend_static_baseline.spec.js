@@ -6,11 +6,14 @@ const ROOT = 'H:/studybuddy-test/runs/frontend-static-baseline';
 const PORT = 8829;
 const BASE = `http://127.0.0.1:${PORT}`;
 const PAGES = [
-  ['index.html', null], ['today.html', '#summary-status'], ['materials.html', '#state'],
-  ['material-detail.html', '#state'], ['qa.html', '#thread-status'], ['plans.html', '#plan-status'],
-  ['notes.html', '#note-status'], ['cards.html', '#deck-status'], ['exercises.html', '#set-status'],
-  ['practice.html', '#session-status'], ['capture.html', '#state'], ['classroom.html', '#capture-status'],
-  ['tasks.html', '#state'], ['settings-provider.html', '#state'],
+  ['index.html', null], ['plan-detail.html', '#plan-status'], ['note-detail.html', '#note-status'],
+  ['practice-session.html', '#session-status'], ['practice-result.html', '#result-status'],
+  ['review.html', '#review-status'], ['reports.html', '#report-status'], ['settings.html', '#settings-status'],
+  ['today.html', '#summary-status'], ['materials.html', '#state'], ['material-detail.html', '#state'],
+  ['qa.html', '#thread-status'], ['plans.html', '#plan-status'], ['notes.html', '#note-status'],
+  ['cards.html', '#deck-status'], ['exercises.html', '#set-status'], ['practice.html', '#session-status'],
+  ['capture.html', '#state'], ['classroom.html', '#capture-status'], ['tasks.html', '#state'],
+  ['settings-provider.html', '#state'],
 ];
 let server;
 function startServer(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'};delete env.STUDYBUDDY_AI_MODEL;delete env.STUDYBUDDY_AI_BASE_URL;delete env.STUDYBUDDY_AI_API_KEY;return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
