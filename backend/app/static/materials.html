@@ -146,9 +146,9 @@ uploadStatus.className='notice';
 uploadStatus.textContent=`正在上传 ${files.length} 个文件...`;
 fileInput.disabled=true;
 try{
-const result=files.length===1
-?await sbApi.upload('/api/materials',files[0])
-:await sbApi.upload('/api/materials/batch',files);
+const result=await sbSubmit.once('materials-upload',()=>files.length===1
+?sbApi.upload('/api/materials',files[0])
+:sbApi.upload('/api/materials/batch',files));
 const success=result.success||result.items?.filter(i=>i.status==='success').length||0;
 const total=result.total||files.length;
 uploadStatus.className=success===total?'notice':'notice warn';
@@ -170,8 +170,7 @@ uploadStatus.append(details)
 setTimeout(()=>{uploadStatus.hidden=true},8000);
 load()
 }catch(e){
-uploadStatus.className='notice warn';
-uploadStatus.textContent=sbApi.safeError(e)
+uploadStatus.className='notice warn';uploadStatus.textContent=sbApi.safeError(e)+' 可重试。'
 }finally{
 fileInput.disabled=false;
 fileInput.value=''
