@@ -39,3 +39,14 @@ test('card and exercise source degradation does not expose raw status as the onl
   await mock(page,'**/api/study/exercise-sets/set-1/exercises',[{id:'exercise-1',prompt:'题目',exercise_type:'short_answer',status:'draft',source_status:'stale'}]);
   await page.goto(`${BASE}/app/exercises.html`);await page.locator('#sets .set-item').click();await expect(page.locator('#exercises')).toContainText('来源: 已过期');
 });
+
+test('plan and note detail display source degradation as user labels',async({page})=>{
+  await mock(page,'**/api/study/goals',[]);await mock(page,'**/api/study/modules',[]);
+  await mock(page,'**/api/study/plans',[{id:'plan-1',title:'计划',status:'active',item_count:1}]);
+  await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'计划',items:[{id:'item-1',title:'学习项',source_link_status:'source_deleted'}]});
+  await page.goto(`${BASE}/app/plans.html`);await page.locator('#plans .plan-item').click();await expect(page.locator('#plan-detail')).toContainText('来源: 来源已删除');
+  await page.unrouteAll({behavior:'ignoreErrors'});
+  await mock(page,'**/api/study/notes',[{id:'note-1',title:'笔记',note_type:'ai_draft'}]);
+  await mock(page,'**/api/study/notes/note-1',{id:'note-1',title:'笔记',note_type:'ai_draft',source_citation_status:'source_unavailable'});
+  await page.goto(`${BASE}/app/notes.html`);await page.locator('#notes .note-item').click();await expect(page.locator('#note-detail')).toContainText('来源状态: 来源不可用');
+});
