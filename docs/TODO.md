@@ -10,6 +10,7 @@
 - [x] I1：migration runner、schema version、migration history、原子升级/rollback、v1→v2 升级、backup/restore 版本一致性、operator upgrade runbook。
 - [x] I2：backup、verify-backup、restore staging、恢复后 offline/online 验收、保留/轮换策略文档、restore drill 模板、integrity/manifest 失败隔离流程。
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。
+- [x] A3-4：静态前端核心页面 API 集成完成（材料、材料详情、问答、今天四个页面）
 
 ## 基础设施收尾已完成（v1 时间盒收口）
 
@@ -279,9 +280,15 @@ revision → chunks → retrieval → citations → Q&A
 
 > 权威执行路线：[`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)。此 P1 不改变 Phase 10 local v1 的完成结论；每项组件必须完成 Composer -> Integration -> Formal 的全部门禁后才能进入正式系统。
 
-- [ ] A0：冻结 API/行为/静态资源/导入兼容基线，完成 `main.py` 与 `repository.py` 职责地图、拆分依赖图和逐批回退计划；禁止混入功能或 schema 变更。
+- [x] A0：冻结 API/行为/静态资源/导入兼容基线，完成 `main.py` 与 `repository.py` 职责地图、拆分依赖图和逐批回退计划；禁止混入功能或 schema 变更。
 - [x] A1：完成 `repository.py` façade 与域出口；完整 backend/browser 通过。内部函数体仍由 `_legacy.py` 承载。
 - [x] A2：完成兼容 `main.py` 后端拆分；保留既有内嵌 UI，新增模块受 32 KiB 门禁约束。完整 backend/browser 通过；A3 未开始。
+- [x] A3-1：建立 `backend/app/static/` 正式静态根目录，由 app factory 挂载到 `/app`。
+- [x] A3-2：实现今天/资料/详情/问答四个 Draft A-D 灰盒页面。
+- [x] A3-3：验证静态页面操作 UI 元素存在性。
+- [x] A3-4：将后端 API 集成到静态前端核心页面，完成 Chromium 验收（materials/detail/qa/today 四个页面）。
+- [ ] A3-5：新增卡片/练习/计划/笔记/课堂/报告页面，接入 Phase 8/9A/9B/9C/9D API。
+- [ ] A3-6：替换旧根路由 `/` 为静态页面入口，完成迁移兼容验收。
 - [ ] A3：执行 [`frontend-plan.md`](frontend-plan.md) F0/F1：建立唯一正式 static root、原生应用壳以及总览/资料/详情/Q&A 独立页面；完成 browser/keyboard/narrow/privacy 门禁。
 - [ ] A4：执行 `frontend-plan.md` F2/F3 的批准部分：Provider 设置与采集页的真实状态表达；未通过 ASR 门禁时不开放真实转写。
 - [ ] B0：统一组件库 catalog、component card、许可证/版本/哈希、fixture、独立 smoke、证据和大二进制忽略规则；仅通过 smoke 的组件可登记为可集成。
