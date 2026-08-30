@@ -2,13 +2,14 @@ const { test, expect } = require('@playwright/test');
 const { spawn } = require('child_process');
 const fs = require('fs');
 
-const RUN_ROOT = 'H:/studybuddy-test/runs/formal-phase9b-ui';
+let runRoot = 'H:/studybuddy-test/runs/formal-phase9b-ui';
 const PORT = 8811;
+const RUN_SUFFIX = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 const BASE = `http://127.0.0.1:${PORT}`;
 let server;
 
 function startServer(provider = 'fake') {
-  const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
+  const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: runRoot};
   if (provider === 'fake') env.STUDYBUDDY_AI_PROVIDER = 'fake';
   else delete env.STUDYBUDDY_AI_PROVIDER;
   delete env.STUDYBUDDY_AI_MODEL; delete env.STUDYBUDDY_AI_BASE_URL; delete env.STUDYBUDDY_AI_API_KEY;
@@ -41,7 +42,7 @@ async function createActivePlan(page) {
   await page.locator('#plan-activate').click(); await expect(page.locator('#plan-detail')).toContainText('状态：active');
 }
 
-test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}); server = startServer(); await ready(); });
+test.beforeEach(async () => { runRoot = `H:/studybuddy-test/runs/formal-phase9b-ui-${RUN_SUFFIX}-${test.info().retry}-${test.info().repeatEachIndex}`; fs.rmSync(runRoot, {recursive: true, force: true}); server = startServer(); await ready(); });
 test.afterEach(async () => { await stop(); });
 
 test('Phase 9B S1 rhythm workspace saves, adjusts, completes and recovers server state', async ({page}) => {
@@ -57,6 +58,7 @@ test('Phase 9B S1 rhythm workspace saves, adjusts, completes and recovers server
   await expect(page.locator('#plan-status')).toHaveText('学习节奏已保存');
   await page.locator('#rhythm-date').fill('2026-01-06');
   await page.locator('#rhythm-minutes').fill('30');
+  await expect(page.locator('#rhythm-allocation-add')).toBeEnabled();
   await page.locator('#rhythm-allocation-add').click();
   await expect(page.locator('#plan-status')).toHaveText('学习项已分配');
   await expect(page.locator('#rhythm-workspace')).toContainText('30/120 分钟');
