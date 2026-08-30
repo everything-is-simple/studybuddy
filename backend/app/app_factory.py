@@ -74,6 +74,7 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          archive_practice_session, get_practice_result, review_exercise_attempt,
                          mark_mistake_from_attempt, add_mistake_feedback, get_mistake_case,
                          list_mistake_cases, redo_mistake_case, archive_mistake_case, list_weak_points,
+                         recommend_practice_exercises,
                          create_cram_goal, list_cram_goals, get_cram_goal, transition_cram_goal,
                          create_cram_session, get_cram_result)
 from .task_handlers import build_task_runner, embedding_provider_identity

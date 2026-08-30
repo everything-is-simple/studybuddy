@@ -208,6 +208,8 @@ def recommend_practice_exercises(connection: sqlite3.Connection, *, project_id: 
         incorrect = sum(1 for a in attempts if a["is_correct"] == 0)
         pending = sum(1 for a in attempts if a["grading_status"] == "pending_review")
         weak_match = bool(weak_point and weak_point.lower() in str(row["prompt"]).lower())
+        if weak_point and not weak_match:
+            continue
         reasons = []
         if not attempts: reasons.append("never_attempted")
         if incorrect: reasons.append("recent_incorrect")

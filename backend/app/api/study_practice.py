@@ -3,6 +3,7 @@ from __future__ import annotations
 
 def register_routes(app, context: dict[str, object]) -> None:
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
+    recommend_practice_exercises = context.get("recommend_practice_exercises")
     def _study_error(error: ValueError, *, default: str, not_found: set[str] | None = None,
                      conflict: set[str] | None = None) -> HTTPException:
         code = str(error)
