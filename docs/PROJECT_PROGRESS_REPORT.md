@@ -195,6 +195,13 @@ Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不�
 
 执行包：[`docs/prompts/phase10/`](prompts/phase10/)。Gate A-J 已全部通过，因此可声明：**Phase 10 已完成，StudyBuddy 已在明确的 local single-process / single-instance / SQLite / local-disk v1 支持范围内完成生产化和上线收口。** 多用户、认证授权、云同步、协作、多进程共享 data_root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 和全局 production `real-pass` 不在该声明内。
 
+### 已选媒体候选（B0 C0；不改变 Formal 状态）
+
+- ASR 选定 `H:/WhisperCli` 的 whisper.cpp `large-v3-turbo` 为唯一 canonical runtime；本地中文 MP3 → TXT/SRT 准备 smoke 已成功，但合成 fixture、失败/超时/终止、清理和脱敏 C1 evidence 尚未完成。
+- OCR 选定 PaddleOCR 3.7.0 / PaddlePaddle 3.3.1 为中文/版面主路径，RapidOCR ONNX 1.4.4 为轻量回退；运行时导入已验证，但未预置模型或处理图片，仍是 B2 C0 candidate。
+- TTS 选定 edge-tts 7.2.8 为免费、无需购买 API Key 的在线 future candidate；它不是离线能力、不属于当前 Phase 9D 批准范围，任何合成必须显式用户触发并另行冻结隐私/保留/失败契约。
+- PPTX 正式文字链保持 `formal-pptx` parser；MarkItDown 0.1.7 + python-pptx 为辅助转换，图片/扫描幻灯片必须经未来 PaddleOCR draft-first 路径。选型和预检不授权正式系统调用，详细边界见 [`prompts/MEDIA_CAPABILITY_DECISION.md`](prompts/MEDIA_CAPABILITY_DECISION.md)。
+
 ### P2：产品验证通过后再做架构扩展
 
 - 多用户/认证授权。
