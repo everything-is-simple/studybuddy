@@ -197,7 +197,7 @@ Phase 9 原计划同时承载学习计划和全部 S1–S7，范围过大，不�
 
 ### 已选媒体候选（B0 C0；不改变 Formal 状态）
 
-- ASR 选定 `H:/WhisperCli` 的 whisper.cpp `large-v3-turbo` 为唯一 canonical runtime；本地中文 MP3 → TXT/SRT 准备 smoke 已成功，但合成 fixture、失败/超时/终止、清理和脱敏 C1 evidence 尚未完成。
+- ASR 已将历史候选 `H:/WhisperCli` 替换为官方 `H:/Whisper/cli/main.exe` + `H:/Whisper/Models/ggml-large-v3-turbo.bin`，并完成 Composer C1、Integration C2 与 Formal scoped contract；Formal 覆盖显式 provider 配置、TXT/SRT 解析、timeout/output limit、临时文件清理、draft-first、幂等和 backup/restore non-repair。真实 runtime 仅以公开 `jfk.wav` 在当前 Windows 主机验证，官方 release asset hash 仍为 `not_verified`，不扩大为通用 ASR real-pass。
 - OCR 选定 PaddleOCR 3.7.0 / PaddlePaddle 3.3.1 为中文/版面主路径，RapidOCR ONNX 1.4.4 为轻量回退；运行时导入已验证，但未预置模型或处理图片，仍是 B2 C0 candidate。
 - TTS 选定 edge-tts 7.2.8 为免费、无需购买 API Key 的在线 future candidate；它不是离线能力、不属于当前 Phase 9D 批准范围，任何合成必须显式用户触发并另行冻结隐私/保留/失败契约。
 - PPTX 正式文字链保持 `formal-pptx` parser；MarkItDown 0.1.7 + python-pptx 为辅助转换，图片/扫描幻灯片必须经未来 PaddleOCR draft-first 路径。选型和预检不授权正式系统调用，详细边界见 [`prompts/MEDIA_CAPABILITY_DECISION.md`](prompts/MEDIA_CAPABILITY_DECISION.md)。

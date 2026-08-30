@@ -11,7 +11,7 @@ from ..embedding import (
     EmbeddingProvider,
     FakeEmbeddingProvider,
 )
-from ._capture import DeterministicFakeCaptureProvider, LoopbackCaptureProvider
+from ._capture import DeterministicFakeCaptureProvider, LoopbackCaptureProvider, WhisperCliCaptureProvider
 from ._core import (
     FAKE_PROVIDER_ID,
     PROVIDER_NOT_CONFIGURED,
@@ -109,7 +109,8 @@ class ProviderRegistry:
             raise ProviderError("provider_invalid_config")
         raise ProviderError(PROVIDER_NOT_CONFIGURED)
 
-    def capture_provider(self) -> CaptureTranscriptionProvider:
+    def capture_provider(self, *, runtime_path: str | None = None, model_path: str | None = None,
+                         timeout_seconds: float = 120.0, max_output_bytes: int = 262144) -> CaptureTranscriptionProvider:
         if self.provider_id in {FAKE_PROVIDER_ID, None, ""}:
             if self.model_id not in (None, "", DeterministicFakeCaptureProvider.model_id):
                 raise ProviderError("transcription_provider_not_configured")
@@ -118,6 +119,11 @@ class ProviderRegistry:
             if self.model_id not in (None, "", LoopbackCaptureProvider.model_id):
                 raise ProviderError("transcription_provider_not_configured")
             return LoopbackCaptureProvider()
+        if self.provider_id == WhisperCliCaptureProvider.provider_id:
+            if not runtime_path or not model_path or self.model_id in (None, ""):
+                raise ProviderError("transcription_provider_not_configured")
+            return WhisperCliCaptureProvider(runtime_path, model_path, model_id=str(self.model_id),
+                                             timeout_seconds=timeout_seconds, max_output_bytes=max_output_bytes)
         raise ProviderError("transcription_provider_not_configured")
 
     def embedding_provider(self, *, model_revision: str = "1", base_url: str | None = None, api_key: str | None = None,

@@ -27,6 +27,10 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
 DEFAULT_TASK_MAX_CONCURRENCY = 1
 DEFAULT_LOG_LEVEL = "INFO"
+DEFAULT_ASR_PROVIDER = None
+DEFAULT_ASR_MODEL = "ggml-large-v3-turbo"
+DEFAULT_ASR_TIMEOUT_SECONDS = 120.0
+DEFAULT_ASR_MAX_OUTPUT_BYTES = 262144
 
 
 @dataclass(frozen=True)
@@ -70,6 +74,12 @@ class AppConfig:
     log_level: str = DEFAULT_LOG_LEVEL
     backup_root: Path | None = None
     demo_mode: bool = False
+    asr_provider_id: str | None = DEFAULT_ASR_PROVIDER
+    asr_model_id: str | None = DEFAULT_ASR_MODEL
+    asr_runtime_path: Path | None = None
+    asr_model_path: Path | None = None
+    asr_timeout_seconds: float = DEFAULT_ASR_TIMEOUT_SECONDS
+    asr_max_output_bytes: int = DEFAULT_ASR_MAX_OUTPUT_BYTES
 
     @property
     def originals_root(self) -> Path:
@@ -226,4 +236,10 @@ def config_from_environment() -> AppConfig:
         log_level=_env_log_level(),
         backup_root=Path(os.environ["STUDYBUDDY_BACKUP_ROOT"]) if os.environ.get("STUDYBUDDY_BACKUP_ROOT") else None,
         demo_mode=demo_mode,
+        asr_provider_id=os.environ.get("STUDYBUDDY_ASR_PROVIDER") or DEFAULT_ASR_PROVIDER,
+        asr_model_id=os.environ.get("STUDYBUDDY_ASR_MODEL") or DEFAULT_ASR_MODEL,
+        asr_runtime_path=Path(os.environ["STUDYBUDDY_ASR_RUNTIME"]) if os.environ.get("STUDYBUDDY_ASR_RUNTIME") else None,
+        asr_model_path=Path(os.environ["STUDYBUDDY_ASR_MODEL_PATH"]) if os.environ.get("STUDYBUDDY_ASR_MODEL_PATH") else None,
+        asr_timeout_seconds=_env_float("STUDYBUDDY_ASR_TIMEOUT_SECONDS", DEFAULT_ASR_TIMEOUT_SECONDS, minimum=0.1, maximum=600.0),
+        asr_max_output_bytes=_env_int("STUDYBUDDY_ASR_MAX_OUTPUT_BYTES", DEFAULT_ASR_MAX_OUTPUT_BYTES, minimum=1, maximum=16 * 1024 * 1024),
     )
