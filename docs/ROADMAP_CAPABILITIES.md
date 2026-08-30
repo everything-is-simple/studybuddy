@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B0 governance scaffolded`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，候选 smoke 与后续 B1-B4/D0-D1 门禁仍待执行。
+> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B0 ASR C1 partial/pass / Integration pending`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 已有精确候选的 C1 smoke 证据，其余候选仍在 researching；Integration 与后续 B1-B4/D0-D1 门禁仍待执行。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -225,14 +225,14 @@ backend/app/
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
 6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3-2 通过后执行的首批页面拆分已完成：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
-8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `421 passed, 2 skipped`、browser `126 passed, 3 skipped`；视觉任务未改变 API 或业务行为。
+8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `426 passed, 2 skipped`、browser `130 passed, 3 skipped`；视觉任务未改变 API 或业务行为。
 
 **通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表 `legacy_only`/`not_exposed`/`a3_pages` 能力已迁移；A3-PAGES/A3-VISUAL 仍按后续任务执行。
 
 ### 后续前端能力切片（A3-VISUAL 之后，按顺序）
 
-1. **Practice workflow**：第二阶段已完成 scoped closeout，第三阶段已完成现状审计与正式契约冻结；推荐 API/数据契约已独立冻结，尚未实现。契约 `frontend-practice-workflow-contract.md` 已更新；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、practice/review 导航，以及 review 详情、feedback、review、mark-mistake、redo、archive 操作。`browser_practice_workflow.spec.js` 当前为 `7 passed`；完整 backend `426 passed, 2 skipped`，完整 browser `130 passed, 3 skipped`；服务生命周期已串行收口。第三阶段正式契约见 `docs/prompts/PHASE_PRACTICE_WORKFLOW_PHASE3_AUDIT_AND_CONTRACT.md`，推荐 API/数据契约见 `docs/prompts/PHASE_PRACTICE_RECOMMENDATION_API_CONTRACT.md`。仍不扩大为真实 Provider 或全局 production `real-pass`。不得机械复制 `/legacy`，也不改变 API 语义。
-2. **Practice workflow 第三阶段需求审计/契约冻结**：先审计现有 practice/exercise/attempt/review 数据与 API，冻结自适应出题、间隔重复、人工简答复核的边界、状态机、隐私、幂等和 source lifecycle；未完成契约冻结前不得改 schema/API 或实现算法。
+1. **Practice workflow**：第二阶段已完成 scoped closeout，第三阶段已完成现状审计与正式契约冻结；推荐 API/数据契约已独立冻结并完成实现。契约 `frontend-practice-workflow-contract.md` 已更新；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、practice/review 导航，以及 review 详情、feedback、review、mark-mistake、redo、archive 操作。`browser_practice_workflow.spec.js` 当前为 `7 passed`；完整 backend `426 passed, 2 skipped`，完整 browser `130 passed, 3 skipped`；推荐 API/browser evidence 和服务生命周期均已串行收口。第三阶段正式契约见 `docs/prompts/PHASE_PRACTICE_WORKFLOW_PHASE3_AUDIT_AND_CONTRACT.md`，推荐 API/数据契约见 `docs/prompts/PHASE_PRACTICE_RECOMMENDATION_API_CONTRACT.md`。仍不扩大为真实 Provider 或全局 production `real-pass`。不得机械复制 `/legacy`，也不改变 API 语义。
+2. **Practice workflow 第三阶段需求审计/契约冻结**：已完成 practice/exercise/attempt/review 数据与 API 审计，并冻结自适应出题、间隔重复、人工简答复核的边界、状态机、隐私、幂等和 source lifecycle；推荐 API 已按独立契约实现，后续 schedule/算法扩展仍需单独立项。
 3. **B3 reports/export/audit**：在 B3 gate 后扩展 `reports.html` 的脱敏导出和审计工作区；维持 report projection、`delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍属于 B4。
 4. **Provider 配置写入**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在后端形成安全写入/验证契约后单独立项；浏览器不得保存、回显或持久化密钥，且必须具备脱敏 connection-test failure 和独立 browser evidence。
 5. **`legacy_only` / `not_exposed`**：以 `docs/frontend-static-capability-matrix.md` 为来源逐项立项。`legacy_only` 需独立页面/路径和 browser evidence；`not_exposed` 在存在安全公共契约前保持不暴露，不得用 mock 伪造成功。
@@ -248,7 +248,7 @@ backend/app/
 3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
 4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
 
-**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；9 个 catalog 候选仍保持 `researching`，独立 C1 smoke 尚未通过。C0 选型已冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`：`H:\WhisperCli`/whisper.cpp `large-v3-turbo` 是唯一 ASR runtime；PaddleOCR 是中文/版面主 OCR，RapidOCR ONNX 是轻量回退，Tesseract 仅兼容后备；PPTX 采用 formal-pptx 原生文字 → MarkItDown/python-pptx 辅助 → 图片页 PaddleOCR 三层路径；edge-tts 是免费在线、显式用户操作的 TTS 候选，未进入当前 9D 业务范围。已知本机 CLI/运行时/PPTX 预检不提升 C1/C2/Formal 状态。
+**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；ASR 选定候选已达到 `smoke_passed`，其余 8 个 catalog 候选仍保持 `researching`；因此当前结论是 ASR C1 partial/pass，Integration pending。OCR、报告和外发独立 C1 smoke 尚未通过。C0 选型已冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`：`H:\WhisperCli`/whisper.cpp `large-v3-turbo` 是唯一 ASR runtime；PaddleOCR 是中文/版面主 OCR，RapidOCR ONNX 是轻量回退，Tesseract 仅兼容后备；PPTX 采用 formal-pptx 原生文字 → MarkItDown/python-pptx 辅助 → 图片页 PaddleOCR 三层路径；edge-tts 是免费在线、显式用户操作的 TTS 候选，未进入当前 9D 业务范围。ASR C1 evidence 见 `H:\studybuddy-composer\results\asr-whisper-cpp\c1-smoke.json`；已知本机 CLI/运行时/PPTX 预检不提升 C2/Formal 状态。
 
 **通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
 
