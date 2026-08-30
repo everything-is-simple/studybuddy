@@ -1,6 +1,6 @@
 # Practice Workflow 第二阶段验收证据
 
-> 状态：`scoped-browser-pass / 2026-08-30`
+> 状态：`scoped-closeout / 2026-08-30`
 
 ## 范围
 
@@ -36,7 +36,7 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/ -q
 422 passed, 2 skipped
 ```
 
-完整 browser 本轮运行结果：`124 passed, 3 skipped, 3 failed`（130 项）。失败为既有测试环境时序/服务生命周期问题，涉及 formal file import、material search、Phase 9B rhythm、Phase 9C legacy workspace；Practice 独立静态页面 focused suite 为 `7 passed`。因此不把本轮完整 browser 运行宣称为全量 real-pass。
+完整 browser 最终运行结果：`127 passed, 3 skipped`（130 项）。4 个涉及服务重启/停止的测试已通过串行生命周期修复收口：`browser_file_import.spec.js`、`browser_material_search.spec.js`、`browser_phase9b.spec.js`、`browser_phase9c.spec.js`。Practice 独立静态页面 focused suite 为 `7 passed`。3 个 skip 均为 opt-in real-provider browser smoke；该结论仍仅为本地限定范围 scoped closeout，不是全量 production real-pass。
 
 契约审计：
 
@@ -59,4 +59,4 @@ C:\miniconda\py310\python.exe -m pytest backend/tests/ -q
 - 系统级 screen reader；
 - 极端长内容和长时稳定性；
 - 后台 worker、流式输出、多进程和多用户部署；
-- 自适应出题、间隔重复、人工简答复核等后续业务能力。
+- 自适应出题、间隔重复、人工简答复核等后续业务能力；这些能力进入 Practice 第三阶段需求审计/契约冻结，尚未实现。
