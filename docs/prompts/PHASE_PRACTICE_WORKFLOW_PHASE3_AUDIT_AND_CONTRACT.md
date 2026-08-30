@@ -130,7 +130,7 @@ open → in_review → fixed → reopened
 6. Provider 不得绕过服务端候选过滤或自行决定不可审计的题目；
 7. 无候选、来源失效、数据不足时返回安全 empty/blocked 状态，不伪造推荐成功。
 
-本阶段不实现推荐 endpoint 或算法。
+本阶段不实现推荐 endpoint 或算法。推荐 API 的独立契约已冻结于 `docs/prompts/PHASE_PRACTICE_RECOMMENDATION_API_CONTRACT.md`。
 
 ### 4.2 间隔重复
 
