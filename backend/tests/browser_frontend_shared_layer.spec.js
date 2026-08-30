@@ -32,6 +32,29 @@ test('shared layer loads tokens and removes HTML inline styles', async ({ page }
   await expect(page.locator('dialog.dialog.dialog-wide')).toHaveCount(1);
 });
 
+test('shared visual system has no page-local styles and exposes neutral-modern focus and touch targets', async ({ page }) => {
+  await page.goto(`${BASE}/app/materials.html`);
+  const summary = await page.evaluate(() => {
+    const css = getComputedStyle(document.documentElement);
+    const button = document.querySelector('.btn');
+    const before = getComputedStyle(document.querySelector('[data-system-status]'), '::before');
+    return {
+      localStyles: document.querySelectorAll('style').length,
+      accent: css.getPropertyValue('--accent').trim(),
+      radius: css.getPropertyValue('--radius-lg').trim(),
+      buttonHeight: button.getBoundingClientRect().height,
+      statusDot: before.width,
+    };
+  });
+  expect(summary.localStyles).toBe(0);
+  expect(summary.accent).toBe('#2f6feb');
+  expect(summary.radius).toBe('12px');
+  expect(summary.buttonHeight).toBeGreaterThanOrEqual(44);
+  expect(parseFloat(summary.statusDot)).toBeGreaterThanOrEqual(7);
+  await page.locator('#apply-filters').focus();
+  await expect(page.locator('#apply-filters')).toHaveCSS('box-shadow', /47, 111, 235/);
+});
+
 test('mobile navigation toggle is keyboard reachable and has correct ARIA state', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${BASE}/app/materials.html`);
