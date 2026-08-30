@@ -26,6 +26,17 @@ def register_routes(app, context: dict[str, object]) -> None:
             "cram_session_scope_conflict", "cram_scope_conflict",
         })
 
+    @app.get("/api/study/practice-recommendations")
+    def study_practice_recommendations(limit: int = 10, weak_point: str | None = None) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return recommend_practice_exercises(connection, project_id=app.state.config.project_id,
+                                                    limit=limit, weak_point=weak_point)
+        except ValueError as error:
+            raise _phase9c_error(error, default="practice_recommendation_failed") from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="practice_recommendation_failed") from None
+
     @app.get("/api/study/practice-sessions")
     def study_practice_sessions(status: str | None = None) -> list[dict[str, object]]:
         try:
