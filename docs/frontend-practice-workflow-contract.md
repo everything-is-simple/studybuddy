@@ -1,7 +1,9 @@
 # Practice Workflow 前端行为契约
 
-> 状态：`frozen / user-approved`
+> 状态：`phase-two-implemented / scoped-browser-pass`
 > 更新：2026-08-30
+>
+> 第二阶段已补齐 review.html 的详情、feedback、review、mark-mistake、redo、archive 操作；现有 API 语义不变，专项 Browser evidence 为 7 passed。
 > 范围：仅冻结既有 Practice API 的前端行为，不新增 endpoint、schema、migration、错误码或后端业务语义。
 
 ## 1. 依据与边界
