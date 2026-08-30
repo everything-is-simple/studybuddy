@@ -126,13 +126,13 @@ python backend/scripts/check-source-size.py
 ```bash
 C:\miniconda\py310\python.exe -m pytest backend/tests/
 ```
-✅ 通过：414 passed, 2 skipped（2 个真实 Provider smoke 默认跳过）
+✅ 历史 A4 快照：414 passed, 2 skipped（2 个真实 Provider smoke 默认跳过）；当前完整 backend 基线为 421 passed, 2 skipped
 
 ### 浏览器验证
 - ✅ `/app/settings-provider.html` — 200 OK（本轮本地 HTTP 合约检查）
 - ✅ `/app/capture.html` — 200 OK（本轮本地 HTTP 合约检查）
 - ✅ `/app/tasks.html` — 200 OK（本轮本地 HTTP 合约检查）
-- ✅ Chromium 完整回归：94 项中 91 passed、3 skipped；3 个 skip 均为 opt-in 真实 Provider UI smoke。A4 专项 `browser_a4.spec.js`：3 passed。
+- 历史 A4 closeout snapshot：94 项中 91 passed、3 skipped；3 个 skip 均为 opt-in 真实 Provider UI smoke。A4 专项 `browser_a4.spec.js`：3 passed。当前完整 browser 基线为 129 项中 126 passed、3 skipped。
 
 ### API 集成验证
 - ✅ `/api/ai/capabilities` — 正确显示 Provider 状态

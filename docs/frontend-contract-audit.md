@@ -1,6 +1,6 @@
 # StudyBuddy 前端契约审计清单
 
-> 状态：`in_progress / A3-FC`
+> 状态：`completed / scoped browser-pass`
 > 更新：2026-08-30
 > 目的：在不改变后端 API、数据库 schema 或能力边界的前提下，收口原生多页前端的路由、字段、状态、错误、响应式、键盘和隐私契约。
 
@@ -30,8 +30,8 @@
 | 笔记 | `notes.html` | 列表与详情暂合并 | 拆 `note-detail.html` |
 | 卡片 | `cards.html` | 已有限定范围页面 | 统一状态 token 和来源状态 |
 | 练习 | `exercises.html` | 已有练习集页面 | 与 practice session 边界对齐 |
-| 练习会话 | — | 缺少独立页面 | 新建 `practice-session.html` |
-| 练习结果 | — | 缺少独立页面 | 新建 `practice-result.html` |
+| 练习会话 | `practice-session.html` | 独立页面已完成首批拆分 | 继续补齐后续 review/feedback 行为 |
+| 练习结果 | `practice-result.html` | 独立页面已完成首批拆分 | 保持 nested summary 与隐私边界 |
 | 复盘 | `practice.html` | 会话和错题暂合并 | 新建 `review.html`，保留回退入口 |
 | 课堂采集 | `capture.html` | 已有 fake/loopback 限定路径 | 审计上传/转写/确认状态 |
 | 报告 | `classroom.html` 内嵌区域 | 不是独立产品页面 | 新建 `reports.html` |
@@ -48,7 +48,7 @@
 - [x] A3-FC-1 首轮自动扫描已发现并修复 capture 直连 `fetch`、材料上传和 Q&A 写操作缺少 retry 文案；Q&A 已改用正式的材料级 index 路由。
 - [x] 为可取消请求统一接入 `AbortSignal`：所有有 API 的页面使用 `setPageScope()`，`api.js` 自动追踪请求，`pagehide` 统一取消；上下文切换后的渲染正确性仍由 A3-FC-3 验证。
 - [x] `shell.js` 补齐报告、任务、系统设置入口，并实现可访问的移动端“更多”导航。
-- [x] 新增 `css/tokens.css` 作为唯一设计 token 来源，所有 14 个静态页面已加载；`app.css` 不再重复声明 token。
+- [x] 新增 `css/tokens.css` 作为唯一设计 token 来源，所有 21 个正式静态页面已加载；`app.css` 不再重复声明 token。
 - [x] `app.css` 补齐当前页面已使用的状态 token，消除未定义 CSS 变量。
 - [x] 清理 HTML `style=""`；将通用间距、dialog、隐藏 input、inline code、列表缩进和 skeleton 尺寸迁入共享 CSS。业务页面仍保留局部布局 CSS，完整组件视觉统一属于 A3-VISUAL。
 - [x] 新增 `browser_frontend_shared_layer.spec.js`，验证 tokens、无 HTML inline style、移动端 ARIA 导航、自动幂等头和请求取消。
@@ -58,14 +58,14 @@
 - [x] 用脚本提取静态页面 endpoint，与 FastAPI route inventory 做存在性比对；脚本：`backend/scripts/audit-frontend-contract.py`。
 - [x] 对关键资源建立字段/状态 fixture：capture、plan、note、practice、report、task。
 - [x] 对每个写操作提供统一 Content-Type、Idempotency-Key、失败重试和重复点击基础策略；核心三页已完成逐页回归。
-- [ ] **A3-FC-3 第二轮**：统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案，并完成所有现有页面的剩余 `sbState` 迁移；学习页面首批 lifecycle/source 状态矩阵已通过，采集/报告/系统页面仍待补齐。
+- [x] **A3-FC-3-2**：已统一 `source_status`、`verification_status`、`pending_review`、`uncertain`、`stale` 等状态的显示文案，并完成正式页面的 `sbState` 迁移；采集/报告/系统页面的 lifecycle/source 矩阵已纳入专项证据。
 - [x] 删除核心三页旧字段名和旧状态判断；禁止页面兼容未知字段而掩盖契约漂移。
-- [ ] **A3-FC-3 第二轮**：为每个现有页面补齐 stale/failure/source-lifecycle、360–1920 宽度、键盘与隐私 DOM 浏览器矩阵；学习页面的 360–1920 与安全失败矩阵已通过，采集/报告/系统页面仍待补齐；这是关闭 A3-FC 的唯一剩余行为门禁。
+- [x] **A3-FC-3-2**：正式页面已补齐 stale/failure/source-lifecycle、360–1920 宽度、键盘与隐私 DOM 浏览器矩阵；`audit-frontend-contract.py --strict` 与专项治理测试通过。
 
 ### 后续阶段边界
 
-- **A3-PAGES：** `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html` 的正式任务页拆分及其独立回归。现有混合页面在替代页具备回退证据前继续可用。
-- **A3-VISUAL：** 所有页面使用 Neutral Modern tokens；将剩余局部 CSS 收敛为 card、button、badge、notice、dialog、focus、grid 组件；完成 360–1920 视觉和触控命中区验收。它不属于 A3-FC-3 的行为收口。
+- **A3-PAGES：** `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html` 的正式任务页拆分及其独立回归。现有混合页面继续作为兼容入口；后续能力仍须遵守 B0-B4 门禁。
+- **A3-VISUAL（已完成声明范围）：** 所有正式 `/app` 页面使用 Neutral Modern tokens；共享 card、button、badge、notice、dialog、focus、grid 组件和 360–1920 视觉/触控验收已通过。它不扩大任何 deferred capability。
 
 ## 4. 静态页能力冻结
 
@@ -77,17 +77,17 @@
 
 - **A3-FC-1（本轮完成首版）：** 自动扫描 endpoint、直接 fetch、旧字段/状态、CSS token、写操作 retry；建立资源状态 fixture 和自动化测试。
 - **A3-FC-2（共享层）：** 收口 `api.js`、`shell.js`、`app.css`，包括 AbortController、幂等策略、统一状态组件、移动端“更多”导航和共享视觉 token。
-- **A3-FC-3（逐页）：** 首轮已完成全部现有静态页面的 response/状态/错误/安全审计；第二轮只完成剩余状态映射和浏览器行为矩阵，关闭前不拆新页面。
-- **A3-PAGES（依赖 A3-FC-3 第二轮）：** 拆分正式页面，不再把新功能混入旧页面。
-- **A3-VISUAL（依赖 A3-PAGES）：** 只做 Neutral Modern 视觉统一和剩余局部 CSS 收敛，不改变 API 或业务行为。
+- **A3-FC-3-2（逐页）：** 已完成全部正式静态页面的 response/状态/错误/安全审计与 browser 矩阵；当前 A3-FC 已按声明范围关闭。
+- **A3-PAGES（已完成首批声明范围）：** 拆分正式页面，不再把新功能混入旧页面；后续功能仍须遵守 B0-B4 门禁。
+- **A3-VISUAL（已完成声明范围）：** Neutral Modern 视觉统一、共享组件收敛和 360–1920 视觉验收已通过，不改变 API 或业务行为。
 
 ## 6. 执行顺序与门禁
 
 1. **A3-FC-1：** 完成页面/API/字段/状态/错误审计表和自动化 route 检查。
 2. **A3-FC-2：** 完成 `api.js`、`shell.js`、`app.css` 共享层收口及 focused tests。
 3. **A3-FC-3：** 首轮已完成全部现有页面；第二轮按领域补齐状态、stale/failure/source-lifecycle、360–1920、键盘和隐私矩阵，完成后才关闭 A3-FC。
-4. **A3-PAGES：** A3-FC-3 第二轮通过后按任务拆分缺失页面，每页单独接入正式 API，不新增临时端点。
-5. **A3-VISUAL：** A3-PAGES 通过后完成 Neutral Modern 视觉统一和局部 CSS 收敛。
+4. **A3-PAGES：** 已按任务拆分首批缺失页面，每页单独接入正式 API，不新增临时端点。
+5. **A3-VISUAL：** 已完成 Neutral Modern 视觉统一和局部 CSS 收敛；后续不扩大为 deferred capability。
 6. **收口：** 运行完整 backend、完整 browser、源码尺寸和 diff 检查，并同步 `frontend-plan.md`、`TODO.md`、`ROADMAP_CAPABILITIES.md`、`STATUS.md`。
 
 ## 7. 明确不在本阶段

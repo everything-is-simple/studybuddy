@@ -52,9 +52,11 @@
 
 ## A3-FC-3-2 收口要求
 
+> 当前完整 browser 基线（2026-08-30）：126 passed, 3 skipped / 129 项；skip 均为 opt-in 真实 Provider UI smoke。
+
 ### 全静态页面基线
 
-所有 14 个当前静态页面必须具有或继承以下证据：
+所有 21 个当前正式静态页面必须具有或继承以下证据：
 
 - 加载、空、失败状态；
 - 适用页面的刷新/retry；
@@ -91,7 +93,7 @@ pending_review / uncertain
 
 1. 本矩阵中的每项都有 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages` 的明确分类；
 2. 自动契约审计为 0 findings；
-3. 14 个现有静态页面的 loading/empty/failed/privacy/keyboard 基线和 360–1920 矩阵通过；
+3. 21 个现有正式静态页面的 loading/empty/failed/privacy/keyboard 基线和 360–1920 矩阵通过；
 4. 适用页面具备来源生命周期读取证据；
 5. 完整 browser/backend suite、source-size 和 diff 检查通过；
 6. `TODO.md`、`ROADMAP_CAPABILITIES.md`、`frontend-plan.md`、`STATUS.md` 同步真实状态。
