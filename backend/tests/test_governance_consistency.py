@@ -212,6 +212,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "frontend-contract-audit-report.md",
         "frontend-static-capability-matrix.md",
         "frontend-static-failure-retry-matrix.md",
+        "frontend-practice-workflow-contract.md",
         "component-adoption-audit-2026-08-27.md",
         "PHASE_ROADMAP.md",
         "PROJECT_PROGRESS_REPORT.md",

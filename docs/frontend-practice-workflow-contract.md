@@ -180,10 +180,10 @@ redo 失败，可重试
 |---|---|
 | 读取 | session detail、result、mistake list/detail 成功路径 |
 | 状态 | draft、active、finished、expired、archived、source unavailable |
-| 写操作 | start、submit、finish、review、mark-mistake、feedback、redo、archive |
+| 写操作 | start、submit、finish、review、mark-mistake、feedback、redo、archive；当前页面已实现 start/submit/finish/redo/archive，review/mark-mistake/feedback 仍待独立控件迁移 |
 | 失败 | 404、409、5xx、malformed response、network abort |
 | 重试 | failed → retry → ready；按钮恢复可用 |
-| 幂等 | submit duplicate click、same key replay、不同提交不串结果 |
+| 幂等 | submit duplicate click、same key replay、不同提交不串结果；当前浏览器证据覆盖 duplicate-click single request，API 层既有测试覆盖 replay/mismatch |
 | stale | session/question/result/review 切换后旧响应不渲染 |
 | 隐私 | DOM/URL/日志不含答案 key、路径、SQL、traceback、secret/raw response |
 | 可用性 | 360/390/430/600/768/820/1024/1366/1440/1920、键盘、可见焦点 |
