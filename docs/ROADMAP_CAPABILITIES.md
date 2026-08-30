@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL next`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前先执行 A3-FC 前端契约与架构收口，再推进页面拆分和视觉迁移。
+> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前先执行 A3-FC 前端契约与架构收口，再推进页面拆分和视觉迁移。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -225,7 +225,7 @@ backend/app/
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
 6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3 第二轮通过后执行的首批页面拆分已完成：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
-8. 页面拆分和行为门禁已通过（backend `421 passed, 2 skipped`；browser `117 passed, 3 skipped`）；下一步由 A3-VISUAL 收敛剩余局部 CSS，并完成 Neutral Modern card/button/badge/notice/dialog/focus/grid 与 360–1920 视觉矩阵；视觉任务不得改变 API 或业务行为。
+8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前基线为 backend `421 passed, 2 skipped`、browser `118 passed, 3 skipped`；视觉任务未改变 API 或业务行为。
 
 **通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表 `legacy_only`/`not_exposed`/`a3_pages` 能力已迁移；A3-PAGES/A3-VISUAL 仍按后续任务执行。
 
