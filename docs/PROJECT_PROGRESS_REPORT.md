@@ -4,7 +4,7 @@
 > 
 > 本报告依据当前正式代码、测试证据和项目决策文档整理。`real-pass` 只表示对应局部用户路径和验收证据通过，不代表整个 StudyBuddy 已达到生产级或全局 `real-pass`。
 >
-> **当前完整回归基线（2026-08-30）**：后端 `421 passed, 2 skipped`；浏览器 `126 passed, 3 skipped`（共 129 项）；所有 skip 均为默认关闭的 opt-in 真实 Provider smoke，不计为失败。
+> **当前完整回归基线（2026-08-30）**：后端 `422 passed, 2 skipped`；浏览器 `126 passed, 3 skipped`（共 129 项）；所有 skip 均为默认关闭的 opt-in 真实 Provider smoke，不计为失败。
 
 ## 一、当前总进度
 
@@ -27,7 +27,7 @@ StudyBuddy 的**本地单进程文件材料基础设施 v1 已基本完工**，�
 
 ### 工程结构里程碑：A2.X 已完成
 
-A2.1-A2.4 已完成行为保持型模块化拆分。当前实现边界为：`backend/app/repositories/` 承载 repository 域模块并由 `repository.py` 提供兼容入口；`backend/app/migrations/runner.py` 保留执行引擎和 registry，版本实现位于相邻 `_vNN_*.py`；`backend/app/providers/` 承载 provider 类型、helpers、fake/capture/OpenAI adapters 与 registry；`backend/app/main.py` 为兼容 façade，页面模板位于 `backend/app/templates/index.html`。四个超限核心文件的拆分、公共 API 兼容性和 schema v13 已分别有历史证据；当前完整 backend 回归为 421 passed / 2 skipped；完整 browser 回归为 126 passed / 3 skipped；本轮 unrestricted 执行已通过全部 symlink 场景。详见 [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)。
+A2.1-A2.4 已完成行为保持型模块化拆分。当前实现边界为：`backend/app/repositories/` 承载 repository 域模块并由 `repository.py` 提供兼容入口；`backend/app/migrations/runner.py` 保留执行引擎和 registry，版本实现位于相邻 `_vNN_*.py`；`backend/app/providers/` 承载 provider 类型、helpers、fake/capture/OpenAI adapters 与 registry；`backend/app/main.py` 为兼容 façade，页面模板位于 `backend/app/templates/index.html`。四个超限核心文件的拆分、公共 API 兼容性和 schema v13 已分别有历史证据；当前完整 backend 回归为 422 passed / 2 skipped；完整 browser 回归为 126 passed / 3 skipped；本轮 unrestricted 执行已通过全部 symlink 场景。详见 [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)。
 
 > 下列状态仅表示该阶段当前约定的第一版范围已经交付，或其设计已经沉淀；不表示对应领域已最终完成。特别是可靠性、备份恢复和 AI 架构均仍有后续 Phase。
 
