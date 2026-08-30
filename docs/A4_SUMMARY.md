@@ -181,7 +181,7 @@ A4 完成后，按照 ROADMAP 顺序推进：
 - **新增页面**: 3 个
 - **新增代码**: ~29 KB
 - **API 端点**: 6 个已集成
-- **测试覆盖**: 后端 414 passed, 2 skipped；浏览器 91 passed, 3 skipped（共 94 项，含 A4 专项；3 个 skip 均为 opt-in 真实 Provider UI smoke）
+- **历史 A4 测试快照**: 后端 414 passed, 2 skipped；浏览器 91 passed, 3 skipped（共 94 项，含 A4 专项；3 个 skip 均为 opt-in 真实 Provider UI smoke）。当前完整基线：backend 421 passed, 2 skipped；browser 126 passed, 3 skipped（共 129 项）
 - **设计一致性**: 100% 遵循 Neutral Modern
 
 ## ✨ 亮点

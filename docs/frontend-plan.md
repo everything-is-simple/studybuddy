@@ -2,9 +2,9 @@
 
 > **文档性质**：这是 StudyBuddy 前端的产品设计、信息架构、低保真 draft 草图、接口映射与实施门禁，不是已完成的前端实现声明。
 >
-> **事实基线（2026-08-30；A3-1 已更新）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 413 passed、2 skipped（默认关闭的真实 Provider smoke）。A2.X（repository/main/migrations/providers 的行为保持型拆分）已完成，Phase 9A/9B/9C 已在各自限定范围完成，Phase 9D 的部分立项范围已 scoped closeout，Phase 10 Gate J 已通过。A3-1 已建立 `backend/app/static/` 并由 app factory 挂载到 `/app`；旧根路由 `/` 仍由 `backend/app/api/web.py` 返回内嵌 `templates/index.html`，处于迁移兼容期。
+> **事实基线（2026-08-30；A3-1 已更新）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 421 passed、2 skipped；完整 browser 基线为 126 passed、3 skipped（默认关闭的真实 Provider smoke）。A2.X（repository/main/migrations/providers 的行为保持型拆分）已完成，Phase 9A/9B/9C 已在各自限定范围完成，Phase 9D 的部分立项范围已 scoped closeout，Phase 10 Gate J 已通过。A3-1 已建立 `backend/app/static/` 并由 app factory 挂载到 `/app`；旧根路由 `/` 已重定向到 `/app/today.html`，`/legacy` 保留内嵌 `templates/index.html` 兼容入口。
 >
-> **状态判定优先级**：实施状态、测试基线与支持边界以 `STATUS.md` 和 `TODO.md` 为准；`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 规定顺序和门禁；本计划只映射前端行为，不能提升任何后端能力等级。整体完成度百分比仅是阶段性估算，现有历史文档存在 55%–60% 与约 65% 两种口径，A3 实施不依赖该数字。
+> **状态判定优先级**：实施状态、测试基线与支持边界以 `STATUS.md` 和 `TODO.md` 为准；`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 规定顺序和门禁；本计划只映射前端行为，不能提升任何后端能力等级。整体完成度百分比仅是阶段性估算，当前统一阶段性估算为约 65%，A3 实施不依赖该数字；旧 55%–60% 仅属于历史快照。
 
 ## 0. 本次修订结论
 
@@ -44,15 +44,15 @@
 
 | 最近变化 | 当前事实 | 前端动作 |
 |---|---|---|
-| A2.X 收口 | 4 个核心大文件已完成行为保持型拆分；`main.py` 为兼容 façade，模板已移到 `backend/app/templates/index.html`；schema v13、413 passed/2 skipped | A3 只处理正式静态资源与前端壳，不再把后端大文件拆分算作前端工作 |
+| A2.X 收口 | 4 个核心大文件已完成行为保持型拆分；`main.py` 为兼容 façade，模板已移到 `backend/app/templates/index.html`；schema v13、backend 421 passed/2 skipped、browser 126 passed/3 skipped | A3 只处理正式静态资源与前端壳，不再把后端大文件拆分算作前端工作 |
 | Phase 7 收口 | embedding/indexing/retrieval mode 已实现；Mistral `mistral-embed` 仅在精确 gateway/model 配置通过真实 gate | 前端显示 lexical/vector/hybrid、索引状态和失败重试；verified 标签只绑定精确配置，不写成通用可用 |
 | Phase 8 收口 | Cards/Exercises 在 deterministic fake-provider、Chromium、backup/restore 范围完成 | 卡片/练习页面优先接入；真实 Provider generation 和 short-answer 人工复核仍显示受限状态 |
 | Phase 9A–9C 收口 | 计划/节奏/笔记、练习/错题/薄弱点/冲刺已有限定范围的 backend/API/UI/恢复证据 | 目标、计划、笔记、练习、复盘页面直接消费已冻结 API，并保留 draft/pending_review/source status |
 | Phase 9D scoped closeout | deterministic fake/loopback capture/transcription、确认后 S2 接入、脱敏报告、delivery off/dry-run、相关 API/UI/lifecycle/restore 已通过；真实 OCR/ASR 与 live delivery 未立项 | 课堂/报告页面立即迁移已验证 fake/loopback/dry-run 路径；真实动作由 capabilities 与 gate 状态禁用，不能显示“已发送”或“真实转写” |
 | Phase 10 Gate J | local v1 上线收口；只有显式 `embedding_index` task 可经 runner 执行，支持状态/进度/lease/retry/cancel/diagnostics | 设置/系统状态页接入 readiness、diagnostics、task 状态；Q&A、生成、OCR/ASR、报告、delivery 不得误标后台任务 |
-| A3 尚未开始 | 仍是单页 workspace，无正式 static root/mount；目标拆屏尚不存在 | 先冻结现有行为回归，再建立唯一 static root 与独立页面；不得声称正式多页前端已交付 |
+| A3/A4 已完成声明范围 | `/app` 正式 static root、独立页面、共享层、Neutral Modern 与 A4 状态页已通过对应证据；Practice workflow 仅完成第一阶段 | 后续页面行为按已冻结 API 和 B0-B4/D0-D1 门禁推进；不得扩大未验证能力 |
 
-**进度结论**：后端与限定范围的产品能力已明显领先于正式前端架构。前端当前不是“等待后端完成”，而是“把已验证 API/UI 行为从内嵌 workspace 迁移到正式产品壳，同时为真实能力和未批准操作保留状态位”。整体完成度不作为本计划的实施门槛：`STATUS.md`/`TODO.md` 记为约 65%，而较早的阶段文档仍为 55%–60%；两者都不是测试通过率，也不是全局 `real-pass`。
+**进度结论**：后端与限定范围的产品能力已明显领先于正式前端架构。前端当前不是“等待后端完成”，而是“把已验证 API/UI 行为从内嵌 workspace 迁移到正式产品壳，同时为真实能力和未批准操作保留状态位”。整体完成度不作为本计划的实施门槛：`STATUS.md`/`TODO.md` 记为约 65%，旧阶段快照不再作为当前口径；该估算不是测试通过率，也不是全局 `real-pass`。
 
 ## 1. 产品目标与用户任务
 
@@ -60,11 +60,11 @@
 
 本节是当前实现快照，不是目标信息架构：
 
-- `/` 仍由 `backend/app/api/web.py` 直接返回内嵌 `INDEX_HTML`；A3-1 已确认正式 static root 为 `backend/app/static/`，由 app factory 以 `StaticFiles(directory=..., html=True)` 挂载到 `/app`。
-- 当前只有一个约 240 行 HTML 行结构、约 156 KB 的单页 workspace。页面同时包含材料导入/批量导入、搜索/筛选/分页、回收站、材料详情/下载/导出、Q&A、卡片与练习、学习计划与节奏、练习反馈/冲刺、资料笔记、课堂采集/转写确认、报告预览/导出/交付审计。
+- `/` 已由 `backend/app/api/web.py` 重定向至 `/app/today.html`；正式 static root 为 `backend/app/static/`，由 app factory 以 `StaticFiles(directory=..., html=True)` 挂载到 `/app`；`/legacy` 保留旧 UI 兼容入口。
+- 旧内嵌 workspace 仍保留完整历史行为，但正式 `/app/` 已提供 21 个静态页面；A3/A4 页面已按声明范围通过 browser/keyboard/narrow/privacy 契约。
 - 当前真实交互通过页面内 `fetch()` 调用后端 API；已保留重复提交保护、幂等键、过期响应保护、失败提示、重试入口、citation 定位、草稿确认/拒绝/归档和文件下载等行为。
 - 旧入口导航仍是同页锚点（材料、问答、卡片与练习、练习反馈、学习计划、资料笔记、课堂与报告），不是独立页面路由；A3-1 新增的 `/app/` 灰盒已提供今天、资料、材料详情、问答四个独立页面，但尚未替换旧入口，也没有任务中心、Provider 配置写入页或系统诊断页。
-- 当前样式仍是旧 workspace 的 system sans + 灰蓝色 raw hex 规则，与 Neutral Modern 的 token、组件、accent 使用约束尚未绑定。Neutral Modern 只能作为后续迁移目标，不能在当前产物状态中写成已完成。
+- 正式 `/app/` 页面已使用共享 `tokens.css`/`app.css` Neutral Modern 层；旧 `/legacy` 保持兼容，不将旧页面样式状态误写成正式视觉系统完成。
 - 当前课堂采集明确触发的是 `deterministic` 转写；报告页面明确展示脱敏快照，delivery 仅允许默认 off/allowlisted dry-run，live 仍固定拒绝。不得把这些 UI 存在误写成真实 ASR 或 live delivery 已通过。
 
 因此，后文出现“必须提供”“目标页面”“A3/A4/B0-B4/D0-D1”时，均表示按路线门禁推进的迁移目标；出现“当前 UI/当前产物”时，均以本节事实为准。迁移期间优先保留上述已有行为，再逐页迁移并补回归测试。
@@ -510,7 +510,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
 - [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 14 个静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项完成不代表 A3-PAGES/A3-VISUAL 完成。
 - [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
-- [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；完整 browser `117 passed, 3 skipped`，专项证据 `13 passed`。不代表报告导出/审计、练习写操作或 Provider 配置写入已迁移。
+- [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；历史 A3-PAGES gate 快照为 `117 passed, 3 skipped`，专项证据 `13 passed`；当前完整 browser 基线为 `126 passed, 3 skipped`。不代表报告导出/审计、练习写操作或 Provider 配置写入已迁移。
 - [x] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；Neutral Modern token、组件、响应式、焦点和状态视觉已统一，剩余局部 CSS 已收敛到共享样式。全部 21 个 `/app/*.html` 无局部 `<style>`；`browser_frontend_visual_matrix.spec.js` 覆盖 shared tokens、card、360/1920、触控目标和 focus ring（`2 passed`）。不得将此项扩大解释为 Provider 写入、报告导出/审计或练习写流程已完成。
 - [ ] **后续行为切片（A3-VISUAL 后）**：Practice workflow 第一阶段已完成：契约已冻结，`practice-session.html` 已覆盖公开题目、start/submit/finish、nested result、expired/source warning、retry/stale 安全边界，`practice-result.html` 使用真实 nested summary，`review.html` 提供安全来源/redo/archive 基线；专项 browser `6 passed`，完整 browser `126 passed, 3 skipped`。后续仍需独立补齐 review/mark-mistake/feedback 控件和更广端到端路径；reports export/audit 仅在 B3 gate 后，Provider 写入仅在安全后端契约获批后，`not_exposed` 不迁移也不伪造。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。

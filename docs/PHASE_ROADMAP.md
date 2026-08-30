@@ -1,13 +1,13 @@
 # StudyBuddy Phase 路线图与进度报告
 
-> 更新：2026-08-29（A4 页面已提交；当前后端基线已重新验证；浏览器本轮受 Chromium 启动权限限制）
+> 更新：2026-08-30（A3-PAGES/A3-VISUAL 与 B0 governance scaffold 已同步；backend/browser 全套回归已在本机验证）
 > 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `TODO.md` 为准。
 >
 > `real-pass` 只表示有真实用户路径和验收证据的局部能力通过，**不代表整个 StudyBuddy 已达到全局生产级 real-pass**。
 
 ## 基础设施真实状态
 
-基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`prompts/INFRASTRUCTURE_CLOSEOUT.md`](prompts/INFRASTRUCTURE_CLOSEOUT.md)。
+基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`prompts/INFRASTRUCTURE_CLOSEOUT.md`](prompts/INFRASTRUCTURE_CLOSEOUT.md)。当前完整回归基线为 backend 421 passed / 2 skipped、browser 126 passed / 3 skipped；skip 均为 opt-in 真实 Provider smoke。
 
 ## 总体进度
 
@@ -17,7 +17,7 @@
 | 文件材料管理 | 80%–85% | 当前最成熟，核心路径为局部 `real-pass` |
 | 前端体验 | 60%–70% | Materials、Q&A 和 Cards/Exercises 的受限工作区已有 Chromium 路径；不是完整产品前端 |
 | AI / 学习产品能力 | 40%–50% | Q&A、retrieval 和 Phase 8 fake-provider Cards/Exercises 闭环已完成；真实 Provider generation、计划和后台任务未完成 |
-| **项目整体（功能加权估算）** | **55%–60%** | 不是测试通过率，不能标记为全局 `real-pass` |
+| **项目整体（功能加权估算）** | **约 65%** | 当前统一阶段性估算；不是测试通过率，不能标记为全局 `real-pass` |
 
 ## 已交付能力与基础设施状态
 

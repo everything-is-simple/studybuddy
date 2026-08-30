@@ -2,7 +2,7 @@
 
 ## 当前入口与状态
 
-StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v13；Phase 9A/9B/9C 已在 deterministic fake-provider、Chromium、backup/restore 的明确范围内完成，Phase 9D 的 9D-0 部分立项范围已完成 scoped closeout：审计、正式领域契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、confirmed transcript → S2 ingestion、S6 脱敏报告、默认关闭的 allowlisted dry-run delivery backend、最小安全 API、Chromium workspace、source lifecycle + backup/restore 门禁均已验收。**Phase 10 已完成：StudyBuddy 已在明确的 local single-process / single-instance / SQLite / local-disk v1 支持范围内完成生产化和上线收口。** 系统仍不是全局 production `real-pass`。当前后端回归基线为 **414 passed, 2 skipped**（2 个真实 Provider smoke 默认跳过）；完整 Gate J evidence 见 [`docs/prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](docs/prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v13；Phase 9A/9B/9C 已在 deterministic fake-provider、Chromium、backup/restore 的明确范围内完成，Phase 9D 的 9D-0 部分立项范围已完成 scoped closeout：审计、正式领域契约、v12 migration、共享 repository/domain transaction、S7 deterministic fake/loopback capture/transcription、confirmed transcript → S2 ingestion、S6 脱敏报告、默认关闭的 allowlisted dry-run delivery backend、最小安全 API、Chromium workspace、source lifecycle + backup/restore 门禁均已验收。**Phase 10 已完成：StudyBuddy 已在明确的 local single-process / single-instance / SQLite / local-disk v1 支持范围内完成生产化和上线收口。** 系统仍不是全局 production `real-pass`。当前完整回归基线为 **backend 421 passed, 2 skipped；browser 126 passed, 3 skipped**（跳过项均为 opt-in 真实 Provider smoke）；完整 Gate J evidence 见 [`docs/prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](docs/prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 
 - 运行 local v1 API：`powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\start-studybuddy.ps1 -DataRoot <local-data-root> -Port 8787`；检查与停止分别使用 `health-studybuddy.ps1`、`stop-studybuddy.ps1`。`python -m backend.app serve` 是显式单进程入口（workers=1、reload=false）；应用工厂为 `backend.app.main:create_app`。开发期直接使用 Uvicorn reload 不属于 release runtime。
 - 运行 operator CLI：`/cygdrive/c/miniconda/py310/python -m backend.app`（入口实现：`backend/app/__main__.py` → `backend/app/cli.py`）；backup、verify、restore、schema 查询、`diagnostics`、`upgrade-preflight --data-root <root> --backup <verified-backup>` 和默认 dry-run 的 `rotate-backups` 均必须显式调用。
@@ -12,9 +12,9 @@ StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统
 
 **本地单机 v1 已完成生产化和上线收口**，范围严格限于 local single-process / single-instance / SQLite / local-disk：Phase 10 Gates A-J 已通过，release candidate 已在隔离 data root 完成启动、导入、索引、学习路径、显式任务、backup、verify、restore、重启和 diagnostics 演练。runner 仍只由显式 API/CLI 调用，启动/backup/restore/read 不自动执行；只有 approved `embedding_index` 接入 runner，Q&A、generation、OCR/ASR、report/delivery 未接入。该完成不代表多用户、认证授权、云同步、协作、多进程共享 data root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 或全局 production `real-pass`。证据和 prompts 见 [`docs/prompts/phase10/`](docs/prompts/phase10/)。
 
-**当前测试基线（2026-08-29）**：后端 `414 passed, 2 skipped`；前端 `91 passed, 3 skipped`；完整浏览器套件共 94 项（包含 A4 专项），3 个 skip 均为 opt-in 真实 Provider UI smoke；后端 2 个 skip 均为 opt-in 真实 Provider smoke。
+**当前完整回归基线（2026-08-30）**：后端 `421 passed, 2 skipped`；浏览器 `126 passed, 3 skipped`（共 129 项）；所有 skip 均为默认关闭的 opt-in 真实 Provider smoke，不计为失败。
 
-**A2.X 系列完成 (2025-01-28)**: 4 个超限核心文件（repositories/_legacy.py, main.py, migrations/runner.py, providers.py）已拆分为模块化结构，从 639KB 减少到 48KB（92.6% 减少），所有模块 ≤ 32 KiB，所有公共 API 保持向后兼容。413 passed, 2 skipped 是 A2.X 的历史基线；当前 post-A4 基线为 414 passed, 2 skipped。详见 [`docs/prompts/architecture/A2_X_SERIES_SUMMARY.md`](docs/prompts/architecture/A2_X_SERIES_SUMMARY.md)。
+**A2.X 系列完成 (2025-01-28)**: 4 个超限核心文件（repositories/_legacy.py, main.py, migrations/runner.py, providers.py）已拆分为模块化结构，从 639KB 减少到 48KB（92.6% 减少），所有模块 ≤ 32 KiB，所有公共 API 保持向后兼容。413 passed, 2 skipped 是 A2.X 的历史基线；当前完整回归基线为 backend 421 passed, 2 skipped、browser 126 passed, 3 skipped。详见 [`docs/prompts/architecture/A2_X_SERIES_SUMMARY.md`](docs/prompts/architecture/A2_X_SERIES_SUMMARY.md)。
 
 Operator backup / restore 已提供 CLI，详见 [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md)。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity/continuous-history/schema-version metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录，`verify-restored-data` 提供 offline/online restore 后验收。`rotate-backups` 默认 dry-run、确认后仅删除较旧 verified sets；`upgrade-preflight` 需重新验证与 live schema 匹配的 rollback backup。备份保留、轮换、restore drill 和升级隔离见 `docs/prompts/BACKUP_OPERATIONS.md`、`docs/prompts/RESTORE_DRILL.md` 与 `docs/prompts/OPERATOR_UPGRADE.md`。无法建立 integrity/schema/original/readiness 安全状态时 v1 停机并隔离证据，不提供 runtime read-only serving。应用启动不会自动 backup、restore 或 repair。
 
@@ -26,7 +26,7 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
 
-本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/ROADMAP_CAPABILITIES.md)；该文档为 `planned`，不是能力完成证据。
+本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立，候选 smoke 尚未通过；该路线仍不是能力完成证据。
 
 ## 当前正式实现
 
