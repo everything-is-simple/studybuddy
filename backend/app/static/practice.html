@@ -25,6 +25,7 @@
 </div>
 
 <div class="grid">
+<section class="card span-12" data-od-id="practice-recommendations"><h2>推荐练习</h2><div id="recommendation-status" class="notice" role="status" aria-live="polite">正在加载推荐...</div><div id="recommendations" class="stack"></div><div class="stack-actions mt-12"><label for="recommendation-limit">推荐数量</label><select id="recommendation-limit"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select><button class="btn btn-primary" id="create-recommended-session" type="button" disabled>创建练习会话</button><button class="btn" id="refresh-recommendations" type="button">刷新推荐</button></div></section>
 <section class="card span-6" data-od-id="practice-sessions">
 <h2>练习会话</h2>
 <div id="session-status" class="notice" role="status" aria-live="polite">正在加载练习会话...</div>
@@ -60,10 +61,22 @@ const refreshMistakes=document.querySelector('#refresh-mistakes');
 const detailSection=document.querySelector('[data-od-id="practice-detail"]');
 const detailTitle=document.querySelector('#detail-title');
 const detailContent=document.querySelector('#detail-content');
+const recommendationStatus=document.querySelector('#recommendation-status');
+const recommendations=document.querySelector('#recommendations');
+const recommendationLimit=document.querySelector('#recommendation-limit');
+const createRecommendedSession=document.querySelector('#create-recommended-session');
+const refreshRecommendations=document.querySelector('#refresh-recommendations');
+let recommendedItems=[];
+let recommendationGeneration=0;
+let recommendationBusy=false;
 
 let sessionGeneration=0;
 let mistakeGeneration=0;
 function text(value){return typeof value==='string'?value:''}
+function showRecommendation(message,kind=''){recommendationStatus.hidden=false;recommendationStatus.className='notice'+(kind?' '+kind:'');recommendationStatus.textContent=message}
+function renderRecommendations(items){recommendations.replaceChildren();recommendedItems=items;items.forEach(item=>{const label=document.createElement('label');label.className='recommendation-item';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=item.exercise_id;checkbox.addEventListener('change',()=>{createRecommendedSession.disabled=!recommendations.querySelector('input:checked')});const copy=document.createElement('span');copy.textContent=`${item.prompt} · ${(item.reason_labels||[]).join('、')}`;label.append(checkbox,copy);recommendations.append(label)});createRecommendedSession.disabled=!items.length;if(!items.length)showRecommendation('暂无可用推荐题目')}
+async function loadRecommendations(){const run=++recommendationGeneration;showRecommendation('正在加载推荐...');recommendations.replaceChildren();createRecommendedSession.disabled=true;try{const limit=Number(recommendationLimit.value);const data=await sbApi.json(`/api/study/practice-recommendations?limit=${limit}`,{signal:pageRequest.signal});if(run!==recommendationGeneration)return;renderRecommendations(Array.isArray(data.items)?data.items:[]);if(data.status==='ready')recommendationStatus.hidden=true}catch(error){if(run===recommendationGeneration)showRecommendation(sbApi.safeError(error),'warn')}}
+async function createRecommended(){if(recommendationBusy)return;const ids=[...recommendations.querySelectorAll('input:checked')].map(input=>input.value);if(!ids.length){showRecommendation('请先选择推荐题目','warn');return}recommendationBusy=true;createRecommendedSession.disabled=true;showRecommendation('正在创建练习会话...');try{const session=await sbApi.json('/api/study/practice-sessions',{method:'POST',body:JSON.stringify({title:'推荐练习',exercise_ids:ids,duration_seconds:600,timezone:'UTC',local_date:new Date().toISOString().slice(0,10)}),signal:pageRequest.signal});location.href=`/app/practice-session.html?session_id=${encodeURIComponent(session.id)}`}catch(error){showRecommendation(sbApi.safeError(error),'warn');createRecommendedSession.disabled=false}finally{recommendationBusy=false}}
 
 async function loadSessions(){
 sessionStatus.textContent='正在加载练习会话...';
@@ -260,8 +273,12 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 }
 }
 
+refreshRecommendations.addEventListener('click',loadRecommendations);
+recommendationLimit.addEventListener('change',loadRecommendations);
+createRecommendedSession.addEventListener('click',createRecommended);
 refreshSessions.addEventListener('click',loadSessions);
 refreshMistakes.addEventListener('click',loadMistakes);
+loadRecommendations();
 loadSessions();
 loadMistakes()
 })();
