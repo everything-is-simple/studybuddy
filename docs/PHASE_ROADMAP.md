@@ -7,7 +7,7 @@
 
 ## 基础设施真实状态
 
-基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`prompts/INFRASTRUCTURE_CLOSEOUT.md`](prompts/INFRASTRUCTURE_CLOSEOUT.md)。当前完整回归基线为 backend 421 passed / 2 skipped、browser 126 passed / 3 skipped；skip 均为 opt-in 真实 Provider smoke。
+基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`prompts/INFRASTRUCTURE_CLOSEOUT.md`](prompts/INFRASTRUCTURE_CLOSEOUT.md)。当前完整回归基线为 backend 422 passed / 2 skipped、browser 126 passed / 3 skipped；skip 均为 opt-in 真实 Provider smoke。
 
 ## 总体进度
 

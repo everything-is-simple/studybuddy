@@ -2,7 +2,7 @@
 
 > **文档性质**：这是 StudyBuddy 前端的产品设计、信息架构、低保真 draft 草图、接口映射与实施门禁，不是已完成的前端实现声明。
 >
-> **事实基线（2026-08-30；A3-1 已更新）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 421 passed、2 skipped；完整 browser 基线为 126 passed、3 skipped（默认关闭的真实 Provider smoke）。A2.X（repository/main/migrations/providers 的行为保持型拆分）已完成，Phase 9A/9B/9C 已在各自限定范围完成，Phase 9D 的部分立项范围已 scoped closeout，Phase 10 Gate J 已通过。A3-1 已建立 `backend/app/static/` 并由 app factory 挂载到 `/app`；旧根路由 `/` 已重定向到 `/app/today.html`，`/legacy` 保留内嵌 `templates/index.html` 兼容入口。
+> **事实基线（2026-08-30；A3-1 已更新）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 422 passed、2 skipped；完整 browser 基线为 126 passed、3 skipped（默认关闭的真实 Provider smoke）。A2.X（repository/main/migrations/providers 的行为保持型拆分）已完成，Phase 9A/9B/9C 已在各自限定范围完成，Phase 9D 的部分立项范围已 scoped closeout，Phase 10 Gate J 已通过。A3-1 已建立 `backend/app/static/` 并由 app factory 挂载到 `/app`；旧根路由 `/` 已重定向到 `/app/today.html`，`/legacy` 保留内嵌 `templates/index.html` 兼容入口。
 >
 > **状态判定优先级**：实施状态、测试基线与支持边界以 `STATUS.md` 和 `TODO.md` 为准；`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 规定顺序和门禁；本计划只映射前端行为，不能提升任何后端能力等级。整体完成度百分比仅是阶段性估算，当前统一阶段性估算为约 65%，A3 实施不依赖该数字；旧 55%–60% 仅属于历史快照。
 
@@ -44,7 +44,7 @@
 
 | 最近变化 | 当前事实 | 前端动作 |
 |---|---|---|
-| A2.X 收口 | 4 个核心大文件已完成行为保持型拆分；`main.py` 为兼容 façade，模板已移到 `backend/app/templates/index.html`；schema v13、backend 421 passed/2 skipped、browser 126 passed/3 skipped | A3 只处理正式静态资源与前端壳，不再把后端大文件拆分算作前端工作 |
+| A2.X 收口 | 4 个核心大文件已完成行为保持型拆分；`main.py` 为兼容 façade，模板已移到 `backend/app/templates/index.html`；schema v13、backend 422 passed/2 skipped、browser 126 passed/3 skipped | A3 只处理正式静态资源与前端壳，不再把后端大文件拆分算作前端工作 |
 | Phase 7 收口 | embedding/indexing/retrieval mode 已实现；Mistral `mistral-embed` 仅在精确 gateway/model 配置通过真实 gate | 前端显示 lexical/vector/hybrid、索引状态和失败重试；verified 标签只绑定精确配置，不写成通用可用 |
 | Phase 8 收口 | Cards/Exercises 在 deterministic fake-provider、Chromium、backup/restore 范围完成 | 卡片/练习页面优先接入；真实 Provider generation 和 short-answer 人工复核仍显示受限状态 |
 | Phase 9A–9C 收口 | 计划/节奏/笔记、练习/错题/薄弱点/冲刺已有限定范围的 backend/API/UI/恢复证据 | 目标、计划、笔记、练习、复盘页面直接消费已冻结 API，并保留 draft/pending_review/source status |
@@ -515,7 +515,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 - [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归。
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
-- [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 21 个正式静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项完成不代表 A3-PAGES/A3-VISUAL 完成。
+- [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 21 个正式静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项不表示 B0-B4 真实能力或 Provider 配置写入已完成。
 - [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
 - [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；历史 A3-PAGES gate 快照为 `117 passed, 3 skipped`，专项证据 `13 passed`；当前完整 browser 基线为 `126 passed, 3 skipped`。不代表报告导出/审计、练习写操作或 Provider 配置写入已迁移。
 - [x] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；Neutral Modern token、组件、响应式、焦点和状态视觉已统一，剩余局部 CSS 已收敛到共享样式。全部 21 个 `/app/*.html` 无局部 `<style>`；`browser_frontend_visual_matrix.spec.js` 覆盖 shared tokens、card、360/1920、触控目标和 focus ring（`2 passed`）。不得将此项扩大解释为 Provider 写入、报告导出/审计或练习写流程已完成。
@@ -532,12 +532,12 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 ## 12. 下一步
 
-当前产物的可用行为先作为迁移回归基线；下一次前端实现不得以“重写单页”为代价删除这些行为。请直接编辑本文件，优先确认以下四项：
+当前正式 `/app/` 行为、旧 `/legacy` 回退和已通过的浏览器证据均作为回归基线；后续实现不得以重写单页为代价删除这些行为。当前下一步不是重新决定 A3 起点，而是按既定门禁推进：
 
-1. **页面范围**：是否同意将“今天、计划、资料、问答、笔记、练习、复盘、课堂采集、报告、系统设置”作为目标产品信息架构？
-2. **A3 起点**：是否先做正式 static root + 应用壳 + 今天/资料/Q&A，而不是继续扩展旧单页？
-3. **首页主行动优先级**：计划任务、待审草稿、导入材料、Provider 状态说明的顺序是否符合你的使用方式？
-4. **草图评审**：请在 Draft A–H 下方标注“保留 / 删除 / 合并 / 需要补充”的页面或模块。
+1. **Practice follow-up**：补齐 review、mark-mistake、feedback 和更广端到端路径，不改变现有 draft/source/privacy 边界。
+2. **B0**：维护 Composer 候选 catalog/card/evidence；未通过 smoke 的候选不得进入 Integration。
+3. **B1–B4**：按真实 ASR → OCR → report → delivery 顺序推进；每项独立完成 Composer → Integration → Formal。
+4. **Provider 与桌面**：Provider 写入仍等待安全契约；D0/D1 Tauri 不作为 B0/B1 前置条件。
 
 A3-1 至 A3-VISUAL 已按声明范围完成：正式 `/app/` static root、页面拆分、共享请求层、Neutral Modern 视觉和浏览器契约均已有证据；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。
 

@@ -52,18 +52,27 @@
 ### 3.2 路线图/状态文档与实现
 
 - **已对齐**：`PHASE_ROADMAP.md`、`PROJECT_PROGRESS_REPORT.md`、`STATUS.md` 和 `TODO.md` 对 Phase 9A/9B/9C 限定范围完成、Phase 9D 部分立项 scoped closeout、Phase 10 local-v1 scoped closeout 的当前结论与代码/测试证据一致；不能扩大为全局 `real-pass`。
-- **发现文档漂移**：`frontend-plan.md` 的旧快照段落仍写“材料管理已有旧 workspace，待拆屏”“计划/笔记/报告/任务前端缺页”，并保留 A3-1 的“仅四个页面”和 A3-2 的“下一步进入 A3-3”措辞；这些与当前 21 页正式实现、A3-PAGES/A3-VISUAL/A4 声明和 126 项浏览器基线不一致。该差异已在本文件记录，后续应清理旧叙述，避免被误读为当前待办。
-- **发现文档口径风险**：`TODO.md` 顶部仍有“前端不代表完整产品化页面架构或 Neutral Modern 视觉系统已经完成”的历史性概括，但同一文件和 `STATUS.md` 已声明 A3-VISUAL 在限定范围完成。准确口径应是“限定范围 scoped browser-pass，不代表 deferred capability 或全局 real-pass”，而不是“视觉系统尚未完成”。
+- **已记录的文档漂移**：`frontend-plan.md` 的能力盘点仍保留“待拆屏/前端缺页”等历史快照措辞；其后文已说明当前 21 个正式页面和 A3-PAGES/A3-VISUAL/A4 状态。该内容已在本文件和 `frontend-implementation-diff-report.md` 标注为历史快照，后续可在计划文档整理时清理。
+- **已修订的文档口径风险**：`TODO.md` 顶部已改为“Neutral Modern 在已验收静态页面范围完成”，并保留不代表 deferred capability 或全局 real-pass 的限制。
 - **路线未完成项保持有效**：`frontend-plan.md` 的缓存/刷新策略、首页聚合 API、Provider 配置写入、capture 命名决策、真实 ASR 资料、B3/B4 和 D0/D1 等开放项没有被本次页面存在性或测试结果关闭。
 
 ### 3.3 测试与用户端到端证据
 
 - 契约审计：通过，21 页面、152 路由、0 发现项。
 - 源码尺寸检查：通过。
-- 后端全套：`421 passed, 2 skipped`；skip 为默认关闭的 opt-in 真实 Provider smoke。
-- 浏览器全套：`126 passed, 3 skipped`，共 129 项；skip 为默认关闭的 opt-in 真实 Provider UI smoke。
-- 用户端到端：通过仓库 Playwright 的导入、材料生命周期、Q&A、多材料问答、计划、笔记、练习、课堂采集、跨页导航、错误恢复和旧入口兼容场景；完整套件第二次串行运行稳定通过。
-- 稳定性备注：第一次完整浏览器串行运行出现 1 个 Phase 9C 时序失败，单独重跑该规格和目标用例通过，第二次完整运行全通过；这属于残余的长套件时序风险，后续仍应关注，不把一次重跑结果解释为无风险保证。
+- 后端全套：`422 passed, 2 skipped`（本次实测）；skip 为默认关闭的 opt-in 真实 Provider smoke。
+- 浏览器全套：`126 passed, 3 skipped`，共 129 项（本次实测）；skip 为默认关闭的 opt-in 真实 Provider UI smoke。
+- 用户端到端：通过仓库 Playwright 的导入、材料生命周期、Q&A、多材料问答、计划、笔记、练习、课堂采集、跨页导航、错误恢复和旧入口兼容场景；本次完整套件串行运行通过。
+- 手工浏览器检查：today、review、qa 页面可访问；问答未配置 Provider 时显示安全阻塞状态；浏览器控制台无错误。当前运行环境将请求的 360px viewport 报告为 `innerWidth=500`，所以本次手工检查不把该读数当作 360px 视觉证据，360px 结论仍以 Playwright 专项测试为准。
+- 稳定性备注：浏览器全套本次通过，但长套件时序风险仍需持续关注；一次通过不等于无界长时稳定性保证。
+
+### 3.4 本次实测新增差异
+
+- **导航文案/信息架构差异（已修订）**：实测发现 `classroom.html` 与 `reports.html` 原先都显示为“报告”，与设计中“课堂采集/报告”的区分不一致。已将 `backend/app/static/js/shell.js` 的兼容入口改为“课堂工作区”；后续应补充导航文案断言，防止回归。
+- **文档测试基线漂移（已修订）**：本次后端实测为 `422 passed, 2 skipped`，当前基线文档已同步；浏览器为 `126 passed, 3 skipped`，与文档一致。历史 gate evidence 的旧数字保留为追溯信息。
+- **设计文档历史快照未完全隔离（中风险）**：`frontend-plan.md` 的能力盘点仍有“待拆屏/前端缺页”等历史状态，虽然其后文已记录 A3-PAGES/A3-VISUAL 完成；读者容易将历史快照误判为当前待办。该文档应把这些行明确标为“历史快照”或更新为当前正式页面状态。
+- **TODO 口径差异（低风险）**：`TODO.md` 顶部仍称 Neutral Modern 视觉系统“尚未完成”，与 `STATUS.md`、本审计及视觉测试的 scoped closeout 结论冲突。准确表述应为“Neutral Modern 在已验收静态页面范围完成，但不代表 deferred capability 或全局 real-pass”。
+- **未发现功能性契约差异**：自动扫描仍为 21 页面、152 路由、0 发现项；本次全量后端/浏览器和现有端到端路径均通过。
 
 ## 4. 已发现的高风险类别
 
@@ -91,7 +100,7 @@
 
 ### 后续阶段边界
 
-- **A3-PAGES：** `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html` 的正式任务页拆分及其独立回归。现有混合页面继续作为兼容入口；后续能力仍须遵守 B0-B4 门禁。
+- **A3-PAGES（首批声明范围已完成）：** `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html` 的正式任务页拆分及其独立回归。现有混合页面继续作为兼容入口；后续能力仍须遵守 B0-B4 门禁。
 - **A3-VISUAL（已完成声明范围）：** 所有正式 `/app` 页面使用 Neutral Modern tokens；共享 card、button、badge、notice、dialog、focus、grid 组件和 360–1920 视觉/触控验收已通过。它不扩大任何 deferred capability。
 
 ## 4. 静态页能力冻结

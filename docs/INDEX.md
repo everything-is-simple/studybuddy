@@ -13,6 +13,7 @@
 - [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)：项目现状摘要。
 - [`A4_COMPLETION_REPORT.md`](A4_COMPLETION_REPORT.md)：Provider 设置、课堂采集与任务状态页面的 A4 交付记录。
 - [`A4_SUMMARY.md`](A4_SUMMARY.md)：A4 页面范围、验证与能力边界摘要。
+- [`frontend-implementation-diff-report.md`](frontend-implementation-diff-report.md)：前端实现与设计、以及文档实现之间的差异记录。
 
 ## 使用与竣工
 
