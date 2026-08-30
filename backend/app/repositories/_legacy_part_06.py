@@ -124,7 +124,7 @@ def create_transcription_operation(connection: sqlite3.Connection, *, project_id
     key = _phase9d_idempotency_key(idempotency_key)
     provider = _phase9d_text(provider_id, code="transcription_provider_not_configured", maximum=100)
     model = _phase9d_text(model_id, code="transcription_provider_not_configured", maximum=200)
-    if provider not in {"fake", "loopback"}:
+    if not provider or not isinstance(provider, str):
         raise ValueError("transcription_provider_not_configured")
     with connection:
         capture = connection.execute(
@@ -216,7 +216,7 @@ def transcribe_capture_session(connection: sqlite3.Connection, *, project_id: st
     """Run one fake/loopback transcription; raw bytes/results remain in memory only."""
     provider_id = getattr(provider, "provider_id", None)
     model_id = getattr(provider, "model_id", None)
-    if provider_id not in {"fake", "loopback"} or not isinstance(model_id, str) or not model_id:
+    if not isinstance(provider_id, str) or not provider_id or not isinstance(model_id, str) or not model_id:
         raise ValueError("transcription_provider_not_configured")
     if not isinstance(timeout_seconds, (int, float)) or isinstance(timeout_seconds, bool) or timeout_seconds <= 0:
         raise ValueError("transcription_failed")

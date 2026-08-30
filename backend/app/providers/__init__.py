@@ -27,6 +27,7 @@ from ._capture import (
     DeterministicFakeCaptureProvider,
     FakeCaptureProvider,
     LoopbackCaptureProvider,
+    WhisperCliCaptureProvider,
 )
 
 # LLM providers
@@ -64,6 +65,7 @@ __all__ = [
     "DeterministicFakeCaptureProvider",
     "FakeCaptureProvider",
     "LoopbackCaptureProvider",
+    "WhisperCliCaptureProvider",
     # LLM providers
     "FakeLLMProvider",
     "OpenAICompatibleLLMProvider",

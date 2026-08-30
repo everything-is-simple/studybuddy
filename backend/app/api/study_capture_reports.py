@@ -111,9 +111,16 @@ def register_routes(app, context: dict[str, object]) -> None:
             raise HTTPException(status_code=400, detail="invalid_idempotency_key")
         config = app.state.config
         try:
+            provider_id = config.asr_provider_id or "fake"
+            model_id = config.asr_model_id if config.asr_provider_id else "fake-capture-v1"
             provider = provider_registry(
-                "fake", "fake-capture-v1",
-            ).capture_provider()
+                provider_id, model_id,
+            ).capture_provider(
+                runtime_path=str(config.asr_runtime_path) if config.asr_runtime_path else None,
+                model_path=str(config.asr_model_path) if config.asr_model_path else None,
+                timeout_seconds=config.asr_timeout_seconds,
+                max_output_bytes=config.asr_max_output_bytes,
+            )
             with connect(config.database_path) as connection:
                 return transcribe_capture_session(
                     connection, project_id=config.project_id,
