@@ -30,7 +30,7 @@
 | `practice-result.html` | 独立练习结果读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `capture.html` | fake/loopback 创建、上传、转写、草稿确认/拒绝 | `browser_a4.spec.js`、`browser_phase9d.spec.js`、`browser_frontend_system_matrix.spec.js` | covered |
 | `classroom.html` | 采集/报告兼容读取、交付边界 | `browser_phase9d.spec.js`、`browser_frontend_system_matrix.spec.js`、`browser_learning_pages.spec.js` | covered |
-| `review.html` | 错题/薄弱点读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
+| `review.html` | 错题/详情、复盘、标记、反馈、redo、归档 | `browser_practice_workflow.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `reports.html` | 脱敏报告列表读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `settings.html` | Provider/系统就绪只读状态 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `tasks.html` | 单任务 read/cancel/retry | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js` | covered |

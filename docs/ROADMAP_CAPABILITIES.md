@@ -231,7 +231,7 @@ backend/app/
 
 ### 后续前端能力切片（A3-VISUAL 之后，按顺序）
 
-1. **Practice workflow**：已完成第一阶段 scoped UI slice。契约 `frontend-practice-workflow-contract.md` 已获用户确认并冻结；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、retry/stale 安全边界，`browser_practice_workflow.spec.js` 为 `6 passed`。完整 review/mark-mistake/feedback 控件和更广端到端路径仍待后续切片。不得机械复制 `/legacy`，也不改变 API 语义。
+1. **Practice workflow**：第二阶段已完成 scoped UI slice。契约 `frontend-practice-workflow-contract.md` 已更新；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、practice/review 导航，以及 review 详情、feedback、review、mark-mistake、redo、archive 操作。`browser_practice_workflow.spec.js` 当前为 `7 passed`；完整 backend/browser 回归已运行，Practice 相关路径通过。仍不扩大为真实 Provider 或全局 production `real-pass`。不得机械复制 `/legacy`，也不改变 API 语义。
 2. **B3 reports/export/audit**：在 B3 gate 后扩展 `reports.html` 的脱敏导出和审计工作区；维持 report projection、`delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍属于 B4。
 3. **Provider 配置写入**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在后端形成安全写入/验证契约后单独立项；浏览器不得保存、回显或持久化密钥，且必须具备脱敏 connection-test failure 和独立 browser evidence。
 4. **`legacy_only` / `not_exposed`**：以 `docs/frontend-static-capability-matrix.md` 为来源逐项立项。`legacy_only` 需独立页面/路径和 browser evidence；`not_exposed` 在存在安全公共契约前保持不暴露，不得用 mock 伪造成功。
