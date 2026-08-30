@@ -47,6 +47,31 @@ def test_governance_preserves_real_provider_and_runtime_boundaries():
     assert "explicit opt-in" in provider_setup
 
 
+def test_media_capability_selection_preserves_formal_boundaries():
+    decision = read("prompts/MEDIA_CAPABILITY_DECISION.md")
+    roadmap = read("ROADMAP_CAPABILITIES.md")
+    todo = read("TODO.md")
+    status = read("STATUS.md")
+    architecture = read("ARCHITECTURE.md")
+    frontend = read("frontend-plan.md")
+    phase_roadmap = read("PHASE_ROADMAP.md")
+    progress = read("PROJECT_PROGRESS_REPORT.md")
+
+    for document in (decision, roadmap, todo, status, architecture, frontend, phase_roadmap, progress):
+        assert "PaddleOCR" in document
+        assert "RapidOCR" in document
+    for document in (decision, status, architecture, phase_roadmap, progress):
+        assert "H:/WhisperCli" in document
+    for document in (decision, roadmap, todo, architecture, phase_roadmap, progress):
+        assert "edge-tts" in document
+    assert "deterministic fake/loopback" in decision
+    assert "C1" in decision
+    assert "not_verified" in decision
+    assert "不属于当前 Phase 9D 批准业务范围" in decision
+    assert "C1 smoke" in roadmap
+    assert "Composer smoke -> Integration -> Formal" in todo
+
+
 def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
     roadmap = read("PHASE_ROADMAP.md")
     status = read("STATUS.md")

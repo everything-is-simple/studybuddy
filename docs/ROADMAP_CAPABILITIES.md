@@ -247,13 +247,13 @@ backend/app/
 3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
 4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
 
-**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；9 个候选均保持 `researching`，独立 smoke 尚未通过。
+**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；9 个 catalog 候选仍保持 `researching`，独立 C1 smoke 尚未通过。C0 选型已冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`：`H:\WhisperCli`/whisper.cpp `large-v3-turbo` 是唯一 ASR runtime；PaddleOCR 是中文/版面主 OCR，RapidOCR ONNX 是轻量回退，Tesseract 仅兼容后备；PPTX 采用 formal-pptx 原生文字 → MarkItDown/python-pptx 辅助 → 图片页 PaddleOCR 三层路径；edge-tts 是免费在线、显式用户操作的 TTS 候选，未进入当前 9D 业务范围。已知本机 CLI/运行时/PPTX 预检不提升 C1/C2/Formal 状态。
 
 **通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
 
 ### B1：真实 ASR 组件流水线
 
-**候选与选择：** 首轮比较 `whisper.cpp`、FunASR、SenseVoice；不预先承诺任一候选胜出。优先评估可离线运行、Windows 可重复安装、可控 CLI 协议、无隐式网络外发、可提供明确文本/段落/时间戳输出的候选。
+**候选与选择：** C0 已选择 `H:\WhisperCli` 中的 whisper.cpp `large-v3-turbo` 作为唯一 canonical runtime；Composer 中的同哈希副本只作证据/审计，禁止形成第二个运行路径。FunASR、SenseVoice 保持未选备选，除非主候选在 C1/C2 失败。选择仍以离线运行、Windows 可重复安装、可控 CLI 协议、无隐式网络外发、明确文本/段落/时间戳输出为准。
 
 **Composer smoke：**
 
@@ -269,7 +269,7 @@ backend/app/
 
 ### B2：真实 OCR 组件流水线
 
-**候选与选择：** 首轮比较 RapidOCR、PaddleOCR、CapsWriter；不预先承诺任一候选胜出。优先评估本地离线、中文可用、明确模型/版本/许可、可控制图片格式和资源上限的候选。
+**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR/RapidOCR 仍必须验证本地模型、许可证、离线运行、中文质量、图片格式和资源上限，未通过 C1/C2 前不得进入 Formal。
 
 **Composer smoke：**
 
@@ -282,6 +282,10 @@ backend/app/
 **Formal：** 冻结 `ImageOcrProvider` 契约后独立实现；结果先作为 draft，未经确认不得覆盖材料或成为正常引用来源。
 
 **通过门槛：** C0-C6 全部通过；一次真实图片 smoke 仅记录精确组件和模型范围。
+
+### TTS：独立重新立项（不属于 B1–B4 的已批准路径）
+
+**候选：** `edge-tts` 是免费、无需购买 API Key 的在线 TTS 客户端；它不是离线引擎，也不等同于 B4 外发。只有出现明确的学习产品用户路径后，才冻结 `TextToSpeechProvider`、用户显式触发、网络 opt-in、音频临时保存/清理、失败/限流、无正文/路径/密钥日志、浏览器播放和删除契约。当前不得自动调用、不得持久化为 citation/source，且不能把 Pi/Python 本机准备度写为 Formal 能力。
 
 ### B3：报告组件流水线
 

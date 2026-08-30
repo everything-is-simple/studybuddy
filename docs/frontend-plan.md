@@ -451,13 +451,20 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 ### B1：真实 ASR
 
+- C0 已选 `H:\WhisperCli` / whisper.cpp `large-v3-turbo` 为唯一 runtime；本机 CLI/TXT/SRT preparation smoke 不等于 Composer C1、Integration、Formal 或通用 real-pass。
 - 在 C0-C6 全部通过前，`capture.html` 只开放已验证 fake/loopback 流程，真实 ASR 控件保持禁用并说明原因。
 - C6 收口后才将真实 ASR 显示为可执行能力；仍按精确工具、模型、环境和输入范围标注，不外推为通用可用。
 
 ### B2：真实 OCR
 
+- C0 已选 PaddleOCR 为中文/版面主路径、RapidOCR ONNX 为轻量回退；仅 Python 运行时预检完成，尚无预置模型/合成图片 C1 smoke。
 - 在 C0-C6 全部通过前，材料/采集相关页面只预留图片上传、OCR draft、`uncertain`/confidence 和用户确认状态；不得把图片上传显示为 OCR 成功。
 - 通过后才开放真实 OCR，并要求 draft-first、citation/source lifecycle 和失败恢复路径。
+
+### TTS：独立 future candidate
+
+- `edge-tts` 是免费但在线的显式用户操作候选，不购买 API Key，也不属于当前 Phase 9D 批准范围。
+- 在独立契约、网络 opt-in、音频清理、隐私和失败路径验收前，页面不提供自动朗读或持久化 TTS 成功状态。
 
 ### B3：本地脱敏报告
 

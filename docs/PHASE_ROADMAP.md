@@ -217,7 +217,7 @@ Phase 10 的总体规划、共用上下文、逐任务 prompts、执行顺序和
 
 ## 后续能力、架构与桌面化路线
 
-Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分已经完成；项目下一步是原生静态前端拆分，再按 Composer -> Integration -> Formal 门禁依次推进真实 ASR、真实 OCR、本地报告和真实外发，最后时间盒评估 Tauri Windows 桌面包装。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
+Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分已经完成；项目下一步是原生静态前端拆分，再按 Composer -> Integration -> Formal 门禁依次推进真实 ASR、真实 OCR、本地报告和真实外发，最后时间盒评估 Tauri Windows 桌面包装。C0 已选 ASR 为 `H:/WhisperCli`/whisper.cpp `large-v3-turbo`，OCR 为 PaddleOCR 主路径与 RapidOCR ONNX 回退，PPTX 为 formal-pptx + MarkItDown + 图片页 OCR；edge-tts 是免费在线、显式用户操作的 TTS future candidate，未进入当前 Phase 9D 批准范围。本机 CLI/运行时/PPTX 转换预检不等于 Composer C1、Integration、Formal 或真实能力完成。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) 与 [`prompts/MEDIA_CAPABILITY_DECISION.md`](prompts/MEDIA_CAPABILITY_DECISION.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
 
 ## 固定执行顺序
 

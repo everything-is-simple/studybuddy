@@ -24,6 +24,7 @@
 - [`MIGRATIONS.md`](MIGRATIONS.md)：schema version、migration runner 与升级规则。
 - [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)：backup / verify / restore 行为边界。
 - [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)：A2.X 核心文件模块化拆分总结、兼容性矩阵和维护指南。
+- [`prompts/MEDIA_CAPABILITY_DECISION.md`](prompts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 的已选候选、运行环境准备度和 B1/B2/Formal 边界。
 
 ## 正式验收证据
 
