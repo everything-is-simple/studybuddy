@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B0 official ASR C1 pass / Integration pending`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；Integration 与后续 B1-B4/D0-D1 门禁仍待执行。
+> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B0 official ASR C1 pass / C2 Integration pass / Formal pending`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；ASR C2 Integration 已通过；Integration 与后续 B1-B4/D0-D1 门禁仍待执行。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -248,7 +248,7 @@ backend/app/
 3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
 4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
 
-**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；ASR 官方 `H:\Whisper\cli` 使用 `H:\Whisper\Models\ggml-large-v3-turbo.bin` 与 GitHub release 的公开 `SampleClips/jfk.wav` 通过 `C1-ASR-01` 至 `C1-ASR-14`；本机 `Whisper.dll` PE product version 为 `1.12.0.0`，对应 GitHub `Const-me/Whisper` release `1.12.0`、commit `c5515ace19066e938854b4b99e0c2e9bbc2eeb65`。SAPI 合成 WAV 不作为该 runtime 的正向识别 oracle；官方 release asset 尚未完成哈希复核（下载受网络限制），Integration pending。OCR、报告和外发独立 C1 smoke 尚未通过。C0 选型已冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`：`H:\WhisperCli`/whisper.cpp `large-v3-turbo` 是唯一 ASR runtime；PaddleOCR 是中文/版面主 OCR，RapidOCR ONNX 是轻量回退，Tesseract 仅兼容后备；PPTX 采用 formal-pptx 原生文字 → MarkItDown/python-pptx 辅助 → 图片页 PaddleOCR 三层路径；edge-tts 是免费在线、显式用户操作的 TTS 候选，未进入当前 9D 业务范围。ASR C1 evidence 见 `H:\studybuddy-composer\results\asr-whisper-cpp\c1-smoke.json`；已知本机 CLI/运行时/PPTX 预检不提升 C2/Formal 状态。
+**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；ASR 官方 `H:\Whisper\cli` 使用 `H:\Whisper\Models\ggml-large-v3-turbo.bin` 与 GitHub release 的公开 `SampleClips/jfk.wav` 通过 `C1-ASR-01` 至 `C1-ASR-14`；本机 `Whisper.dll` PE product version 为 `1.12.0.0`，对应 GitHub `Const-me/Whisper` release `1.12.0`、commit `c5515ace19066e938854b4b99e0c2e9bbc2eeb65`。SAPI 合成 WAV 不作为该 runtime 的正向识别 oracle；官方 release asset 尚未完成哈希复核（下载受网络限制）；ASR C2 Integration 已通过，Formal 重实现仍待执行。OCR、报告和外发独立 C1 smoke 尚未通过。C0 选型已冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`：`H:\WhisperCli`/whisper.cpp `large-v3-turbo` 是唯一 ASR runtime；PaddleOCR 是中文/版面主 OCR，RapidOCR ONNX 是轻量回退，Tesseract 仅兼容后备；PPTX 采用 formal-pptx 原生文字 → MarkItDown/python-pptx 辅助 → 图片页 PaddleOCR 三层路径；edge-tts 是免费在线、显式用户操作的 TTS 候选，未进入当前 9D 业务范围。ASR C1 evidence 见 `H:\studybuddy-composer\results\asr-whisper-cpp\c1-smoke.json`；已知本机 CLI/运行时/PPTX 预检不提升 C2/Formal 状态。
 
 **通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
 
