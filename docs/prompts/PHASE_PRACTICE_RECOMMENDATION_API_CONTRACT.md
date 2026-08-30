@@ -1,6 +1,8 @@
 # Practice 推荐功能 API 与数据契约
 
-> 状态：`contract-frozen / 2026-08-30`
+> 状态：`implemented / scoped-browser-pass / 2026-08-30`
+>
+> 推荐 API 与 Practice 前端最小闭环已实现；本文件同时记录实现后的验证结果。
 > 前置：Practice 第三阶段现状审计与契约冻结
 > 范围：自适应出题的只读推荐契约；不包含实现、migration、后台调度或 Provider generation。
 
@@ -212,3 +214,27 @@ reason code 列表去重，并按固定顺序输出：`never_attempted`、`recen
 - [x] 明确失败、空结果、stale、backup/restore 和未验证边界。
 
 只有本文件评审通过后，才能创建 API schema、repository 查询、focused backend tests 和 browser evidence。实现必须保持 `algorithm_version='practice-recommendation-v1'`，任何排序或公开字段改变都需要更新契约版本与证据。
+
+## 11. 实现与验证记录
+
+已实现：
+
+- `GET /api/study/practice-recommendations`；
+- 既有 `practice.html` 推荐选择工作区；
+- 显式选择后复用 `POST /api/study/practice-sessions`；
+- 创建的 session 保持 `draft`，不自动 start；
+- 独立服务、隔离 data root 的 Browser evidence。
+
+验证：
+
+```text
+backend/tests/test_practice_recommendations_api.py: 4 passed
+backend/tests/browser_practice_recommendations.spec.js: 3 passed
+backend/tests/browser_practice_workflow.spec.js: 7 passed
+full backend: 426 passed, 2 skipped
+full browser: 130 passed, 3 skipped
+contract audit: 21 pages, 153 routes, 0 findings
+source-size: passed
+```
+
+Browser 使用单 worker 串行执行；3 个 skip 均为 opt-in real-provider browser smoke。
