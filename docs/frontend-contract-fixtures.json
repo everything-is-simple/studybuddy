@@ -5,42 +5,130 @@
     "capture": {
       "endpoint": "/api/study/capture-sessions",
       "identity": "id",
-      "states": ["draft", "uploaded", "transcribing", "pending_review", "confirmed", "rejected", "archived"],
-      "source_states": ["valid", "stale", "source_deleted", "source_unavailable"]
+      "states": [
+        "draft",
+        "uploaded",
+        "transcribing",
+        "review_required",
+        "confirmed",
+        "rejected",
+        "failed",
+        "archived"
+      ],
+      "source_states": [
+        "valid",
+        "stale",
+        "source_deleted",
+        "source_unavailable"
+      ],
+      "draft_states": [
+        "pending_review",
+        "confirmed",
+        "rejected"
+      ]
     },
     "plan": {
       "endpoint": "/api/study/plans",
       "identity": "id",
-      "states": ["draft", "confirmed", "active", "paused", "completed", "archived"],
-      "item_states": ["pending", "in_progress", "completed", "skipped", "archived"]
+      "states": [
+        "draft",
+        "confirmed",
+        "active",
+        "paused",
+        "completed",
+        "archived"
+      ],
+      "item_states": [
+        "pending",
+        "in_progress",
+        "completed",
+        "skipped",
+        "archived"
+      ]
     },
     "note": {
       "endpoint": "/api/study/notes",
       "identity": "id",
-      "states": ["draft", "confirmed", "archived"],
-      "source_states": ["valid", "stale", "source_deleted", "source_unavailable"]
+      "states": [
+        "draft",
+        "confirmed",
+        "rejected",
+        "archived"
+      ],
+      "source_states": [
+        "valid",
+        "stale",
+        "source_deleted",
+        "source_unavailable"
+      ]
     },
     "practice": {
       "endpoint": "/api/study/practice-sessions",
       "identity": "id",
-      "states": ["draft", "active", "finished", "expired", "archived"],
-      "review_states": ["pending_review", "correct", "incorrect", "uncertain"]
+      "states": [
+        "draft",
+        "active",
+        "finished",
+        "expired",
+        "archived"
+      ],
+      "review_states": [
+        "pending_review",
+        "correct",
+        "incorrect",
+        "uncertain"
+      ]
     },
     "report": {
       "endpoint": "/api/study/reports",
       "identity": "id",
-      "states": ["draft", "ready", "archived"],
-      "delivery_states": ["off", "dry_run", "blocked", "failed", "succeeded"]
+      "states": [
+        "draft",
+        "ready",
+        "archived"
+      ],
+      "delivery_modes": [
+        "off",
+        "dry_run",
+        "live"
+      ],
+      "delivery_attempt_states": [
+        "blocked",
+        "dry_run",
+        "succeeded",
+        "failed"
+      ]
     },
     "task": {
       "endpoint": "/api/tasks/{task_id}",
       "identity": "id",
-      "states": ["pending", "running", "succeeded", "failed", "cancel_requested", "cancelled", "stale"]
+      "states": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancel_requested",
+        "cancelled",
+        "stale"
+      ]
     }
   },
   "write_policy": {
     "idempotency_header": "Idempotency-Key",
     "safe_default": true,
-    "exceptions": ["GET", "HEAD", "OPTIONS", "DELETE when endpoint does not accept a key"]
+    "exceptions": [
+      "GET",
+      "HEAD",
+      "OPTIONS",
+      "DELETE when endpoint does not accept a key"
+    ]
+  },
+  "backend_state_sources": {
+    "capture": "backend/app/migrations/_v12_phase9d_extended.py: capture_sessions.status",
+    "plan": "backend/app/migrations/_v09_phase9a_learning_plan.py: study_plans.status and study_plan_items.status",
+    "note": "backend/app/migrations/_v10_phase9b_material_learning.py: study_notes.status",
+    "practice": "backend/app/migrations/_v11_phase9c_feedback.py: practice_sessions.status and exercise_attempt_reviews.decision",
+    "report": "backend/app/migrations/_v12_phase9d_extended.py: reports.status and report_delivery_attempts.status",
+    "task": "backend/app/diagnostics.py: _TASK_STATUSES plus operation_tasks.status"
   }
 }

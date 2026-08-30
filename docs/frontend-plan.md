@@ -508,16 +508,16 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 - [x] **正式 static root / mount**：已确认 `backend/app/static/` 挂载到 `/app`；已完成 HTTP 冒烟验证及 Chromium 回归。
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
-- [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 14 个静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项完成不代表 A3-PAGES/A3-VISUAL 完成。
+- [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 21 个正式静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项完成不代表 A3-PAGES/A3-VISUAL 完成。
 - [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
 - [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；历史 A3-PAGES gate 快照为 `117 passed, 3 skipped`，专项证据 `13 passed`；当前完整 browser 基线为 `126 passed, 3 skipped`。不代表报告导出/审计、练习写操作或 Provider 配置写入已迁移。
 - [x] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；Neutral Modern token、组件、响应式、焦点和状态视觉已统一，剩余局部 CSS 已收敛到共享样式。全部 21 个 `/app/*.html` 无局部 `<style>`；`browser_frontend_visual_matrix.spec.js` 覆盖 shared tokens、card、360/1920、触控目标和 focus ring（`2 passed`）。不得将此项扩大解释为 Provider 写入、报告导出/审计或练习写流程已完成。
 - [ ] **后续行为切片（A3-VISUAL 后）**：Practice workflow 第一阶段已完成：契约已冻结，`practice-session.html` 已覆盖公开题目、start/submit/finish、nested result、expired/source warning、retry/stale 安全边界，`practice-result.html` 使用真实 nested summary，`review.html` 提供安全来源/redo/archive 基线；专项 browser `6 passed`，完整 browser `126 passed, 3 skipped`。后续仍需独立补齐 review/mark-mistake/feedback 控件和更广端到端路径；reports export/audit 仅在 B3 gate 后，Provider 写入仅在安全后端契约获批后，`not_exposed` 不迁移也不伪造。
-- [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
-- [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
+- [x] **旧 `/` 入口**：`/` 已重定向到 `/app/today.html`；完整旧单页保留在 `/legacy` 作为兼容回退。
+- [ ] **首页聚合 API**：当前由多个已验证 API 组合；是否新增聚合 endpoint 仍是产品/后端契约决策。
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
 - [ ] **Today 的默认主行动**：按“计划任务 > 待审草稿 > 导入材料 > Provider 状态说明”还是其它优先级？Provider 配置仅在正式写入契约获批后才可作为可执行动作。
-- [ ] **导航显示策略**：报告、课堂采集在未满足真实能力门禁时显示“不可用说明”还是进入更多菜单？
+- [x] **导航显示策略**：报告、课堂采集和设置入口已显示；真实能力由状态/门禁限制，未批准操作不暴露。
 - [ ] **capture 入口**：确认 transcript 后的 material/revision 命名与用户可见文案。
 - [ ] **报告用户**：只服务本人，还是需要后续家长/教育者查看权限模型？当前不假设多用户。
 - [ ] **真实 ASR 资料**：补充 W0 所需入口、参数、模型、输出和失败证据；没有证据就保持禁用。
@@ -532,6 +532,6 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 3. **首页主行动优先级**：计划任务、待审草稿、导入材料、Provider 状态说明的顺序是否符合你的使用方式？
 4. **草图评审**：请在 Draft A–H 下方标注“保留 / 删除 / 合并 / 需要补充”的页面或模块。
 
-A3-1 已完成：已核实 static mount 与现有浏览器入口，并将 Draft A–D 转为 `/app/` 下的可点击灰盒；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。当前进入前端契约与架构收口，不把现有灰盒测试结果等同于完整产品化完成。
+A3-1 至 A3-VISUAL 已按声明范围完成：正式 `/app/` static root、页面拆分、共享请求层、Neutral Modern 视觉和浏览器契约均已有证据；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。
 
-A3-2 已完成：新增 `browser_static_pages.spec.js`，覆盖四个静态页面的路由可达性、材料加载与空/错误状态、无效 ID 提示、问答线程读取、360px 窄屏适配、键盘 Tab/Enter 访问、隐私边界（无路径/SQL/密钥泄露）。全部 56 个浏览器测试通过（3 skipped）。下一步进入 A3-3：逐页迁移真实操作（导入、搜索、索引、thread、citation、导出、提交保护）。
+A3-2 至 A3-6 已完成：核心页面、学习页面、路由迁移和回归证据已收口；当前完整 browser 基线为 126 passed, 3 skipped。后续不再把旧 A3 灰盒任务描述为待实施。

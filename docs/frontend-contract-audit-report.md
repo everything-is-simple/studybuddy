@@ -2,7 +2,7 @@
 
 > 此报告由 `backend/scripts/audit-frontend-contract.py` 生成；发现项是待修复或待确认事项，不是完成声明。
 
-- 页面：14
+- 页面：21
 - 后端路由：152
 - 发现项：0
 
@@ -23,10 +23,17 @@
 | `index.html` | 0 | 否 | 否 | 否 | 否 |
 | `material-detail.html` | 1 | 否 | 否 | 是 | 是 |
 | `materials.html` | 5 | 否 | 是 | 是 | 是 |
+| `note-detail.html` | 1 | 否 | 否 | 是 | 是 |
 | `notes.html` | 3 | 否 | 是 | 是 | 是 |
+| `plan-detail.html` | 1 | 否 | 否 | 是 | 是 |
 | `plans.html` | 4 | 否 | 否 | 是 | 是 |
+| `practice-result.html` | 1 | 否 | 否 | 是 | 是 |
+| `practice-session.html` | 1 | 否 | 是 | 是 | 是 |
 | `practice.html` | 5 | 否 | 是 | 是 | 是 |
 | `qa.html` | 4 | 否 | 是 | 是 | 是 |
+| `reports.html` | 1 | 否 | 否 | 是 | 是 |
+| `review.html` | 1 | 否 | 是 | 是 | 是 |
 | `settings-provider.html` | 2 | 否 | 否 | 否 | 是 |
+| `settings.html` | 2 | 否 | 否 | 是 | 是 |
 | `tasks.html` | 3 | 否 | 是 | 是 | 是 |
 | `today.html` | 2 | 否 | 否 | 否 | 是 |

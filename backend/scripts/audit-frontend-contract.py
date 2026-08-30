@@ -7,6 +7,7 @@ import re
 import sys
 from pathlib import Path
 
+
 ROOT = Path(__file__).resolve().parents[2]
 STATIC = ROOT / "backend" / "app" / "static"
 API = ROOT / "backend" / "app" / "api"
@@ -16,6 +17,44 @@ IGNORE_LEGACY_FIELDS = {"capture_session_id"}
 OLD_FIELDS = ("capture_session_id",)
 OLD_STATES = ("asset_uploaded", "created")
 REQUIRED_RESOURCES = {"capture", "plan", "note", "practice", "report", "task"}
+
+def actual_contract_states() -> dict[str, set[str]]:
+    """Return state enums from the current backend contracts for fixture drift checks."""
+    sys.path.insert(0, str(ROOT / "backend"))
+    from app.delivery import DELIVERY_MODES
+    from app.diagnostics import _TASK_STATUSES
+    from app.repositories.plans import NOTE_STATUSES, STUDY_ITEM_STATUSES, STUDY_PLAN_STATUSES
+    from app.repositories.practice import PHASE9C_SESSION_STATUSES
+
+    migration = (ROOT / "backend" / "app" / "migrations" / "_v12_phase9d_extended.py").read_text(encoding="utf-8")
+    capture_match = re.search(
+        r"CREATE TABLE capture_sessions.*?status TEXT NOT NULL CHECK\(status IN \((.*?)\)\)",
+        migration,
+        re.S,
+    )
+    if not capture_match:
+        raise RuntimeError("capture status contract not found")
+    capture_states = set(re.findall(r"'([^']+)'", capture_match.group(1)))
+    delivery_match = re.search(
+        r"CREATE TABLE report_delivery_attempts.*?status TEXT NOT NULL CHECK\(status IN \((.*?)\)\)",
+        migration,
+        re.S,
+    )
+    if not delivery_match:
+        raise RuntimeError("delivery status contract not found")
+    delivery_attempt_states = set(re.findall(r"'([^']+)'", delivery_match.group(1)))
+    report_states = {"draft", "ready", "archived"}
+    return {
+        "capture.states": capture_states,
+        "plan.states": set(STUDY_PLAN_STATUSES),
+        "plan.item_states": set(STUDY_ITEM_STATUSES),
+        "note.states": set(NOTE_STATUSES),
+        "practice.states": set(PHASE9C_SESSION_STATUSES),
+        "report.states": report_states,
+        "report.delivery_modes": set(DELIVERY_MODES),
+        "report.delivery_attempt_states": delivery_attempt_states,
+        "task.states": set(_TASK_STATUSES),
+    }
 
 def normalize(url: str) -> str:
     url = url.split("?", 1)[0]
@@ -90,6 +129,21 @@ def audit() -> dict[str, object]:
         missing_resources = sorted(REQUIRED_RESOURCES - set(fixtures.get("resources", {})))
         for resource in missing_resources:
             findings.append({"kind": "missing_contract_fixture_resource", "page": "shared", "value": resource})
+        if not missing_resources:
+            try:
+                actual = actual_contract_states()
+            except (ImportError, RuntimeError, OSError) as error:
+                findings.append({"kind": "fixture_contract_read_failed", "page": "shared", "value": type(error).__name__})
+            else:
+                for key, expected in actual.items():
+                    resource, field = key.split(".", 1)
+                    declared = set(fixtures["resources"][resource].get(field, []))
+                    if declared != expected:
+                        findings.append({
+                            "kind": "fixture_state_mismatch",
+                            "page": "shared",
+                            "value": f"{key}: declared={sorted(declared)} actual={sorted(expected)}",
+                        })
     css = (STATIC / "css" / "app.css").read_text(encoding="utf-8")
     token_css = (STATIC / "css" / "tokens.css").read_text(encoding="utf-8") if (STATIC / "css" / "tokens.css").exists() else ""
     all_css = "\n".join(p.read_text(encoding="utf-8") for p in STATIC.rglob("*") if p.suffix in {".css", ".html"})
