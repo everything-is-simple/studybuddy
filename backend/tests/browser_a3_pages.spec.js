@@ -50,7 +50,7 @@ test('A3-PAGES practice session and result render approved read-only data',async
   await expect(page.locator('#session-detail')).toContainText('模拟练习');
   await expect(page.locator('#session-detail')).toContainText('已完成');
   await page.unrouteAll({behavior:'ignoreErrors'});
-  await mock(page,'**/api/study/practice-sessions/session-1/result',{score:8,total:10,grading_note:'继续复习重点。'});
+  await mock(page,'**/api/study/practice-sessions/session-1/result',{session:{id:'session-1',status:'finished'},summary:{score_total:8,total_item_count:10,scored_count:8,submitted_count:8,grading_note:'继续复习重点。'}});
   await page.goto(`${BASE}/app/practice-result.html?session_id=session-1`);
   await expect(page.locator('#result-detail')).toContainText('得分：8 / 10');
   await expect(page.locator('body')).not.toContainText(/answer.?key|正确答案/i);

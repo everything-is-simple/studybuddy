@@ -512,7 +512,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 - [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
 - [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；完整 browser `117 passed, 3 skipped`，专项证据 `13 passed`。不代表报告导出/审计、练习写操作或 Provider 配置写入已迁移。
 - [x] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；Neutral Modern token、组件、响应式、焦点和状态视觉已统一，剩余局部 CSS 已收敛到共享样式。全部 21 个 `/app/*.html` 无局部 `<style>`；`browser_frontend_visual_matrix.spec.js` 覆盖 shared tokens、card、360/1920、触控目标和 focus ring（`2 passed`）。不得将此项扩大解释为 Provider 写入、报告导出/审计或练习写流程已完成。
-- [ ] **后续行为切片（A3-VISUAL 后）**：practice workflow 逐题作答/submit/finish/redo 必须先冻结答案 key 隐私、幂等、失败/retry、stale response 与独立 browser evidence；reports export/audit 仅在 B3 gate 后，维持 `delivery=off`/dry-run/append-only audit；Provider 写入仅在安全后端契约获批后，禁止浏览器保存、回显或持久化密钥。其余 `legacy_only` 逐项迁移，`not_exposed` 不迁移也不伪造。
+- [ ] **后续行为切片（A3-VISUAL 后）**：Practice workflow 第一阶段已完成：契约已冻结，`practice-session.html` 已覆盖公开题目、start/submit/finish、nested result、expired/source warning、retry/stale 安全边界，`practice-result.html` 使用真实 nested summary，`review.html` 提供安全来源/redo/archive 基线；专项 browser `6 passed`，完整 browser `126 passed, 3 skipped`。后续仍需独立补齐 review/mark-mistake/feedback 控件和更广端到端路径；reports export/audit 仅在 B3 gate 后，Provider 写入仅在安全后端契约获批后，`not_exposed` 不迁移也不伪造。
 - [ ] **旧 `/` 入口**：当前保留完整单页兼容入口；待 Draft A–D 各自通过回归后决定重定向或逐页切换。
 - [ ] **首页聚合 API**：允许多 API 组合，还是新增一个安全聚合 endpoint？
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
