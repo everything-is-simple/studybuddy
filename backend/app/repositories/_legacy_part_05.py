@@ -182,6 +182,59 @@ def list_weak_points(connection: sqlite3.Connection, *, project_id: str) -> list
     ).fetchall()
     return [dict(row) for row in rows]
 
+def recommend_practice_exercises(connection: sqlite3.Connection, *, project_id: str, limit: int = 10,
+                                  weak_point: str | None = None) -> dict[str, object]:
+    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 20:
+        raise ValueError("practice_recommendation_invalid_query")
+    if weak_point is not None:
+        if not isinstance(weak_point, str) or not 1 <= len(weak_point.strip()) <= 200:
+            raise ValueError("practice_recommendation_invalid_query")
+        weak_point = weak_point.strip()
+    rows = connection.execute(
+        "SELECT e.* FROM exercises e WHERE e.project_id=? AND e.status='ready' "
+        "ORDER BY e.id", (project_id,)).fetchall()
+    items = []
+    for row in rows:
+        citations = connection.execute(
+            "SELECT status FROM exercise_citations WHERE exercise_id=?", (row["id"],)
+        ).fetchall()
+        if row["exercise_kind"] == "ai_generated" and (not citations or any(c["status"] != "valid" for c in citations)):
+            continue
+        if any(c["status"] != "valid" for c in citations):
+            continue
+        attempts = connection.execute(
+            "SELECT grading_status,is_correct,submitted_at FROM exercise_attempts WHERE exercise_id=? ORDER BY submitted_at DESC",
+            (row["id"],)).fetchall()
+        incorrect = sum(1 for a in attempts if a["is_correct"] == 0)
+        pending = sum(1 for a in attempts if a["grading_status"] == "pending_review")
+        weak_match = bool(weak_point and weak_point.lower() in str(row["prompt"]).lower())
+        reasons = []
+        if not attempts: reasons.append("never_attempted")
+        if incorrect: reasons.append("recent_incorrect")
+        if pending: reasons.append("pending_review")
+        if weak_match: reasons.append("weak_point_match")
+        reasons.append("source_valid")
+        items.append({"exercise_id": row["id"], "exercise_type": row["exercise_type"], "prompt": row["prompt"],
+                      "options": json.loads(row["options_json"]), "status": row["status"], "source_status": "valid",
+                      "weak_point": weak_point if weak_match else None,
+                      "attempt_summary": {"attempt_count": len(attempts), "incorrect_count": incorrect,
+                                          "pending_review_count": pending,
+                                          "last_attempt_at": attempts[0]["submitted_at"] if attempts else None},
+                      "reason_codes": reasons})
+    items.sort(key=lambda item: (0 if not item["attempt_summary"]["attempt_count"] else 1,
+                                 0 if weak_point and item["weak_point"] else 1,
+                                 -item["attempt_summary"]["incorrect_count"],
+                                 -item["attempt_summary"]["pending_review_count"],
+                                 item["attempt_summary"]["last_attempt_at"] is not None,
+                                 item["attempt_summary"]["last_attempt_at"] or "",
+                                 item["attempt_summary"]["attempt_count"], item["exercise_id"]))
+    labels = {"never_attempted": "尚未练习", "recent_incorrect": "近期答错较多",
+              "pending_review": "等待人工复核", "weak_point_match": "匹配当前薄弱点", "source_valid": "来源当前可用"}
+    for item in items:
+        item["reason_labels"] = [labels[code] for code in item["reason_codes"]]
+    return {"status": "ready" if items[:limit] else "empty", "algorithm_version": "practice-recommendation-v1",
+            "generated_at": utc_now(), "limit": limit, "items": items[:limit]}
+
 PHASE9D_TRANSCRIPTION_OPERATION = "class_capture_transcription"
 
 PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD = 0.70

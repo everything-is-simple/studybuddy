@@ -70,6 +70,10 @@ class PracticeSessionRequest(BaseModel):
 class PracticeSubmitRequest(BaseModel):
     answer: object
 
+class PracticeRecommendationQuery(BaseModel):
+    limit: int = 10
+    weak_point: str | None = None
+
 class AttemptReviewRequest(BaseModel):
     decision: str
     feedback: str = ""
