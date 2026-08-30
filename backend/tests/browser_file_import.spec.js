@@ -25,7 +25,15 @@ async function waitReady() {
   }
   throw new Error('server_not_ready');
 }
-function stopServer(server) { if (server && !server.killed) server.kill(); }
+async function stopServer(server) {
+  if (!server || server.killed) return;
+  await new Promise(resolve => {
+    const finish = () => resolve();
+    server.once('exit', finish);
+    server.kill();
+    setTimeout(finish, 5000);
+  });
+}
 function hashFile(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 function countFiles(root, pattern) {
   if (!fs.existsSync(root)) return 0;
@@ -129,7 +137,7 @@ function makeBoundaryFiles() {
     await page.context().setOffline(true);
     
     // Stop server and wait longer for clean shutdown
-    stopServer(server); server = null; 
+    await stopServer(server); server = null;
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Start server and wait for full readiness
@@ -166,5 +174,5 @@ function makeBoundaryFiles() {
     };
     fs.mkdirSync(path.dirname(ARTIFACT), {recursive: true}); fs.writeFileSync(ARTIFACT, JSON.stringify(payload, null, 2), 'utf8');
     expect(consoleErrors).toEqual([]);
-  } finally { stopServer(server); }
+  } finally { await stopServer(server); }
 });

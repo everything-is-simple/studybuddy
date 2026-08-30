@@ -23,7 +23,7 @@ async function ready() {
   }
   throw new Error('server_not_ready');
 }
-function stop() { if (server && !server.killed) server.kill(); server = null; }
+async function stop() { if (!server || server.killed) { server = null; return; } await new Promise(resolve => { const finish = () => resolve(); server.once('exit', finish); server.kill(); setTimeout(finish, 5000); }); server = null; }
 async function uploadAndIndex(page, name = 'rhythm-notes.txt') {
   await page.locator('#file').setInputFiles({name, mimeType: 'text/plain', buffer: Buffer.from('A controlled source establishes a stable rhythm and a cited note.')});
   await page.locator('#file-import').click();
@@ -42,7 +42,7 @@ async function createActivePlan(page) {
 }
 
 test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}); server = startServer(); await ready(); });
-test.afterEach(stop);
+test.afterEach(async () => { await stop(); });
 
 test('Phase 9B S1 rhythm workspace saves, adjusts, completes and recovers server state', async ({page}) => {
   const errors = [];

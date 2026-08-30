@@ -23,7 +23,7 @@ async function ready() {
   }
   throw new Error('server_not_ready');
 }
-function stop() { if (server && !server.killed) server.kill(); server = null; }
+async function stop() { if (!server || server.killed) { server = null; return; } await new Promise(resolve => { const finish = () => resolve(); server.once('exit', finish); server.kill(); setTimeout(finish, 5000); }); server = null; }
 async function createExercise(page, type = 'multiple_choice') {
   const set = await page.request.post(`${BASE}/api/study/exercise-sets`, {data: {title: 'Browser 9C'}});
   const payload = type === 'multiple_choice'
@@ -42,7 +42,7 @@ async function createGoal(page) {
 }
 
 test.beforeEach(async () => { fs.rmSync(RUN_ROOT, {recursive: true, force: true}); server = startServer(); await ready(); });
-test.afterEach(stop);
+test.afterEach(async () => { await stop(); });
 
 test('Phase 9C S3 workspace starts, submits, results, reloads and preserves privacy', async ({page}) => {
   const errors = [];
