@@ -15,6 +15,8 @@ from ._core import (
     CaptureProviderError,
     CaptureTranscriptionProvider,
     CaptureTranscriptionRequest,
+    ImageOcrProvider,
+    ImageOcrRequest,
     CaptureTranscriptionResult,
     LLMProvider,
     ProviderError,
@@ -23,6 +25,8 @@ from ._core import (
 )
 
 # Capture providers
+from ._ocr import PaddleImageOcrProvider
+
 from ._capture import (
     DeterministicFakeCaptureProvider,
     FakeCaptureProvider,
@@ -61,6 +65,9 @@ __all__ = [
     "CaptureTranscriptionResult",
     "CaptureProviderError",
     "CaptureTranscriptionProvider",
+    "ImageOcrProvider",
+    "ImageOcrRequest",
+    "PaddleImageOcrProvider",
     # Capture providers
     "DeterministicFakeCaptureProvider",
     "FakeCaptureProvider",

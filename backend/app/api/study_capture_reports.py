@@ -111,16 +111,27 @@ def register_routes(app, context: dict[str, object]) -> None:
             raise HTTPException(status_code=400, detail="invalid_idempotency_key")
         config = app.state.config
         try:
-            provider_id = config.asr_provider_id or "fake"
-            model_id = config.asr_model_id if config.asr_provider_id else "fake-capture-v1"
-            provider = provider_registry(
-                provider_id, model_id,
-            ).capture_provider(
-                runtime_path=str(config.asr_runtime_path) if config.asr_runtime_path else None,
-                model_path=str(config.asr_model_path) if config.asr_model_path else None,
-                timeout_seconds=config.asr_timeout_seconds,
-                max_output_bytes=config.asr_max_output_bytes,
-            )
+            with connect(config.database_path) as connection:
+                capture = get_capture_session(
+                    connection, project_id=config.project_id, capture_session_id=capture_id,
+                )
+            if capture is None:
+                raise HTTPException(status_code=404, detail="capture_not_found")
+            if capture["asset_kind"] == "image":
+                if not (config.ocr_enabled and config.ocr_provider_id == "paddleocr"):
+                    raise ProviderError("transcription_provider_not_configured")
+                provider_id, model_id = config.ocr_provider_id, config.ocr_model_id
+                provider_kwargs = {"ocr_model_root": str(config.ocr_model_root) if config.ocr_model_root else None,
+                                   "timeout_seconds": config.ocr_timeout_seconds,
+                                   "max_output_bytes": config.ocr_max_output_bytes}
+            else:
+                provider_id = config.asr_provider_id or "fake"
+                model_id = config.asr_model_id if config.asr_provider_id else "fake-capture-v1"
+                provider_kwargs = {"runtime_path": str(config.asr_runtime_path) if config.asr_runtime_path else None,
+                                   "model_path": str(config.asr_model_path) if config.asr_model_path else None,
+                                   "timeout_seconds": config.asr_timeout_seconds,
+                                   "max_output_bytes": config.asr_max_output_bytes}
+            provider = provider_registry(provider_id, model_id).capture_provider(**provider_kwargs)
             with connect(config.database_path) as connection:
                 return transcribe_capture_session(
                     connection, project_id=config.project_id,
