@@ -306,9 +306,9 @@ backend/app/
 
 **C5 Formal：** 已完成只读 report service/export API 和产品页面 `reports.html` 的 backend/browser/source-lifecycle/backup-restore/operator acceptance。页面仅读取已有 snapshot，支持 JSON/Markdown 导出，明确呈现未发送状态；证据见 `docs/evidence/B3_REPORT_C5_ACCEPTANCE_EVIDENCE.md`。
 
-**C6 Formal：** 执行 scoped closeout：复核 B3 C0-C5 evidence、治理边界、回归、source-size、文档一致性和明确 `not_verified` 限制；不持久化原始 prompt、完整敏感文本或导出内容到审计记录。
+**C6 Formal：** 已完成 scoped closeout：复核 B3 C0-C5 evidence、Composer/Integration/Formal 隔离、B3 governance、C4/C5 focused、Phase 9D report/source-lifecycle/backup-restore、Chromium、完整 backend、frontend contract audit、source-size 和 diff check。脱敏 closeout evidence 见 `docs/evidence/B3_REPORT_C6_SCOPED_CLOSEOUT_EVIDENCE.md`。
 
-**通过门槛：** C0-C6 全部通过。报告完成不自动批准 delivery，也不表示报告内容适用于医学、教育评估或其它高风险决策。
+**通过门槛：** C0-C6 全部通过。B3 完成仅限 local deterministic project-scoped JSON/Markdown report scope；报告完成不自动批准 delivery，也不表示报告内容适用于医学、教育评估或其它高风险决策。
 
 ### B4：真实外发组件流水线
 
