@@ -98,10 +98,10 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 - `README.md`：入口和简明当前定位，不复制完整状态表。
 - `docs/STATUS.md`：能力状态、证据索引和已知运行限制；是实现状态的权威来源。
-- `docs/` 根目录只保留核心入口、设计、治理、状态、路线、TODO 和正式 acceptance；规划、历史、运行手册和辅助 evidence 统一放在 `docs/prompts/`，其中辅助 evidence 放在 `docs/prompts/evidence/`。
+- `docs/` 根目录只保留核心入口、设计、治理、状态、路线和 TODO；持久契约、正式证据、运行手册和历史资料分别位于 `docs/contracts/`、`docs/evidence/`、`docs/operations/` 和 `docs/archive/`。
 - `docs/TODO.md`：唯一可勾选的执行清单；完成项必须关联代码、测试、文档和证据。
 - `docs/PHASE_ROADMAP.md`：长期阶段、依赖和执行顺序，不作为测试结果记录。
-- `docs/PROJECT_PROGRESS_REPORT.md`：面向项目汇报的当前事实摘要，不能产生与 STATUS 冲突的新状态。
+- 不维护独立的项目进度报告；面向项目汇报的当前事实摘要以 `docs/STATUS.md` 为准，不能产生第二份冲突状态。
 - `docs/CODE_TEST_GOVERNANCE.md`：本治理契约，描述规则而不是功能完成度。
 - `docs/INDEX.md`：所有重要文档的导航入口。
 

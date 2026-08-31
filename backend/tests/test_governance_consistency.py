@@ -19,13 +19,13 @@ def test_authoritative_status_documents_agree_on_p6e_boundary():
     roadmap = read("PHASE_ROADMAP.md")
     status = read("STATUS.md")
     todo = read("TODO.md")
-    evidence = read("prompts/P6E_ACCEPTANCE_EVIDENCE.md")
+    evidence = read("evidence/P6E_ACCEPTANCE_EVIDENCE.md")
 
     assert "P6-E fake Provider" in roadmap
     assert "P6-E core workflow acceptance" in status
     assert "P6-E fake Provider 核心工作流整体验收" in todo
-    assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in roadmap
-    assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in status
+    assert "evidence/P6E_ACCEPTANCE_EVIDENCE.md" in roadmap
+    assert "evidence/P6E_ACCEPTANCE_EVIDENCE.md" in status
     assert "Fake Provider complete workflow" in evidence
     assert "real network" in evidence
     assert "not global availability" in evidence
@@ -33,9 +33,9 @@ def test_authoritative_status_documents_agree_on_p6e_boundary():
 
 def test_governance_preserves_real_provider_and_runtime_boundaries():
     architecture = read("ARCHITECTURE.md")
-    decisions = read("prompts/DECISIONS.md")
-    progress = read("PROJECT_PROGRESS_REPORT.md")
-    provider_setup = read("prompts/AI_PROVIDER_SETUP.md")
+    decisions = read("DECISIONS.md")
+    progress = read("STATUS.md")
+    provider_setup = read("operations/AI_PROVIDER_SETUP.md")
 
     for document in (architecture, decisions, progress, provider_setup):
         assert "not_verified" in document
@@ -48,14 +48,14 @@ def test_governance_preserves_real_provider_and_runtime_boundaries():
 
 
 def test_media_capability_selection_preserves_formal_boundaries():
-    decision = read("prompts/MEDIA_CAPABILITY_DECISION.md")
+    decision = read("contracts/MEDIA_CAPABILITY_DECISION.md")
     roadmap = read("ROADMAP_CAPABILITIES.md")
     todo = read("TODO.md")
     status = read("STATUS.md")
     architecture = read("ARCHITECTURE.md")
     frontend = read("frontend-plan.md")
     phase_roadmap = read("PHASE_ROADMAP.md")
-    progress = read("PROJECT_PROGRESS_REPORT.md")
+    progress = read("STATUS.md")
 
     for document in (decision, roadmap, todo, status, architecture, frontend, phase_roadmap, progress):
         assert "PaddleOCR" in document
@@ -76,8 +76,8 @@ def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
     roadmap = read("PHASE_ROADMAP.md")
     status = read("STATUS.md")
     todo = read("TODO.md")
-    progress = read("PROJECT_PROGRESS_REPORT.md")
-    evidence = read("prompts/PHASE8_ACCEPTANCE_EVIDENCE.md")
+    progress = read("STATUS.md")
+    evidence = read("evidence/PHASE8_ACCEPTANCE_EVIDENCE.md")
 
     for document in (roadmap, status, todo, progress):
         assert "PHASE8_ACCEPTANCE_EVIDENCE.md" in document
@@ -92,12 +92,12 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     roadmap = read("PHASE_ROADMAP.md")
     status = read("STATUS.md")
     todo = read("TODO.md")
-    progress = read("PROJECT_PROGRESS_REPORT.md")
+    progress = read("STATUS.md")
     architecture = read("ai-learning-architecture.md")
-    decisions = read("prompts/DECISIONS.md")
+    decisions = read("DECISIONS.md")
     migration_doc = read("MIGRATIONS.md")
-    contract = read("prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md")
-    acceptance = read("prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md")
+    contract = read("contracts/PHASE9A_DOMAIN_CONTRACT.md")
+    acceptance = read("evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md")
     runner = (ROOT / "backend" / "app" / "migrations" / "runner.py").read_text(encoding="utf-8")
 
     for document in (roadmap, status, todo, progress, architecture):
@@ -106,7 +106,7 @@ def test_phase9a_contract_migration_and_status_are_consistent():
         assert "9A-2" in document
     assert "Phase 9A" in status
     assert "v9" in status
-    assert "prompts/phase9a/PHASE9A_DOMAIN_CONTRACT.md" in status
+    assert "contracts/PHASE9A_DOMAIN_CONTRACT.md" in status
     assert "Current schema version: **13**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
     assert "10 | phase9b_material_learning_schema" in migration_doc
@@ -154,11 +154,11 @@ def test_phase9b_closeout_and_current_regression_are_consistent():
     roadmap = read("PHASE_ROADMAP.md")
     status = read("STATUS.md")
     todo = read("TODO.md")
-    progress = read("PROJECT_PROGRESS_REPORT.md")
+    progress = read("STATUS.md")
     architecture = read("ARCHITECTURE.md")
-    contract = read("prompts/phase9b/PHASE9B_DOMAIN_CONTRACT.md")
-    evidence = read("prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md")
-    decisions = read("prompts/DECISIONS.md")
+    contract = read("contracts/PHASE9B_DOMAIN_CONTRACT.md")
+    evidence = read("evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md")
+    decisions = read("DECISIONS.md")
     governance = read("CODE_TEST_GOVERNANCE.md")
 
     for document in (roadmap, status, todo, progress, architecture, contract, decisions):
@@ -226,34 +226,28 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
 
     allowed_core_docs = {
         "ARCHITECTURE.md",
-        "A4_COMPLETION_REPORT.md",
-        "A4_SUMMARY.md",
         "BACKUP_RESTORE.md",
         "CODE_TEST_GOVERNANCE.md",
+        "DECISIONS.md",
         "INDEX.md",
+        "LOCAL_V1_USER_GUIDE.md",
         "MIGRATIONS.md",
-        "frontend-plan.md",
-        "frontend-contract-audit.md",
-        "frontend-contract-audit-report.md",
-        "frontend-implementation-diff-report.md",
-        "frontend-static-capability-matrix.md",
-        "frontend-static-failure-retry-matrix.md",
-        "frontend-practice-workflow-contract.md",
-        "component-adoption-audit-2026-08-27.md",
         "PHASE_ROADMAP.md",
-        "PROJECT_PROGRESS_REPORT.md",
         "ROADMAP_CAPABILITIES.md",
         "STATUS.md",
         "TODO.md",
         "ai-learning-architecture.md",
-        "LOCAL_V1_USER_GUIDE.md",
+        "frontend-contract-audit-report.md",
+        "frontend-plan.md",
+        "frontend-static-capability-matrix.md",
+        "frontend-static-failure-retry-matrix.md",
     }
     assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
-    assert (DOCS / "prompts" / "README.md").is_file()
-    assert (DOCS / "prompts" / "evidence" / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").is_file()
-    assert (DOCS / "prompts" / "evidence" / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").is_file()
-    assert not (DOCS / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").exists()
-    assert not (DOCS / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").exists()
+    for directory in ("contracts", "evidence", "operations", "archive"):
+        assert (DOCS / directory).is_dir()
+    assert not any((DOCS / "prompts").rglob("*.md"))
+    assert (DOCS / "evidence" / "PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md").is_file()
+    assert (DOCS / "evidence" / "PHASE9A_BACKUP_RESTORE_EVIDENCE.md").is_file()
 
 
 def test_markdown_relative_links_resolve_after_document_moves():
@@ -278,9 +272,9 @@ def test_core_design_tracks_current_phase_and_moved_document_links():
     backup = read("BACKUP_RESTORE.md")
     migrations = read("MIGRATIONS.md")
     roadmap = read("PHASE_ROADMAP.md")
-    progress = read("PROJECT_PROGRESS_REPORT.md")
+    progress = read("STATUS.md")
     status = read("STATUS.md")
-    phase9d = read("prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md")
+    phase9d = read("evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md")
     restore_acceptance = (ROOT / "backend" / "app" / "restore_acceptance.py").read_text(encoding="utf-8")
 
     for document in (architecture, ai_architecture, progress):
@@ -298,12 +292,12 @@ def test_core_design_tracks_current_phase_and_moved_document_links():
     assert "PHASE9D_ACCEPTANCE_EVIDENCE.md" in roadmap
     assert "当前正式 schema 为 v11" not in architecture
     assert "API/UI、完整 source lifecycle/restore gates" not in ai_architecture
-    assert "prompts/P6E_ACCEPTANCE_EVIDENCE.md" in architecture
-    assert "prompts/BACKUP_OPERATIONS.md" in backup
-    assert "prompts/RESTORE_DRILL.md" in backup
+    assert "evidence/P6E_ACCEPTANCE_EVIDENCE.md" in architecture
+    assert "operations/BACKUP_OPERATIONS.md" in backup
+    assert "operations/RESTORE_DRILL.md" in backup
     assert "Phase 9D capture-session" in migrations
     assert "OCR/ASR" in backup and "report generation" in backup and "delivery" in backup
     assert "_phase9d_checks" in restore_acceptance
     assert "acceptance_phase9d_schema_missing" in restore_acceptance
-    assert "prompts/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md" in roadmap
-    assert "prompts/DECISIONS.md" in progress
+    assert "evidence/PHASE7_EMBEDDING_ACCEPTANCE_EVIDENCE.md" in roadmap
+    assert "DECISIONS.md" in progress

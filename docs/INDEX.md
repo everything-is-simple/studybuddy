@@ -9,50 +9,34 @@
 - [`STATUS.md`](STATUS.md)：实现状态与证据索引的权威来源。
 - [`TODO.md`](TODO.md)：唯一可勾选的执行清单。
 - [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：已完成 Phase 与长期阶段、依赖和完成标准。
-- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力补齐、原生前端与桌面化路线图；A2.X、A3、A4 已完成声明范围，B0-B4 与 D0-D1 能力流水线仍为 `planned`。
-- [`PROJECT_PROGRESS_REPORT.md`](PROJECT_PROGRESS_REPORT.md)：项目现状摘要。
-- [`A4_COMPLETION_REPORT.md`](A4_COMPLETION_REPORT.md)：Provider 设置、课堂采集与任务状态页面的 A4 交付记录。
-- [`A4_SUMMARY.md`](A4_SUMMARY.md)：A4 页面范围、验证与能力边界摘要。
-- [`frontend-implementation-diff-report.md`](frontend-implementation-diff-report.md)：前端实现与设计、以及文档实现之间的差异记录。
+- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力路线图。
 
-## 使用与竣工
-
-- [`LOCAL_V1_USER_GUIDE.md`](LOCAL_V1_USER_GUIDE.md)：竣工报告、首次配置、启动/停止、首次验收、真实 AI 配置、日常使用和最小产品扩展路线。
-
-## 核心设计与运维
+## 设计、使用与维护
 
 - [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构和实施边界。
 - [`MIGRATIONS.md`](MIGRATIONS.md)：schema version、migration runner 与升级规则。
 - [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)：backup / verify / restore 行为边界。
-- [`prompts/architecture/A2_X_SERIES_SUMMARY.md`](prompts/architecture/A2_X_SERIES_SUMMARY.md)：A2.X 核心文件模块化拆分总结、兼容性矩阵和维护指南。
-- [`prompts/MEDIA_CAPABILITY_DECISION.md`](prompts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 的已选候选、运行环境准备度和 B1/B2/Formal 边界。
+- [`LOCAL_V1_USER_GUIDE.md`](LOCAL_V1_USER_GUIDE.md)：本地 v1 首次配置、启动、验收和日常使用。
+- [`frontend-plan.md`](frontend-plan.md)：保留的前端实现契约与范围。
 
-## 正式验收证据
+## 分类资料
 
-- [`prompts/PHASE8_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE8_ACCEPTANCE_EVIDENCE.md)：Cards / Exercises 限定范围验收。
-- [`prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9A_ACCEPTANCE_EVIDENCE.md)：学习领域与计划核心验收。
-- [`prompts/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](prompts/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)：9A source lifecycle 辅助证据。
-- [`prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](prompts/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md)：9A backup / restore 辅助证据。
-- [`prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9B_ACCEPTANCE_EVIDENCE.md)：S1/S2 工作流验收。
-- [`prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9C_ACCEPTANCE_EVIDENCE.md)：S3/S4/S5 工作流验收。
-- [`prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md`](prompts/PHASE9D_ACCEPTANCE_EVIDENCE.md)：S6/S7 部分立项范围的 Gate A-L scoped closeout。
-- [`prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md`](prompts/phase10/PHASE10_TASK_INTEGRATION_EVIDENCE.md)：Phase 10-4 approved embedding task integration Gate E evidence.
-- [`prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md`](prompts/phase10/PHASE10_OBSERVABILITY_READINESS_EVIDENCE.md)：Phase 10-5 observability/readiness/diagnostics Gate F evidence.
-- [`prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md`](prompts/phase10/PHASE10_OPERATIONS_EVIDENCE.md)：Phase 10-6 backup/restore/migration operations Gate G evidence.
-- [`prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)：Phase 10-7 local runtime/configuration/start-stop Gate H evidence。
-- [`prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md`](prompts/phase10/PHASE10_BOUNDARY_EVIDENCE.md)：Phase 10-8 local capacity/performance/lifecycle/boundary Gate I evidence。
-- [`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：Phase 10-9 isolated release candidate drill、Gate J 与 local-v1 release closeout evidence。
+- [`contracts/`](contracts/)：持久领域、API、Provider、媒体和前端工作流契约；实现应以对应契约为准。
+- [`evidence/`](evidence/)：正式验收与 scoped gate 证据，不把未验证范围写成 `real-pass`。
+- [`operations/`](operations/)：Provider、备份、恢复、升级和本地环境的操作手册。
+- [`archive/`](archive/)：保留的历史审计、阶段范围和重构记录；它们只提供历史背景，不是当前事实源。
 
-## 非核心资料
+### 常用分类入口
 
-所有规划 prompt、阶段审计、历史决策、provider/运行手册与已完成阶段的辅助证据统一放在 [`prompts/`](prompts/)。其中：
-
-- [`prompts/phase9a/`](prompts/phase9a/)、[`prompts/phase9b/`](prompts/phase9b/)、[`prompts/phase9c/`](prompts/phase9c/)：Phase 9 的任务规划、领域契约和执行门禁；它们不是实现状态证据。
-- [`prompts/phase10/`](prompts/phase10/)：Phase 10 本地生产化、后台任务与上线收口的总体 prompt、共用上下文、10-0 至 10-9 子任务 prompt 和 Gate A-J；它们不是实现状态证据。
-- `prompts/` 根目录：provider、升级、备份演练、基础设施和历史参考资料。
+- [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 候选及 Formal 边界。
+- [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)：Phase 9D 限定范围 closeout。
+- [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：local-v1 release candidate drill。
+- [`operations/AI_PROVIDER_SETUP.md`](operations/AI_PROVIDER_SETUP.md)：真实 Provider 的显式 opt-in 配置边界。
+- [`archive/A2_X_SERIES_SUMMARY.md`](archive/A2_X_SERIES_SUMMARY.md)：A2.X 模块化拆分历史总结。
 
 ## 文档维护规则
 
-- 根目录只保留 `README.md`、`AGENTS.md` 与项目元数据；活跃文档位于 `docs/`。
-- `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责状态、执行清单、已完成阶段长期顺序与已批准后续路线；发生冲突时先修正这些事实源。
-- `docs/` 根目录只保留核心入口、设计、治理、状态、路线、TODO 和正式 acceptance；非核心过程资料、历史决策、规划 prompt 和辅助 evidence 只放在 `docs/prompts/`（辅助 evidence 置于 `docs/prompts/evidence/`），不要再复制到 `docs/` 根目录。
+- 根目录只保留 `README.md`、`AGENTS.md` 与项目元数据；活跃事实源位于 `docs/` 根目录。
+- `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责状态、执行清单、阶段顺序与已批准路线；发生冲突时先修正这些事实源。
+- 非核心资料必须按用途放入 `contracts/`、`evidence/`、`operations/` 或 `archive/`，不要恢复已移除的规划 prompt 目录或复制第二份状态摘要。
+- 新增或移动 Markdown 后，运行治理测试中的链接检查；历史归档中的已移除资料应改为文字 provenance，而不是保留失效链接。
