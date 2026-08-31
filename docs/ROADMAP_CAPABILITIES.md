@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；ASR C2 Integration、Formal contract、显式 opt-in API/browser/backup-restore evidence 已通过，且完整 Chromium 基线已恢复为 `130 passed, 4 skipped`。后续 B2-B4/D0-D1 门禁仍待执行。
+> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；ASR C2 Integration、Formal contract、显式 opt-in API/browser/backup-restore evidence 已通过，且完整 Chromium 基线已恢复为 `130 passed, 4 skipped`。B2 OCR C0-C6 已在冻结的 PaddleOCR 本地 synthetic scope 内完成 scoped closeout；B3-B4/D0-D1 门禁仍待执行。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -272,7 +272,7 @@ backend/app/
 
 ### B2：真实 OCR 组件流水线
 
-**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR/RapidOCR 仍必须验证本地模型、许可证、离线运行、中文质量、图片格式和资源上限，未通过 C1/C2 前不得进入 Formal。
+**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR 已完成 Composer C1、Integration C2、Formal C3 contract freeze、C4 implementation、C5 acceptance 与 C6 scoped closeout；RapidOCR 仍是独立 smoke candidate，未自动纳入 Formal。
 
 **Composer smoke：**
 
@@ -282,9 +282,9 @@ backend/app/
 
 **Integration：** 验证 image original、OCR draft、uncertain/confidence、operation/task、用户确认、material/revision/chunk/citation 接入、delete/restore/purge 和 backup/restore non-repair。
 
-**Formal：** 冻结 `ImageOcrProvider` 契约后独立实现；结果先作为 draft，未经确认不得覆盖材料或成为正常引用来源。
+**Formal：** 已依据冻结的 `ImageOcrProvider` 契约独立实现；结果先作为 draft，未经确认不得覆盖材料或成为正常引用来源。C5 使用显式 opt-in 的本地模型和非敏感 synthetic PNG 完成 acceptance，C6 已完成限定范围 closeout。
 
-**通过门槛：** C0-C6 全部通过；一次真实图片 smoke 仅记录精确组件和模型范围。
+**通过门槛：** B2 C0-C6 已在精确 PaddleOCR/模型/Windows/Python 3.10/CPU/local synthetic scope 内完成；一次真实图片 smoke 仅记录精确组件和模型范围，不外推为通用 OCR real-pass。脱敏证据见 `docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`。
 
 ### TTS：独立重新立项（不属于 B1–B4 的已批准路径）
 

@@ -26,7 +26,7 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
 
-本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立。已选 C0 路径为 `H:\WhisperCli`/whisper.cpp `large-v3-turbo`（ASR）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS 候选）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；目前仅有本机预检/准备度证据，候选 C1 smoke、Integration、Formal 均未通过。真实 OCR/ASR/TTS 不得据此视为已完成。详见 [`docs/contracts/MEDIA_CAPABILITY_DECISION.md`](docs/contracts/MEDIA_CAPABILITY_DECISION.md)。
+本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立。已选 C0 路径为 `H:\WhisperCli`/whisper.cpp `large-v3-turbo`（ASR）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS 候选）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；B1 ASR 与 B2 PaddleOCR 已分别在各自精确 scope 内完成 scoped closeout，RapidOCR、TTS、PPTX 图片页 OCR 仍未完成对应 Formal 门禁。真实 OCR/ASR/TTS 不得据此视为通用能力或全局 real-pass。B2 脱敏证据见 [`docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`](docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md)。详见 [`docs/contracts/MEDIA_CAPABILITY_DECISION.md`](docs/contracts/MEDIA_CAPABILITY_DECISION.md)。
 
 ## 当前正式实现
 
