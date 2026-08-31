@@ -32,6 +32,9 @@
 <div class="asr-notice" id="asr-notice" role="status" aria-live="polite">
 <p>正在加载转写能力状态…</p>
 </div>
+<div class="asr-notice mt-12" id="ocr-notice" role="status" aria-live="polite">
+<p>正在加载 OCR 能力状态…</p>
+</div>
 </section>
 
 <section class="card mt-24" data-od-id="capture-sessions">
@@ -60,6 +63,7 @@
 <select id="asset-kind" required>
 <option value="audio">音频</option>
 <option value="video">视频</option>
+<option value="image">图片</option>
 </select>
 </div>
 <div class="field mt-16">
@@ -110,6 +114,7 @@ let currentSessions=[];
 let loadGeneration=0;
 let detailGeneration=0;
 let captureCapability={status:'demo',provider_id:'fake',model_id:'fake-capture-v1'};
+let ocrCapability={status:'not_configured',provider_id:null,model_id:null};
 
 function text(value){return typeof value==='string'?value:''}
 
@@ -117,9 +122,12 @@ async function loadCaptureCapability(){
 try{
 const data=await sbApi.json('/api/ai/capabilities',{signal:pageRequest.signal});
 captureCapability=data&&typeof data.capture==='object'?data.capture:captureCapability;
+ocrCapability=data&&typeof data.ocr==='object'?data.ocr:ocrCapability;
 }catch(e){if(e.name!=='AbortError')captureCapability={status:'unknown',provider_id:null,model_id:null}}
 const notice=document.querySelector('#asr-notice');
 notice.replaceChildren();
+const ocrNotice=document.querySelector('#ocr-notice');
+ocrNotice.replaceChildren();
 const heading=document.createElement('p');
 const emphasis=document.createElement('strong');
 const detail=document.createElement('p');detail.className='mt-8 mb-0';
@@ -136,7 +144,20 @@ emphasis.textContent='转写 Provider 未配置：';
 heading.append(emphasis,document.createTextNode('无法执行转写。'));
 detail.textContent='请由本机运行配置提供有效的转写 Provider；页面不会显示运行时或模型路径。';
 }
-notice.append(heading,detail)
+notice.append(heading,detail);
+const ocrHeading=document.createElement('p');
+const ocrEmphasis=document.createElement('strong');
+const ocrDetail=document.createElement('p');ocrDetail.className='mt-8 mb-0';
+if(ocrCapability.status==='configured'){
+ocrEmphasis.textContent='本机 OCR 已配置：';
+ocrHeading.append(ocrEmphasis,document.createTextNode('图片识别结果仍需人工核对。'));
+ocrDetail.textContent=`Provider：${text(ocrCapability.provider_id)} · 模型：${text(ocrCapability.model_id)}。`;
+}else{
+ocrEmphasis.textContent='OCR Provider 未配置：';
+ocrHeading.append(ocrEmphasis,document.createTextNode('图片不会回退到 fake 或 ASR。'));
+ocrDetail.textContent='请由本机运行配置提供有效的 OCR Provider；页面不会显示模型路径。';
+}
+ocrNotice.append(ocrHeading,ocrDetail)
 }
 
 async function load(){
@@ -220,7 +241,8 @@ actions.append(viewBtn);
 if(item.status==='uploaded'){
 const transcribeBtn=document.createElement('button');
 transcribeBtn.className='btn';
-transcribeBtn.textContent=captureCapability.status==='configured'?'转写':'转写（fake）';
+const capability=item.asset_kind==='image'?ocrCapability:captureCapability;
+transcribeBtn.textContent=capability.status==='configured'?'转写':(item.asset_kind==='image'?'转写（OCR 未配置）':'转写（fake）');
 transcribeBtn.onclick=()=>transcribeSession(item.id);
 actions.append(transcribeBtn)
 }
@@ -271,7 +293,7 @@ uploadSection.className='upload-section';
 uploadSection.innerHTML=`
 <h3>上传文件</h3>
 <div class="upload-area" id="upload-area-${captureId}">
-<input type="file" id="file-input-${captureId}" accept="audio/*,video/*">
+<input type="file" id="file-input-${captureId}" accept="${data.asset_kind==='image'?'image/png,image/jpeg,image/webp':'audio/*,video/*'}">
 <p><strong>点击选择文件</strong>或拖放到此处</p>
 </div>
 <div id="upload-status-${captureId}" class="notice mt-12" hidden></div>
@@ -293,7 +315,7 @@ const draftId=text(draft.id)||text(draft.draft_id);
 const draftStatus=text(draft.status)||text(draft.draft_status);
 const draftSection=document.createElement('div');
 draftSection.className='draft-editor';
-const draftTitle=document.createElement('h3');draftTitle.textContent='转写草稿 · '+sbState.label(draftStatus);draftSection.append(draftTitle);const draftView=document.createElement('div');draftView.className='transcript-view';draftView.textContent=text(draft.text)||'(空)';draftSection.append(draftView);
+const draftTitle=document.createElement('h3');draftTitle.textContent=(data.asset_kind==='image'?'OCR 草稿 · ':'转写草稿 · ')+sbState.label(draftStatus);draftSection.append(draftTitle);const draftView=document.createElement('div');draftView.className='transcript-view';draftView.textContent=text(draft.text)||'(空)';draftSection.append(draftView);
 
 if(['draft','pending_review','review_required'].includes(draftStatus)){
 const editArea=document.createElement('textarea');
@@ -350,11 +372,15 @@ statusEl.textContent=sbApi.safeError(e)+' 可重试。'
 }
 
 async function transcribeSession(captureId){
-const configured=captureCapability.status==='configured';
-if(!confirm(configured?'确定使用当前配置的本机转写 Provider 吗？':'确定使用 fake 转写吗？'))return;
+const item=currentSessions.find(entry=>entry.id===captureId);
+const isImage=item&&item.asset_kind==='image';
+const capability=isImage?ocrCapability:captureCapability;
+const configured=capability.status==='configured';
+if(!configured){alert(isImage?'OCR Provider 未配置。':'转写 Provider 未配置。');return}
+if(!confirm(isImage?'确定使用当前配置的本机 OCR Provider 吗？':'确定使用当前配置的本机转写 Provider 吗？'))return;
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcribe`,{method:'POST',signal:pageRequest.signal});
-alert(captureCapability.status==='configured'?'转写已完成，结果等待人工确认。':'转写已触发（fake）');
+alert(isImage?'OCR 已完成，结果等待人工确认。':'转写已完成，结果等待人工确认。');
 load()
 }catch(e){
 if(e.name!=='AbortError')alert(sbApi.safeError(e))
@@ -426,6 +452,12 @@ alert(sbApi.safeError(e))
 }
 };
 
+document.querySelector('#asset-kind').onchange=e=>{
+const image=e.target.value==='image';
+const media=document.querySelector('#media-type');
+media.value=image?'image/png':'audio/mpeg';
+media.placeholder=image?'例：image/png':'例：audio/mpeg';
+};
 includeArchived.onchange=load;
 refreshBtn.onclick=load;
 
