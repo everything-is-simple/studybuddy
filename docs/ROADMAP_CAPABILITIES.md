@@ -292,7 +292,7 @@ backend/app/
 
 ### B3：报告组件流水线
 
-**C0 状态：** `candidate-selected / audit-frozen`。现有 Phase 9D report domain 是唯一 Formal 语义基线，不建立第二套 report domain。Composer 首轮候选为 project-owned 的本地确定性 projection reimplementation，当前仍为 `researching`。JSON/Markdown 进入 C1；PDF 因缺少 renderer/layout/font/resource/accessibility/privacy evidence 而排除。HTML/email、Feishu card、AI narrative、delivery state、网络和 task scheduling 同样排除。C0 脱敏证据见 `docs/evidence/B3_REPORT_C0_AUDIT_AND_SCOPE.md`。
+**C0-C3 状态：** C0 `audit-frozen`、C1 Composer `smoke_passed`、C2 Integration `integration_passed`、C3 Formal `contract-frozen`。现有 Phase 9D report domain 是唯一 Formal 语义基线，不建立第二套 report domain。`report-core` 仅在声明的 synthetic/local scope 内通过 Composer 与 Integration；C3 contract 见 `docs/contracts/B3_REPORT_COMPONENT_CONTRACT.md`，evidence 见 `docs/evidence/B3_REPORT_C3_CONTRACT_EVIDENCE.md`。JSON/Markdown 进入 Formal C4/C5；PDF 因缺少 renderer/layout/font/resource/accessibility/privacy evidence 而排除。HTML/email、Feishu card、AI narrative、delivery state、网络和 task scheduling 同样排除。C0 evidence 见 `docs/evidence/B3_REPORT_C0_AUDIT_AND_SCOPE.md`。
 
 **范围：** 先验证本地、确定性、脱敏的 report projection 和 JSON/Markdown export；不将“生成报告”与“真实外发”绑定。
 
@@ -300,7 +300,9 @@ backend/app/
 
 **Integration：** 与 9A-9D 学习数据、project scope、source lifecycle、append-only report audit、backup/restore 和隔离 data root 组合验证。
 
-**Formal：** 独立实现只读 report service/export API 和产品页面 `reports.html`；不持久化原始 prompt、完整敏感文本或导出内容到审计记录。
+**C3 Formal contract freeze：** 已冻结复用现有 Phase 9D report domain 的正式边界、safe payload、snapshot/idempotency、source lifecycle、backup/restore non-repair、JSON/Markdown-only export、API/UI 与 privacy/error 风险；正式契约见 `docs/contracts/B3_REPORT_COMPONENT_CONTRACT.md`。尚未实现新的 Formal production behavior。
+
+**C4/C5 Formal：** 独立验证并实现只读 report service/export API 和产品页面 `reports.html` 的必要缺口；不持久化原始 prompt、完整敏感文本或导出内容到审计记录。
 
 **通过门槛：** C0-C6 全部通过。报告完成不自动批准 delivery，也不表示报告内容适用于医学、教育评估或其它高风险决策。
 
