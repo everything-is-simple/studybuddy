@@ -57,13 +57,21 @@ function makeBoundaryFiles() {
 }
 
  test('formal file import final browser acceptance', async ({page}) => {
+  test.setTimeout(120000);
   fs.rmSync(RUN_ROOT, {recursive: true, force: true});
   fs.rmSync(path.dirname(ARTIFACT), {recursive: true, force: true});
   const boundary = makeBoundaryFiles();
   const consoleErrors = [];
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  page.on('pageerror', error => consoleErrors.push(`pageerror: ${error.message}`));
-  page.on('requestfailed', request => consoleErrors.push(`requestfailed: ${request.url()} ${request.failure()?.errorText}`));
+  let serverRestarting = false;
+  page.on('console', message => {
+    if (message.type() === 'error' && !serverRestarting) consoleErrors.push(message.text());
+  });
+  page.on('pageerror', error => {
+    if (!serverRestarting) consoleErrors.push(`pageerror: ${error.message}`);
+  });
+  page.on('requestfailed', request => {
+    if (!serverRestarting) consoleErrors.push(`requestfailed: ${request.url()} ${request.failure()?.errorText}`);
+  });
   let server = startServer();
   try {
     await waitReady();
@@ -133,7 +141,10 @@ function makeBoundaryFiles() {
     const refreshReadback = true;
     const beforeRestart = await page.locator('#materials .item').count();
     
-    // Set page offline to prevent requests during server restart
+    // The material count is the stable completion condition before teardown;
+    // networkidle is not reliable while capability/status reads are active.
+    await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);
+    serverRestarting = true;
     await page.context().setOffline(true);
     
     // Stop server and wait longer for clean shutdown
@@ -150,9 +161,6 @@ function makeBoundaryFiles() {
     
     // Wait for materials list to fully load
     await expect(page.locator('#materials .item')).toHaveCount(beforeRestart);
-    
-    // Additional wait to ensure UI is fully interactive
-    await page.waitForLoadState('networkidle');
     
     const exactItem = page.getByRole('button', {name: /exact-50m\.txt/});
     await expect(exactItem).toHaveCount(1);

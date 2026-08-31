@@ -1,6 +1,6 @@
 # Formal ASR Scoped Acceptance Evidence
 
-> Status: `Formal API/static-browser smoke passed; C5/C6 closeout blocked by full-browser baseline` for the exact local configuration below. This is not a general ASR quality, portability, capacity, or global production `real-pass` claim.
+> Status: `C0-C6 scoped closeout` for the exact local configuration below. This is not a general ASR quality, portability, capacity, or global production `real-pass` claim.
 
 ## Scope
 
@@ -31,7 +31,7 @@ The adapter keeps original bytes in memory only, uses a per-run temporary direct
 | Real configured static-browser lifecycle | `STUDYBUDDY_RUN_REAL_ASR_SMOKE=1 backend/scripts/test-browser.ps1 -Spec @('browser_formal_asr.spec.js')` | `1 passed` |
 | Focused default browser regression | `backend/scripts/test-browser.ps1 -Spec @('browser_a4.spec.js','browser_frontend_system_matrix.spec.js','browser_formal_asr.spec.js')` | `11 passed, 1 skipped` (real ASR browser gate disabled) |
 | Full backend regression | `C:/miniconda/py310/python.exe -m pytest backend/tests/ -q` | `431 passed, 3 skipped` |
-| Full Chromium regression | `npx playwright test backend/tests --workers=1 --reporter=line` | `128 passed, 4 skipped, 2 failed`; failures are non-ASR `browser_file_import.spec.js` and `browser_phase9c.spec.js`, so C5/C6 remain blocked |
+| Full Chromium regression | `npx playwright test backend/tests --workers=1 --reporter=line` | `130 passed, 4 skipped` |
 | Source-size policy | `C:/miniconda/py310/python.exe backend/scripts/check-source-size.py` | passed |
 
 The opt-in test uses a fresh temporary data root and confirms:
