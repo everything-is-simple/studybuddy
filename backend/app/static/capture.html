@@ -460,6 +460,7 @@ media.placeholder=image?'例：image/png':'例：audio/mpeg';
 };
 includeArchived.onchange=load;
 refreshBtn.onclick=load;
+window.addEventListener('pagehide',()=>{if(sessionDetailDialog.open)sessionDetailDialog.close()});
 
 Promise.all([loadCaptureCapability(),load()])
 })();
