@@ -13,7 +13,7 @@ def test_b3_report_c0_scope_is_frozen_without_promotion():
     catalog = json.loads((COMPOSER / "manifests/b0-catalog.json").read_text(encoding="utf-8"))
     report = next(item for item in catalog["candidates"] if item["id"] == "report-core")
 
-    assert report["status"] == "researching"
+    assert report["status"] == "integration_passed"
     assert report["formal_system_allowed"] is False
     for marker in ("daily", "weekly", "monthly", "exam_alert", "JSON", "Markdown", "half-open"):
         assert marker in evidence and marker in plan
@@ -27,8 +27,8 @@ def test_b3_report_c0_documents_keep_c1_and_delivery_pending():
     status = (ROOT / "docs/STATUS.md").read_text(encoding="utf-8")
     todo = (ROOT / "docs/TODO.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "docs/ROADMAP_CAPABILITIES.md").read_text(encoding="utf-8")
-    assert "B3 C0 candidate audit/scope is frozen" in status
-    assert "下一步是 B3 C1 Composer smoke" in todo
-    assert "candidate-selected / audit-frozen" in roadmap
+    assert "B3 C0 audit/scope, C1 Composer smoke, C2 isolated Integration, and C3 Formal contract freeze are complete" in status
+    assert "下一步是 B3 C4 Formal 独立实现/验证" in todo
+    assert "C0-C3 状态" in roadmap or "C0 `audit-frozen`" in roadmap
     assert "不建立第二套 report domain" in roadmap
     assert "delivery=off" in todo
