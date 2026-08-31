@@ -292,7 +292,9 @@ backend/app/
 
 ### B3：报告组件流水线
 
-**范围：** 先验证本地、确定性、脱敏的 report projection 和 JSON/Markdown/PDF-safe export；不将“生成报告”与“真实外发”绑定。
+**C0 状态：** `candidate-selected / audit-frozen`。现有 Phase 9D report domain 是唯一 Formal 语义基线，不建立第二套 report domain。Composer 首轮候选为 project-owned 的本地确定性 projection reimplementation，当前仍为 `researching`。JSON/Markdown 进入 C1；PDF 因缺少 renderer/layout/font/resource/accessibility/privacy evidence 而排除。HTML/email、Feishu card、AI narrative、delivery state、网络和 task scheduling 同样排除。C0 脱敏证据见 `docs/evidence/B3_REPORT_C0_AUDIT_AND_SCOPE.md`。
+
+**范围：** 先验证本地、确定性、脱敏的 report projection 和 JSON/Markdown export；不将“生成报告”与“真实外发”绑定。
 
 **Composer smoke：** 验证输入白名单、日/周/月/考试提醒时间窗口、时区、脱敏、空数据、source unavailable、稳定排序、导出大小和损坏输出失败。
 
