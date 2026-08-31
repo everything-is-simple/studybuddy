@@ -51,8 +51,18 @@ def register_routes(app, context: dict[str, object]) -> None:
             max_response_bytes=config.embedding_max_response_bytes,
             max_retries=config.embedding_max_retries,
         ).capabilities()
-        # Preserve the legacy response exactly until embedding is explicitly configured.
+        capture = provider_registry(
+            config.asr_provider_id or "fake",
+            config.asr_model_id if config.asr_provider_id else "fake-capture-v1",
+        ).capture_capabilities(
+            runtime_path=str(config.asr_runtime_path) if config.asr_runtime_path else None,
+            model_path=str(config.asr_model_path) if config.asr_model_path else None,
+            timeout_seconds=config.asr_timeout_seconds,
+            max_output_bytes=config.asr_max_output_bytes,
+        )
+        # Preserve legacy top-level LLM fields while adding independent, safe
+        # capability snapshots for optional subsystems.
         if embedding_provider_id is None:
-            return llm
-        return {**llm, "llm": llm, "embedding": embedding}
+            return {**llm, "capture": capture}
+        return {**llm, "llm": llm, "embedding": embedding, "capture": capture}
     return context

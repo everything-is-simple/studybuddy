@@ -29,9 +29,8 @@
 
 <section class="card" data-od-id="capture-asr-status">
 <h2>转写能力状态</h2>
-<div class="asr-notice">
-<p><strong>注意：</strong>真实 ASR（语音识别）功能尚未通过 B1 门禁验证。</p>
-<p class="mt-8 mb-0">当前仅支持 fake/loopback 转写流程用于测试和演示。上传的音频文件会保存，但转写结果为模拟数据。</p>
+<div class="asr-notice" id="asr-notice" role="status" aria-live="polite">
+<p>正在加载转写能力状态…</p>
 </div>
 </section>
 
@@ -110,8 +109,35 @@ const closeDetailBtn=document.querySelector('#close-detail-btn');
 let currentSessions=[];
 let loadGeneration=0;
 let detailGeneration=0;
+let captureCapability={status:'demo',provider_id:'fake',model_id:'fake-capture-v1'};
 
 function text(value){return typeof value==='string'?value:''}
+
+async function loadCaptureCapability(){
+try{
+const data=await sbApi.json('/api/ai/capabilities',{signal:pageRequest.signal});
+captureCapability=data&&typeof data.capture==='object'?data.capture:captureCapability;
+}catch(e){if(e.name!=='AbortError')captureCapability={status:'unknown',provider_id:null,model_id:null}}
+const notice=document.querySelector('#asr-notice');
+notice.replaceChildren();
+const heading=document.createElement('p');
+const emphasis=document.createElement('strong');
+const detail=document.createElement('p');detail.className='mt-8 mb-0';
+if(captureCapability.status==='configured'){
+emphasis.textContent='本机 ASR 已配置：';
+heading.append(emphasis,document.createTextNode('转写将使用当前进程显式配置的本地 Provider。'));
+detail.textContent=`Provider：${text(captureCapability.provider_id)} · 模型：${text(captureCapability.model_id)}。转写先创建草稿，必须人工确认后才会转为学习材料。`;
+}else if(captureCapability.status==='demo'){
+emphasis.textContent='当前为 fake 转写：';
+heading.append(emphasis,document.createTextNode('仅用于测试和演示。'));
+detail.textContent='上传的音频文件会保存，但转写结果为模拟数据。';
+}else{
+emphasis.textContent='转写 Provider 未配置：';
+heading.append(emphasis,document.createTextNode('无法执行转写。'));
+detail.textContent='请由本机运行配置提供有效的转写 Provider；页面不会显示运行时或模型路径。';
+}
+notice.append(heading,detail)
+}
 
 async function load(){
 const generation=++loadGeneration;
@@ -194,7 +220,7 @@ actions.append(viewBtn);
 if(item.status==='uploaded'){
 const transcribeBtn=document.createElement('button');
 transcribeBtn.className='btn';
-transcribeBtn.textContent='转写（fake）';
+transcribeBtn.textContent=captureCapability.status==='configured'?'转写':'转写（fake）';
 transcribeBtn.onclick=()=>transcribeSession(item.id);
 actions.append(transcribeBtn)
 }
@@ -252,26 +278,24 @@ uploadSection.innerHTML=`
 `;
 sessionDetailContent.append(uploadSection);
 
-setTimeout(()=>{
-const uploadArea=document.querySelector(`#upload-area-${captureId}`);
-const fileInput=document.querySelector(`#file-input-${captureId}`);
-const uploadStatus=document.querySelector(`#upload-status-${captureId}`);
-if(uploadArea&&fileInput){
+const uploadArea=uploadSection.querySelector(`#upload-area-${captureId}`);
+const fileInput=uploadSection.querySelector(`#file-input-${captureId}`);
+const uploadStatus=uploadSection.querySelector(`#upload-status-${captureId}`);
 uploadArea.onclick=()=>fileInput.click();
 fileInput.onchange=()=>{
 if(fileInput.files.length)uploadFile(captureId,fileInput.files[0],uploadStatus)
 }
 }
-},100)
-}
 
 if(data.transcript_drafts&&data.transcript_drafts.length>0){
 data.transcript_drafts.forEach(draft=>{
+const draftId=text(draft.id)||text(draft.draft_id);
+const draftStatus=text(draft.status)||text(draft.draft_status);
 const draftSection=document.createElement('div');
 draftSection.className='draft-editor';
-const draftTitle=document.createElement('h3');draftTitle.textContent='转写草稿 · '+sbState.label(draft.draft_status);draftSection.append(draftTitle);const draftView=document.createElement('div');draftView.className='transcript-view';draftView.textContent=text(draft.text)||'(空)';draftSection.append(draftView);
+const draftTitle=document.createElement('h3');draftTitle.textContent='转写草稿 · '+sbState.label(draftStatus);draftSection.append(draftTitle);const draftView=document.createElement('div');draftView.className='transcript-view';draftView.textContent=text(draft.text)||'(空)';draftSection.append(draftView);
 
-if(draft.draft_status==='pending_review'){
+if(['draft','pending_review','review_required'].includes(draftStatus)){
 const editArea=document.createElement('textarea');
 editArea.value=text(draft.text);
 editArea.placeholder='编辑转写内容...';
@@ -283,19 +307,19 @@ btnGroup.className='stack-actions mt-12';
 const saveBtn=document.createElement('button');
 saveBtn.className='btn';
 saveBtn.textContent='保存编辑';
-saveBtn.onclick=()=>editDraft(captureId,draft.draft_id,editArea.value);
+saveBtn.onclick=()=>editDraft(captureId,draftId,editArea.value);
 btnGroup.append(saveBtn);
 
 const confirmBtn=document.createElement('button');
 confirmBtn.className='btn btn-primary';
 confirmBtn.textContent='确认';
-confirmBtn.onclick=()=>confirmDraft(captureId,draft.draft_id);
+confirmBtn.onclick=()=>confirmDraft(captureId,draftId);
 btnGroup.append(confirmBtn);
 
 const rejectBtn=document.createElement('button');
 rejectBtn.className='btn';
 rejectBtn.textContent='拒绝';
-rejectBtn.onclick=()=>rejectDraft(captureId,draft.draft_id);
+rejectBtn.onclick=()=>rejectDraft(captureId,draftId);
 btnGroup.append(rejectBtn);
 
 draftSection.append(btnGroup)
@@ -326,10 +350,11 @@ statusEl.textContent=sbApi.safeError(e)+' 可重试。'
 }
 
 async function transcribeSession(captureId){
-if(!confirm('确定使用 fake 转写吗？（真实 ASR 尚未接入）'))return;
+const configured=captureCapability.status==='configured';
+if(!confirm(configured?'确定使用当前配置的本机转写 Provider 吗？':'确定使用 fake 转写吗？'))return;
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcribe`,{method:'POST',signal:pageRequest.signal});
-alert('转写已触发（fake）');
+alert(captureCapability.status==='configured'?'转写已完成，结果等待人工确认。':'转写已触发（fake）');
 load()
 }catch(e){
 if(e.name!=='AbortError')alert(sbApi.safeError(e))
@@ -404,7 +429,7 @@ alert(sbApi.safeError(e))
 includeArchived.onchange=load;
 refreshBtn.onclick=load;
 
-load()
+Promise.all([loadCaptureCapability(),load()])
 })();
 </script>
 </body>

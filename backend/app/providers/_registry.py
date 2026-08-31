@@ -126,6 +126,32 @@ class ProviderRegistry:
                                              timeout_seconds=timeout_seconds, max_output_bytes=max_output_bytes)
         raise ProviderError("transcription_provider_not_configured")
 
+    def capture_capabilities(self, *, runtime_path: str | None = None, model_path: str | None = None,
+                             timeout_seconds: float = 120.0, max_output_bytes: int = 262144) -> dict[str, object]:
+        try:
+            provider = self.capture_provider(
+                runtime_path=runtime_path, model_path=model_path,
+                timeout_seconds=timeout_seconds, max_output_bytes=max_output_bytes,
+            )
+        except ProviderError as error:
+            return {
+                "status": "not_configured", "configured": False,
+                "provider_id": None, "model_id": None,
+                "runtime_kind": "none", "network_required": False,
+                "supports": {"transcription": False}, "error_code": error.code,
+            }
+        if isinstance(provider, DeterministicFakeCaptureProvider):
+            return {
+                "status": "demo", "configured": True, "provider_id": provider.provider_id,
+                "model_id": provider.model_id, "runtime_kind": "deterministic_demo",
+                "network_required": False, "supports": {"transcription": True},
+            }
+        return {
+            "status": "configured", "configured": True, "provider_id": provider.provider_id,
+            "model_id": provider.model_id, "runtime_kind": "local_cli",
+            "network_required": False, "supports": {"transcription": True},
+        }
+
     def embedding_provider(self, *, model_revision: str = "1", base_url: str | None = None, api_key: str | None = None,
                            timeout_seconds: float = 30.0,
                            max_batch_size: int = MAX_EMBEDDING_BATCH, max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS,
