@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B0 official ASR C1 pass / C2 Integration pass / Formal scoped pass`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；ASR C2 Integration 与 Formal scoped contract 已通过；后续 B1-B4/D0-D1 门禁仍待执行。
+> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 Formal API+static browser smoke passed, C5/C6 blocked by full-browser baseline`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；ASR C2 Integration、Formal contract、显式 opt-in API/browser/backup-restore evidence 已通过。C5/C6 仍受完整 Chromium baseline 的两个非 ASR 失败阻塞。后续 B2-B4/D0-D1 门禁仍待执行。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -267,6 +267,8 @@ backend/app/
 **Formal：** 冻结 `CaptureTranscriptionProvider` 契约后独立实现 adapter；任务接入必须单独评审，不能因已有 `embedding_index` runner 而自动获批。必须实现 draft-first、用户确认、幂等、超时、取消、retry、安全审计和浏览器全链路。
 
 **通过门槛：** C0-C6 全部通过；真实 smoke 仅证明精确工具/模型/环境/音频范围，不外推为通用 ASR real-pass。
+
+**当前 Formal 状态：** provider contract、真实 API draft-first → confirm → citation → backup/restore smoke，以及 opt-in 静态 `capture.html` 上传 → 转写 → 草稿 → 用户确认的 Chromium evidence 已通过；页面 capability 不暴露 runtime 或模型路径，ASR 不接入 task runner。完整 Chromium suite 当前在两个非 ASR spec 失败，故 C5 full-browser gate 与 C6 closeout 尚未通过。脱敏证据见 `docs/prompts/FORMAL_ASR_ACCEPTANCE_EVIDENCE.md`。官方 asset hash、其他格式/语言/环境、取消与子进程树清理、并发/容量和通用 real-pass 仍为 `not_verified`。
 
 ### B2：真实 OCR 组件流水线
 

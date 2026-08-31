@@ -27,6 +27,11 @@ def test_capabilities_default_provider_not_configured(tmp_path: Path):
             "model_id": None,
             "supports": {"qa": False},
             "error_code": "provider_not_configured",
+            "capture": {
+                "status": "demo", "configured": True, "provider_id": "fake",
+                "model_id": "fake-capture-v1", "runtime_kind": "deterministic_demo",
+                "network_required": False, "supports": {"transcription": True},
+            },
         }
         text = response.text.lower()
         for bad in ("secret", "token", "key", "stored_path", "traceback", "sqlite", "h:/", "g:/"):
@@ -38,15 +43,13 @@ def test_capabilities_fake_provider_available(tmp_path: Path):
     with TestClient(create_app(config)) as client:
         response = client.get("/api/ai/capabilities")
         assert response.status_code == 200
-        assert response.json() == {
-            "status": "demo",
-            "configured": True,
-            "verification_status": "not_applicable",
-            "runtime_kind": "deterministic_demo",
-            "config_source": "process_environment",
-            "provider_id": "fake",
-            "model_id": "fake-studybuddy-v1",
-            "supports": {"qa": True},
+        payload = response.json()
+        assert payload["status"] == "demo"
+        assert payload["provider_id"] == "fake"
+        assert payload["capture"] == {
+            "status": "demo", "configured": True, "provider_id": "fake",
+            "model_id": "fake-capture-v1", "runtime_kind": "deterministic_demo",
+            "network_required": False, "supports": {"transcription": True},
         }
 
 
@@ -71,6 +74,27 @@ def test_capabilities_partial_provider_config_is_invalid(tmp_path: Path):
         assert payload["status"] == "invalid_config"
         assert payload["error_code"] == "provider_invalid_config"
         assert payload["supports"] == {"qa": False}
+
+
+def test_capture_capabilities_are_safe_for_local_whisper_configuration(tmp_path: Path):
+    runtime = tmp_path / "whisper.exe"
+    model = tmp_path / "model.bin"
+    runtime.write_bytes(b"runtime")
+    model.write_bytes(b"model")
+    config = AppConfig(
+        data_root=tmp_path / "data", asr_provider_id="whisper-cpp",
+        asr_model_id="ggml-large-v3-turbo", asr_runtime_path=runtime,
+        asr_model_path=model,
+    )
+    with TestClient(create_app(config)) as client:
+        payload = client.get("/api/ai/capabilities").json()
+    assert payload["capture"] == {
+        "status": "configured", "configured": True, "provider_id": "whisper-cpp",
+        "model_id": "ggml-large-v3-turbo", "runtime_kind": "local_cli",
+        "network_required": False, "supports": {"transcription": True},
+    }
+    assert str(runtime) not in str(payload)
+    assert str(model) not in str(payload)
 
 
 def test_provider_environment_configuration(monkeypatch, tmp_path: Path):

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -16,7 +18,16 @@ from app.providers import (
     WhisperCliCaptureProvider,
     provider_registry,
 )
-from app.repository import connect, create_capture_session, transcribe_capture_session, upload_capture_asset
+from app.backup import backup_data, restore_backup, verify_backup
+from app.config import AppConfig
+from app.main import create_app
+from app.repository import connect, create_capture_session, get_capture_session, transcribe_capture_session, upload_capture_asset
+from app.restore_acceptance import verify_restored_data
+
+REAL_ASR_SMOKE = os.environ.get("STUDYBUDDY_RUN_REAL_ASR_SMOKE") == "1"
+REAL_ASR_RUNTIME = Path(os.environ.get("STUDYBUDDY_ASR_RUNTIME", "H:/Whisper/cli/main.exe"))
+REAL_ASR_MODEL = Path(os.environ.get("STUDYBUDDY_ASR_MODEL_PATH", "H:/Whisper/Models/ggml-large-v3-turbo.bin"))
+REAL_ASR_FIXTURE = Path(os.environ.get("STUDYBUDDY_ASR_FIXTURE", "H:/Whisper/Whisper-1.12.0/SampleClips/jfk.wav"))
 
 PROJECT = "formal_asr"
 WAV = b"RIFF" + (20).to_bytes(4, "little") + b"WAVE" + b"formal-asr"
@@ -109,3 +120,80 @@ def test_formal_provider_is_draft_first_and_idempotent(tmp_path: Path, monkeypat
         assert replay["replay"] is True
         assert replay["draft"]["id"] == result["draft"]["id"]
         assert "Formal transcript" in json.dumps(result)
+
+
+@pytest.mark.skipif(not REAL_ASR_SMOKE, reason="opt-in real ASR smoke")
+def test_real_asr_api_lifecycle_and_backup_restore_are_scoped(tmp_path: Path, monkeypatch):
+    assert REAL_ASR_RUNTIME.is_file()
+    assert REAL_ASR_MODEL.is_file()
+    assert REAL_ASR_FIXTURE.is_file()
+    source = tmp_path / "source"
+    backup = tmp_path / "backup"
+    restored = tmp_path / "restored"
+    config = AppConfig(
+        data_root=source,
+        asr_provider_id="whisper-cpp",
+        asr_model_id="ggml-large-v3-turbo",
+        asr_runtime_path=REAL_ASR_RUNTIME,
+        asr_model_path=REAL_ASR_MODEL,
+        asr_timeout_seconds=120.0,
+    )
+    with TestClient(create_app(config)) as client:
+        created = client.post("/api/study/capture-sessions", json={
+            "asset_kind": "audio", "original_name": "fixture.wav", "media_type": "audio/wav",
+        })
+        assert created.status_code == 201
+        capture_id = str(created.json()["id"])
+        uploaded = client.post(
+            f"/api/study/capture-sessions/{capture_id}/upload",
+            files={"file": ("fixture.wav", REAL_ASR_FIXTURE.read_bytes(), "audio/wav")},
+        )
+        assert uploaded.status_code == 200
+        first = client.post(
+            f"/api/study/capture-sessions/{capture_id}/transcribe",
+            headers={"Idempotency-Key": "formal-real-asr-api"},
+        )
+        assert first.status_code == 200
+        draft = first.json()["draft"]
+        assert draft["status"] == "draft"
+        assert draft["segments"]
+        replay = client.post(
+            f"/api/study/capture-sessions/{capture_id}/transcribe",
+            headers={"Idempotency-Key": "formal-real-asr-api"},
+        )
+        assert replay.status_code == 200
+        assert replay.json()["replay"] is True
+        assert replay.json()["draft"]["id"] == draft["id"]
+        edited = client.post(
+            f"/api/study/capture-sessions/{capture_id}/transcript/edit",
+            json={"draft_id": draft["id"], "text": "User-reviewed transcript."},
+        )
+        assert edited.status_code == 200
+        confirmed = client.post(
+            f"/api/study/capture-sessions/{capture_id}/confirm",
+            json={"draft_id": draft["id"]},
+        )
+        assert confirmed.status_code == 200
+        assert confirmed.json()["capture"]["status"] == "confirmed"
+        assert confirmed.json()["revision"]["citations"]
+        public_payload = json.dumps({"first": first.json(), "confirmed": confirmed.json()})
+        assert "stored_path" not in public_payload
+        assert str(REAL_ASR_RUNTIME) not in public_payload
+        assert str(REAL_ASR_MODEL) not in public_payload
+
+    assert backup_data(source, backup)["status"] == "complete"
+    assert verify_backup(backup)["status"] == "valid"
+
+    def provider_called(*_args, **_kwargs):
+        raise AssertionError("provider_called_during_restore")
+
+    monkeypatch.setattr("app.main.provider_registry", provider_called)
+    assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
+    assert verify_restored_data(restored)["status"] == "passed"
+    with connect(restored / "studybuddy.sqlite3") as connection:
+        restored_capture = get_capture_session(
+            connection, project_id="default", capture_session_id=capture_id,
+        )
+    assert restored_capture is not None
+    assert restored_capture["status"] == "confirmed"
+    assert len(restored_capture["transcript_drafts"]) == 1
