@@ -193,10 +193,15 @@ def export_report_snapshot(connection: sqlite3.Connection, *, project_id: str,
         raise ValueError("report_invalid_state")
     payload = _phase9d_validate_safe_payload(report["safe_payload"])
     if format_name == "json":
-        return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")), "application/json"
+        content = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        if len(content.encode("utf-8")) > PHASE9D_REPORT_MAX_EXPORT_BYTES:
+            raise ValueError("payload_too_large")
+        return content, "application/json"
     markdown = str(report["markdown_content"])
     if not markdown or "stored_path" in markdown or "answer_key" in markdown or "answer_json" in markdown:
         raise ValueError("report_redaction_violation")
+    if len(markdown.encode("utf-8")) > PHASE9D_REPORT_MAX_EXPORT_BYTES:
+        raise ValueError("payload_too_large")
     return markdown, "text/markdown"
 
 def create_report_snapshot(connection: sqlite3.Connection, *, project_id: str,

@@ -251,6 +251,9 @@ PHASE9D_REPORT_KINDS = {"daily", "weekly", "monthly", "exam_alert"}
 
 PHASE9D_REPORT_EXPORT_FORMATS = {"json", "markdown"}
 
+# B3 report exports are bounded independently of upload/provider limits.
+PHASE9D_REPORT_MAX_EXPORT_BYTES = 1024 * 1024
+
 PHASE9D_REPORT_PAYLOAD_FIELDS = {
     "period": {"report_kind", "period_start", "period_end", "timezone", "generated_at"},
     "plan": {"active_goal_count", "active_plan_count", "planned_item_count", "completed_item_count",
