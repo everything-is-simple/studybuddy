@@ -302,7 +302,9 @@ backend/app/
 
 **C3 Formal contract freeze：** 已冻结复用现有 Phase 9D report domain 的正式边界、safe payload、snapshot/idempotency、source lifecycle、backup/restore non-repair、JSON/Markdown-only export、API/UI 与 privacy/error 风险；正式契约见 `docs/contracts/B3_REPORT_COMPONENT_CONTRACT.md`。尚未实现新的 Formal production behavior。
 
-**C4/C5 Formal：** 独立验证并实现只读 report service/export API 和产品页面 `reports.html` 的必要缺口；不持久化原始 prompt、完整敏感文本或导出内容到审计记录。
+**C4 Formal：** 已独立验证并实现必要 Formal 缺口：JSON/Markdown report export 统一执行 1 MiB 上限，超限返回稳定 `payload_too_large`；现有 report domain、snapshot、API、UI、source lifecycle 与 backup/restore 语义保持不变。证据见 `docs/evidence/B3_REPORT_C4_IMPLEMENTATION_EVIDENCE.md`。
+
+**C5 Formal：** 继续验收只读 report service/export API 和产品页面 `reports.html` 的 backend/browser/source-lifecycle/backup-restore/operator 边界；不持久化原始 prompt、完整敏感文本或导出内容到审计记录。
 
 **通过门槛：** C0-C6 全部通过。报告完成不自动批准 delivery，也不表示报告内容适用于医学、教育评估或其它高风险决策。
 

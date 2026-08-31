@@ -13,6 +13,8 @@ def _phase9d_http_status(code: str) -> int:
         return 409
     if code in {"provider_timeout"}:
         return 504
+    if code in {"payload_too_large"}:
+        return 400
     if code in {"transcription_provider_not_configured"}:
         return 503
     return 400
