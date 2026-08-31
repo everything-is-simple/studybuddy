@@ -53,7 +53,8 @@ class PaddleImageOcrProvider:
             raise CaptureProviderError("transcription_failed")
         temporary_root = Path(tempfile.mkdtemp(prefix="studybuddy-ocr-"))
         try:
-            input_path = temporary_root / "input.image"
+            suffix = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}[request.media_type]
+            input_path = temporary_root / f"input{suffix}"
             input_path.write_bytes(request.content)
             self._validate_image(input_path)
             result = self._load().predict(str(input_path))
