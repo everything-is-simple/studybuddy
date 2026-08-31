@@ -70,7 +70,7 @@ powershell -NoProfile -File .\backend\scripts\health-studybuddy.ps1 -Port 8787
 powershell -NoProfile -File .\backend\scripts\stop-studybuddy.ps1 -DataRoot <local-data-root>
 ```
 
-启动脚本固定 loopback、单进程、delivery off，并用 data root 下的 PID 文件配合应用的 `.studybuddy-instance.lock`；停止只操作该 PID，不按端口杀进程。配置、Provider key 来源、升级和发布限制见 [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md) 与 [`prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)。
+启动脚本固定 loopback、单进程、delivery off，并用 data root 下的 PID 文件配合应用的 `.studybuddy-instance.lock`；停止只操作该 PID，不按端口杀进程。配置、Provider key 来源、升级和发布限制见 [`operations/OPERATOR_UPGRADE.md`](operations/OPERATOR_UPGRADE.md) 与 [`evidence/PHASE10_RELEASE_RUNTIME_EVIDENCE.md`](evidence/PHASE10_RELEASE_RUNTIME_EVIDENCE.md)。
 
 ## 诊断与健康
 
@@ -82,4 +82,4 @@ C:/miniconda/py310/python.exe -m app.cli diagnostics --data-root <data-root>
 
 ## 运维边界
 
-备份保留/轮换、权限、外部 scheduler、恢复演练和失败隔离见 [`prompts/BACKUP_OPERATIONS.md`](prompts/BACKUP_OPERATIONS.md)、[`prompts/RESTORE_DRILL.md`](prompts/RESTORE_DRILL.md) 与 [`prompts/OPERATOR_UPGRADE.md`](prompts/OPERATOR_UPGRADE.md)。不要把 backup 输出放在 live data root 内，也不要在服务运行时覆盖 live data。database integrity、schema/history、original hash/size、restore acceptance 或 readiness 无法建立时，v1 不进入普通 read/write 或 runtime read-only serving：停止服务、保留证据、以 verified backup 恢复到新空目标。
+备份保留/轮换、权限、外部 scheduler、恢复演练和失败隔离见 [`operations/BACKUP_OPERATIONS.md`](operations/BACKUP_OPERATIONS.md)、[`operations/RESTORE_DRILL.md`](operations/RESTORE_DRILL.md) 与 [`operations/OPERATOR_UPGRADE.md`](operations/OPERATOR_UPGRADE.md)。不要把 backup 输出放在 live data root 内，也不要在服务运行时覆盖 live data。database integrity、schema/history、original hash/size、restore acceptance 或 readiness 无法建立时，v1 不进入普通 read/write 或 runtime read-only serving：停止服务、保留证据、以 verified backup 恢复到新空目标。

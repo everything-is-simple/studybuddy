@@ -4,7 +4,7 @@
 >
 > 支持范围：Windows、本机浏览器、单进程、单实例、SQLite、本地磁盘、一个 `data_root`。
 >
-> 正式上线证据：[`prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](prompts/phase10/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 正式上线证据：[`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 
 ## 先说结论：它现在能为学生做什么
 

@@ -218,7 +218,7 @@ backend/app/
 
 **工作包：**
 
-1. 建立 `docs/frontend-contract-audit.md`，逐页记录页面路由、API、method、Content-Type、请求字段、响应字段、状态机、错误码、重试、窄屏、键盘和隐私断言。
+1. 维护 `docs/frontend-contract-audit-report.md`，逐页记录页面路由、API、method、Content-Type、请求字段、响应字段、状态机、错误码、重试、窄屏、键盘和隐私断言。
 2. 对照后端路由自动检查页面调用的 endpoint 是否存在；对关键 response 字段和状态值建立 contract fixtures，禁止继续使用旧字段名。
 3. 收口 `js/api.js`：字符串 JSON body 自动补 `Content-Type`、统一解析安全错误、保存 request ID、扩展稳定错误码映射，并为可取消请求预留 AbortSignal 入口。
 4. 收口 `css/app.css`：补齐所有页面使用的 token，消除未定义 CSS 变量；统一 badge、notice、button、focus、grid 和移动端导航样式。
@@ -231,7 +231,7 @@ backend/app/
 
 ### 后续前端能力切片（A3-VISUAL 之后，按顺序）
 
-1. **Practice workflow**：第二阶段已完成 scoped closeout，第三阶段已完成现状审计与正式契约冻结；推荐 API/数据契约已独立冻结并完成实现。契约 `frontend-practice-workflow-contract.md` 已更新；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、practice/review 导航，以及 review 详情、feedback、review、mark-mistake、redo、archive 操作。`browser_practice_workflow.spec.js` 当前为 `7 passed`；完整 backend `426 passed, 2 skipped`，完整 browser `130 passed, 3 skipped`；推荐 API/browser evidence 和服务生命周期均已串行收口。第三阶段正式契约见 `docs/prompts/PHASE_PRACTICE_WORKFLOW_PHASE3_AUDIT_AND_CONTRACT.md`，推荐 API/数据契约见 `docs/prompts/PHASE_PRACTICE_RECOMMENDATION_API_CONTRACT.md`。仍不扩大为真实 Provider 或全局 production `real-pass`。不得机械复制 `/legacy`，也不改变 API 语义。
+1. **Practice workflow**：第二阶段已完成 scoped closeout，第三阶段已完成现状审计与正式契约冻结；推荐 API/数据契约已独立冻结并完成实现。契约 `contracts/frontend-practice-workflow-contract.md` 已更新；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、practice/review 导航，以及 review 详情、feedback、review、mark-mistake、redo、archive 操作。`browser_practice_workflow.spec.js` 当前为 `7 passed`；完整 backend `426 passed, 2 skipped`，完整 browser `130 passed, 3 skipped`；推荐 API/browser evidence 和服务生命周期均已串行收口。第三阶段正式契约见 `docs/contracts/PHASE_PRACTICE_WORKFLOW_PHASE3_AUDIT_AND_CONTRACT.md`，推荐 API/数据契约见 `docs/contracts/PHASE_PRACTICE_RECOMMENDATION_API_CONTRACT.md`。仍不扩大为真实 Provider 或全局 production `real-pass`。不得机械复制 `/legacy`，也不改变 API 语义。
 2. **Practice workflow 第三阶段需求审计/契约冻结**：已完成 practice/exercise/attempt/review 数据与 API 审计，并冻结自适应出题、间隔重复、人工简答复核的边界、状态机、隐私、幂等和 source lifecycle；推荐 API 已按独立契约实现，后续 schedule/算法扩展仍需单独立项。
 3. **B3 reports/export/audit**：在 B3 gate 后扩展 `reports.html` 的脱敏导出和审计工作区；维持 report projection、`delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍属于 B4。
 4. **Provider 配置写入**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在后端形成安全写入/验证契约后单独立项；浏览器不得保存、回显或持久化密钥，且必须具备脱敏 connection-test failure 和独立 browser evidence。
@@ -268,7 +268,7 @@ backend/app/
 
 **通过门槛：** C0-C6 全部通过；真实 smoke 仅证明精确工具/模型/环境/音频范围，不外推为通用 ASR real-pass。
 
-**当前 scoped closeout：** C0-C6 已在当前 Windows 主机、`whisper-cpp` / `ggml-large-v3-turbo` 与公开 `jfk.wav` fixture 的精确范围内通过。C5 包含 provider contract、真实 API draft-first → confirm → citation → backup/restore smoke、opt-in 静态 `capture.html` 上传 → 转写 → 草稿 → 用户确认 Chromium evidence，以及完整 Chromium `130 passed, 4 skipped` 回归；页面 capability 不暴露 runtime 或模型路径，ASR 不接入 task runner。脱敏证据见 `docs/prompts/FORMAL_ASR_ACCEPTANCE_EVIDENCE.md`。官方 asset hash、其他格式/语言/环境、取消与子进程树清理、并发/容量和通用 real-pass 仍为 `not_verified`。
+**当前 scoped closeout：** C0-C6 已在当前 Windows 主机、`whisper-cpp` / `ggml-large-v3-turbo` 与公开 `jfk.wav` fixture 的精确范围内通过。C5 包含 provider contract、真实 API draft-first → confirm → citation → backup/restore smoke、opt-in 静态 `capture.html` 上传 → 转写 → 草稿 → 用户确认 Chromium evidence，以及完整 Chromium `130 passed, 4 skipped` 回归；页面 capability 不暴露 runtime 或模型路径，ASR 不接入 task runner。脱敏证据见 `docs/evidence/FORMAL_ASR_ACCEPTANCE_EVIDENCE.md`。官方 asset hash、其他格式/语言/环境、取消与子进程树清理、并发/容量和通用 real-pass 仍为 `not_verified`。
 
 ### B2：真实 OCR 组件流水线
 
