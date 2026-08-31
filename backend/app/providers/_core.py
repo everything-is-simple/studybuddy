@@ -80,3 +80,20 @@ class CaptureTranscriptionProvider(Protocol):
 
     def transcribe(self, request: CaptureTranscriptionRequest) -> CaptureTranscriptionResult:
         ...
+
+
+@dataclass(frozen=True)
+class ImageOcrRequest:
+    """In-memory OCR input; raw bytes never cross the persistence boundary."""
+
+    media_type: str
+    content_sha256: str
+    content: bytes
+
+
+class ImageOcrProvider(Protocol):
+    provider_id: str
+    model_id: str
+
+    def recognize(self, request: ImageOcrRequest) -> CaptureTranscriptionResult:
+        ...

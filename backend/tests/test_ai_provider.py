@@ -32,6 +32,12 @@ def test_capabilities_default_provider_not_configured(tmp_path: Path):
                 "model_id": "fake-capture-v1", "runtime_kind": "deterministic_demo",
                 "network_required": False, "supports": {"transcription": True},
             },
+            "ocr": {
+                "status": "not_configured", "configured": False,
+                "verification_status": "not_applicable", "runtime_kind": "none",
+                "network_required": False, "provider_id": None, "model_id": None,
+                "supports": {"ocr": False},
+            },
         }
         text = response.text.lower()
         for bad in ("secret", "token", "key", "stored_path", "traceback", "sqlite", "h:/", "g:/"):

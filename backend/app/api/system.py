@@ -60,9 +60,32 @@ def register_routes(app, context: dict[str, object]) -> None:
             timeout_seconds=config.asr_timeout_seconds,
             max_output_bytes=config.asr_max_output_bytes,
         )
+        ocr = {
+            "status": "not_configured", "configured": False, "verification_status": "not_applicable",
+            "runtime_kind": "none", "network_required": False, "provider_id": None,
+            "model_id": None, "supports": {"ocr": False},
+        }
+        if config.ocr_enabled and config.ocr_provider_id == "paddleocr" and config.ocr_model_root:
+            try:
+                ocr_provider = provider_registry(
+                    "paddleocr", config.ocr_model_id,
+                ).capture_provider(
+                    ocr_model_root=str(config.ocr_model_root),
+                    timeout_seconds=config.ocr_timeout_seconds,
+                    max_output_bytes=config.ocr_max_output_bytes,
+                )
+            except ProviderError:
+                ocr_provider = None
+            if ocr_provider is not None:
+                ocr = {
+                    "status": "configured", "configured": True, "verification_status": "unverified",
+                    "runtime_kind": "local_model", "network_required": False,
+                    "provider_id": "paddleocr", "model_id": config.ocr_model_id,
+                    "supports": {"ocr": True},
+                }
         # Preserve legacy top-level LLM fields while adding independent, safe
         # capability snapshots for optional subsystems.
         if embedding_provider_id is None:
-            return {**llm, "capture": capture}
-        return {**llm, "llm": llm, "embedding": embedding, "capture": capture}
+            return {**llm, "capture": capture, "ocr": ocr}
+        return {**llm, "llm": llm, "embedding": embedding, "capture": capture, "ocr": ocr}
     return context

@@ -31,6 +31,11 @@ DEFAULT_ASR_PROVIDER = None
 DEFAULT_ASR_MODEL = "ggml-large-v3-turbo"
 DEFAULT_ASR_TIMEOUT_SECONDS = 120.0
 DEFAULT_ASR_MAX_OUTPUT_BYTES = 262144
+DEFAULT_OCR_PROVIDER = None
+DEFAULT_OCR_MODEL = "PP-OCRv5_server_det+PP-OCRv5_server_rec"
+DEFAULT_OCR_TIMEOUT_SECONDS = 120.0
+DEFAULT_OCR_MAX_OUTPUT_BYTES = 524288
+DEFAULT_OCR_ENABLED = False
 
 
 @dataclass(frozen=True)
@@ -80,6 +85,12 @@ class AppConfig:
     asr_model_path: Path | None = None
     asr_timeout_seconds: float = DEFAULT_ASR_TIMEOUT_SECONDS
     asr_max_output_bytes: int = DEFAULT_ASR_MAX_OUTPUT_BYTES
+    ocr_provider_id: str | None = DEFAULT_OCR_PROVIDER
+    ocr_model_id: str | None = DEFAULT_OCR_MODEL
+    ocr_model_root: Path | None = None
+    ocr_timeout_seconds: float = DEFAULT_OCR_TIMEOUT_SECONDS
+    ocr_max_output_bytes: int = DEFAULT_OCR_MAX_OUTPUT_BYTES
+    ocr_enabled: bool = DEFAULT_OCR_ENABLED
 
     @property
     def originals_root(self) -> Path:
@@ -242,4 +253,10 @@ def config_from_environment() -> AppConfig:
         asr_model_path=Path(os.environ["STUDYBUDDY_ASR_MODEL_PATH"]) if os.environ.get("STUDYBUDDY_ASR_MODEL_PATH") else None,
         asr_timeout_seconds=_env_float("STUDYBUDDY_ASR_TIMEOUT_SECONDS", DEFAULT_ASR_TIMEOUT_SECONDS, minimum=0.1, maximum=600.0),
         asr_max_output_bytes=_env_int("STUDYBUDDY_ASR_MAX_OUTPUT_BYTES", DEFAULT_ASR_MAX_OUTPUT_BYTES, minimum=1, maximum=16 * 1024 * 1024),
+        ocr_provider_id=os.environ.get("STUDYBUDDY_OCR_PROVIDER") or DEFAULT_OCR_PROVIDER,
+        ocr_model_id=os.environ.get("STUDYBUDDY_OCR_MODEL") or DEFAULT_OCR_MODEL,
+        ocr_model_root=Path(os.environ["STUDYBUDDY_OCR_MODEL_ROOT"]) if os.environ.get("STUDYBUDDY_OCR_MODEL_ROOT") else None,
+        ocr_timeout_seconds=_env_float("STUDYBUDDY_OCR_TIMEOUT_SECONDS", DEFAULT_OCR_TIMEOUT_SECONDS, minimum=0.1, maximum=600.0),
+        ocr_max_output_bytes=_env_int("STUDYBUDDY_OCR_MAX_OUTPUT_BYTES", DEFAULT_OCR_MAX_OUTPUT_BYTES, minimum=1, maximum=16 * 1024 * 1024),
+        ocr_enabled=_env_bool("STUDYBUDDY_OCR_ENABLED", DEFAULT_OCR_ENABLED),
     )
