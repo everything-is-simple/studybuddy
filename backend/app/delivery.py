@@ -198,8 +198,10 @@ def _configured_adapter(config: AppConfig, channel: str) -> ReportDeliveryAdapte
             timeout_seconds=config.report_delivery_timeout_seconds,
         )
     if channel == "feishu":
+        target_label = config.report_delivery_feishu_target_label
+        webhook = config.report_delivery_feishu_webhook
         return FeishuWebhookDeliveryAdapter(
-            targets=dict(config.report_delivery_feishu_targets),
+            targets={target_label: webhook} if target_label and webhook else {},
             timeout_seconds=config.report_delivery_timeout_seconds,
         )
     raise DeliveryAdapterError("delivery_target_not_allowed")

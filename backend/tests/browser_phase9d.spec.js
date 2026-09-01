@@ -10,7 +10,9 @@ let server;
 function startServer(deliveryMode = 'off') {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
   env.STUDYBUDDY_REPORT_DELIVERY_MODE = deliveryMode;
-  env.STUDYBUDDY_REPORT_DELIVERY_TARGETS = deliveryMode === 'dry_run' ? 'guardian-primary' : '';
+  env.STUDYBUDDY_REPORT_DELIVERY_TARGETS = deliveryMode === 'off' ? '' : 'guardian-primary';
+  env.STUDYBUDDY_REPORT_DELIVERY_ENABLED = deliveryMode === 'live' ? 'true' : 'false';
+  env.STUDYBUDDY_REPORT_DELIVERY_AUTHORIZED = deliveryMode === 'live' ? 'true' : 'false';
   delete env.STUDYBUDDY_AI_PROVIDER;
   delete env.STUDYBUDDY_AI_MODEL;
   delete env.STUDYBUDDY_AI_BASE_URL;
@@ -175,6 +177,24 @@ test('Phase 9D S6 report preview, default-off delivery and safe audit', async ({
 
   const report = await createReport(page);
   expect(report.id).toMatch(/^report_/);
+});
+
+test('B4 C5 live configuration remains visibly blocked and does not send', async ({page}) => {
+  stop();
+  server = startServer('live');
+  await ready();
+  await page.goto(`${BASE}/legacy`);
+  await bootstrapProject(page);
+  await page.getByRole('link', {name: '课堂与报告'}).click();
+  await page.locator('#phase9d-period-start').fill('2026-01-15');
+  await page.locator('#phase9d-period-end').fill('2026-01-16');
+  await page.locator('#phase9d-report-create').click();
+  await page.getByRole('button', {name: '执行交付检查'}).click();
+  await expect(page.locator('#phase9d-status')).toContainText('delivery_authorization_required');
+  await expect(page.locator('#phase9d-workspace')).toContainText('交付状态：blocked');
+  await expect(page.locator('#phase9d-workspace')).toContainText('结果：未发送');
+  await expect(page.locator('body')).not.toContainText('@');
+  await expect(page.locator('body')).not.toContainText('hook/');
 });
 
 test('Phase 9D S6 explicit dry-run is visible and never reports sent', async ({page}) => {

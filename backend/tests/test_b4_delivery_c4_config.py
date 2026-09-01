@@ -18,16 +18,17 @@ def test_delivery_runtime_mapping_is_parsed_without_exposing_secrets(monkeypatch
     monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_SMTP_USERNAME", "sender@example.invalid")
     monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD", "private-auth-code")
     monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_SMTP_TARGETS", "guardian-primary=recipient@example.invalid")
-    monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGETS", "guardian-primary=https://open.feishu.cn/open-apis/bot/v2/hook/12345678901234567890")
+    monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGET_LABEL", "guardian-primary")
     monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_FEISHU_WEBHOOK", "https://open.feishu.cn/open-apis/bot/v2/hook/12345678901234567890")
 
     config = config_from_environment()
 
     assert config.report_delivery_smtp_host == "smtp.163.com"
     assert config.report_delivery_smtp_targets == (("guardian-primary", "recipient@example.invalid"),)
-    assert config.report_delivery_feishu_targets[0][0] == "guardian-primary"
+    assert config.report_delivery_feishu_target_label == "guardian-primary"
     assert config.report_delivery_smtp_password_runtime == "private-auth-code"
     assert "private-auth-code" not in repr(config)
+    assert "12345678901234567890" not in repr(config)
 
 
 def test_delivery_runtime_mapping_rejects_duplicate_or_malformed_entries(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -52,7 +53,7 @@ def test_delivery_runtime_mapping_defaults_remain_closed(monkeypatch: pytest.Mon
         "STUDYBUDDY_REPORT_DELIVERY_SMTP_USERNAME",
         "STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD",
         "STUDYBUDDY_REPORT_DELIVERY_SMTP_TARGETS",
-        "STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGETS",
+        "STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGET_LABEL",
         "STUDYBUDDY_REPORT_DELIVERY_FEISHU_WEBHOOK",
     ):
         monkeypatch.delenv(name, raising=False)
@@ -63,4 +64,4 @@ def test_delivery_runtime_mapping_defaults_remain_closed(monkeypatch: pytest.Mon
     assert config.report_delivery_enabled is False
     assert config.report_delivery_authorized is False
     assert config.report_delivery_smtp_targets == ()
-    assert config.report_delivery_feishu_targets == ()
+    assert config.report_delivery_feishu_target_label is None
