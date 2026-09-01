@@ -1,13 +1,13 @@
 # StudyBuddy Phase 路线图与进度报告
 
-> 更新：2026-08-30（A3-PAGES/A3-VISUAL 与 B0 governance scaffold 已同步；backend/browser 全套回归已在本机验证）
+> 更新：2026-08-31（A3-PAGES/A3-VISUAL、B1-B4 C0-C6 scoped closeout 与 B0 governance scaffold 已同步；backend/browser 全套回归已在本机验证）
 > 本文是项目按 Phase 管理的长期路线图和优先级记录。实现、测试和验收状态以 `STATUS.md` 为准；可执行勾选项以 `TODO.md` 为准。
 >
 > `real-pass` 只表示有真实用户路径和验收证据的局部能力通过，**不代表整个 StudyBuddy 已达到全局生产级 real-pass**。
 
 ## 基础设施真实状态
 
-基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`evidence/INFRASTRUCTURE_CLOSEOUT.md`](evidence/INFRASTRUCTURE_CLOSEOUT.md)。当前完整回归基线为 backend 422 passed / 2 skipped、browser 126 passed / 3 skipped；skip 均为 opt-in 真实 Provider smoke。
+基础设施的 I1 migration/schema versioning、I2 backup/restore 运维闭环、I3 最小可观察性与 I4 真实环境/容量基线（时间盒）均已完成；StudyBuddy 本地单进程文件材料基础设施 v1 已基本完工。I1 是 AI Phase 4 的硬前置，已满足；I4 的未验证边界已明确记入 v1 运行限制，并作为已知限制持续记录。准确范围见 [`evidence/INFRASTRUCTURE_CLOSEOUT.md`](evidence/INFRASTRUCTURE_CLOSEOUT.md)。当前完整回归基线以 `STATUS.md` 为准：backend 468 passed / 3 skipped、browser 130 passed / 4 skipped；skip 均为 opt-in 真实 smoke。
 
 ## 总体进度
 
@@ -16,7 +16,7 @@
 | 本地单进程基础设施 | 90%–95% | 导入、SQLite、storage、一致性、恢复、migration、backup/restore 和启动安全已具备；I4 已时间盒验收 |
 | 文件材料管理 | 80%–85% | 当前最成熟，核心路径为局部 `real-pass` |
 | 前端体验 | 60%–70% | Materials、Q&A 和 Cards/Exercises 的受限工作区已有 Chromium 路径；不是完整产品前端 |
-| AI / 学习产品能力 | 40%–50% | Q&A、retrieval 和 Phase 8 fake-provider Cards/Exercises 闭环已完成；真实 Provider generation、计划和后台任务未完成 |
+| AI / 学习产品能力 | 40%–50% | Q&A、retrieval、Phase 8 fake-provider Cards/Exercises、Phase 9A-9D 部分立项闭环已完成；真实 Provider generation、未批准的自动化任务和全局 real-pass 未完成 |
 | **项目整体（功能加权估算）** | **约 65%** | 当前统一阶段性估算；不是测试通过率，不能标记为全局 `real-pass` |
 
 ## 已交付能力与基础设施状态
@@ -217,7 +217,7 @@ Phase 9A、Phase 9B 与 Phase 9C 已分别在明确范围内完成；Phase 9D �
 
 ## 后续能力、架构与桌面化路线
 
-Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分已经完成；项目下一步是原生静态前端拆分，再按 Composer -> Integration -> Formal 门禁依次推进真实 ASR、真实 OCR、本地报告和真实外发，最后时间盒评估 Tauri Windows 桌面包装。C0 已选 ASR 为 `H:/WhisperCli`/whisper.cpp `large-v3-turbo`，OCR 为 PaddleOCR 主路径与 RapidOCR ONNX 回退，PPTX 为 formal-pptx + MarkItDown + 图片页 OCR；edge-tts 是免费在线、显式用户操作的 TTS future candidate，未进入当前 Phase 9D 批准范围。本机 CLI/运行时/PPTX 转换预检不等于 Composer C1、Integration、Formal 或真实能力完成。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) 与 [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
+Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分、A3/A4 静态前端交付和 B1-B4 各自 scoped C0-C6 closeout 已完成；项目下一步是把已验证但仍在 `/legacy` 的学习写操作逐项集成到默认 `/app`，并扩大 B1-B4 的验证范围。桌面安装包在现有系统功能完成正式集成并经过用户路径验证前明确暂缓，不启动 Tauri spike。C0 已选 ASR 为 `H:/WhisperCli`/whisper.cpp `large-v3-turbo`，OCR 为 PaddleOCR 主路径与 RapidOCR ONNX 回退，PPTX 为 formal-pptx + MarkItDown + 图片页 OCR；edge-tts 是免费在线、显式用户操作的 TTS future candidate，未进入当前 Phase 9D 批准范围。本机 CLI/运行时/PPTX 转换预检不等于 Composer C1、Integration、Formal 或真实能力完成。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) 与 [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
 
 ## 固定执行顺序
 
@@ -228,7 +228,7 @@ I4：真实环境与容量基线（时间盒） ✅ 已验收
 → Phase 5：真实 provider adapter 与精确 smoke evidence ✅ 已完成既有 DeepSeek/Agnes 精确证据
 → Phase 6：AI MVP 产品化与整体验收（P6-A–P6-E）✅ fake/default/UI acceptance 已完成，精确 P6-E real UI path 按 gate 运行
 → Phase 7：embedding / hybrid retrieval（按需，下一产品阶段）
-→ Phase 8：卡片与练习
+→ Phase 8：卡片与练习 ✅ 已完成限定范围
 → Phase 9A：学习领域基础与计划核心
 → Phase 9B：资料学习工作流（S1/S2）
 → Phase 9C：练习与反馈工作流（S3/S4/S5）

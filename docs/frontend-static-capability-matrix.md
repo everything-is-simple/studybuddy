@@ -1,8 +1,8 @@
 # 静态前端能力矩阵
 
-> 状态：`A3-FC-3-2 / in_progress`
-> 更新：2026-08-30
-> 范围：只描述 `/app/*.html` 的当前真实能力；不把旧 `/legacy` workspace、后端 API 存在或历史浏览器证据自动视为静态页面已经迁移。
+> 状态：`A3-FC-3-2 / closed`；A3-PAGES 与 A3-VISUAL 已完成声明范围。
+> 更新：2026-08-31
+> 范围：只描述 `/app/*.html` 的当前真实能力；不把旧 `/legacy` workspace、后端 API 存在或历史浏览器证据自动视为静态页面已经迁移。`/app` 是默认正式入口，`/legacy` 只作为迁移期兼容回退；矩阵中的 `legacy_only` 是后续必须逐项补齐的正式集成工作。
 
 ## 状态定义
 
@@ -11,7 +11,7 @@
 | `static_verified` | `/app` 页面已有真实读取或操作路径，且有对应静态页浏览器证据。 |
 | `legacy_only` | 后端和/或 `/legacy` 已有验证路径，但 `/app` 页面尚未迁移该操作。 |
 | `not_exposed` | 后端没有公共契约，或当前安全/能力边界明确禁止在浏览器暴露该动作。 |
-| `a3_pages` | 已冻结为 A3-PAGES 的独立页面迁移目标；在该任务开始前不能把它声明为静态页已完成。 |
+| `a3_pages` | 历史 A3-PAGES 迁移分类；A3-PAGES 已关闭，遗留条目必须改列为 `legacy_only`、`static_verified` 或 `not_exposed`。 |
 
 ## 页面能力矩阵
 
@@ -42,7 +42,7 @@
 | `capture.html` | fake/loopback 会话创建、上传、fake 转写、草稿编辑、确认、拒绝 | `static_verified` | A4/Phase 9D browser tests；真实 ASR 仍未通过 B1。 |
 | `capture.html` | archive | `not_exposed` | 正式 API 固定返回 `capture_invalid_state`；不能伪造归档成功控件。 |
 | `classroom.html` | 采集/报告只读兼容列表、报告详情、交付边界说明 | `static_verified` | learning/Phase 9D/system-matrix tests。 |
-| `classroom.html` | 正式报告页、导出、完整审计工作区 | `a3_pages` | 迁移目标为 `reports.html`；当前兼容页保持可回退。 |
+| `classroom.html` | 正式报告页、JSON/Markdown 导出、只读审计工作区 | `static_verified` | `reports.html` 已提供此正式路径；保持 `delivery=off`、allowlisted dry-run 和 append-only audit 边界。 |
 | `tasks.html` | 单任务读取、cancel、retry、状态/进度显示 | `static_verified` | A4/system-matrix tests；仅批准的 `embedding_index` 任务可由 runner 执行。 |
 | `tasks.html` | 全局任务列表/筛选 | `not_exposed` | 后端没有全局 task-list API；页面不得伪造列表。 |
 | `settings-provider.html` | capabilities/readiness 只读状态 | `static_verified` | A4/system-matrix tests。 |
@@ -52,7 +52,7 @@
 
 ## A3-FC-3-2 收口要求
 
-> 当前完整 browser 基线（2026-08-30）：126 passed, 3 skipped / 129 项；skip 均为 opt-in 真实 Provider UI smoke。
+> 历史完整 browser 基线（2026-08-30）：126 passed, 3 skipped / 129 项；当前完整基线以 `STATUS.md` 为准：130 passed, 4 skipped；skip 均为 opt-in 真实 smoke。
 
 ### 全静态页面基线
 
@@ -82,10 +82,10 @@ pending_review / uncertain
 
 ## 后续冻结能力的处理规则
 
-- `legacy_only`：只在 A3-VISUAL 之后按一项能力一份页面/路径、状态/隐私合同和 browser evidence 的方式迁移；不复制 `/legacy` 实现，也不以 API 存在替代静态页证据。
+- `legacy_only`：按唯一正式 `/app` 入口目标逐项迁移，一项能力一份页面/路径、状态/隐私合同和 browser evidence；不复制 `/legacy` 实现，也不以 API 存在替代静态页证据。
 - `not_exposed`：保持不暴露。必须先获得安全、稳定的公共后端契约，再单独评审 UI；不得用 mock 或静态文案伪造可执行成功。
 - practice workflow（逐题作答、submit、finish、redo）是首个后续行为切片，须先冻结答案 key 隐私、幂等、stale response、失败/retry。
-- report export/audit 只在 B3 gate 后扩展，持续显示 `delivery=off`、dry-run 和 append-only audit 边界；Provider 写入仅在安全写入/验证契约批准后另行立项，浏览器永不保存、回显或持久化密钥。
+- B3 report export/audit 已在声明范围内完成，持续显示 `delivery=off`、dry-run 和 append-only audit 边界；Provider 写入仅在安全写入/验证契约批准后另行立项，浏览器永不保存、回显或持久化密钥。
 
 ## 进入 A3-PAGES 的门槛
 
@@ -96,4 +96,4 @@ pending_review / uncertain
 3. 21 个现有正式静态页面的 loading/empty/failed/privacy/keyboard 基线和 360–1920 矩阵通过；
 4. 适用页面具备来源生命周期读取证据；
 5. 完整 browser/backend suite、source-size 和 diff 检查通过；
-6. `TODO.md`、`ROADMAP_CAPABILITIES.md`、`frontend-plan.md`、`STATUS.md` 同步真实状态。
+6. `TODO.md`、`ROADMAP_CAPABILITIES.md`、`frontend-plan.md`、`STATUS.md` 同步真实状态，并按 `CODE_TEST_GOVERNANCE.md` 区分当前状态与历史快照。

@@ -1,8 +1,8 @@
 # B2 ImageOcrProvider 正式契约
 
-> 状态：`contract-frozen`（B2 C3）  
-> 范围：PaddleOCR 精确本地模型配置；Formal C4/C5/C6 尚未开始。  
-> 本文冻结正式边界，不是实现、schema migration、API 或 UI 证据。
+> 状态：`scoped closeout`（B2 C0-C6；本契约保留为 C3 历史冻结记录）
+> 范围：PaddleOCR 精确本地模型配置；C4/C5/C6 已完成，当前 closeout 见 `docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`。
+> 本文定义 C3 正式边界；它不替代后续实现、验收或 closeout evidence。
 
 ## 1. 审计基线与门禁结论
 
@@ -14,13 +14,14 @@ B2 已完成前置组件证据：
 
 证据仅代表精确组件、模型、环境和 synthetic fixture 范围，不代表通用 OCR 准确率、全部图片类型、其它环境、并发容量或全局 `real-pass`。
 
-Formal 顺序冻结为：
+Formal 顺序及当前结果：
 
 ```text
-C3 contract-frozen → C4 independent implementation → C5 formal gates → C6 scoped closeout
+C3 contract-frozen -> C4 independent implementation (completed)
+-> C5 formal gates (completed) -> C6 scoped closeout (completed)
 ```
 
-C4 不得复制 Composer/Integration 实现；必须针对本契约独立实现并复用正式系统已有 source/material/revision/citation 语义。
+C4 已按本契约独立实现并复用正式系统已有 source/material/revision/citation 语义；未验证范围仍以 C6 evidence 为准。
 
 ## 2. 精确支持范围与明确不做
 
