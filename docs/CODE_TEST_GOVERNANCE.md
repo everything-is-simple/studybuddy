@@ -67,7 +67,7 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 `test-browser.ps1` 每次只接受一个 spec；需要多个 browser spec 时必须分别串行执行。
 
-历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `421 passed, 2 skipped`（verified 2026-08-30）；当前 Chromium 基线为 `126 passed, 3 skipped`（共 129 项，包含 A3/A4 与后续专项）；3 个 skip 均为显式 opt-in real-provider browser paths。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
+历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `468 passed, 3 skipped`（verified 2026-08-31）；当前 Chromium 基线为 `130 passed, 4 skipped`；skip 均为显式 opt-in real smoke。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
 
 真实 Provider 仍只能通过目标专用 gate 或 `run-provider-api-acceptance.ps1` 启用，不属于默认门禁。
 
@@ -95,6 +95,17 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 `real-pass` 只能描述局部能力和精确配置组合，不能改写为全局生产就绪。网络 smoke、benchmark、ACL、磁盘耗尽、断电、屏幕阅读器等未执行项目必须保持 `not_verified`。
 
 ## 4. 文档事实源
+
+### 4.1 权威顺序与历史快照
+
+- `docs/STATUS.md` 是当前实现状态、当前完整回归基线和已知限制的唯一权威来源；发生冲突时先修正其他活跃文档，除非 `STATUS.md` 本身有可复现代码或测试证据证明错误。
+- `docs/TODO.md` 是唯一可勾选的执行清单；未完成工作必须在此登记，完成项必须反映当前状态而非旧计划。
+- `docs/ROADMAP_CAPABILITIES.md` 只定义已批准的执行顺序、前置条件和范围，不得用旧 gate 文案推翻 `STATUS.md` 的完成结论。
+- `docs/contracts/` 记录某次契约冻结或实现边界；若契约标题或正文包含阶段状态，后续完成时必须更新为当前状态，或显式标为“历史快照”。
+- `docs/evidence/` 与 `docs/archive/` 是不可重写的历史证据；其中的测试数字、日期和阶段结论必须保留并标为历史，不得作为当前基线引用。
+- 活跃文档引用测试数量时，必须写明“当前”或“历史快照”；当前数值只可引用 `STATUS.md`，历史数值不得以“当前完整基线”措辞出现。
+
+### 4.2 文档职责
 
 - `README.md`：入口和简明当前定位，不复制完整状态表。
 - `docs/STATUS.md`：能力状态、证据索引和已知运行限制；是实现状态的权威来源。

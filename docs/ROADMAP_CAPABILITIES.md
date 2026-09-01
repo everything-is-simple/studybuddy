@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES first slice closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。当前 B0 已完成候选治理脚手架，ASR 官方候选已使用 GitHub release 的公开 `SampleClips/jfk.wav` 完成并通过 C1-ASR-01 至 C1-ASR-14；本机 Whisper.dll PE 版本与 GitHub Const-me/Whisper 1.12.0 release 对齐，其余候选仍在 researching；ASR C2 Integration、Formal contract、显式 opt-in API/browser/backup-restore evidence 已通过，且完整 Chromium 基线已恢复为 `130 passed, 4 skipped`。B2 OCR C0-C6 已在冻结的 PaddleOCR 本地 synthetic scope 内完成 scoped closeout；B3-B4/D0-D1 门禁仍待执行。
+> 状态：`A3-FC closed / A3-PAGES closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout / B3 C0-C6 scoped closeout / B4 C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。B0 候选治理脚手架已完成，B1 ASR、B2 PaddleOCR、B3 报告和 B4 外发均已在各自声明 scope 内完成 C0-C6；D0-D1 桌面门禁仍未开始。当前完整回归基线以 `STATUS.md` 为准：backend `468 passed, 3 skipped`、Chromium `130 passed, 4 skipped`。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -225,15 +225,15 @@ backend/app/
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
 6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3-2 通过后执行的首批页面拆分已完成：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
-8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `426 passed, 2 skipped`、browser `130 passed, 3 skipped`；视觉任务未改变 API 或业务行为。
+8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `468 passed, 3 skipped`、browser `130 passed, 4 skipped`；视觉任务未改变 API 或业务行为。
 
-**通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表 `legacy_only`/`not_exposed`/`a3_pages` 能力已迁移；A3-PAGES/A3-VISUAL 仍按后续任务执行。
+**通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表所有 `legacy_only`/`not_exposed` 能力已迁移；A3-PAGES/A3-VISUAL 已分别完成声明范围，剩余未暴露能力仍按独立契约推进。
 
 ### 后续前端能力切片（A3-VISUAL 之后，按顺序）
 
-1. **Practice workflow**：第二阶段已完成 scoped closeout，第三阶段已完成现状审计与正式契约冻结；推荐 API/数据契约已独立冻结并完成实现。契约 `contracts/frontend-practice-workflow-contract.md` 已更新；已迁移公开题目、start/submit/finish、嵌套结果、expired/source warning、practice/review 导航，以及 review 详情、feedback、review、mark-mistake、redo、archive 操作。`browser_practice_workflow.spec.js` 当前为 `7 passed`；完整 backend `426 passed, 2 skipped`，完整 browser `130 passed, 3 skipped`；推荐 API/browser evidence 和服务生命周期均已串行收口。第三阶段正式契约见 `docs/contracts/PHASE_PRACTICE_WORKFLOW_PHASE3_AUDIT_AND_CONTRACT.md`，推荐 API/数据契约见 `docs/contracts/PHASE_PRACTICE_RECOMMENDATION_API_CONTRACT.md`。仍不扩大为真实 Provider 或全局 production `real-pass`。不得机械复制 `/legacy`，也不改变 API 语义。
+1. **默认 `/app` 集成收口**：`/app` 是唯一默认正式用户入口，`/legacy` 仅作兼容回退。按一项能力一份契约和 browser evidence 的顺序迁移仍为 `legacy_only` 的操作：材料详情索引、Q&A citation detail/body location、计划/节奏写操作、笔记写操作、Cards/Exercises 写操作，以及其余学习写流程；不得机械复制 `/legacy`，也不改变 API 语义。Practice workflow 第二阶段已完成 scoped closeout，第三阶段推荐 API/数据契约已实现；完整 backend/browser 当前基线以 `STATUS.md` 为准。
 2. **Practice workflow 第三阶段需求审计/契约冻结**：已完成 practice/exercise/attempt/review 数据与 API 审计，并冻结自适应出题、间隔重复、人工简答复核的边界、状态机、隐私、幂等和 source lifecycle；推荐 API 已按独立契约实现，后续 schedule/算法扩展仍需单独立项。
-3. **B3 reports/export/audit**：在 B3 gate 后扩展 `reports.html` 的脱敏导出和审计工作区；维持 report projection、`delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍属于 B4。
+3. **B3 reports/export/audit**：B3 C0-C6 已在声明 scope 内完成；`reports.html` 提供脱敏 report projection、JSON/Markdown export 和审计工作区，维持 `delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍保持 B4 的独立拒绝边界。
 4. **Provider 配置写入**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在后端形成安全写入/验证契约后单独立项；浏览器不得保存、回显或持久化密钥，且必须具备脱敏 connection-test failure 和独立 browser evidence。
 5. **`legacy_only` / `not_exposed`**：以 `docs/frontend-static-capability-matrix.md` 为来源逐项立项。`legacy_only` 需独立页面/路径和 browser evidence；`not_exposed` 在存在安全公共契约前保持不暴露，不得用 mock 伪造成功。
 
@@ -248,7 +248,7 @@ backend/app/
 3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
 4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
 
-**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`；ASR 官方 `H:\Whisper\cli` 使用 `H:\Whisper\Models\ggml-large-v3-turbo.bin` 与 GitHub release 的公开 `SampleClips/jfk.wav` 通过 `C1-ASR-01` 至 `C1-ASR-14`；本机 `Whisper.dll` PE product version 为 `1.12.0.0`，对应 GitHub `Const-me/Whisper` release `1.12.0`、commit `c5515ace19066e938854b4b99e0c2e9bbc2eeb65`。SAPI 合成 WAV 不作为该 runtime 的正向识别 oracle；官方 release asset 尚未完成哈希复核（下载受网络限制）；ASR C2 Integration 已通过；Formal 已独立重实现并通过限定范围 contract evidence。OCR、报告和外发独立 C1 smoke 尚未通过。C0 选型已冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`：官方 `H:\Whisper\cli\main.exe` + `H:\Whisper\Models\ggml-large-v3-turbo.bin` 是唯一 ASR runtime；PaddleOCR 是中文/版面主 OCR，RapidOCR ONNX 是轻量回退，Tesseract 仅兼容后备；PPTX 采用 formal-pptx 原生文字 → MarkItDown/python-pptx 辅助 → 图片页 PaddleOCR 三层路径；edge-tts 是免费在线、显式用户操作的 TTS 候选，未进入当前 9D 业务范围。ASR C1 evidence 见 `H:\studybuddy-composer\results\asr-whisper-cpp\c1-smoke.json`；已知本机 CLI/运行时/PPTX 预检不提升 C2/Formal 状态。
+**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`。B1 ASR、B2 PaddleOCR、B3 report 和 B4 delivery 均已在各自精确 scope 完成 C0-C6 scoped closeout；当前状态和限制以 `docs/STATUS.md` 为准。RapidOCR 是仅完成 C1 smoke 的回退候选，Tesseract 是兼容后备，TTS/PPTX 图片页 OCR 尚未进入 Formal。C0 选型仍冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`；组件 catalog 只记录可复核来源、版本、scope 与未验证范围，不得把限定 smoke 外推为通用能力。
 
 **通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
 
@@ -300,7 +300,7 @@ backend/app/
 
 **Integration：** 与 9A-9D 学习数据、project scope、source lifecycle、append-only report audit、backup/restore 和隔离 data root 组合验证。
 
-**C3 Formal contract freeze：** 已冻结复用现有 Phase 9D report domain 的正式边界、safe payload、snapshot/idempotency、source lifecycle、backup/restore non-repair、JSON/Markdown-only export、API/UI 与 privacy/error 风险；正式契约见 `docs/contracts/B3_REPORT_COMPONENT_CONTRACT.md`。尚未实现新的 Formal production behavior。
+**C3 Formal contract freeze：** 已冻结复用现有 Phase 9D report domain 的正式边界、safe payload、snapshot/idempotency、source lifecycle、backup/restore non-repair、JSON/Markdown-only export、API/UI 与 privacy/error 风险；正式契约见 `docs/contracts/B3_REPORT_COMPONENT_CONTRACT.md`。后续 C4/C5 已按该契约独立实现并验收。
 
 **C4 Formal：** 已独立验证并实现必要 Formal 缺口：JSON/Markdown report export 统一执行 1 MiB 上限，超限返回稳定 `payload_too_large`；现有 report domain、snapshot、API、UI、source lifecycle 与 backup/restore 语义保持不变。证据见 `docs/evidence/B3_REPORT_C4_IMPLEMENTATION_EVIDENCE.md`。
 
@@ -312,7 +312,7 @@ backend/app/
 
 ### B4：真实外发组件流水线
 
-**顺序约束：** 只有 B3 scoped closeout 后才开始。默认 `delivery=off` 和既有 live 拒绝语义在整个阶段保持有效，直到精确 adapter 获得单独批准。
+**顺序约束：** B3 scoped closeout 已完成，B4 已按独立渠道门禁完成 C0-C6。默认 `delivery=off` 和既有 live 拒绝语义在整个阶段及当前运行时保持有效；精确 synthetic smoke 不构成通用或产品化 live delivery 批准。
 
 **候选：** QQ SMTP、飞书 Webhook；每个渠道独立组件、独立证据、独立开关，不共享“已验证”结论。
 
@@ -341,9 +341,11 @@ backend/app/
 | DOC/RTF/PPT 旧格式转换 | 继续拒绝 | 有明确用户需求、可信转换器、隔离与安全合同；不得复用启发式 DOC 解码 |
 | 多用户、云同步、协作 | 延后 | 单独产品和部署路线，不与本路线图混入 |
 
-### D0：Tauri 桌面化准备审计
+### D0：Tauri 桌面化准备审计（明确暂缓）
 
-**目的：** 在写桌面壳之前验证其是否与当前运行边界、安全模型和发布方式兼容。
+**状态：** 不得启动。只有现有 Web 系统功能已完成正式 `/app` 集成，并完成其正常用户路径、失败/retry、来源生命周期与安全验证后，才可重新评审桌面化。
+
+**目的：** 达到上述重新立项条件后，在写桌面壳之前验证其是否与当前运行边界、安全模型和发布方式兼容。
 
 **任务：**
 
@@ -354,7 +356,9 @@ backend/app/
 
 **通过门槛：** threat model、打包输入清单、sidecar 生命周期、数据目录迁移/备份策略和 release test plan 完成；没有将开发期 `tauri dev` 当作安装包证据。
 
-### D1：Tauri Windows 最小安装包时间盒
+### D1：Tauri Windows 最小安装包时间盒（明确暂缓）
+
+**前置条件：** D0 重新获批且 Web 功能集成/验证完成。
 
 **任务：**
 
@@ -365,17 +369,17 @@ backend/app/
 
 **通过门槛：** Windows 安装包在隔离环境完成规定路径和完整 backend/browser/desktop smoke；记录包大小、依赖、签名状态和未验证限制。未达标则保留 Web/loopback 发布方式，不宣称桌面版本完成。
 
-### D2：macOS 可行性门（非第一步承诺）
+### D2：macOS 可行性门（明确暂缓）
 
-只在拥有 macOS 构建环境、签名/notarization 方案、系统 webview/sidecar 测试和数据目录/权限验收后启动。不得以 Windows 成功推断 macOS 可用。
+只在 D0/D1 重新获批、拥有 macOS 构建环境、签名/notarization 方案、系统 webview/sidecar 测试和数据目录/权限验收后启动。不得以 Windows 成功推断 macOS 可用。
 
 ## 4. 第一步总验收与文档收口
 
 第一步完成不等于所有未来能力都完成。仅当下列独立 gate 均已有证据，才可声明“第一步 scoped closeout”：
 
 1. A0-A4 的架构/前端门禁通过，`main.py` 和 `repository.py` 不再承载巨型混合实现。
-2. B1-B4 中每个被正式批准和实现的组件均已完成 C0-C6；未通过或未启动者必须明确列为 `not_started`/`not_verified`，不得掩盖。
-3. D0-D1 Windows desktop 时间盒达标；若 D1 未达标，第一步可在能力与架构范围内关闭，但桌面化保持未完成，不能称为“桌面应用已交付”。
+2. B1-B4 中每个被正式批准和实现的组件均已完成 C0-C6 scoped closeout；其余未通过或未启动的候选/能力必须明确列为 `not_started`/`not_verified`，不得掩盖。
+3. 桌面化不属于当前施工完成条件；在 Web 功能完成正式 `/app` 集成和验证前，D0-D2 保持明确暂缓，不能称为“桌面应用已交付”。
 4. 每次组件/正式接入都有 focused tests、完整 backend regression、相关 Chromium/desktop tests、source lifecycle、backup/restore 与安全检查。
 5. `README.md`、`STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md`、`frontend-plan.md`、组件 manifests/cards 和 acceptance evidence 与真实状态同步。
 

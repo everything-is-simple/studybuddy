@@ -37,6 +37,6 @@
 ## 文档维护规则
 
 - 根目录只保留 `README.md`、`AGENTS.md` 与项目元数据；活跃事实源位于 `docs/` 根目录。
-- `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责状态、执行清单、阶段顺序与已批准路线；发生冲突时先修正这些事实源。
+- `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责当前状态、唯一执行清单、阶段顺序与已批准路线；当前状态冲突时以 `STATUS.md` 为准，执行项冲突时以 `TODO.md` 为准。历史证据只保留原始快照，不能覆盖当前状态。完整规则见 `CODE_TEST_GOVERNANCE.md`。
 - 非核心资料必须按用途放入 `contracts/`、`evidence/`、`operations/` 或 `archive/`，不要恢复已移除的规划 prompt 目录或复制第二份状态摘要。
 - 新增或移动 Markdown 后，运行治理测试中的链接检查；历史归档中的已移除资料应改为文字 provenance，而不是保留失效链接。

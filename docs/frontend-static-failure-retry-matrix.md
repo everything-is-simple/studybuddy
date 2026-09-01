@@ -1,14 +1,14 @@
 # 静态前端失败与重试覆盖矩阵
 
-> 状态：`A3-FC-3-2 / evidence index`
-> 更新：2026-08-30
-> 本文件把 `/app` 静态页的已暴露能力与现有浏览器证据对应起来。`legacy_only`、`not_exposed` 与 `a3_pages` 能力不以静态页操作测试伪造成功路径，详见 [`frontend-static-capability-matrix.md`](frontend-static-capability-matrix.md)。
+> 状态：`A3-FC-3-2 / closed evidence index`
+> 更新：2026-08-31
+> 本文件把 `/app` 静态页的已暴露能力与现有浏览器证据对应起来。`/app` 是默认正式入口；`legacy_only` 和 `not_exposed` 不以静态页操作测试伪造成功路径，详见 [`frontend-static-capability-matrix.md`](frontend-static-capability-matrix.md)。
 
 ## 状态定义
 
 - **covered**：静态页的 loading/empty/failed/retry 或安全边界已有 browser evidence。
 - **baseline**：页面没有相应写操作或 retry；验证安全初始状态、空状态、键盘和隐私边界。
-- **deferred**：能力属于 `legacy_only`、`not_exposed` 或 `a3_pages`，不将旧入口或后端证据误记为静态页操作证据。
+- **deferred**：能力属于 `legacy_only` 或 `not_exposed`，不将旧入口或后端证据误记为静态页操作证据。
 
 ## 页面覆盖表
 
@@ -44,7 +44,7 @@
 - 全局任务列表；
 - Provider 配置写入、密钥保存和连接测试；
 - capture archive；
-- 独立报告、导出和完整审计工作区。
+- 历史 classroom 兼容入口以外的报告操作；正式 `reports.html` 已覆盖 JSON/Markdown export 与只读审计工作区。
 
 它们的后端或 `/legacy` evidence 不构成 `/app` 静态页面已迁移的声明。后续仅由 A3-PAGES 按独立页面和浏览器路径迁移。
 

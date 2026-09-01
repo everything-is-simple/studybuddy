@@ -82,13 +82,13 @@ Pi Agent Desktop 应以 `H:\studybuddy` 作为主工作区打开；需要操作 
 - 基础设施 v1 已基本完工：I1 migration/schema、I2 backup/restore、I3 可观察性完成；I4 真实环境/容量基线时间盒验收完成。
 - 文件材料管理 v1 核心路径局部 `real-pass`；Phase 4–6 的可信 Q&A、Provider 和产品化证据按精确范围记录。
 - Phase 7 已按 Mistral 精确配置范围收口；Phase 8 已按 deterministic fake-provider、Chromium 与 backup/restore 精确范围收口，证据见 `PHASE8_ACCEPTANCE_EVIDENCE.md`。
-- Phase 9A-0 至 9A-8 已在明确的单进程 SQLite/backend/API/local Chromium scoped gates 内完成；9A-8 acceptance evidence 见 `PHASE9A_ACCEPTANCE_EVIDENCE.md`。Phase 9B-2（v10 schema）、9B-3（共用 domain transaction）、9B-4（S2 deterministic fake-provider note workflow）、9B-5（S1 synchronous rhythm workflow）与 9B-6（S1/S2 最小安全 API）已到 `implemented/backend-pass`；9B-7（S1/S2 最小 Chromium workspace）已到 `browser-pass`；9B-8（source lifecycle/backup-restore）已到 `scoped-gates-pass`/`restore-gates-pass`；9B-9 已完成限定范围内 closeout。Phase 9C/9D 和完整学习产品能力仍未完成。
+- Phase 9A、9B、9C 已在各自 deterministic fake-provider / 单进程 SQLite / API / local Chromium / backup-restore 的声明范围完成 closeout；Phase 9D 的已批准部分范围也已 scoped closeout。完整学习产品能力与全局 real-pass 仍未完成；当前范围和证据以 `../STATUS.md` 为准。
 - 比较结论：正式系统在工程治理、可靠性、资料生命周期、引用可追溯性和验收纪律上已经进化；在卡片、练习、学习计划、OCR/ASR 和 S1–S7 产品宽度上尚未全面超过历史/前代版本。
 - Phase 9 不作为单一业务大阶段，后续学习能力按 9A–9D 独立立项和验收；Phase 10 继续承载后台任务、生产化和扩展。
 
 ## 六、下一步准备
 
-Phase 7、Phase 8 fake-provider closeout、Phase 9A 限定范围 acceptance 和 Phase 9B 限定范围 closeout 已完成；Phase 9B-2 至 9B-6 为 `implemented/backend-pass`，9B-7 Chromium workspace 为 `browser-pass`，9B-8 source lifecycle/backup-restore artifact 通过 scoped/restore gates，9B-9 已完成脱敏 evidence 与文档收口。下一步进入独立的 Phase 9C/9D 契约和 gate；9B–9D 必须保持独立范围、契约和 migration gate。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
+Phase 7、Phase 8 fake-provider closeout、Phase 9A/9B/9C 的限定范围 closeout，以及 Phase 9D 已批准部分范围的 scoped closeout 均已完成。下一步按 `TODO.md` 先完成默认 `/app` 对既有用户操作的集成，再扩大 B1-B4 验证范围；桌面化在 Web 功能完整集成和验证前明确暂缓。Composer/Integration 组件仍需保持可复核 smoke/integration evidence：
 
 1. `chunker` - deterministic 文本分块（中文/Unicode offset、page/slide span 映射）
 2. `chunk-fts5-retrieval` - chunk 词法检索与 top-k 排序
