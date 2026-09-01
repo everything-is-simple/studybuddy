@@ -185,6 +185,26 @@ def _target_allowed(config: AppConfig, target_label: str) -> bool:
     return target_label in set(config.report_delivery_targets)
 
 
+def _configured_adapter(config: AppConfig, channel: str) -> ReportDeliveryAdapter:
+    """Build a runtime adapter only for dry-run-compatible configuration."""
+    if channel == "smtp":
+        return SmtpDeliveryAdapter(
+            host=config.report_delivery_smtp_host,
+            port=config.report_delivery_smtp_port,
+            username=config.report_delivery_smtp_username or "",
+            auth_code=config.report_delivery_smtp_password_runtime or "",
+            targets=dict(config.report_delivery_smtp_targets),
+            secure=config.report_delivery_smtp_secure,
+            timeout_seconds=config.report_delivery_timeout_seconds,
+        )
+    if channel == "feishu":
+        return FeishuWebhookDeliveryAdapter(
+            targets=dict(config.report_delivery_feishu_targets),
+            timeout_seconds=config.report_delivery_timeout_seconds,
+        )
+    raise DeliveryAdapterError("delivery_target_not_allowed")
+
+
 def _load_report_content(connection: sqlite3.Connection, *, project_id: str,
                          report_id: str) -> tuple[dict[str, object], str, str]:
     row = connection.execute(

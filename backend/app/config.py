@@ -23,6 +23,10 @@ DEFAULT_EMBEDDING_MAX_RETRIES = 0
 DEFAULT_REPORT_DELIVERY_MODE = "off"
 DEFAULT_REPORT_DELIVERY_ENABLED = False
 DEFAULT_REPORT_DELIVERY_AUTHORIZED = False
+DEFAULT_REPORT_DELIVERY_SMTP_HOST = "smtp.qq.com"
+DEFAULT_REPORT_DELIVERY_SMTP_PORT = 465
+DEFAULT_REPORT_DELIVERY_SMTP_SECURE = True
+DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS = 10.0
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
 DEFAULT_TASK_MAX_CONCURRENCY = 1
@@ -91,6 +95,16 @@ class AppConfig:
     ocr_timeout_seconds: float = DEFAULT_OCR_TIMEOUT_SECONDS
     ocr_max_output_bytes: int = DEFAULT_OCR_MAX_OUTPUT_BYTES
     ocr_enabled: bool = DEFAULT_OCR_ENABLED
+    # B4 runtime delivery settings remain opt-in and are never persisted.
+    report_delivery_smtp_host: str = DEFAULT_REPORT_DELIVERY_SMTP_HOST
+    report_delivery_smtp_port: int = DEFAULT_REPORT_DELIVERY_SMTP_PORT
+    report_delivery_smtp_secure: bool = DEFAULT_REPORT_DELIVERY_SMTP_SECURE
+    report_delivery_smtp_username: str | None = field(default=None, repr=False)
+    report_delivery_smtp_password_runtime: str | None = field(default=None, repr=False)
+    report_delivery_smtp_targets: tuple[tuple[str, str], ...] = ()
+    report_delivery_feishu_targets: tuple[tuple[str, str], ...] = ()
+    report_delivery_timeout_seconds: float = DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS
+    report_delivery_feishu_webhook: str | None = field(default=None, repr=False)
 
     @property
     def originals_root(self) -> Path:
@@ -173,6 +187,45 @@ def _env_delivery_mode() -> str:
     value = os.environ.get("STUDYBUDDY_REPORT_DELIVERY_MODE", DEFAULT_REPORT_DELIVERY_MODE).strip().lower()
     if value not in {"off", "dry_run", "live"}:
         raise ValueError("invalid_report_delivery_mode")
+    return value
+
+
+def _env_delivery_mappings(name: str) -> tuple[tuple[str, str], ...]:
+    raw = os.environ.get(name, "")
+    pairs: list[tuple[str, str]] = []
+    for item in raw.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if item.count("=") != 1:
+            raise ValueError(f"invalid_{name.lower()}")
+        label, target = (part.strip() for part in item.split("=", 1))
+        if (not label or not target or len(label) > 100 or len(target) > 500
+                or any(not (char.isascii() and (char.isalnum() or char in "._-")) for char in label)):
+            raise ValueError(f"invalid_{name.lower()}")
+        pairs.append((label, target))
+    if len({label for label, _ in pairs}) != len(pairs):
+        raise ValueError(f"invalid_{name.lower()}")
+    return tuple(pairs)
+
+
+def _env_delivery_smtp_host() -> str:
+    value = os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_HOST", DEFAULT_REPORT_DELIVERY_SMTP_HOST).strip().lower()
+    if value not in {"smtp.qq.com", "smtp.163.com"}:
+        raise ValueError("invalid_report_delivery_smtp_host")
+    return value
+
+
+def _env_delivery_feishu_webhook() -> str | None:
+    value = os.environ.get("STUDYBUDDY_REPORT_DELIVERY_FEISHU_WEBHOOK", "").strip()
+    if not value:
+        return None
+    parsed = urlparse(value)
+    if (parsed.scheme != "https" or parsed.netloc != "open.feishu.cn"
+            or not parsed.path.startswith("/open-apis/bot/v2/hook/")
+            or len(parsed.path.rsplit("/", 1)[-1]) < 20
+            or parsed.query or parsed.fragment):
+        raise ValueError("invalid_report_delivery_feishu_webhook")
     return value
 
 
@@ -259,4 +312,13 @@ def config_from_environment() -> AppConfig:
         ocr_timeout_seconds=_env_float("STUDYBUDDY_OCR_TIMEOUT_SECONDS", DEFAULT_OCR_TIMEOUT_SECONDS, minimum=0.1, maximum=600.0),
         ocr_max_output_bytes=_env_int("STUDYBUDDY_OCR_MAX_OUTPUT_BYTES", DEFAULT_OCR_MAX_OUTPUT_BYTES, minimum=1, maximum=16 * 1024 * 1024),
         ocr_enabled=_env_bool("STUDYBUDDY_OCR_ENABLED", DEFAULT_OCR_ENABLED),
+        report_delivery_smtp_host=_env_delivery_smtp_host(),
+        report_delivery_smtp_port=_env_int("STUDYBUDDY_REPORT_DELIVERY_SMTP_PORT", DEFAULT_REPORT_DELIVERY_SMTP_PORT, minimum=1, maximum=65535),
+        report_delivery_smtp_secure=_env_bool("STUDYBUDDY_REPORT_DELIVERY_SMTP_SECURE", DEFAULT_REPORT_DELIVERY_SMTP_SECURE),
+        report_delivery_smtp_username=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_USERNAME") or None,
+        report_delivery_smtp_password_runtime=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD") or None,
+        report_delivery_smtp_targets=_env_delivery_mappings("STUDYBUDDY_REPORT_DELIVERY_SMTP_TARGETS"),
+        report_delivery_feishu_targets=_env_delivery_mappings("STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGETS"),
+        report_delivery_timeout_seconds=_env_float("STUDYBUDDY_REPORT_DELIVERY_TIMEOUT_SECONDS", DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS, minimum=0.1, maximum=60.0),
+        report_delivery_feishu_webhook=_env_delivery_feishu_webhook(),
     )

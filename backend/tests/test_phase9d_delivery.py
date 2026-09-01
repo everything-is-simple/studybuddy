@@ -178,6 +178,20 @@ def test_live_requires_explicit_authorization_then_remains_not_approved(tmp_path
         assert adapter.calls == 0
 
 
+def test_live_gate_does_not_construct_or_call_injected_adapter(tmp_path: Path):
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        _seed_project(connection)
+        report = _report(connection)
+        adapter = CountingAdapter()
+        result = execute_report_delivery(
+            connection, config=_config(tmp_path, mode="live", enabled=True, authorized=True),
+            project_id=PROJECT_ID, report_id=str(report["id"]), channel="smtp",
+            target_label="guardian-primary", authorization_granted=True, adapter=adapter,
+        )
+        assert result["error_code"] == "delivery_live_not_approved"
+        assert adapter.calls == 0
+
+
 def test_unexpected_adapter_failure_is_audited_with_stable_redacted_code(tmp_path: Path):
     with connect(tmp_path / "studybuddy.sqlite3") as connection:
         _seed_project(connection)
