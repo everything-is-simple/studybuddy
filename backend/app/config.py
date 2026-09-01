@@ -102,7 +102,7 @@ class AppConfig:
     report_delivery_smtp_username: str | None = field(default=None, repr=False)
     report_delivery_smtp_password_runtime: str | None = field(default=None, repr=False)
     report_delivery_smtp_targets: tuple[tuple[str, str], ...] = ()
-    report_delivery_feishu_targets: tuple[tuple[str, str], ...] = ()
+    report_delivery_feishu_target_label: str | None = None
     report_delivery_timeout_seconds: float = DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS
     report_delivery_feishu_webhook: str | None = field(default=None, repr=False)
 
@@ -207,6 +207,16 @@ def _env_delivery_mappings(name: str) -> tuple[tuple[str, str], ...]:
     if len({label for label, _ in pairs}) != len(pairs):
         raise ValueError(f"invalid_{name.lower()}")
     return tuple(pairs)
+
+
+def _env_delivery_label(name: str) -> str | None:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return None
+    if (len(value) > 100
+            or any(not (char.isascii() and (char.isalnum() or char in "._-")) for char in value)):
+        raise ValueError(f"invalid_{name.lower()}")
+    return value
 
 
 def _env_delivery_smtp_host() -> str:
@@ -318,7 +328,7 @@ def config_from_environment() -> AppConfig:
         report_delivery_smtp_username=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_USERNAME") or None,
         report_delivery_smtp_password_runtime=os.environ.get("STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD") or None,
         report_delivery_smtp_targets=_env_delivery_mappings("STUDYBUDDY_REPORT_DELIVERY_SMTP_TARGETS"),
-        report_delivery_feishu_targets=_env_delivery_mappings("STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGETS"),
+        report_delivery_feishu_target_label=_env_delivery_label("STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGET_LABEL"),
         report_delivery_timeout_seconds=_env_float("STUDYBUDDY_REPORT_DELIVERY_TIMEOUT_SECONDS", DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS, minimum=0.1, maximum=60.0),
         report_delivery_feishu_webhook=_env_delivery_feishu_webhook(),
     )

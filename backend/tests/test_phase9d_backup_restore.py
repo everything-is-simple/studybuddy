@@ -336,6 +336,8 @@ def test_backup_restore_preserves_phase9d_history_without_side_effects(tmp_path:
     monkeypatch.setattr("app.repository.transcribe_capture_session", fail_ai)
     monkeypatch.setattr("app.repository.create_report_snapshot", fail_ai)
     monkeypatch.setattr("app.repository.record_report_delivery_attempt", fail_ai)
+    monkeypatch.setattr("app.delivery.SmtpDeliveryAdapter.deliver", fail_ai)
+    monkeypatch.setattr("app.delivery.FeishuWebhookDeliveryAdapter.deliver", fail_ai)
 
     assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
     acceptance = verify_restored_data(restored)
