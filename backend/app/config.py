@@ -101,7 +101,7 @@ class AppConfig:
     report_delivery_smtp_secure: bool = DEFAULT_REPORT_DELIVERY_SMTP_SECURE
     report_delivery_smtp_username: str | None = field(default=None, repr=False)
     report_delivery_smtp_password_runtime: str | None = field(default=None, repr=False)
-    report_delivery_smtp_targets: tuple[tuple[str, str], ...] = ()
+    report_delivery_smtp_targets: tuple[tuple[str, str], ...] = field(default=(), repr=False)
     report_delivery_feishu_target_label: str | None = None
     report_delivery_timeout_seconds: float = DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS
     report_delivery_feishu_webhook: str | None = field(default=None, repr=False)

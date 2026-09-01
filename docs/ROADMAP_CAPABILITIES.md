@@ -326,9 +326,11 @@ backend/app/
 
 **C4 状态：** 已完成 `implemented/backend-pass`：Formal 独立实现 SMTP/Feishu adapters、运行时分渠道 target mapping 和 allowlist、内容大小限制、稳定 provider error mapping、idempotency/explicit retry 边界与 default-off/no-network/live no-adapter 测试。证据：`docs/evidence/B4_DELIVERY_C4_IMPLEMENTATION_EVIDENCE.md`。C4 没有打开 Formal live execution gate。
 
-**C5 状态：** 已完成 `scoped acceptance passed`：default-off/live-blocked browser、source lifecycle、backup/restore no-send 和两条独立 operator-authorized fixed-synthetic channel smoke 均通过。SMTP scope 仅为一条 163 SMTP 到 QQ mailbox 路径；Feishu scope 仅为一个 configured custom-bot webhook。证据：`docs/evidence/B4_DELIVERY_C5_ACCEPTANCE_EVIDENCE.md`。这不开放 Formal product API live delivery；C6 closeout 待完成。
+**C5 状态：** 已完成 `scoped acceptance passed`：default-off/live-blocked browser、source lifecycle、backup/restore no-send 和两条独立 operator-authorized fixed-synthetic channel smoke 均通过。SMTP scope 仅为一条 163 SMTP 到 QQ mailbox 路径；Feishu scope 仅为一个 configured custom-bot webhook。证据：`docs/evidence/B4_DELIVERY_C5_ACCEPTANCE_EVIDENCE.md`。
 
-**通过门槛：** C0-C6 全部通过。精确渠道的 real smoke 不表示所有 SMTP/webhook 配置均可用。
+**C6 状态：** 已完成 `scoped closeout passed`：复核 Composer/Integration/Formal 隔离、独立实现、runtime-secret redaction、source lifecycle、restore no-send、browser/backend/full regression、source-size、diff 和脱敏 evidence。证据：`docs/evidence/B4_DELIVERY_C6_SCOPED_CLOSEOUT_EVIDENCE.md`。B4 完成仅限精确 fixed-synthetic channel scope；Formal product API live 继续拒绝，任何产品化 live delivery 必须重新冻结并验收独立 contract。
+
+**通过门槛：** C0-C6 已在声明 scope 内通过。精确渠道的 real smoke 不表示所有 SMTP/webhook 配置均可用。
 
 ### B5：明确延后项与重新立项条件
 
