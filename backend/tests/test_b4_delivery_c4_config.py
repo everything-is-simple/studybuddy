@@ -28,6 +28,7 @@ def test_delivery_runtime_mapping_is_parsed_without_exposing_secrets(monkeypatch
     assert config.report_delivery_feishu_target_label == "guardian-primary"
     assert config.report_delivery_smtp_password_runtime == "private-auth-code"
     assert "private-auth-code" not in repr(config)
+    assert "recipient@example.invalid" not in repr(config)
     assert "12345678901234567890" not in repr(config)
 
 
