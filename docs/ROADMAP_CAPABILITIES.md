@@ -324,7 +324,9 @@ backend/app/
 
 **C3 状态：** 已完成 `contract-frozen`：`docs/contracts/B4_DELIVERY_COMPONENT_CONTRACT.md` 与 `docs/evidence/B4_DELIVERY_C3_CONTRACT_EVIDENCE.md` 冻结了 SMTP/Feishu 分渠道、默认关闭、显式授权、allowlist、幂等、审计、失败和 restore non-send 边界。一次 163→QQ synthetic 邮件实际收件及一次 Feishu synthetic live smoke 仅作为精确配置/网络可行性证据，不开放 Formal live delivery。
 
-**C4 状态：** 已完成 `implemented/backend-pass`：Formal 独立实现 SMTP/Feishu adapters、运行时分渠道 target mapping 和 allowlist、内容大小限制、稳定 provider error mapping、idempotency/explicit retry 边界与 default-off/no-network/live no-adapter 测试。证据：`docs/evidence/B4_DELIVERY_C4_IMPLEMENTATION_EVIDENCE.md`。C4 没有打开 Formal live execution gate 或发送网络请求；C5 acceptance、C6 closeout 待完成。
+**C4 状态：** 已完成 `implemented/backend-pass`：Formal 独立实现 SMTP/Feishu adapters、运行时分渠道 target mapping 和 allowlist、内容大小限制、稳定 provider error mapping、idempotency/explicit retry 边界与 default-off/no-network/live no-adapter 测试。证据：`docs/evidence/B4_DELIVERY_C4_IMPLEMENTATION_EVIDENCE.md`。C4 没有打开 Formal live execution gate。
+
+**C5 状态：** 已完成 `scoped acceptance passed`：default-off/live-blocked browser、source lifecycle、backup/restore no-send 和两条独立 operator-authorized fixed-synthetic channel smoke 均通过。SMTP scope 仅为一条 163 SMTP 到 QQ mailbox 路径；Feishu scope 仅为一个 configured custom-bot webhook。证据：`docs/evidence/B4_DELIVERY_C5_ACCEPTANCE_EVIDENCE.md`。这不开放 Formal product API live delivery；C6 closeout 待完成。
 
 **通过门槛：** C0-C6 全部通过。精确渠道的 real smoke 不表示所有 SMTP/webhook 配置均可用。
 
