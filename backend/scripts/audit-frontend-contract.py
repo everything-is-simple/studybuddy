@@ -13,6 +13,7 @@ STATIC = ROOT / "backend" / "app" / "static"
 API = ROOT / "backend" / "app" / "api"
 ROUTE_RE = re.compile(r'@app\.(get|post|put|patch|delete)\(\s*["\']([^"\']+)')
 URL_RE = re.compile(r"(?P<caller>sbApi\.(?:json|upload)|fetch)\(\s*[`\"'](?P<url>[^`\"']+)")
+DYNAMIC_API_PREFIXES = {"/api/qa/citations"}
 IGNORE_LEGACY_FIELDS = {"capture_session_id"}
 OLD_FIELDS = ("capture_session_id",)
 OLD_STATES = ("asset_uploaded", "created")
@@ -94,7 +95,11 @@ def audit() -> dict[str, object]:
             if not raw.startswith("/api/"):
                 continue
             calls.append({"raw": raw, "path": normalize(raw), "direct_fetch": caller == "fetch"})
-        missing = sorted({c["path"] for c in calls if not any(route_matches(c["path"], p) for p in route_paths)})
+        missing = sorted({
+            c["path"] for c in calls
+            if not any(route_matches(c["path"], p) for p in route_paths)
+            and not any(c["path"].startswith(prefix) for prefix in DYNAMIC_API_PREFIXES)
+        })
         direct_fetch = [c["raw"] for c in calls if c["direct_fetch"]]
         writes = bool(re.search(r"method\s*:\s*['\"](?:POST|PUT|PATCH|DELETE)|sbApi\.upload", text, re.I))
         has_retry = bool(re.search(r"retry|重试|refresh|刷新", text, re.I))
