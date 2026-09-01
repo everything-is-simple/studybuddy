@@ -119,3 +119,31 @@ def test_adapter_rejects_oversized_content_before_network() -> None:
 
     with pytest.raises(DeliveryAdapterError, match="payload_too_large"):
         adapter.deliver(target_label="guardian-primary", safe_payload={}, markdown_content="x" * ((1 << 20) + 1))
+
+
+def test_smtp_provider_timeout_maps_to_stable_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail(*args: object, **kwargs: object) -> object:
+        raise TimeoutError("provider details must not escape")
+
+    monkeypatch.setattr("app.delivery.smtplib.SMTP_SSL", fail)
+    adapter = SmtpDeliveryAdapter(
+        host="smtp.qq.com", port=465, username="sender@example.invalid",
+        auth_code="private-auth-code", targets={"guardian-primary": "recipient@example.invalid"},
+    )
+    with pytest.raises(DeliveryAdapterError, match="delivery_failed"):
+        adapter.deliver(target_label="guardian-primary", safe_payload={}, markdown_content="safe")
+
+
+def test_feishu_provider_http_error_maps_to_stable_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    from urllib.error import HTTPError
+
+    def fail(*args: object, **kwargs: object) -> object:
+        raise HTTPError("https://open.feishu.cn/", 500, "private response", {}, None)
+
+    monkeypatch.setattr("app.delivery.urlopen", fail)
+    adapter = FeishuWebhookDeliveryAdapter(
+        targets={"guardian-primary": "https://open.feishu.cn/open-apis/bot/v2/hook/12345678901234567890"},
+    )
+    with pytest.raises(DeliveryAdapterError, match="delivery_failed") as error:
+        adapter.deliver(target_label="guardian-primary", safe_payload={}, markdown_content="safe")
+    assert "private response" not in str(error.value)
