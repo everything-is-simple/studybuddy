@@ -26,10 +26,10 @@
 | `qa.html` | citation 详情/正文定位 | `legacy_only` | 后端和旧 workspace 有证据；静态页当前只提供材料详情链接，未迁移正式 citation detail 面板。 |
 | `plans.html` | 目标、模块、计划列表和详情读取、状态/来源显示 | `static_verified` | learning/matrix browser tests；详情选择会保留 `plan_id` 上下文。 |
 | `plan-detail.html` | 独立计划详情、项目状态和来源状态读取、缺少标识/失败重试 | `static_verified` | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js`；不新增后端能力。 |
-| `plans.html` | 创建/编辑目标、模块、计划、依赖、进度、节奏 | `legacy_only` | 已有后端和旧 workspace 契约；静态页未迁移写操作。 |
+| `plans.html` | 创建/编辑目标、模块、计划、依赖、进度、节奏 | `static_verified` | P1-2 `/app` 页面提供真实写操作、状态转换、计划项/依赖/进度、节奏设置与分配；`browser_p1_2_plans_notes_migration.spec.js` 覆盖核心路径。 |
 | `notes.html` | 列表、详情、笔记类型/来源状态、AI 草稿确认 | `static_verified` | learning/state-matrix browser tests；详情选择会保留 `note_id` 上下文。 |
 | `note-detail.html` | 独立笔记详情、内容/引用/来源状态读取、缺少标识/失败重试 | `static_verified` | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js`；不新增后端能力。 |
-| `notes.html` | 创建、编辑、生成、拒绝、归档、来源刷新、导出 | `legacy_only` | 后端和旧 workspace 契约已存在；静态页仅迁移确认读取路径。 |
+| `notes.html` | 创建、编辑、生成、拒绝、归档、来源刷新、导出 | `static_verified` | P1-2 `/app` 页面提供用户笔记创建/编辑、AI 草稿生成、确认/拒绝/归档、模块关联、来源刷新与导出；`browser_p1_2_plans_notes_migration.spec.js` 覆盖核心路径。 |
 | `cards.html` | 卡组/卡片读取、draft/来源状态、引用键展示 | `static_verified` | learning/state-matrix browser tests。 |
 | `cards.html` | 创建、生成、编辑、确认、拒绝、归档、复习 | `legacy_only` | 后端和旧 workspace 契约已存在，未迁移到静态页。 |
 | `exercises.html` | 练习集/题目读取、draft/来源状态、题目确认 | `static_verified` | learning/state-matrix browser tests。 |
