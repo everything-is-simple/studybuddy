@@ -322,7 +322,7 @@ backend/app/
 
 **Formal：** 先保持 dry-run；真实 live adapter 必须具有运行时 enable、显式授权、逐次确认、channel allowlist、幂等、审计和立即安全失败的错误边界。真实发送 smoke 必须用户显式授权、使用非敏感测试目标并形成脱敏证据。
 
-**通过门槛：** C0-C6 全部通过。精确渠道的 real smoke 不表示所有 SMTP/webhook 配置均可用。
+**C3 状态：** 已完成 `contract-frozen`：`docs/contracts/B4_DELIVERY_COMPONENT_CONTRACT.md` 与 `docs/evidence/B4_DELIVERY_C3_CONTRACT_EVIDENCE.md` 冻结了 SMTP/Feishu 分渠道、默认关闭、显式授权、allowlist、幂等、审计、失败和 restore non-send 边界。一次 163→QQ synthetic 邮件实际收件及一次 Feishu synthetic live smoke 仅作为精确配置/网络可行性证据，不开放 Formal live delivery。C4 独立 adapter、C5 acceptance、C6 closeout 待完成。\n\n**通过门槛：** C0-C6 全部通过。精确渠道的 real smoke 不表示所有 SMTP/webhook 配置均可用。
 
 ### B5：明确延后项与重新立项条件
 
