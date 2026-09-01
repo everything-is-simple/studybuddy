@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import smtplib
+import socket
 import sqlite3
 from dataclasses import dataclass
+from email.message import EmailMessage
 from typing import Protocol
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from .config import AppConfig
 from .repository import find_report_delivery_replay, record_report_delivery_attempt
@@ -12,6 +18,9 @@ from .repository import find_report_delivery_replay, record_report_delivery_atte
 
 DELIVERY_CHANNELS = {"smtp", "feishu"}
 DELIVERY_MODES = {"off", "dry_run", "live"}
+DELIVERY_TIMEOUT_SECONDS = 10.0
+MAX_DELIVERY_CONTENT_BYTES = 1 << 20
+FEISHU_WEBHOOK_PREFIX = "/open-apis/bot/v2/hook/"
 
 
 class DeliveryAdapterError(Exception):
@@ -66,8 +75,103 @@ class DryRunDeliveryAdapter:
         return DeliveryOutcome(status="dry_run")
 
 
+class SmtpDeliveryAdapter:
+    """Runtime-configured SMTP adapter; live execution remains gated below."""
+
+    channel = "smtp"
+
+    def __init__(self, *, host: str, port: int, username: str, auth_code: str,
+                 targets: dict[str, str], secure: bool = True,
+                 timeout_seconds: float = DELIVERY_TIMEOUT_SECONDS) -> None:
+        self.host, self.port, self.username = host.strip(), port, username.strip()
+        self.auth_code, self.targets = auth_code, dict(targets)
+        self.secure, self.timeout_seconds = secure, timeout_seconds
+
+    def deliver(self, *, target_label: str, safe_payload: dict[str, object],
+                markdown_content: str) -> DeliveryOutcome:
+        recipient = self.targets.get(target_label)
+        if self.host not in {"smtp.qq.com", "smtp.163.com"} or not recipient:
+            raise DeliveryAdapterError("delivery_configuration_invalid")
+        if not self.username or not self.auth_code or "@" not in self.username or "@" not in recipient:
+            raise DeliveryAdapterError("delivery_configuration_invalid")
+        if not isinstance(markdown_content, str) or not markdown_content:
+            raise DeliveryAdapterError("delivery_failed")
+        if len(markdown_content.encode("utf-8")) > MAX_DELIVERY_CONTENT_BYTES:
+            raise DeliveryAdapterError("payload_too_large")
+        message = EmailMessage()
+        message["From"], message["To"] = self.username, recipient
+        message["Subject"] = "StudyBuddy report"
+        message.set_content(markdown_content)
+        try:
+            if self.secure:
+                client = smtplib.SMTP_SSL(self.host, self.port, timeout=self.timeout_seconds)
+            else:
+                client = smtplib.SMTP(self.host, self.port, timeout=self.timeout_seconds)
+            with client:
+                client.ehlo()
+                if not self.secure:
+                    client.starttls()
+                    client.ehlo()
+                client.login(self.username, self.auth_code)
+                client.send_message(message)
+        except smtplib.SMTPAuthenticationError:
+            raise DeliveryAdapterError("delivery_failed") from None
+        except (smtplib.SMTPException, OSError, socket.timeout):
+            raise DeliveryAdapterError("delivery_failed") from None
+        return DeliveryOutcome(status="sent")
+
+
+class FeishuWebhookDeliveryAdapter:
+    """Runtime-configured HTTPS Feishu text webhook adapter."""
+
+    channel = "feishu"
+
+    def __init__(self, *, targets: dict[str, str], timeout_seconds: float = DELIVERY_TIMEOUT_SECONDS) -> None:
+        self.targets = dict(targets)
+        self.timeout_seconds = timeout_seconds
+
+    @staticmethod
+    def _allowed_url(url: str) -> bool:
+        parsed = urlparse(url)
+        return (
+            parsed.scheme == "https"
+            and parsed.netloc == "open.feishu.cn"
+            and parsed.path.startswith(FEISHU_WEBHOOK_PREFIX)
+            and len(parsed.path.rsplit("/", 1)[-1]) >= 20
+            and not parsed.query and not parsed.fragment
+        )
+
+    def deliver(self, *, target_label: str, safe_payload: dict[str, object],
+                markdown_content: str) -> DeliveryOutcome:
+        url = self.targets.get(target_label)
+        if not url or not self._allowed_url(url):
+            raise DeliveryAdapterError("delivery_configuration_invalid")
+        if not isinstance(markdown_content, str) or not markdown_content:
+            raise DeliveryAdapterError("delivery_failed")
+        body = json.dumps(
+            {"msg_type": "text", "content": {"text": markdown_content}},
+            ensure_ascii=True, separators=(",", ":"),
+        ).encode("utf-8")
+        if len(body) > MAX_DELIVERY_CONTENT_BYTES:
+            raise DeliveryAdapterError("payload_too_large")
+        request = Request(
+            url, data=body, method="POST",
+            headers={"Content-Type": "application/json", "Idempotency-Key": target_label},
+        )
+        try:
+            with urlopen(request, timeout=self.timeout_seconds) as response:  # nosec B310: allowlist validated above
+                if response.status < 200 or response.status >= 300:
+                    raise DeliveryAdapterError("delivery_failed")
+                response.read(128)
+        except DeliveryAdapterError:
+            raise
+        except (HTTPError, URLError, OSError, socket.timeout):
+            raise DeliveryAdapterError("delivery_failed") from None
+        return DeliveryOutcome(status="sent")
+
+
 class LiveDeliveryAdapter:
-    """Explicit placeholder: 9D never sends to SMTP, Feishu, or any endpoint."""
+    """Explicit placeholder: B4-C3 keeps Formal live delivery closed."""
 
     def __init__(self, channel: str) -> None:
         self.channel = channel
