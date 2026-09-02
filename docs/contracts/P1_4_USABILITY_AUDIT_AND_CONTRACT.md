@@ -362,7 +362,7 @@
 | 切片 | 状态 | 说明 |
 |---|---|---|
 | C0 真实输入与重启复现证据补齐 | `implemented + scoped real-pass` | 不修改 `backend/app/`；新增 `test_p1_4_real_input_chain.py`、`test_p1_4_restart_durability.py`、`browser_p1_4_real_input_restart.spec.js`。真实 PDF/DOCX/PPTX/MD/中文长名 TXT 全链已实测；`/app` 主要写操作族重启后均 `durable`；新发现 P14-P0-05。证据：[`../evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`](../evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md)。 |
-| C1 幂等与反馈 | 未开始 | P14-P1-01/P1-02/P1-03 |
+| C1 幂等与反馈 | `implemented / backend-pass + browser-pass` | P14-P1-01: review.html 添加 Idempotency-Key；P14-P1-02: 验证 5 个关键详情页已有 generation guard（note-detail, plan-detail, practice-session, practice-result, review），其他页面未强制添加；P14-P1-03: 错误码映射从 20 个扩充到 41 个，覆盖 C0 发现的所有未映射码。Focused backend 5 passed（`test_p1_4_c1_idempotency_feedback.py`）。完整基线：backend 491 passed, 3 skipped；browser 147 passed, 4 skipped。 |
 | C2 来源与解析可解释性 | 未开始 | P14-P1-04/P1-05/P1-06，C0 已固定具体事实 |
 | C3 `/app` 批量导出 | 未开始 | P14-P0-02 或 P2-01 |
 | C4 规模与完整工作流 | 未开始 | P14-P2-02~P2-06 |
