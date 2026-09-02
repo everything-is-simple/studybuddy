@@ -310,9 +310,19 @@ revision → chunks → retrieval → citations → Q&A
 - [x] P1-1：已将材料详情的显式索引、Q&A citation detail/body location 从 `/legacy` 迁移到默认 `/app`；覆盖页面状态、隐私/来源生命周期与 browser evidence。证据：`browser_p1_1_material_qa_migration.spec.js`，3 passed；完整 browser 回归 144 passed、4 skipped。
 - [x] P1-2：已将计划/节奏和笔记的既有写操作从 `/legacy` 迁移到默认 `/app`；未改变 API、draft、source 或幂等语义。证据：`browser_p1_2_plans_notes_migration.spec.js`，3 passed；串行重复验收 9 passed；相关后端 23 passed。
 - [x] P1-3：已将 Cards/Exercises 的既有写操作和学习复习路径从 `/legacy` 迁移到默认 `/app`；保留 citation、draft-first、确认和答案 key 隐私边界。证据：`browser_p1_3_cards_exercises_review_migration.spec.js`，3 passed；相关后端 18 passed；完整 browser 回归 144 passed、4 skipped。
-- [ ] P1-4：完成 `/app` 与 `/legacy` 的功能差异审计；仅在所有已有用户功能均有默认 `/app` 路径、failure/retry/source lifecycle/browser evidence 后，才评估移除或进一步降级 `/legacy`。
-- [ ] P1-5：冻结 Provider 配置写入与 connection-test 的安全契约；先定义 secret 生命周期、脱敏失败、权限、运行边界和 browser evidence，再决定是否实现设置页写入。当前 `settings.html`/`settings-provider.html` 保持只读。
-- [ ] P1-6：扩大 B1 ASR、B2 OCR、B3 reports、B4 delivery 的验证范围：输入集、取消、并发、失败恢复、跨环境与真实用户路径逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass。
+- [ ] P1-4：完成 `/app` 与 `/legacy` 的功能差异审计与可用性收口。
+  产出：`docs/contracts/P1_4_USABILITY_AUDIT_AND_CONTRACT.md`、`docs/evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`。
+  验收：完成 L1（后端存在）、L2（`/app` 可达）、L3（SQLite/data_root 持久化且重启可复现）盘点；逐条给出前端绑定矩阵、BROKEN/DRIFT/UNREACHABLE 结论；完成真实文件处理链、五条学习主线实测、backup→verify→新空目录 restore→双次重启验证。
+  五条主线必须全部完成实测，但不要求本项偷偷迁移所有 `legacy_only`/`not_exposed` 能力；已声明由 `/app` 支持的步骤必须只在 `/app` 内走通，仍需 `/legacy`、命令行或尚未暴露的步骤必须如实记录并纳入台账。仅在 P0 阻断、持久化/重启和规定文件链门槛满足后，才评估移除或进一步降级 `/legacy`。
+  不得把 L1/L2 证据写成 L3 可复现能力，不得把 `/legacy` 证据写成 `/app` 已迁移。
+- [ ] P1-5：冻结 Provider 配置写入与 connection-test 的安全契约。
+  产出：secret 生命周期、脱敏失败、权限、运行边界契约与 browser evidence；当前 `settings.html`/`settings-provider.html` 保持只读。优先级在 P1-4 台账产出后重新评估，不预先假定必须实现配置写入。
+- [ ] P1-6：扩大 B1 ASR、B2 OCR、B3 reports、B4 delivery 的验证范围。
+  产出：输入集、取消、并发、失败恢复、跨环境与真实用户路径证据，逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass。优先级在 P1-4 台账产出后重新评估。
+- [ ] P1-7：真实自用观察期（由使用者本人执行，非编码任务）。
+  连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
+  产出：卡壳记录，回流进 P1-4 台账作为 P1/P2 条目。
+  该项不是 P1-4 的勾选门槛；`real-pass` 声明需要它，`P1-4 completed` 不需要。
 - [ ] TTS：独立重新立项；edge-tts 7.2.8 是免费但在线的显式用户操作候选，先冻结网络 opt-in、音频保留/清理、隐私和失败契约，再决定 Composer -> Integration -> Formal。
 - [ ] D0-D2：明确暂缓。只有 P1-4 完成、现有 Web 功能均已正式 `/app` 集成并通过正常与失败用户路径验证后，才可重新评审 Tauri Windows threat-model/spike、最小安装包或 macOS 可行性；当前不得启动桌面施工。
 - [ ] E0-E6：现代前端框架迁移仅为第二步 draft；只有维护复杂度、复杂交互或多用户 Web 产品决策触发后，才按 `ROADMAP_CAPABILITIES.md` 评估和实施。

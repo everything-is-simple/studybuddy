@@ -231,11 +231,11 @@ backend/app/
 
 ### 后续前端能力切片（A3-VISUAL 之后，按顺序）
 
-1. **默认 `/app` 集成收口**：`/app` 是唯一默认正式用户入口，`/legacy` 仅作兼容回退。按一项能力一份契约和 browser evidence 的顺序迁移仍为 `legacy_only` 的操作：材料详情索引、Q&A citation detail/body location、计划/节奏写操作、笔记写操作、Cards/Exercises 写操作，以及其余学习写流程；不得机械复制 `/legacy`，也不改变 API 语义。Practice workflow 第二阶段已完成 scoped closeout，第三阶段推荐 API/数据契约已实现；完整 backend/browser 当前基线以 `STATUS.md` 为准。
-2. **Practice workflow 第三阶段需求审计/契约冻结**：已完成 practice/exercise/attempt/review 数据与 API 审计，并冻结自适应出题、间隔重复、人工简答复核的边界、状态机、隐私、幂等和 source lifecycle；推荐 API 已按独立契约实现，后续 schedule/算法扩展仍需单独立项。
-3. **B3 reports/export/audit**：B3 C0-C6 已在声明 scope 内完成；`reports.html` 提供脱敏 report projection、JSON/Markdown export 和审计工作区，维持 `delivery=off`、allowlisted dry-run 和 append-only audit。dry-run 永不显示为已发送，live delivery 仍保持 B4 的独立拒绝边界。
-4. **Provider 配置写入**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在后端形成安全写入/验证契约后单独立项；浏览器不得保存、回显或持久化密钥，且必须具备脱敏 connection-test failure 和独立 browser evidence。
-5. **`legacy_only` / `not_exposed`**：以 `docs/frontend-static-capability-matrix.md` 为来源逐项立项。`legacy_only` 需独立页面/路径和 browser evidence；`not_exposed` 在存在安全公共契约前保持不暴露，不得用 mock 伪造成功。
+1. **P1-4：`/app` 可用性与 `/legacy` 差异审计**：先盘点后端 API、`/app` 实际绑定、响应字段、状态/错误边界和 SQLite/data_root 重启持久化，再实测真实文件处理链与五条学习主线。每条结论区分 L1（存在）、L2（可达）和 L3（可复现）；已声明由 `/app` 支持的能力必须有独立 browser evidence，仍为 `legacy_only`、`not_exposed` 或 CLI-only 的步骤必须如实记录，不得把审计偷换成全量迁移。契约/审计/剧本/台账写入 `docs/contracts/P1_4_USABILITY_AUDIT_AND_CONTRACT.md`，收口证据写入 `docs/evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`；不在 `docs/` 根目录新增 Markdown，不新建第五份路线图。P1-4 关闭不以使用者 7 天真实自用为机器门槛。
+2. **P1-5：Provider 配置写入安全契约**：不属于 A3-VISUAL，也不因设置页已存在而获批。仅在 P1-4 台账后重新评估；先冻结 secret 生命周期、脱敏失败、权限、运行边界、connection-test 和独立 browser evidence，再决定是否实现配置写入。当前浏览器不得保存、回显或持久化密钥，`settings.html`/`settings-provider.html` 保持只读。
+3. **P1-6：扩大真实能力验证**：在 P1-4 台账后重新评估 B1 ASR、B2 OCR、B3 reports、B4 delivery 的输入集、取消、并发、失败恢复、跨环境和真实用户路径，逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass，delivery 继续保持 `off`，未验证能力继续标记 `not_verified`。
+4. **P1-7：真实自用观察期**：由使用者本人连续 7 天使用真实资料与课程，记录卡壳点、误解点和放弃点，回流到 P1-4 台账形成 P1/P2 条目。它不是 P1-4 的编码或机器验收门槛；在 P1-7 完成前不得声明完整产品达到任何形式的 `real-pass`。
+5. **Practice workflow 与其余能力**：Practice workflow 第二阶段已完成 scoped closeout，第三阶段推荐 API/数据契约已实现；其余 `legacy_only`/`not_exposed` 能力仍按 `docs/frontend-static-capability-matrix.md` 逐项立项。`legacy_only` 需独立页面/路径和 browser evidence；`not_exposed` 在存在安全公共契约前保持不暴露，不得用 mock 伪造成功。
 
 ### B0：组件库统一准备与证据治理
 
