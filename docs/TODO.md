@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
 > 更新：2026-08-31（B4 Delivery C6 scoped closeout evidence 已同步）
-> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13；当前完整后端回归为 **468 passed, 3 skipped**，完整 Chromium 为 **144 passed, 4 skipped**。此前的文件导入重启、Phase 9C 会话刷新和 Phase 9B 节奏刷新竞态已修复；所有 skip 均为 opt-in 真实 smoke。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v13；当前完整后端回归为 **486 passed, 3 skipped**，完整 Chromium 为 **147 passed, 4 skipped**（历史基线为 468 passed / 144 passed）。此前的文件导入重启、Phase 9C 会话刷新和 Phase 9B 节奏刷新竞态已修复；所有 skip 均为 opt-in 真实 smoke。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
 
@@ -315,6 +315,7 @@ revision → chunks → retrieval → citations → Q&A
   验收：完成 L1（后端存在）、L2（`/app` 可达）、L3（SQLite/data_root 持久化且重启可复现）盘点；逐条给出前端绑定矩阵、BROKEN/DRIFT/UNREACHABLE 结论；完成真实文件处理链、五条学习主线实测、backup→verify→新空目录 restore→双次重启验证。
   五条主线必须全部完成实测，但不要求本项偷偷迁移所有 `legacy_only`/`not_exposed` 能力；已声明由 `/app` 支持的步骤必须只在 `/app` 内走通，仍需 `/legacy`、命令行或尚未暴露的步骤必须如实记录并纳入台账。仅在 P0 阻断、持久化/重启和规定文件链门槛满足后，才评估移除或进一步降级 `/legacy`。
   不得把 L1/L2 证据写成 L3 可复现能力，不得把 `/legacy` 证据写成 `/app` 已迁移。
+  进展：阶段 A/B/C 已完成并写入 `docs/contracts/P1_4_USABILITY_AUDIT_AND_CONTRACT.md`（API 清单、前端绑定矩阵、UNREACHABLE 逐条结论、五条剧本、P0/P1/P2/P3 台账）。阶段 D 的 C0 切片已完成：真实 PDF/DOCX/PPTX/MD/中文长名 TXT 的导入→解析→text span→索引→检索→citation 定位回原文已实测，`/app` 主要写操作族重启后均 `durable`，且修正了“真实文件链未验证”的缺口；新发现 P14-P0-05（同内容第二份材料无法建立索引）已入台账。focused backend `18 passed`，focused browser `3 passed`；证据：`docs/evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`。待办：C1 幂等/反馈、C2 来源与解析可解释性、C3 `/app` 批量导出、C4 规模与完整工作流，以及 backup→verify→新空目录 restore 的专项复核。
 - [ ] P1-5：冻结 Provider 配置写入与 connection-test 的安全契约。
   产出：secret 生命周期、脱敏失败、权限、运行边界契约与 browser evidence；当前 `settings.html`/`settings-provider.html` 保持只读。优先级在 P1-4 台账产出后重新评估，不预先假定必须实现配置写入。
 - [ ] P1-6：扩大 B1 ASR、B2 OCR、B3 reports、B4 delivery 的验证范围。
