@@ -44,7 +44,7 @@
 
 | 最近变化 | 当前事实 | 前端动作 |
 |---|---|---|
-| A2.X 收口 | 4 个核心大文件已完成行为保持型拆分；`main.py` 为兼容 façade，模板已移到 `backend/app/templates/index.html`；schema v13、backend 468 passed/3 skipped、browser 130 passed/4 skipped | A3 只处理正式静态资源与前端壳，不再把后端大文件拆分算作前端工作 |
+| A2.X 收口 | 4 个核心大文件已完成行为保持型拆分；`main.py` 为兼容 façade，模板已移到 `backend/app/templates/index.html`；schema v13、backend 468 passed/3 skipped、browser 144 passed/4 skipped | A3 只处理正式静态资源与前端壳，不再把后端大文件拆分算作前端工作 |
 | Phase 7 收口 | embedding/indexing/retrieval mode 已实现；Mistral `mistral-embed` 仅在精确 gateway/model 配置通过真实 gate | 前端显示 lexical/vector/hybrid、索引状态和失败重试；verified 标签只绑定精确配置，不写成通用可用 |
 | Phase 8 收口 | Cards/Exercises 在 deterministic fake-provider、Chromium、backup/restore 范围完成 | 卡片/练习页面优先接入；真实 Provider generation 和 short-answer 人工复核仍显示受限状态 |
 | Phase 9A–9C 收口 | 计划/节奏/笔记、练习/错题/薄弱点/冲刺已有限定范围的 backend/API/UI/恢复证据 | 目标、计划、笔记、练习、复盘页面直接消费已冻结 API，并保留 draft/pending_review/source status |

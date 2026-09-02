@@ -70,7 +70,7 @@ P1-3 已完成 real-pass：Cards、Exercises 和 Review 的 `/app` 核心用户�
 
 ## 全量回归说明
 
-本次 P1-3 定向验收及相关状态矩阵验证均通过（6 passed）。完整浏览器套件仍包含若干既有环境/历史契约失败项，未将其冒充为 P1-3 通过：正式导入测试出现资源 404，P1-2 计划测试存在既有选择器不匹配，旧版 P1-3 测试依赖已替换的嵌套路由，部分测试依赖 localhost:8000 外部服务。
+P1-3 定向验收及相关状态矩阵验证均通过（6 passed）。随后完成完整 Chromium 回归：`144 passed, 4 skipped`，无失败；skip 均为默认关闭的 opt-in 真实 smoke。
 
 ## 技术债务
 - `backend/app/static/cards.html` 和 `exercises.html` 的 JavaScript 应该提取到独立文件
