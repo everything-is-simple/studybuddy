@@ -52,7 +52,7 @@
 
 ## A3-FC-3-2 收口要求
 
-> 历史完整 browser 基线（2026-08-30）：126 passed, 3 skipped / 129 项；当前完整基线以 `STATUS.md` 为准：130 passed, 4 skipped；skip 均为 opt-in 真实 smoke。
+> 历史完整 browser 基线（2026-08-30）：126 passed, 3 skipped / 129 项；当前完整基线以 `STATUS.md` 为准：144 passed, 4 skipped；skip 均为 opt-in 真实 smoke。
 
 ### 全静态页面基线
 

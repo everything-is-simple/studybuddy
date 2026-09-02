@@ -1,6 +1,6 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout / B3 C0-C6 scoped closeout / B4 C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。B0 候选治理脚手架已完成，B1 ASR、B2 PaddleOCR、B3 报告和 B4 外发均已在各自声明 scope 内完成 C0-C6；D0-D1 桌面门禁仍未开始。当前完整回归基线以 `STATUS.md` 为准：backend `468 passed, 3 skipped`、Chromium `130 passed, 4 skipped`。
+> 状态：`A3-FC closed / A3-PAGES closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout / B3 C0-C6 scoped closeout / B4 C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。B0 候选治理脚手架已完成，B1 ASR、B2 PaddleOCR、B3 报告和 B4 外发均已在各自声明 scope 内完成 C0-C6；D0-D1 桌面门禁仍未开始。当前完整回归基线以 `STATUS.md` 为准：backend `468 passed, 3 skipped`、Chromium `144 passed, 4 skipped`。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -225,7 +225,7 @@ backend/app/
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
 6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3-2 通过后执行的首批页面拆分已完成：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
-8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `468 passed, 3 skipped`、browser `130 passed, 4 skipped`；视觉任务未改变 API 或业务行为。
+8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `468 passed, 3 skipped`、browser `144 passed, 4 skipped`；视觉任务未改变 API 或业务行为。
 
 **通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表所有 `legacy_only`/`not_exposed` 能力已迁移；A3-PAGES/A3-VISUAL 已分别完成声明范围，剩余未暴露能力仍按独立契约推进。
 
@@ -268,7 +268,7 @@ backend/app/
 
 **通过门槛：** C0-C6 全部通过；真实 smoke 仅证明精确工具/模型/环境/音频范围，不外推为通用 ASR real-pass。
 
-**当前 scoped closeout：** C0-C6 已在当前 Windows 主机、`whisper-cpp` / `ggml-large-v3-turbo` 与公开 `jfk.wav` fixture 的精确范围内通过。C5 包含 provider contract、真实 API draft-first → confirm → citation → backup/restore smoke、opt-in 静态 `capture.html` 上传 → 转写 → 草稿 → 用户确认 Chromium evidence，以及完整 Chromium `130 passed, 4 skipped` 回归；页面 capability 不暴露 runtime 或模型路径，ASR 不接入 task runner。脱敏证据见 `docs/evidence/FORMAL_ASR_ACCEPTANCE_EVIDENCE.md`。官方 asset hash、其他格式/语言/环境、取消与子进程树清理、并发/容量和通用 real-pass 仍为 `not_verified`。
+**当前 scoped closeout：** C0-C6 已在当前 Windows 主机、`whisper-cpp` / `ggml-large-v3-turbo` 与公开 `jfk.wav` fixture 的精确范围内通过。C5 包含 provider contract、真实 API draft-first → confirm → citation → backup/restore smoke、opt-in 静态 `capture.html` 上传 → 转写 → 草稿 → 用户确认 Chromium evidence，以及完整 Chromium `144 passed, 4 skipped` 回归；页面 capability 不暴露 runtime 或模型路径，ASR 不接入 task runner。脱敏证据见 `docs/evidence/FORMAL_ASR_ACCEPTANCE_EVIDENCE.md`。官方 asset hash、其他格式/语言/环境、取消与子进程树清理、并发/容量和通用 real-pass 仍为 `not_verified`。
 
 ### B2：真实 OCR 组件流水线
 
