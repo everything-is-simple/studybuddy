@@ -308,6 +308,14 @@ def list_cards(connection: sqlite3.Connection, *, project_id: str, deck_id: str 
             _refresh_card_citations(connection, str(row["id"]))
     return [{**dict(row), "tags": json.loads(row["tags_json"]), "citations": list_card_citations(connection, str(row["id"]))} for row in rows]
 
+def get_card(connection: sqlite3.Connection, *, project_id: str, card_id: str) -> dict[str, object] | None:
+    with connection:
+        row = connection.execute("SELECT c.id,c.deck_id,c.card_type,c.status,c.front,c.back,c.explanation,c.tags_json,c.source_revision,c.edited_by_user,c.created_at,c.updated_at,c.confirmed_at,c.archived_at FROM study_cards c WHERE c.project_id=? AND c.id=?", (project_id, card_id)).fetchone()
+        if row is None:
+            return None
+        _refresh_card_citations(connection, card_id)
+    return {**dict(row), "tags": json.loads(row["tags_json"]), "citations": list_card_citations(connection, card_id)}
+
 def list_card_citations(connection: sqlite3.Connection, card_id: str) -> list[dict[str, object]]:
     return [dict(row) for row in connection.execute("SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,quote,position,status FROM card_citations WHERE card_id=? ORDER BY position,id", (card_id,)).fetchall()]
 
