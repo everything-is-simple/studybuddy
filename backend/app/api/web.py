@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 
 def register_routes(app, context: dict[str, object]) -> None:
@@ -11,6 +11,10 @@ def register_routes(app, context: dict[str, object]) -> None:
         """Redirect root to new static frontend."""
         return RedirectResponse(url="/app/today.html", status_code=302)
     
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon() -> Response:
+        return Response(status_code=204)
+
     @app.get("/legacy", response_class=HTMLResponse, include_in_schema=False)
     def legacy_ui() -> str:
         """Legacy embedded UI for compatibility."""

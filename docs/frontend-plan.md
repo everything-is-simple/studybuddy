@@ -2,7 +2,7 @@
 
 > **文档性质**：这是 StudyBuddy 前端的产品设计、信息架构、低保真 draft 草图、接口映射与实施门禁，不是已完成的前端实现声明。
 >
-> **事实基线（2026-08-31）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 468 passed、3 skipped；完整 browser 基线为 130 passed、4 skipped（skip 均为默认关闭的 opt-in 真实 smoke）。A2.X、Phase 9A/9B/9C、Phase 9D 的部分立项范围、Phase 10 Gate J，以及 B1 ASR、B2 OCR、B3 报告、B4 外发均已在各自声明 scope 内完成。`/app` 是默认正式入口，`/legacy` 仅保留兼容回退；下一步是逐项迁移 `legacy_only` 用户操作。D0-D2 桌面化明确暂缓，直至现有 Web 功能完成集成并验证。
+> **事实基线（2026-08-31）**：后端 schema v13；local single-process / single-instance / SQLite / local-disk v1；最近一次完整 backend 基线为 468 passed、3 skipped；完整 browser 基线为 144 passed、4 skipped（skip 均为默认关闭的 opt-in 真实 smoke）。A2.X、Phase 9A/9B/9C、Phase 9D 的部分立项范围、Phase 10 Gate J，以及 B1 ASR、B2 OCR、B3 报告、B4 外发均已在各自声明 scope 内完成。`/app` 是默认正式入口，`/legacy` 仅保留兼容回退；下一步是逐项迁移 `legacy_only` 用户操作。D0-D2 桌面化明确暂缓，直至现有 Web 功能完成集成并验证。
 >
 > **状态判定优先级**：实施状态、测试基线与支持边界以 `STATUS.md` 和 `TODO.md` 为准；`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 规定顺序和门禁；本计划只映射前端行为，不能提升任何后端能力等级。整体完成度百分比仅是阶段性估算，当前统一阶段性估算为约 65%，A3 实施不依赖该数字；旧 55%–60% 仅属于历史快照。
 
@@ -516,9 +516,9 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 - [ ] **缓存与刷新策略**：当前未设置正式 cache-control/version manifest；确定发布时的刷新策略。
 - [x] **前端契约审计（A3-FC-3-2）**：已扫描并审计全部 21 个正式静态页面；`frontend-static-capability-matrix.md` 冻结每项为 `static_verified`、`legacy_only`、`not_exposed` 或 `a3_pages`；`frontend-static-failure-retry-matrix.md` 索引 failure/retry 与安全证据。状态映射、stale/source-lifecycle、360–1920、键盘和隐私 DOM 浏览器矩阵已通过。此项不表示 B0-B4 真实能力或 Provider 配置写入已完成。
 - [x] **共享层收口（A3-FC-2）**：已统一 `js/api.js`、`js/shell.js`、`css/tokens.css`、`css/app.css` 的 headers、自动幂等、request ID、页面 scope/取消入口、状态基础、token 和移动端导航；所有有 API 的页面已接入 scope，HTML inline style 已清理，专门浏览器测试通过。
-- [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；历史 A3-PAGES gate 快照为 `117 passed, 3 skipped`，专项证据 `13 passed`；当前完整 browser 基线为 `130 passed, 4 skipped`。报告 JSON/Markdown 导出与只读审计已在 B3 scope 内迁移；不代表未迁移练习写操作或 Provider 配置写入已完成。
+- [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；历史 A3-PAGES gate 快照为 `117 passed, 3 skipped`，专项证据 `13 passed`；当前完整 browser 基线为 `144 passed, 4 skipped`。报告 JSON/Markdown 导出与只读审计已在 B3 scope 内迁移；不代表未迁移练习写操作或 Provider 配置写入已完成。
 - [x] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；Neutral Modern token、组件、响应式、焦点和状态视觉已统一，剩余局部 CSS 已收敛到共享样式。全部 21 个 `/app/*.html` 无局部 `<style>`；`browser_frontend_visual_matrix.spec.js` 覆盖 shared tokens、card、360/1920、触控目标和 focus ring（`2 passed`）。不得将此项扩大解释为 Provider 写入、报告导出/审计或练习写流程已完成。
-- [x] **后续行为切片（A3-VISUAL 后）**：Practice workflow 第二阶段已完成 scoped closeout：`practice-session.html` 覆盖公开题目、start/submit/finish、nested result、expired/source warning、retry/stale 安全边界，`practice-result.html` 使用真实 nested summary，`review.html` 支持 detail、feedback、review、mark-mistake、redo、archive；专项 browser `7 passed`，完整 backend `468 passed, 3 skipped`，完整 browser `130 passed, 4 skipped`。B3 reports export/audit 已完成限定范围接入；Provider 写入仍需安全后端契约，`not_exposed` 不迁移也不伪造。
+- [x] **后续行为切片（A3-VISUAL 后）**：Practice workflow 第二阶段已完成 scoped closeout：`practice-session.html` 覆盖公开题目、start/submit/finish、nested result、expired/source warning、retry/stale 安全边界，`practice-result.html` 使用真实 nested summary，`review.html` 支持 detail、feedback、review、mark-mistake、redo、archive；专项 browser `7 passed`，完整 backend `468 passed, 3 skipped`，完整 browser `144 passed, 4 skipped`。B3 reports export/audit 已完成限定范围接入；Provider 写入仍需安全后端契约，`not_exposed` 不迁移也不伪造。
 - [x] **旧 `/` 入口**：`/` 已重定向到 `/app/today.html`；完整旧单页保留在 `/legacy` 作为兼容回退。
 - [ ] **首页聚合 API**：当前由多个已验证 API 组合；是否新增聚合 endpoint 仍是产品/后端契约决策。
 - [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
@@ -540,4 +540,4 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 A3-1 至 A3-VISUAL 已按声明范围完成：正式 `/app/` static root、页面拆分、共享请求层、Neutral Modern 视觉和浏览器契约均已有证据；没有开放或宣称任何未验证 Provider、ASR/OCR 或 live delivery 能力。
 
-A3-2 至 A3-6 已完成：核心页面、学习页面、路由迁移和回归证据已收口；历史 A3 gate baseline 为 126 passed, 3 skipped，当前完整 browser 基线以 `STATUS.md` 为准（130 passed, 4 skipped）。后续不再把旧 A3 灰盒任务描述为待实施。
+A3-2 至 A3-6 已完成：核心页面、学习页面、路由迁移和回归证据已收口；历史 A3 gate baseline 为 126 passed, 3 skipped，当前完整 browser 基线以 `STATUS.md` 为准（144 passed, 4 skipped）。后续不再把旧 A3 灰盒任务描述为待实施。
