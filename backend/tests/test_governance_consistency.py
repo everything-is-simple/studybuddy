@@ -241,6 +241,9 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "frontend-plan.md",
         "frontend-static-capability-matrix.md",
         "frontend-static-failure-retry-matrix.md",
+        "P1-3-MANUAL-TEST.md",
+        "P1-3-STATUS.md",
+        "P1-3-SUMMARY.md",
     }
     assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
     for directory in ("contracts", "evidence", "operations", "archive"):

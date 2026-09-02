@@ -27,6 +27,7 @@
 <div class="grid">
 <section class="card span-4" data-od-id="exercises-sets">
 <h2>练习集</h2>
+<form id="set-create-form" class="stack"><input id="new-set-title" placeholder="新练习集名称" required><button class="btn btn-primary" type="submit">创建练习集</button></form>
 <div id="set-status" class="notice" role="status" aria-live="polite">正在加载练习集...</div>
 <ul id="sets" class="set-list"></ul>
 <button class="btn" id="refresh-sets" type="button" class="mt-12">刷新列表</button>
@@ -34,6 +35,7 @@
 
 <section class="card span-8" data-od-id="exercises-detail">
 <h2 id="set-title">选择练习集</h2>
+<div id="set-actions" class="stack" hidden><form id="exercise-create-form" class="stack"><select id="new-exercise-type"><option value="short_answer">简答题</option><option value="multiple_choice">选择题</option><option value="true_false">判断题</option></select><input id="new-exercise-prompt" placeholder="题目" required><input id="new-exercise-answer" placeholder="答案" required><button class="btn" type="button">创建题目</button></form><form id="exercise-generate-form" class="stack"><input id="exercise-topic" placeholder="AI 草稿主题" required><input id="exercise-material-ids" placeholder="材料 ID（逗号分隔）" required><button class="btn" type="submit">生成题目草稿</button></form></div>
 <div id="exercise-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="exercise-detail" class="stack"></div>
 <ul id="exercises" class="exercise-list" hidden></ul>
@@ -52,13 +54,14 @@ const refreshSets=document.querySelector('#refresh-sets');
 const setTitle=document.querySelector('#set-title');
 const exerciseStatus=document.querySelector('#exercise-status');
 const exerciseDetail=document.querySelector('#exercise-detail');
-const exercises=document.querySelector('#exercises');
+const exercises=document.querySelector('#exercises'),setActions=document.querySelector('#set-actions');let busy=false;function setBusy(value){busy=value;document.querySelectorAll('button,input,textarea,select').forEach(node=>node.disabled=value)}function message(error){return ({provider_not_configured:'AI 服务尚未配置',retrieval_not_ready:'材料尚未建立索引',retrieval_empty:'未找到相关材料',citation_invalid:'引用来源不可用',exercise_edit_not_allowed:'该题目不可编辑',exercise_not_ready:'题目尚未就绪'})[error.code]||'练习操作失败，可重试'}async function mutate(action,success){if(busy)return;setBusy(true);try{await action();await loadSets();if(selectedSetId)await selectSet(selectedSetId,setTitle.textContent);if(selectedExerciseId)await viewExercise(selectedExerciseId);exerciseStatus.hidden=false;exerciseStatus.className='notice';exerciseStatus.textContent=success}catch(error){exerciseStatus.hidden=false;exerciseStatus.className='notice warn';exerciseStatus.textContent=message(error)}finally{setBusy(false)}}
 
 let selectedSetId=null;
+let selectedExerciseId=null;
 let setGeneration=0;
 let exerciseGeneration=0;
 
-function text(value){return typeof value==='string'?value:''}
+function text(value){return typeof value==='string'?value:''}function button(label,handler){const node=document.createElement('button');node.className='btn';node.type='button';node.textContent=label;node.onclick=handler;return node}
 
 const typeLabels={
 multiple_choice:'选择题',
@@ -114,6 +117,7 @@ exerciseStatus.hidden=false;
 exerciseStatus.textContent='正在加载练习...';
 exerciseStatus.className='notice';
 exerciseDetail.replaceChildren();
+setActions.hidden=false;
 exercises.replaceChildren();
 exercises.hidden=true;
 document.querySelectorAll('.set-item').forEach(el=>{
@@ -121,7 +125,7 @@ el.classList.toggle('selected',el.onclick.toString().includes(setId))
 });
 try{
 const run=++exerciseGeneration;
-const data=await sbApi.json(`/api/study/exercise-sets/${encodeURIComponent(setId)}/exercises`,{signal:pageRequest.signal});
+const data=await sbApi.json(`/api/study/exercises?set_id=${encodeURIComponent(setId)}`,{signal:pageRequest.signal});
 if(run!==exerciseGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
@@ -166,7 +170,9 @@ exerciseStatus.textContent=sbApi.safeError(e)
 }
 }
 
+async function editExercise(exercise){const form=document.createElement('form');form.className='stack';const prompt=document.createElement('input');prompt.value=text(exercise.prompt);prompt.setAttribute('aria-label','题目内容');const explanation=document.createElement('textarea');explanation.value=text(exercise.explanation);explanation.setAttribute('aria-label','题目解析');const save=document.createElement('button');save.className='btn';save.type='submit';save.textContent='保存题目';form.append(prompt,explanation,save);form.onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id),{method:'PATCH',body:JSON.stringify({prompt:prompt.value,options:exercise.options||[],explanation:explanation.value,citations:exercise.citations||[]}),signal:pageRequest.signal}),'题目已保存')};return form}
 async function viewExercise(exerciseId){
+selectedExerciseId=exerciseId;
 exerciseDetail.replaceChildren();
 exerciseStatus.hidden=false;
 exerciseStatus.textContent='正在加载题目详情...';
@@ -233,7 +239,7 @@ confirmBtn.onclick=()=>confirmExercise(exerciseId);
 actions.append(confirmBtn);
 container.append(actions)
 }
-exerciseDetail.append(container)
+if(exercise.status==='draft'){container.append(await editExercise(exercise),button('确认题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/confirm',{method:'POST',signal:pageRequest.signal}),'题目已确认')),button('拒绝题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/reject',{method:'POST',signal:pageRequest.signal}),'题目已拒绝')))}if(exercise.status!=='archived')container.append(button('归档题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/archive',{method:'POST',signal:pageRequest.signal}),'题目已归档')));if(exercise.status==='ready')container.append(button('开始作答',()=>{location.href='/app/practice.html?exercise_id='+encodeURIComponent(exercise.id)}));exerciseDetail.append(container)
 }catch(e){
 exerciseStatus.className='notice warn';
 exerciseStatus.textContent=sbApi.safeError(e)
@@ -251,7 +257,7 @@ alert(sbApi.safeError(e))
 }
 }
 
-refreshSets.addEventListener('click',loadSets);
+document.querySelector('#set-create-form button').onclick=()=>mutate(()=>sbApi.json('/api/study/exercise-sets',{method:'POST',body:JSON.stringify({title:document.querySelector('#new-set-title').value}),signal:pageRequest.signal}),'练习集已创建');document.querySelector('#exercise-create-form button').onclick=()=>{const type=document.querySelector('#new-exercise-type').value,raw=document.querySelector('#new-exercise-answer').value;let answer=raw;if(type==='multiple_choice')answer=Number(raw);if(type==='true_false')answer=raw.toLowerCase()==='true';mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/exercises',{method:'POST',body:JSON.stringify({exercise_type:type,prompt:document.querySelector('#new-exercise-prompt').value,options:type==='multiple_choice'?['选项 A','选项 B']:[],answer_key:answer,explanation:'',citations:[],exercise_kind:'user_created'}),signal:pageRequest.signal}),'题目已创建')};document.querySelector('#exercise-generate-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/generate',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({topic:document.querySelector('#exercise-topic').value,material_ids:document.querySelector('#exercise-material-ids').value.split(',').map(value=>value.trim()).filter(Boolean),count:1,exercise_type:'multiple_choice'}),signal:pageRequest.signal}),'题目草稿已生成')};refreshSets.addEventListener('click',loadSets);
 loadSets()
 })();
 </script>

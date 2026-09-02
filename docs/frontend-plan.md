@@ -533,7 +533,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 当前正式 `/app/` 行为、旧 `/legacy` 回退和已通过的浏览器证据均作为回归基线；后续实现不得以重写单页为代价删除这些行为。当前下一步不是重新决定 A3 起点，而是按既定门禁推进：
 
-1. **默认 `/app` 集成**：P1-1 已迁移材料详情索引、Q&A citation detail/body location；P1-2 已迁移计划/节奏与笔记写操作：目标、模块、计划草稿、计划编辑、计划项/依赖/进度、节奏设置与分配，以及笔记创建/编辑、AI 草稿、模块关联、确认/拒绝/归档、来源刷新和导出。后续继续迁移 Cards/Exercises 和其余 `legacy_only` 学习写操作；`/legacy` 只保留兼容回退。
+1. **默认 `/app` 集成**：P1-1 已迁移材料详情索引、Q&A citation detail/body location；P1-2 已迁移计划/节奏与笔记写操作：目标、模块、计划草稿、计划编辑、计划项/依赖/进度、节奏设置与分配，以及笔记创建/编辑、AI 草稿、模块关联、确认/拒绝/归档、来源刷新和导出；P1-3 已完成 Cards/Exercises 后端 API 和 `/app` 前端写操作迁移，并通过 Cards/Exercises/Review 真实浏览器验收（3 passed）；后端完整回归 468 passed、前端契约审计 0 findings。AI 生成草稿真实 Provider 流程和完整 practice workflow 仍按既定边界后续迁移；`/legacy` 只保留兼容回退。
 2. **Provider 安全写入**：先冻结 secret 生命周期、脱敏 connection-test、权限和运行边界契约，再考虑设置页写入。
 3. **B1–B4 范围扩展**：补齐输入集、取消、并发、失败恢复、跨环境和真实用户路径证据；不得把 scoped closeout 外推为通用 real-pass。
 4. **桌面化暂缓**：D0/D1 在现有 Web 功能完成正式集成并验证前不得启动。

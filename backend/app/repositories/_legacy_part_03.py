@@ -83,6 +83,14 @@ def list_exercises(connection: sqlite3.Connection, *, project_id: str, set_id: s
             _refresh_exercise_citations(connection, str(row["id"]))
     return [_exercise_public(connection, row) for row in rows]
 
+def get_exercise(connection: sqlite3.Connection, *, project_id: str, exercise_id: str) -> dict[str, object] | None:
+    with connection:
+        row = connection.execute("SELECT * FROM exercises WHERE project_id=? AND id=?", (project_id, exercise_id)).fetchone()
+        if row is None:
+            return None
+        _refresh_exercise_citations(connection, exercise_id)
+    return _exercise_public(connection, row)
+
 def create_exercise(connection: sqlite3.Connection, *, project_id: str, set_id: str, exercise_type: str,
                     payload: dict[str, object], source_revision: str | None = None,
                     exercise_kind: str = "user_created") -> dict[str, object]:

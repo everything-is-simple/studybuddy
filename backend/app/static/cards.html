@@ -27,6 +27,7 @@
 <div class="grid">
 <section class="card span-4" data-od-id="cards-decks">
 <h2>卡片组</h2>
+<form id="deck-create-form" class="stack"><input id="new-deck-title" placeholder="新卡片组名称" required><button class="btn btn-primary" type="submit">创建卡片组</button></form>
 <div id="deck-status" class="notice" role="status" aria-live="polite">正在加载卡片组...</div>
 <ul id="decks" class="deck-list"></ul>
 <button class="btn" id="refresh-decks" type="button" class="mt-12">刷新列表</button>
@@ -34,6 +35,7 @@
 
 <section class="card span-8" data-od-id="cards-detail">
 <h2 id="deck-title">选择卡片组</h2>
+<div id="deck-actions" class="stack" hidden><form id="card-create-form" class="stack"><input id="new-card-front" placeholder="问题" required><textarea id="new-card-back" placeholder="答案" required></textarea><button class="btn" type="submit">创建卡片</button></form><form id="card-generate-form" class="stack"><input id="card-topic" placeholder="AI 草稿主题" required><input id="card-material-ids" placeholder="材料 ID（逗号分隔）" required><button class="btn" type="submit">生成卡片草稿</button></form></div>
 <div id="card-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="card-detail" class="stack"></div>
 <ul id="cards" class="card-list" hidden></ul>
@@ -52,13 +54,17 @@ const refreshDecks=document.querySelector('#refresh-decks');
 const deckTitle=document.querySelector('#deck-title');
 const cardStatus=document.querySelector('#card-status');
 const cardDetail=document.querySelector('#card-detail');
-const cards=document.querySelector('#cards');
+const cards=document.querySelector('#cards'),deckActions=document.querySelector('#deck-actions');let busy=false;
+function setBusy(value){busy=value;document.querySelectorAll('button,input,textarea').forEach(node=>node.disabled=value)}
+function message(error){return ({provider_not_configured:'AI 服务尚未配置',retrieval_not_ready:'材料尚未建立索引',retrieval_empty:'未找到相关材料',citation_invalid:'引用来源不可用',card_edit_not_allowed:'该卡片不可编辑',card_not_ready:'卡片尚未就绪'})[error.code]||'卡片操作失败，可重试'}
+async function mutate(action,success){if(busy)return;setBusy(true);try{await action();await loadDecks();if(selectedDeckId)await selectDeck(selectedDeckId,deckTitle.textContent);if(selectedCardId)await viewCard(selectedCardId);cardStatus.hidden=false;cardStatus.className='notice';cardStatus.textContent=success}catch(error){cardStatus.hidden=false;cardStatus.className='notice warn';cardStatus.textContent=message(error)}finally{setBusy(false)}}
 
 let selectedDeckId=null;
+let selectedCardId=null;
 let deckGeneration=0;
 let cardGeneration=0;
 
-function text(value){return typeof value==='string'?value:''}
+function text(value){return typeof value==='string'?value:''}function button(label,handler){const node=document.createElement('button');node.className='btn';node.type='button';node.textContent=label;node.onclick=handler;return node}
 
 async function loadDecks(){
 deckStatus.textContent='正在加载卡片组...';
@@ -111,6 +117,7 @@ cardStatus.hidden=false;
 cardStatus.textContent='正在加载卡片...';
 cardStatus.className='notice';
 cardDetail.replaceChildren();
+deckActions.hidden=false;
 cards.replaceChildren();
 cards.hidden=true;
 document.querySelectorAll('.deck-item').forEach(el=>{
@@ -118,7 +125,7 @@ el.classList.toggle('selected',el.onclick.toString().includes(deckId))
 });
 try{
 const run=++cardGeneration;
-const data=await sbApi.json(`/api/study/decks/${encodeURIComponent(deckId)}/cards`,{signal:pageRequest.signal});
+const data=await sbApi.json(`/api/study/cards?deck_id=${encodeURIComponent(deckId)}`,{signal:pageRequest.signal});
 if(run!==cardGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
@@ -164,7 +171,9 @@ cardStatus.textContent=sbApi.safeError(e)
 }
 }
 
+async function editCard(card){const form=document.createElement('form');form.className='stack';const front=document.createElement('input');front.value=text(card.front);front.setAttribute('aria-label','卡片问题');const back=document.createElement('textarea');back.value=text(card.back);back.setAttribute('aria-label','卡片答案');const save=document.createElement('button');save.className='btn';save.type='submit';save.textContent='保存卡片';form.append(front,back,save);form.onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/cards/'+encodeURIComponent(card.id),{method:'PATCH',body:JSON.stringify({front:front.value,back:back.value,tags:card.tags||[],explanation:card.explanation||'',citations:card.citations||[],card_type:card.card_type||'user_created'}),signal:pageRequest.signal}),'卡片已保存')};return form}
 async function viewCard(cardId){
+selectedCardId=cardId;
 cardDetail.replaceChildren();
 cardStatus.hidden=false;
 cardStatus.textContent='正在加载卡片详情...';
@@ -200,14 +209,14 @@ citations.append(link)
 });
 container.append(citations)
 }
-cardDetail.append(container)
+if(card.status==='draft'){container.append(await editCard(card),button('确认卡片',()=>mutate(()=>sbApi.json('/api/study/cards/'+encodeURIComponent(card.id)+'/confirm',{method:'POST',signal:pageRequest.signal}),'卡片已确认')),button('拒绝卡片',()=>mutate(()=>sbApi.json('/api/study/cards/'+encodeURIComponent(card.id)+'/reject',{method:'POST',signal:pageRequest.signal}),'卡片已拒绝')))}if(card.status!=='archived')container.append(button('归档卡片',()=>mutate(()=>sbApi.json('/api/study/cards/'+encodeURIComponent(card.id)+'/archive',{method:'POST',signal:pageRequest.signal}),'卡片已归档')));if(card.status==='ready')container.append(button('记为掌握',()=>mutate(()=>sbApi.json('/api/study/cards/'+encodeURIComponent(card.id)+'/reviews',{method:'POST',body:JSON.stringify({result:'good'}),signal:pageRequest.signal}),'复习记录已保存')),button('需要复习',()=>mutate(()=>sbApi.json('/api/study/cards/'+encodeURIComponent(card.id)+'/reviews',{method:'POST',body:JSON.stringify({result:'again'}),signal:pageRequest.signal}),'复习记录已保存')));cardDetail.append(container)
 }catch(e){
 cardStatus.className='notice warn';
 cardStatus.textContent=sbApi.safeError(e)
 }
 }
 
-refreshDecks.addEventListener('click',loadDecks);
+document.querySelector('#deck-create-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/decks',{method:'POST',body:JSON.stringify({title:document.querySelector('#new-deck-title').value}),signal:pageRequest.signal}),'卡片组已创建')};document.querySelector('#card-create-form').onsubmit=event=>{event.preventDefault();const front=document.querySelector('#new-card-front').value;const back=document.querySelector('#new-card-back').value;mutate(()=>sbApi.json('/api/study/decks/'+encodeURIComponent(selectedDeckId)+'/cards',{method:'POST',body:JSON.stringify({front:front,back:back,card_type:'user_created',tags:[],explanation:'',citations:[]}),signal:pageRequest.signal}),'卡片已创建').then(()=>{document.querySelector('#new-card-front').value='';document.querySelector('#new-card-back').value=''})};document.querySelector('#card-generate-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/decks/'+encodeURIComponent(selectedDeckId)+'/generate',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({topic:document.querySelector('#card-topic').value,material_ids:document.querySelector('#card-material-ids').value.split(',').map(value=>value.trim()).filter(Boolean),count:1}),signal:pageRequest.signal}),'卡片草稿已生成')};refreshDecks.addEventListener('click',loadDecks);
 loadDecks()
 })();
 </script>

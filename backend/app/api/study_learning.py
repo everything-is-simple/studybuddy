@@ -31,6 +31,16 @@ def register_routes(app, context: dict[str, object]) -> None:
         with connect(app.state.config.database_path) as connection:
             return list_cards(connection, project_id=app.state.config.project_id, deck_id=deck_id)
 
+    @app.get("/api/study/cards/{card_id}")
+    def study_card(card_id: str) -> dict[str, object]:
+        if not card_id or len(card_id) > 100:
+            raise HTTPException(status_code=404, detail="card_not_found")
+        with connect(app.state.config.database_path) as connection:
+            result = get_card(connection, project_id=app.state.config.project_id, card_id=card_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail="card_not_found")
+        return result
+
     @app.post("/api/study/decks/{deck_id}/cards", status_code=201)
     def create_study_card(deck_id: str, request: CardRequest) -> dict[str, object]:
         try:
@@ -131,6 +141,16 @@ def register_routes(app, context: dict[str, object]) -> None:
     def study_exercises(set_id: str | None = None) -> list[dict[str, object]]:
         with connect(app.state.config.database_path) as connection:
             return list_exercises(connection, project_id=app.state.config.project_id, set_id=set_id)
+
+    @app.get("/api/study/exercises/{exercise_id}")
+    def study_exercise(exercise_id: str) -> dict[str, object]:
+        if not exercise_id or len(exercise_id) > 100:
+            raise HTTPException(status_code=404, detail="exercise_not_found")
+        with connect(app.state.config.database_path) as connection:
+            result = get_exercise(connection, project_id=app.state.config.project_id, exercise_id=exercise_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail="exercise_not_found")
+        return result
 
     @app.post("/api/study/exercise-sets/{set_id}/exercises", status_code=201)
     def create_study_exercise(set_id: str, request: ExerciseRequest) -> dict[str, object]:
