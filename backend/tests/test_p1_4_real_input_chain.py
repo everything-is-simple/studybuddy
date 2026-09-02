@@ -391,11 +391,12 @@ def test_shared_hash_second_material_cannot_be_indexed_today(tmp_path: Path):
 
 
 def test_shared_hash_conflict_code_has_no_user_facing_message_today(tmp_path: Path):
-    """`revision_fingerprint_conflict` is not in the shared error map.
+    """C1 已将 `revision_fingerprint_conflict` 加入 error map。
 
-    The page therefore shows the generic retry wording, which is the friction
-    recorded as P14-P1-03.
+    C0 记录它缺失为 P14-P1-03 的摩擦；C1 修复后，用户会看到
+    "内容指纹冲突"而非通用重试文案。
     """
     shared = (ROOT / "app" / "static" / "js" / "api.js").read_text(encoding="utf-8")
     assert "request_failed:'请求失败，请重试'" in shared
-    assert "revision_fingerprint_conflict" not in shared
+    # C1 fix: revision_fingerprint_conflict now has a user-facing message
+    assert "revision_fingerprint_conflict:'内容指纹冲突" in shared
