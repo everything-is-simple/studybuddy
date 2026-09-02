@@ -8,7 +8,8 @@ const BASE = `http://127.0.0.1:${PORT}`;
 let server;
 function startServer(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'};delete env.STUDYBUDDY_AI_MODEL;delete env.STUDYBUDDY_AI_BASE_URL;delete env.STUDYBUDDY_AI_API_KEY;return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:15000}).toBe(true)}
-test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=startServer();await ready()});test.afterEach(()=>{if(server&&!server.killed)server.kill();server=null});
+async function stopServer(){if(!server||server.killed){server=null;return}await new Promise(resolve=>{let settled=false;const finish=()=>{if(!settled){settled=true;resolve()}};server.once('exit',finish);server.kill();setTimeout(finish,5000)});server=null}
+test.beforeEach(async()=>{await stopServer();fs.rmSync(ROOT,{recursive:true,force:true});server=startServer();await ready()});test.afterEach(async()=>{await stopServer()});
 
 async function createMaterial(page){const response=await page.request.post(`${BASE}/api/materials`,{multipart:{file:{name:'p1-2-source.txt',mimeType:'text/plain',buffer:Buffer.from('P1-2 source text for learning notes and plan context.')}}});expect(response.ok()).toBe(true);const result=await response.json();return String(result.id||result.material_id)}
 
@@ -16,15 +17,18 @@ test('P1-2 plans page creates a goal, plan draft, item and rhythm settings',asyn
   await page.goto(`${BASE}/app/plans.html`);
   await page.locator('#goal-title').fill('完成 P1-2 学习目标');
   await page.getByRole('button',{name:'新建目标'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('目标已创建');
   await expect(page.locator('#goals')).toContainText('完成 P1-2 学习目标');
   await page.locator('#plan-title').fill('P1-2 迁移计划');
   await page.locator('#plan-goal').selectOption({label:'完成 P1-2 学习目标'});
   await page.getByRole('button',{name:'新建计划草稿'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('计划草稿已创建');
   await expect(page.locator('#plans')).toContainText('P1-2 迁移计划');
   await page.locator('#plans .plan-item').click();
   await expect(page.locator('#plan-detail')).toContainText('草稿');
   await page.locator('#plan-item-title').fill('验证学习节奏');
   await page.getByRole('button',{name:'添加学习项'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('学习项已添加');
   await expect(page.locator('[aria-label="学习项 验证学习节奏"]')).toHaveValue('验证学习节奏');
   await page.locator('#rhythm-period-start').fill('2026-09-01');
   await page.locator('#rhythm-target-minutes').fill('90');
