@@ -1,6 +1,6 @@
-# P1-4 可用性审计与契约（阶段 A：代码真相盘点）
+# P1-4 可用性审计与契约（阶段 D 总体收口）
 
-> 状态：`phase-a-audited / 2026-08-31`
+> 状态：`closeout-scoped-pass / 2026-09-03`
 > 
 > 本文是 P1-4 阶段 A 的审计结果，不是功能完成声明。结论严格区分 L1（存在）、L2（可达）和 L3（可复现）。本阶段没有修改 `backend/app/`，没有新增 schema、migration、endpoint 或业务功能。
 
@@ -382,5 +382,5 @@ C4-1 冻结边界：
 | C1 幂等与反馈 | `implemented / backend-pass + browser-pass` | P14-P1-01: review.html 添加 Idempotency-Key；P14-P1-02: 验证 5 个关键详情页已有 generation guard（note-detail, plan-detail, practice-session, practice-result, review），其他页面未强制添加；P14-P1-03: 错误码映射从 20 个扩充到 41 个，覆盖 C0 发现的所有未映射码。Focused backend 5 passed（`test_p1_4_c1_idempotency_feedback.py`）。完整基线：backend 491 passed, 3 skipped；browser 147 passed, 4 skipped。 |
 | C2 来源与解析可解释性 | `implemented / backend-pass + browser-pass` | P14-P1-04/P1-05/P1-06；`test_p1_4_c2_explainability.py` 4 passed，真实 Chromium 2 passed，关联 browser 矩阵 7 passed；L2/L3 范围和 not_verified 边界见 evidence 文档 |
 | C3 `/app` 批量导出 | `implemented / backend-pass + browser-pass` | P14-P0-02/P2-01 按 P2 可用性补全关闭；复用既有 API，无 schema/API 变更。C3 Chromium 2 passed，关联 browser 13 passed，focused backend/static/governance 29 passed；L2/L3 与 not_verified 边界见 evidence。 |
-| C4 规模与完整工作流 | 未开始 | P14-P2-02~P2-06（P2-01 已由 C3 关闭） |
+| C4 规模与完整工作流 | `implemented / scoped closeout` | C4-1 cram、C4-2 source-link、C4-3 task-list、C4-4 周趋势、C4-5 measurement-only、C4-6 backup/restore 均已完成；P14-P2-02~P2-06 已逐项关闭，P2-01 由 C3 关闭。 |
 | P14-P0-05 revision 指纹修复 | 已完成 | schema v14 在指纹中加入 material_id；独立 migration/rollback、共享内容索引和依赖数据保留测试已通过。 |
