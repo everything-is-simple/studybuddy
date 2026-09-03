@@ -1,8 +1,8 @@
-# P1-4 可用性收口证据（C0 切片：真实输入与重启复现证据补齐）
+# P1-4 可用性收口证据（C0-C4 总体 closeout）
 
-> 状态：`C0 slice / evidence-recorded`
+> 状态：`closeout-scoped-pass`
 > 日期：2026-09-02
-> 范围：本文件只记录 P1-4 阶段 D 的第一个切片 C0。C0 的目标是补齐证据、把真相写下来，而不是改业务行为。本切片没有修改 `backend/app/`，没有新增 schema/migration/endpoint/错误码，也没有改动既有 API 的 URL、method、状态码、幂等语义或响应字段名。
+> 范围：本文件汇总 P1-4 阶段 D 的 C0-C4 切片证据。各切片保持独立 contract 与提交边界；结论严格限定在 local single-process / single-instance / SQLite / local-disk、deterministic fake/loopback 与专用 browser evidence 范围，不外推为全局 production real-pass。
 
 审计与台账见 [`../contracts/P1_4_USABILITY_AUDIT_AND_CONTRACT.md`](../contracts/P1_4_USABILITY_AUDIT_AND_CONTRACT.md)。
 
@@ -208,7 +208,8 @@ C4-2 在 `plans.html` 提供模块/学习项 owner 选择、当前资料 chunk �
 
 C4-3 冻结并实现 `GET /api/tasks`：仅返回当前 project 的脱敏公共 task rows，支持 `status`、`task_kind`、`operation_type` 筛选，`limit` 默认 25、范围 1–100，`offset >= 0`，按 `created_at,id` 倒序，并返回 `items/total/limit/offset`。无 schema/migration 变更；既有单任务 read/cancel/retry 路径保持不变。`tasks.html` 已从“待实现”提示切换为真实列表、状态筛选、空态、失败提示、刷新和详情入口，并保留原有详情动作。
 
-验证：`test_p1_4_c4_3_task_list.py` `1 passed`；`browser_a4.spec.js` 与 `browser_frontend_system_matrix.spec.js` 组合 `11 passed`；专用真实 success-path `browser_p1_4_c4_3_task_list.spec.js` `1 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。真实导入/索引/排队任务进入 `/app/tasks.html`，状态筛选、空态、详情入口和 DOM 隐私断言均通过。当前结论为 `implemented / scoped browser-pass`；L3 仅限正常停服重启后的 SQLite/data_root 读取，不包含强杀、多 worker 或 backup/restore。C4-4~### C4-6 backup → verify → 新空目录 restore 专项 gate
+验证：`test_p1_4_c4_3_task_list.py` `1 passed`；`browser_a4.spec.js` 与 `browser_frontend_system_matrix.spec.js` 组合 `11 passed`；专用真实 success-path `browser_p1_4_c4_3_task_list.spec.js` `1 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。真实导入/索引/排队任务进入 `/app/tasks.html`，状态筛选、空态、详情入口和 DOM 隐私断言均通过。当前结论为 `implemented / scoped browser-pass`；L3 仅限正常停服重启后的 SQLite/data_root 读取，不包含强杀、多 worker 或 backup/restore。C4-4~
+### C4-6 backup → verify → 新空目录 restore 专项 gate
 
 新增 `backend/tests/test_p1_4_c4_6_backup_restore.py`，使用既有 backup library 验证完整闭环：代表性材料（共享原件 + soft-deleted 材料）、active plan/item、progress event、rhythm settings、queued operation task；执行 `backup_data`、`verify_backup`、`restore_backup(confirm=True)`、`verify_restored_data`，然后在新 data root 进行两次正常启动并读取 `/api/health`、`/api/readiness`、plans、tasks、weekly-trend。验证迁移前后关键快照一致，schema `14` 与 `schema_migrations=14` 保持一致。
 
@@ -218,8 +219,13 @@ C4-3 冻结并实现 `GET /api/tasks`：仅返回当前 project 的脱敏公共 
 
 新增只读 `GET /api/study/plans/{plan_id}/rhythm/weekly-trend`，复用 `study_progress_events` 与既有 rhythm timezone，不新增 schema/migration，不修改 plan/progress/rhythm 写入语义。响应固定返回请求结束日向前 7 个 local days 的每日 started/completed/skipped/reopened 计数与 totals；事件按配置 IANA timezone 归属，避免按 UTC 日期误分桶。`today.html` 增加近七天完成趋势展示，并沿用现有安全错误/空态处理。
 
-验证：`test_p1_4_c4_4_weekly_trend.py` `1 passed`；既有 Phase 9B rhythm 与 frontend contract 组合 `13 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。专用真实 `/app/today.html` browser fixture `browser_p1_4_c4_4_weekly_trend.spec.js` 已 `1 passed`，覆盖真实计划/进度事件、7 日卡片、失败安全提示与隐私断言；API 专项测试另覆盖 Asia/Shanghai 跨 UTC 日界线归属。当前结论为 `implemented / scoped browser-pass`；L3 仍仅限正常 SQLite 读取，不包含强杀、多 worker 或 backup/restore。### C4-5 资料规模与批量体验测量（已关闭，measurement-only）
+验证：`test_p1_4_c4_4_weekly_trend.py` `1 passed`；既有 Phase 9B rhythm 与 frontend contract 组合 `13 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。专用真实 `/app/today.html` browser fixture `browser_p1_4_c4_4_weekly_trend.spec.js` 已 `1 passed`，覆盖真实计划/进度事件、7 日卡片、失败安全提示与隐私断言；API 专项测试另覆盖 Asia/Shanghai 跨 UTC 日界线归属。当前结论为 `implemented / scoped browser-pass`；L3 仍仅限正常 SQLite 读取，不包含强杀、多 worker 或 backup/restore。
+### C4-5 资料规模与批量体验测量（已关闭，measurement-only）
 
 新增仅用于本地测量的 `backend/scripts/measure_p1_4_c4_5.py`。脚本创建临时 SQLite data root，生成合成 operation task rows，通过真实 `GET /api/tasks` 测量有界列表读取，不写入仓库、不新增生产 API/schema、不保留数据库或测量产物。初始基线（本机单进程、fake provider、limit=100）为：task-list 10/100/500/1000/2000 rows 分别约 `16.630/27.144/27.236/33.852/33.275 ms`，均遵守最多返回 100 rows。材料导入端到端基线为 10/100/500 个小型 TXT 分别约 `335.380/3563.606/27695.033 ms`，列表仍最多返回 100 rows；该测量包含逐文件 HTTP、解析和 SQLite 写入，不等同纯导入函数耗时。结果不是容量承诺，也不是多 worker/生产规模结论。基于当前有界证据，不新增产品 API、失败重试队列、批量进度页或新的筛选/排序能力；后续只有在真实使用观察证明摩擦阈值被触发时才另立 contract。专用 browser measurement `browser_p1_4_c4_5_measurement.spec.js` 已 `1 passed`：真实 `/app/materials.html` 20 行渲染约 `276 ms`，`/app/tasks.html` 列表渲染约 `106 ms`；失败刷新安全展示通过。真实 queued task 在观察窗口内可能快速完成，因此取消仅记录为“完成先于取消观察”，不把取消耗时伪造为成功指标。重复点击的功能性防抖仍由 C4-1/C4-2 专项覆盖。C4-5 关闭 P14-P2-06，取消未形成成功耗时指标，不能解释为取消性能已验证。
 
-C4-1 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-04。L3 仅指同一 local single-process、SQLite、本地磁盘 data root 上正常停服重启后的目标/session/result 回读；强杀、断电、多 worker、跨时区日期显示、backup→verify→新空目录 restore、自动提醒/选题和真实规模仍为 `not_verified`，并分别留给后续切片或明确 non-goal。
+## P1-4 总体 closeout 结论
+
+C0-C4（含 C4-1 至 C4-6）已完成各自冻结范围的实现、测试和 evidence 收口。C4-1 至 C4-6 分别关闭 P14-P2-04、P14-P2-03、P14-P2-02、P14-P2-05、P14-P2-06 与 backup/restore 专项 gate；C3 已关闭 P14-P2-01。P1-4 在本次范围内结论为 `closeout-scoped-pass`。
+
+整体回归与门禁：P1-4 相关 backend/browser 专项均通过；frontend contract audit `0 findings`；source-size 与 `git diff --check` 通过。所有结论仅适用于 local single-process / single-instance / SQLite / local-disk；真实 Provider/OCR/ASR 通用能力、真实断电、强杀中间态、多 worker、网络盘/ACL、无界规模与全局 production `real-pass` 仍不在声明内。
