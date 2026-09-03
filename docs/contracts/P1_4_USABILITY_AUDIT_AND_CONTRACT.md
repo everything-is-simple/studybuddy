@@ -352,6 +352,8 @@
 
 C4 不作为单次实现交付。P14-P2-02～P2-06 分别拆为 C4-1 cram、C4-2 source-link、C4-3 task-list、C4-4 周趋势、C4-5 规模测量，最终另做 C4-6 backup/restore 专项 gate；后续切片不得借 C4-1 扩大 API 或 schema。
 
+C4-6 冻结 contract：只使用既有 CLI/library 的 `backup_data` → `verify_backup` → `restore_backup(confirm=True)` → `verify_restored_data`，目标必须是全新空目录；恢复后进行两次正常启动/health/readiness 与关键 `/app` 读取。验收比较迁移前后 schema version、migration history、代表性材料（含 deleted/shared original）、计划/进度/rhythm、task list 与 weekly trend；restore 不得自动触发 provider、index、refresh、repair、排程或提醒。该 gate 证明 local single-process、single-instance、SQLite、local-disk 的正常停服恢复，不证明真实断电、多 worker 或生产灾备。
+
 C4-1 冻结边界：
 
 - 只复用 `GET/POST /api/study/cram-goals`、目标详情/状态动作、`POST .../sessions`、`GET .../result` 与既有 practice session start/submit/finish；不新增 migration、endpoint、字段或错误码。

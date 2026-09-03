@@ -208,7 +208,11 @@ C4-2 在 `plans.html` 提供模块/学习项 owner 选择、当前资料 chunk �
 
 C4-3 冻结并实现 `GET /api/tasks`：仅返回当前 project 的脱敏公共 task rows，支持 `status`、`task_kind`、`operation_type` 筛选，`limit` 默认 25、范围 1–100，`offset >= 0`，按 `created_at,id` 倒序，并返回 `items/total/limit/offset`。无 schema/migration 变更；既有单任务 read/cancel/retry 路径保持不变。`tasks.html` 已从“待实现”提示切换为真实列表、状态筛选、空态、失败提示、刷新和详情入口，并保留原有详情动作。
 
-验证：`test_p1_4_c4_3_task_list.py` `1 passed`；`browser_a4.spec.js` 与 `browser_frontend_system_matrix.spec.js` 组合 `11 passed`；专用真实 success-path `browser_p1_4_c4_3_task_list.spec.js` `1 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。真实导入/索引/排队任务进入 `/app/tasks.html`，状态筛选、空态、详情入口和 DOM 隐私断言均通过。当前结论为 `implemented / scoped browser-pass`；L3 仅限正常停服重启后的 SQLite/data_root 读取，不包含强杀、多 worker 或 backup/restore。C4-4~C4-6 未实施。
+验证：`test_p1_4_c4_3_task_list.py` `1 passed`；`browser_a4.spec.js` 与 `browser_frontend_system_matrix.spec.js` 组合 `11 passed`；专用真实 success-path `browser_p1_4_c4_3_task_list.spec.js` `1 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。真实导入/索引/排队任务进入 `/app/tasks.html`，状态筛选、空态、详情入口和 DOM 隐私断言均通过。当前结论为 `implemented / scoped browser-pass`；L3 仅限正常停服重启后的 SQLite/data_root 读取，不包含强杀、多 worker 或 backup/restore。C4-4~### C4-6 backup → verify → 新空目录 restore 专项 gate
+
+新增 `backend/tests/test_p1_4_c4_6_backup_restore.py`，使用既有 backup library 验证完整闭环：代表性材料（共享原件 + soft-deleted 材料）、active plan/item、progress event、rhythm settings、queued operation task；执行 `backup_data`、`verify_backup`、`restore_backup(confirm=True)`、`verify_restored_data`，然后在新 data root 进行两次正常启动并读取 `/api/health`、`/api/readiness`、plans、tasks、weekly-trend。验证迁移前后关键快照一致，schema `14` 与 `schema_migrations=14` 保持一致。
+
+结果：C4-6 专项测试 `1 passed`；restore acceptance `passed`。该 gate 仅证明 local single-process/single-instance、SQLite、本地磁盘、正常停服时的 backup/restore 与重启读取；不证明真实断电、强杀中间态、多 worker、网络盘/ACL 或生产级灾备。未自动运行 provider、index、source refresh、repair、排程或提醒。
 
 ### C4-4 周趋势 contract（scoped implementation）
 
