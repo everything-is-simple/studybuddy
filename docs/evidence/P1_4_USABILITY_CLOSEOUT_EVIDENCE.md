@@ -210,4 +210,10 @@ C4-3 冻结并实现 `GET /api/tasks`：仅返回当前 project 的脱敏公共 
 
 验证：`test_p1_4_c4_3_task_list.py` `1 passed`；`browser_a4.spec.js` 与 `browser_frontend_system_matrix.spec.js` 组合 `11 passed`；专用真实 success-path `browser_p1_4_c4_3_task_list.spec.js` `1 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。真实导入/索引/排队任务进入 `/app/tasks.html`，状态筛选、空态、详情入口和 DOM 隐私断言均通过。当前结论为 `implemented / scoped browser-pass`；L3 仅限正常停服重启后的 SQLite/data_root 读取，不包含强杀、多 worker 或 backup/restore。C4-4~C4-6 未实施。
 
+### C4-4 周趋势 contract（scoped implementation）
+
+新增只读 `GET /api/study/plans/{plan_id}/rhythm/weekly-trend`，复用 `study_progress_events` 与既有 rhythm timezone，不新增 schema/migration，不修改 plan/progress/rhythm 写入语义。响应固定返回请求结束日向前 7 个 local days 的每日 started/completed/skipped/reopened 计数与 totals；事件按配置 IANA timezone 归属，避免按 UTC 日期误分桶。`today.html` 增加近七天完成趋势展示，并沿用现有安全错误/空态处理。
+
+验证：`test_p1_4_c4_4_weekly_trend.py` `1 passed`；既有 Phase 9B rhythm 与 frontend contract 组合 `13 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。专用真实 `/app/today.html` browser fixture `browser_p1_4_c4_4_weekly_trend.spec.js` 已 `1 passed`，覆盖真实计划/进度事件、7 日卡片、失败安全提示与隐私断言；API 专项测试另覆盖 Asia/Shanghai 跨 UTC 日界线归属。当前结论为 `implemented / scoped browser-pass`；L3 仍仅限正常 SQLite 读取，不包含强杀、多 worker 或 backup/restore。C4-5、C4-6 未实施。
+
 C4-1 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-04。L3 仅指同一 local single-process、SQLite、本地磁盘 data root 上正常停服重启后的目标/session/result 回读；强杀、断电、多 worker、跨时区日期显示、backup→verify→新空目录 restore、自动提醒/选题和真实规模仍为 `not_verified`，并分别留给后续切片或明确 non-goal。

@@ -243,6 +243,44 @@ def delete_rhythm_allocation(connection: sqlite3.Connection, *, project_id: str,
         connection.execute("DELETE FROM rhythm_allocations WHERE id=? AND project_id=?", (allocation_id, project_id))
     return True
 
+def study_weekly_trend(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
+                        local_date: object | None = None) -> dict[str, object]:
+    from zoneinfo import ZoneInfo
+    plan = _study_plan_row(connection, project_id=project_id, plan_id=plan_id)
+    if plan is None:
+        raise ValueError('study_rhythm_plan_not_found')
+    settings = _rhythm_settings_row(connection, project_id=project_id, plan_id=plan_id)
+    timezone_name = str(settings['timezone']) if settings else 'UTC'
+    try:
+        zone = ZoneInfo(timezone_name)
+    except Exception:
+        raise ValueError('study_rhythm_invalid_timezone') from None
+    if local_date is None:
+        end_date = datetime.now(timezone.utc).astimezone(zone).date()
+    else:
+        end_date = _rhythm_date(local_date)
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    start_date = end_date - timedelta(days=6)
+    rows = connection.execute(
+        "SELECT e.event_type,e.created_at FROM study_progress_events e "
+        "WHERE e.project_id=? AND e.plan_id=? ORDER BY e.created_at,e.id", (project_id, plan_id)
+    ).fetchall()
+    buckets = {start_date + timedelta(days=i): {'local_date': (start_date + timedelta(days=i)).isoformat(),
+               'started_count': 0, 'completed_count': 0, 'skipped_count': 0, 'reopened_count': 0} for i in range(7)}
+    for row in rows:
+        try:
+            event_date = datetime.fromisoformat(str(row['created_at']).replace('Z', '+00:00')).astimezone(zone).date()
+        except (TypeError, ValueError):
+            continue
+        bucket = buckets.get(event_date)
+        key = f"{row['event_type']}_count"
+        if bucket is not None and key in bucket:
+            bucket[key] += 1
+    values = list(buckets.values())
+    return {'plan_id': plan_id, 'timezone': timezone_name,
+            'local_date_start': start_date.isoformat(), 'local_date_end': end_date.isoformat(),
+            'days': values, 'totals': {key: sum(int(day[key]) for day in values) for key in values[0] if key != 'local_date'}}
+
 def rhythm_summary(connection: sqlite3.Connection, *, project_id: str, plan_id: str,
                    local_date: object | None = None, periods: int = 1) -> dict[str, object]:
     # Validate an explicit business coordinate even if the plan has not yet

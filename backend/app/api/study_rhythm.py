@@ -40,6 +40,19 @@ def register_routes(app, context: dict[str, object]) -> None:
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="study_rhythm_persist_failed") from None
 
+    @app.get("/api/study/plans/{plan_id}/rhythm/weekly-trend")
+    def study_weekly_trend_route(plan_id: str, local_date: str | None = None) -> dict[str, object]:
+        plan_id = _bounded_id(plan_id, 'study_rhythm_plan_not_found')
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return study_weekly_trend(connection, project_id=app.state.config.project_id,
+                                           plan_id=plan_id, local_date=local_date)
+        except ValueError as error:
+            raise _study_error(error, default='study_rhythm_summary_failed',
+                               not_found={'study_rhythm_plan_not_found'}) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail='study_rhythm_summary_failed') from None
+
     @app.get("/api/study/plans/{plan_id}/rhythm/summary")
     def study_rhythm_summary_route(plan_id: str, local_date: str | None = None, periods: int = 1) -> dict[str, object]:
         plan_id = _bounded_id(plan_id, "study_rhythm_plan_not_found")
