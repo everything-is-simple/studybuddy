@@ -1,0 +1,13 @@
+const {test,expect}=require('@playwright/test');
+const {spawn}=require('child_process');const fs=require('fs');
+const ROOT='H:/studybuddy-test/runs/p1-4-c4-3-task-list',PORT=8865,BASE=`http://127.0.0.1:${PORT}`,PYTHON='C:/miniconda/py310/python.exe';let server;
+function start(){return spawn(PYTHON,['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env:{...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'},stdio:'ignore',windowsHide:true})}
+async function ready(){await expect.poll(async()=>{try{return(await fetch(BASE+'/api/readiness')).ok}catch(_){return false}},{timeout:20000}).toBe(true)}
+async function stop(){if(!server||server.killed)return;await new Promise(r=>{let done=false;const end=()=>{if(!done){done=true;r()}};server.once('exit',end);server.kill();setTimeout(end,5000)});server=null}
+test.beforeEach(async()=>{await stop();fs.rmSync(ROOT,{recursive:true,force:true});server=start();await ready()});test.afterEach(stop);
+test('real queued task appears in /app task list and filters safely',async({page,request})=>{
+ const uploaded=await request.post(BASE+'/api/materials',{multipart:{file:{name:'task-list.txt',mimeType:'text/plain',buffer:Buffer.from('task list source')}}});expect(uploaded.status(),await uploaded.text()).toBe(201);const material=await uploaded.json();const indexed=await request.post(`${BASE}/api/materials/${material.material_id}/ai-index`);expect(indexed.status(),await indexed.text()).toBe(200);const queued=await request.post(`${BASE}/api/materials/${material.material_id}/ai-index/tasks`,{headers:{'Idempotency-Key':'c4-3-browser'}});expect(queued.status(),await queued.text()).toBe(202);const task=await queued.json();expect(task.status).toBe('queued');
+ await page.goto(BASE+'/app/tasks.html');await expect(page.locator('#tasks')).toContainText('embedding_index');await expect(page.locator('#state')).toContainText('共 1 个任务');await expect(page.locator('#tasks a')).toHaveAttribute('href',new RegExp(task.task_id));
+ await page.locator('#status-filter').selectOption('failed');await page.locator('#apply-filters').click();await expect(page.locator('#state')).toHaveText('当前无全局任务列表');await page.locator('#status-filter').selectOption('queued');await page.locator('#apply-filters').click();await expect(page.locator('#tasks')).toContainText('等待中');
+ await page.locator('#tasks a').click();await expect(page.locator('#task-detail-section')).toBeVisible();await expect(page.locator('#task-detail')).toContainText('等待中');await expect(page.locator('body')).not.toContainText(/stored_path|traceback|input_fingerprint|H:\\|task list source/i);
+});
