@@ -88,4 +88,83 @@ def register_routes(app, context: dict[str, object]) -> None:
         if embedding_provider_id is None:
             return {**llm, "capture": capture, "ocr": ocr}
         return {**llm, "llm": llm, "embedding": embedding, "capture": capture, "ocr": ocr}
+
+    @app.post("/api/system/provider-connection-test")
+    def provider_connection_test(request: ProviderConnectionTestRequest) -> dict[str, str]:
+        """Test Provider (LLM/Embedding) connection with synthetic payload.
+
+        Contract: P1-5-0 frozen, P1-5-2 implementation.
+        - Explicitly triggered (never automatic)
+        - Fixed synthetic payload
+        - Does not change configuration state
+        - Bounded response (1 KB max)
+        - Stable error code mapping
+        """
+        try:
+            if request.provider_type == "llm":
+                provider_llm_connection_test(
+                    base_url=request.base_url,
+                    api_key=request.api_key,
+                    model_id=request.model_id,
+                    timeout_seconds=request.timeout_seconds or 30.0,
+                )
+            elif request.provider_type == "embedding":
+                provider_embedding_connection_test(
+                    base_url=request.base_url,
+                    api_key=request.api_key,
+                    model_id=request.model_id,
+                    timeout_seconds=request.timeout_seconds or 30.0,
+                )
+            else:
+                raise HTTPException(status_code=400, detail="invalid_provider_type")
+            return {"status": "ok"}
+        except HTTPException:
+            raise
+        except ConnectionTestError as error:
+            raise HTTPException(status_code=400, detail=error.code) from None
+        except Exception:
+            raise HTTPException(status_code=500, detail="connection_test_failed") from None
+
+    @app.post("/api/system/email-connection-test")
+    def email_connection_test(request: EmailConnectionTestRequest) -> dict[str, str]:
+        """Test Email (SMTP/Feishu) connection with synthetic payload.
+
+        Contract: P1-5-0 frozen, P1-5-2 implementation.
+        - Explicitly triggered (never automatic)
+        - Fixed synthetic payload
+        - Does not change configuration state
+        - Bounded response (1 KB max)
+        - Stable error code mapping
+        """
+        try:
+            if request.channel == "smtp":
+                if not request.smtp_host or not request.smtp_port or request.smtp_sender is None or request.smtp_recipient is None:
+                    raise HTTPException(status_code=400, detail="delivery_configuration_invalid")
+                smtp_connection_test(
+                    host=request.smtp_host,
+                    port=request.smtp_port,
+                    secure=request.smtp_secure if request.smtp_secure is not None else True,
+                    username=request.smtp_username,
+                    password=request.smtp_password,
+                    sender=request.smtp_sender,
+                    recipient=request.smtp_recipient,
+                    timeout_seconds=request.timeout_seconds or 10.0,
+                )
+            elif request.channel == "feishu":
+                if not request.feishu_webhook:
+                    raise HTTPException(status_code=400, detail="delivery_configuration_invalid")
+                feishu_connection_test(
+                    webhook_url=request.feishu_webhook,
+                    timeout_seconds=request.timeout_seconds or 10.0,
+                )
+            else:
+                raise HTTPException(status_code=400, detail="invalid_channel")
+            return {"status": "ok"}
+        except ConnectionTestError as error:
+            raise HTTPException(status_code=400, detail=error.code) from None
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=500, detail="connection_test_failed") from None
+
     return context
