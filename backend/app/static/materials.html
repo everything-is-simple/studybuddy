@@ -61,6 +61,16 @@
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
 </div>
 <div id="error" class="error" role="alert" hidden></div>
+<div id="batch-export" class="batch-toolbar" hidden>
+<label class="batch-select-all"><input id="select-page" type="checkbox"> 选择当前页</label>
+<span id="selection-status" class="muted" role="status" aria-live="polite">已选择 0 份</span>
+<div class="action-group">
+<button class="btn" id="export-originals" type="button" disabled>导出原件 ZIP</button>
+<button class="btn" id="export-texts" type="button" disabled>导出文本 ZIP</button>
+<button class="btn btn-primary" id="export-all" type="button" disabled>导出全部 ZIP</button>
+</div>
+</div>
+<div id="export-status" class="notice mt-16" hidden role="status" aria-live="polite"></div>
 <ul id="items" class="list"></ul>
 <div id="pagination" class="pagination" hidden></div>
 </section>
@@ -85,6 +95,11 @@ const state=document.querySelector('#state');
 const error=document.querySelector('#error');
 const pagination=document.querySelector('#pagination');
 const listTitle=document.querySelector('#list-title');
+const batchExport=document.querySelector('#batch-export');
+const selectPage=document.querySelector('#select-page');
+const selectionStatus=document.querySelector('#selection-status');
+const exportStatus=document.querySelector('#export-status');
+const exportButtons=[document.querySelector('#export-originals'),document.querySelector('#export-texts'),document.querySelector('#export-all')];
 
 let currentView='active';
 let currentStatus='';
@@ -92,8 +107,32 @@ let currentQuery='';
 let currentPage=0;
 const pageSize=20;
 let loadGeneration=0;
+let visibleIds=[];
+const selectedIds=new Set();
+let exportBusy=false;
 
 function text(value){return typeof value==='string'?value:''}
+
+function resetSelection(){selectedIds.clear();visibleIds=[];updateSelection()}
+
+function updateSelection(){
+const count=selectedIds.size;
+selectionStatus.textContent=`已选择 ${count} 份`;
+selectPage.checked=visibleIds.length>0&&visibleIds.every(id=>selectedIds.has(id));
+selectPage.indeterminate=count>0&&!selectPage.checked;
+selectPage.disabled=exportBusy||!visibleIds.length;
+exportButtons.forEach(button=>button.disabled=exportBusy||count===0)
+}
+
+selectPage.addEventListener('change',()=>{
+visibleIds.forEach(id=>selectPage.checked?selectedIds.add(id):selectedIds.delete(id));
+items.querySelectorAll('.material-select').forEach(input=>{input.checked=selectPage.checked});
+updateSelection()
+});
+
+document.querySelector('#export-originals').onclick=()=>exportSelected(true,false);
+document.querySelector('#export-texts').onclick=()=>exportSelected(false,true);
+document.querySelector('#export-all').onclick=()=>exportSelected(true,true);
 
 uploadArea.addEventListener('click',()=>fileInput.click());
 uploadArea.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click()}});
@@ -177,6 +216,7 @@ applyFilters.click()
 });
 
 viewDeleted.addEventListener('click',()=>{
+resetSelection();
 currentView=currentView==='active'?'deleted':'active';
 viewDeleted.textContent=currentView==='active'?'查看回收站':'返回材料列表';
 listTitle.textContent=currentView==='active'?'材料列表':'回收站';
@@ -185,6 +225,7 @@ load()
 });
 
 async function load(){
+resetSelection();
 const generation=++loadGeneration;
 state.textContent='加载中…';
 error.hidden=true;
@@ -218,6 +259,9 @@ function renderPage(data){
 const rows=Array.isArray(data)?data:data.items||[];
 const total=data.total||rows.length;
 const hasMore=data.has_more||false;
+batchExport.hidden=currentView!=='active'||!rows.length;
+visibleIds=currentView==='active'?rows.map(row=>text(row.id||row.material_id)).filter(Boolean):[];
+updateSelection();
 if(!rows.length){
 state.textContent='暂无材料';
 items.innerHTML='<li class="empty">还没有材料</li>';
@@ -230,6 +274,14 @@ const name=text(row.original_name||row.display_name||row.name)||'未命名';
 const status=text(row.status)||'unknown';
 const deleted=!!row.deleted_at;
 const li=document.createElement('li');
+if(currentView==='active'&&!deleted){
+const select=document.createElement('input');
+select.type='checkbox';
+select.className='material-select';
+select.setAttribute('aria-label',`选择 ${name}`);
+select.onchange=()=>{select.checked?selectedIds.add(id):selectedIds.delete(id);updateSelection()};
+li.append(select)
+}
 const link=document.createElement('a');
 link.href='/app/material-detail.html?material='+encodeURIComponent(id);
 link.textContent=name;
@@ -284,6 +336,30 @@ next.textContent='下一页';
 next.disabled=!hasMore;
 next.onclick=()=>{currentPage++;load()};
 pagination.append(next)
+}
+
+async function exportSelected(includeOriginal,includeText){
+if(exportBusy||!selectedIds.size)return;
+exportBusy=true;
+exportStatus.hidden=false;
+exportStatus.className='notice';
+exportStatus.textContent=`正在导出 ${selectedIds.size} 份材料...`;
+updateSelection();
+try{
+const blob=await sbApi.download('/api/materials/export',{method:'POST',body:JSON.stringify({material_ids:Array.from(selectedIds),include_original:includeOriginal,include_text:includeText})});
+if(!blob.type.includes('zip')||blob.size<4)throw Object.assign(new Error('export_failed'),{code:'export_failed'});
+const prefix=includeOriginal&&includeText?'全部':includeOriginal?'原件':'文本';
+const url=URL.createObjectURL(blob);
+const link=document.createElement('a');
+link.href=url;link.download='studybuddy-materials.zip';document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
+exportStatus.className='notice status-success';
+exportStatus.textContent=`${prefix} ZIP 导出完成（${selectedIds.size} 份）`
+}catch(e){
+exportStatus.className='notice warn';
+exportStatus.textContent=sbApi.safeError(e)+' 可重试。'
+}finally{
+exportBusy=false;updateSelection()
+}
 }
 
 async function deleteMaterial(id,name){
