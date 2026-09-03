@@ -27,7 +27,7 @@
 | `qa.html` | citation 详情/正文定位 | `static_verified` | P1-1 已迁移 citation detail 与正文 offset 定位；P1-4 C0 以真实多页 PDF 验证点击 citation 跳回原文高亮，并在重启后用同一 citation URL 复现同一高亮。 |
 | `plans.html` | 目标、模块、计划列表和详情读取、状态/来源显示 | `static_verified` | learning/matrix browser tests；C2 从 plan `source_links` 映射到 item，缺失来源显示“未关联来源”，详情选择会保留 `plan_id` 上下文。 |
 | `plan-detail.html` | 独立计划详情、项目状态和来源状态读取、缺少标识/失败重试 | `static_verified` | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js`；不新增后端能力。 |
-| `plans.html` | 创建/编辑目标、模块、计划、依赖、进度、节奏 | `static_verified` | P1-2 `/app` 页面提供真实写操作、状态转换、计划项/依赖/进度、节奏设置与分配；`browser_p1_2_plans_notes_migration.spec.js` 覆盖核心路径。 |
+| `plans.html` | 创建/编辑目标、模块、计划、依赖、进度、节奏；source-link 工作区创建/删除/刷新 | `static_verified` | P1-2 `/app` 页面提供真实写操作；C4-2 提供当前候选、模块/学习项 owner 选择、source link 添加/删除/显式 refresh，`browser_p1_4_c4_2_source_links.spec.js` 覆盖生命周期、失败重试与归档保护。 |
 | `notes.html` | 列表、详情、笔记类型/来源状态、AI 草稿确认 | `static_verified` | learning/state-matrix browser tests；详情选择会保留 `note_id` 上下文。 |
 | `note-detail.html` | 独立笔记详情、内容/引用/来源状态读取、缺少标识/失败重试 | `static_verified` | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js`；不新增后端能力。 |
 | `notes.html` | 创建、编辑、生成、拒绝、归档、来源刷新、导出 | `static_verified` | P1-2 `/app` 页面提供用户笔记创建/编辑、AI 草稿生成、确认/拒绝/归档、模块关联、来源刷新与导出；`browser_p1_2_plans_notes_migration.spec.js` 覆盖核心路径。 |

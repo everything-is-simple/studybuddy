@@ -259,6 +259,36 @@ def register_routes(app, context: dict[str, object]) -> None:
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="study_source_create_failed") from None
 
+    @app.delete("/api/study/modules/{module_id}/sources/{link_id}", status_code=204)
+    def delete_module_source_route(module_id: str, link_id: str) -> Response:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                delete_module_source_link(connection, project_id=app.state.config.project_id, module_id=module_id, link_id=link_id)
+        except ValueError as error:
+            raise _study_error(error, default="study_source_delete_failed", not_found={"knowledge_module_not_found", "study_source_link_not_found"}) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="study_source_delete_failed") from None
+        return Response(status_code=204)
+
+    @app.delete("/api/study/plans/{plan_id}/items/{item_id}/sources/{link_id}", status_code=204)
+    def delete_item_source_route(plan_id: str, item_id: str, link_id: str) -> Response:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                delete_plan_item_source_link(connection, project_id=app.state.config.project_id, plan_id=plan_id, item_id=item_id, link_id=link_id)
+        except ValueError as error:
+            raise _study_error(error, default="study_source_delete_failed", not_found={"study_plan_item_not_found", "study_source_link_not_found"}, conflict={"study_plan_edit_not_allowed"}) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="study_source_delete_failed") from None
+        return Response(status_code=204)
+
+    @app.get("/api/study/source-candidates")
+    def study_source_candidates() -> list[dict[str, object]]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return list_study_source_candidates(connection, project_id=app.state.config.project_id)
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="study_source_candidates_failed") from None
+
     @app.get("/api/study/sources")
     def study_sources(module_id: str | None = None, plan_id: str | None = None, item_id: str | None = None) -> list[dict[str, object]]:
         if module_id and (plan_id or item_id):

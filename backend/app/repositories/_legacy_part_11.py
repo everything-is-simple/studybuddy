@@ -10,6 +10,26 @@ from ._legacy_part_07 import *
 from ._legacy_part_08 import *
 from ._legacy_part_09 import *
 from ._legacy_part_10 import *
+def list_study_source_candidates(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
+    rows = connection.execute(
+        "SELECT m.id AS material_id,m.original_name,r.id AS revision_id,r.extraction_id,"
+        "c.id AS chunk_id,c.chunk_index FROM materials m "
+        "JOIN material_revisions r ON r.material_id=m.id AND r.is_current=1 "
+        "JOIN chunks c ON c.revision_id=r.id AND c.status='ready' "
+        "WHERE m.project_id=? AND m.deleted_at IS NULL ORDER BY m.original_name,m.id,c.chunk_index,c.id",
+        (project_id,),
+    ).fetchall()
+    result = []
+    for row in rows:
+        spans = [str(value[0]) for value in connection.execute(
+            "SELECT span_id FROM chunk_spans WHERE chunk_id=? ORDER BY span_id", (row["chunk_id"],)
+        ).fetchall()]
+        result.append({"material_id": row["material_id"], "material_name": row["original_name"],
+                       "revision_id": row["revision_id"], "extraction_id": row["extraction_id"],
+                       "chunk_id": row["chunk_id"], "chunk_index": row["chunk_index"],
+                       "span_ids": spans})
+    return result
+
 def get_study_source_links(connection: sqlite3.Connection, *, project_id: str, plan_id: str | None = None,
                            module_id: str | None = None, item_id: str | None = None) -> list[dict[str, object]]:
     if module_id is not None:

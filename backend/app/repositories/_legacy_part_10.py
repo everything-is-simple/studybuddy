@@ -255,6 +255,33 @@ def create_plan_item_source_link(connection: sqlite3.Connection, *, project_id: 
             raise ValueError("study_source_invalid") from exc
     return dict(connection.execute("SELECT * FROM plan_item_source_links WHERE id=?", (link_id,)).fetchone())
 
+def delete_module_source_link(connection: sqlite3.Connection, *, project_id: str, module_id: str, link_id: str) -> bool:
+    with connection:
+        module = _study_module_row(connection, project_id=project_id, module_id=module_id)
+        if module is None:
+            raise ValueError("knowledge_module_not_found")
+        deleted = connection.execute(
+            "DELETE FROM module_source_links WHERE id=? AND module_id=? AND project_id=?",
+            (link_id, module_id, project_id),
+        ).rowcount
+    if not deleted:
+        raise ValueError("study_source_link_not_found")
+    return True
+
+def delete_plan_item_source_link(connection: sqlite3.Connection, *, project_id: str, plan_id: str, item_id: str, link_id: str) -> bool:
+    with connection:
+        item = _study_item_row(connection, project_id=project_id, plan_id=plan_id, item_id=item_id)
+        if item is None:
+            raise ValueError("study_plan_item_not_found")
+        _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
+        deleted = connection.execute(
+            "DELETE FROM plan_item_source_links WHERE id=? AND plan_item_id=? AND project_id=?",
+            (link_id, item_id, project_id),
+        ).rowcount
+    if not deleted:
+        raise ValueError("study_source_link_not_found")
+    return True
+
 def _refresh_note_source_links_for_material(connection: sqlite3.Connection, material_id: str) -> None:
     rows = connection.execute(
         "SELECT id,project_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key "
