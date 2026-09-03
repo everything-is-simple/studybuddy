@@ -28,9 +28,10 @@ from . import (
     _v11_phase9c_feedback as v11,
     _v12_phase9d_extended as v12,
     _v13_phase10_tasks as v13,
+    _v14_fix_revision_fingerprint as v14,
 )
 
-CURRENT_SCHEMA_VERSION = 13
+CURRENT_SCHEMA_VERSION = 14
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -61,6 +62,7 @@ _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] =
     (11, "phase9c_exercise_feedback_schema", v11.migrate),
     (12, "phase9d_extended_learning_schema", v12.migrate),
     (13, "phase10_operation_task_schema", v13.migrate),
+    (14, "fix_revision_fingerprint_material_id", v14.migrate),
 )
 
 # Compatibility aliases for tests that monkeypatch migration functions
@@ -69,6 +71,7 @@ _migration_v10 = v10.migrate
 _migration_v11 = v11.migrate
 _migration_v12 = v12.migrate
 _migration_v13 = v13.migrate
+_migration_v14 = v14.migrate
 
 
 def schema_version(connection: sqlite3.Connection) -> int:

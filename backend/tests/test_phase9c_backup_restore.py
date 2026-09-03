@@ -83,7 +83,7 @@ def test_phase9c_backup_restore_preserves_facts_statuses_and_non_repair(tmp_path
     assert backup_data(source, backup)["status"] == "complete"
     assert verify_backup(backup)["status"] == "valid"
     manifest = (backup / "manifest.json").read_text(encoding="utf-8")
-    assert json.loads(manifest)["database"]["schema_version"] == 13
+    assert json.loads(manifest)["database"]["schema_version"] == 14
     assert str(source) not in manifest and "stored_path" not in manifest
 
     def forbidden(*_args, **_kwargs):

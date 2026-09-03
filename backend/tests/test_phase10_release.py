@@ -31,7 +31,7 @@ def clear_release_env(monkeypatch):
 
 def test_cli_version_is_stable_and_safe(capsys):
     assert cli_main(["version"]) == 0
-    assert capsys.readouterr().out.strip() == '{"application_version": "local-v1", "schema_version": 13}'
+    assert capsys.readouterr().out.strip() == '{"application_version": "local-v1", "schema_version": 14}'
 
 
 def test_default_release_configuration_is_local_safe_and_secret_is_not_repr(monkeypatch):
