@@ -198,7 +198,7 @@ def _revision_payload(connection: sqlite3.Connection, material_id: str, extracti
     ).fetchone()
 
 def _revision_fingerprint(row: sqlite3.Row) -> str:
-    values = (str(row["source_sha256"]), _sha256_text(str(row["text"])),
+    values = (str(row["material_id"]), str(row["source_sha256"]), _sha256_text(str(row["text"])),
               str(row["parser_id"]), str(row["parser_version"]))
     return hashlib.sha256("\\x1f".join(values).encode("utf-8")).hexdigest()
 

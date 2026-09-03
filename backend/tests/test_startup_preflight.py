@@ -124,7 +124,7 @@ def test_preflight_order(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(main, "run_audit", lambda path: events.append("audit") or {"status": "ok", "reasons": []})
     monkeypatch.setattr(main, "reconcile", lambda config: events.append("recovery"))
     monkeypatch.setattr(main, "collect_diagnostics", lambda root: {
-        "status": "ok", "reasons": [], "schema_version": 13,
+        "status": "ok", "reasons": [], "schema_version": 14,
         "task_counts": {}, "recommended_actions": ["none"],
     })
     with TestClient(create_app(AppConfig(data_root=tmp_path))) as client:

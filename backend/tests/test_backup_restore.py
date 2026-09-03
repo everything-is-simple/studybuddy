@@ -64,9 +64,9 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
     backup_data(source, backup)
 
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 13
+    assert manifest["database"]["schema_version"] == 14
     with sqlite3.connect(backup / "database.sqlite3") as connection:
-        assert assert_schema_version(connection) == 13
+        assert assert_schema_version(connection) == 14
         assert connection.execute(
             "SELECT version, name FROM schema_migrations ORDER BY version"
         ).fetchall() == [
@@ -83,14 +83,15 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
             (11, "phase9c_exercise_feedback_schema"),
             (12, "phase9d_extended_learning_schema"),
             (13, "phase10_operation_task_schema"),
+            (14, "fix_revision_fingerprint_material_id"),
         ]
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
 
     assert verify_backup(backup)["status"] == "valid"
     restored = tmp_path / "restored"
     assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
     with sqlite3.connect(restored / "studybuddy.sqlite3") as connection:
-        assert assert_schema_version(connection) == 13
+        assert assert_schema_version(connection) == 14
         assert connection.execute(
             "SELECT version, name FROM schema_migrations ORDER BY version"
         ).fetchall() == [
@@ -107,8 +108,9 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
             (11, "phase9c_exercise_feedback_schema"),
             (12, "phase9d_extended_learning_schema"),
             (13, "phase10_operation_task_schema"),
+            (14, "fix_revision_fingerprint_material_id"),
         ]
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
         assert tuple(connection.execute(
             "SELECT status,progress_percent,stage_code FROM operation_tasks WHERE id='backup_task'"
         ).fetchone()) == ('queued', 0, 'queued')
@@ -120,8 +122,8 @@ def test_backup_restore_preserves_schema_version_and_history(tmp_path: Path):
     with TestClient(create_app(AppConfig(data_root=restored))):
         pass
     with sqlite3.connect(restored / "studybuddy.sqlite3") as connection:
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 13
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 14
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
 
 
 def test_restore_requires_confirm_and_nonempty_target_unchanged(tmp_path: Path):

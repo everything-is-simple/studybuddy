@@ -1,6 +1,6 @@
 # Database migrations
 
-Current schema version: **13**.
+Current schema version: **14**.
 
 The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The execution engine and public migration API remain at `backend/app/migrations/runner.py`; individual migration bodies are maintained in the adjacent `_vNN_*.py` modules, with shared helpers in `_helpers.py`.
 
@@ -18,6 +18,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 11 | phase9c_exercise_feedback_schema
 12 | phase9d_extended_learning_schema
 13 | phase10_operation_task_schema
+14 | fix_revision_fingerprint_material_id
 ```
 
 ## Repository layout
@@ -28,7 +29,7 @@ backend/app/migrations/
   _helpers.py               # schema inspection and shared migration helpers
   _canonical.py             # canonical schema helper
   _ai_schema.py             # shared AI schema helper
-  _v01_*.py ... _v13_*.py   # one idempotent body per registered version
+  _v01_*.py ... _v14_*.py   # one idempotent body per registered version
 ```
 
 Use `runner.py` as the only public execution entry point. Version modules are internal implementation modules and must not be invoked independently by application startup, backup, restore, or read paths.
@@ -40,6 +41,7 @@ Use `runner.py` as the only public execution entry point. Version modules are in
 - v11 adds the Phase 9C session/item snapshots, attempt linkage metadata, review/mistake/feedback facts, and cram-goal persistence schema. Domain validation and projections remain outside the migration.
 - v12 adds the Phase 9D capture-session, transcript draft/segment, report snapshot, delivery-attempt, and capture-linked operation persistence schema. The approved 9D-0 partial scope now includes 9D-3 shared domain behavior, 9D-4 deterministic fake/loopback capture/transcription, 9D-5 explicit confirmed transcript ingestion into the existing S2 material/revision/chunk/retrieval/citation path, 9D-6 read-only report aggregation/redaction, 9D-7 default-off/allowlisted dry-run delivery audit, 9D-8 API, 9D-9 Chromium workspace, and 9D-10 source lifecycle plus backup/restore non-repair verification. Real OCR/ASR and live SMTP/Feishu delivery remain outside the v12 completion claim.
 - v13 adds Phase 10 task envelopes (`operation_tasks`) and append-only task-attempt audit (`operation_task_attempts`). It preserves existing `ai_operations`, does not backfill historical operations or alter legacy synchronous APIs, and never persists raw content, secrets, paths, raw Provider payloads, answer keys, or submitted answers. The 10-3 runner uses the v13 schema but is explicit-only: startup, backup, restore and reads do not start or execute it. Composite project-scoped FKs, status/progress/retry checks, one-task-per-operation and at-most-one-running-attempt indexes provide structural protection; state transitions, progress monotonicity, lease compare-and-set, cancellation and retry policy remain repository/runner behavior.
+- v14 fixes P14-P0-05: `revision_fingerprint` now includes `material_id` in its hash, so two materials with identical content get distinct fingerprints. This is an in-place UPDATE migration (no table rebuild, no CASCADE risk). All existing fingerprints are recomputed with the new formula during upgrade. The UNIQUE constraint remains on the same column and continues enforcing one revision per (material, content, parser) combination. Rollback recomputes fingerprints using the old 4-tuple formula (without `material_id`).
 - A failure rolls back; the service never becomes ready with a half-upgraded schema.
 - Migration history and `PRAGMA user_version` are never edited manually.
 - There is no automatic down migration. Preserve the failed database and restore a verified backup into a new empty target when recovery is required.

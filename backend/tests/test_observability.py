@@ -128,7 +128,7 @@ def test_diagnostics_is_read_only_safe_and_reports_stale_task(tmp_path: Path, ca
     result = collect_diagnostics(tmp_path)
     assert result["status"] == "degraded"
     assert result["application_version"] == "local-v1"
-    assert result["schema_version"] == 13
+    assert result["schema_version"] == 14
     assert result["task_counts"]["stale"] == 1
     assert result["recommended_actions"] == ["review_stale_tasks_before_explicit_retry"]
     assert database.read_bytes() == before

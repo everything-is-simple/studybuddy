@@ -111,7 +111,7 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "9 | phase9a_learning_plan_schema" in migration_doc
     assert "10 | phase9b_material_learning_schema" in migration_doc
     assert "11 | phase9c_exercise_feedback_schema" in migration_doc
-    assert "CURRENT_SCHEMA_VERSION = 13" in runner
+    assert "CURRENT_SCHEMA_VERSION = 14" in runner
     assert '(9, "phase9a_learning_plan_schema", v09.migrate)' in runner
     assert '(10, "phase9b_material_learning_schema", v10.migrate)' in runner
     assert '(11, "phase9c_exercise_feedback_schema", v11.migrate)' in runner

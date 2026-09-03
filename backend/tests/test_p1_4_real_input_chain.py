@@ -342,16 +342,13 @@ def test_shared_hash_import_keeps_one_original_and_survives_restart(tmp_path: Pa
             assert download.content == first.read_bytes()
 
 
-def test_shared_hash_second_material_cannot_be_indexed_today(tmp_path: Path):
-    """Confirmed C0 defect, recorded as current truth rather than a wish.
+def test_shared_hash_both_materials_can_be_indexed_after_fix(tmp_path: Path):
+    """After P14-P0-05 fix (migration v14), both materials can be indexed.
 
     Two materials with identical content are accepted by import (shared-hash
-    storage is intentional), but only the first can build an AI index: the
-    second is refused with `revision_fingerprint_conflict` because the revision
-    fingerprint is content-derived and globally unique.  The second material is
-    therefore permanently unusable for retrieval, Q&A and citations until the
-    first one is purged.  Tracked as P14-P0-05 in the P1-4 ledger; changing the
-    fingerprint contract needs its own migration and API decision.
+    storage is intentional). After the revision fingerprint fix (migration v14),
+    the fingerprint includes material_id, so both materials can build their own
+    AI index and be used independently for retrieval, Q&A, and citations.
     """
     directory = _fixture_dir(tmp_path)
     first = directory / "duplicate-one.md"
@@ -362,39 +359,37 @@ def test_shared_hash_second_material_cannot_be_indexed_today(tmp_path: Path):
     with _client(root) as client:
         one = _upload(client, first)
         two = _upload(client, second)
+        # Both materials can now be indexed successfully
         assert client.post(f"/api/materials/{one['material_id']}/ai-index").status_code == 200
-        blocked = client.post(f"/api/materials/{two['material_id']}/ai-index")
-        assert blocked.status_code == 400
-        assert blocked.json()["detail"] == "revision_fingerprint_conflict"
-        task_route = client.post(f"/api/materials/{two['material_id']}/ai-index/tasks",
-                                 headers={"Idempotency-Key": "p1-4-shared-hash"})
-        assert task_route.status_code == 400
-        assert task_route.json()["detail"] == "revision_fingerprint_conflict"
-        assert client.get(f"/api/materials/{two['material_id']}/ai-index").json()["status"] == "not_indexed"
-        blocked_answer = client.post("/api/qa/ask", json={
+        assert client.post(f"/api/materials/{two['material_id']}/ai-index").status_code == 200
+        # Both show ready status
+        assert client.get(f"/api/materials/{one['material_id']}/ai-index").json()["status"] == "ready"
+        assert client.get(f"/api/materials/{two['material_id']}/ai-index").json()["status"] == "ready"
+        # Both can answer questions
+        answer_one = client.post("/api/qa/ask", json={
+            "question": QUERY, "material_ids": [one["material_id"]],
+            "retrieval_mode": "lexical", "top_k": 5,
+        })
+        assert answer_one.status_code == 200
+        answer_two = client.post("/api/qa/ask", json={
             "question": QUERY, "material_ids": [two["material_id"]],
             "retrieval_mode": "lexical", "top_k": 5,
         })
-        assert blocked_answer.status_code == 409
-        assert blocked_answer.json()["detail"] == "retrieval_not_ready"
-        # Deleting the first material does not release the fingerprint; only a
-        # purge does, which also destroys the first material's own history.
+        assert answer_two.status_code == 200
+        # Deleting one material does not affect the other
         assert client.delete(f"/api/materials/{one['material_id']}").status_code == 204
-        assert client.post(f"/api/materials/{two['material_id']}/ai-index").status_code == 400
-        assert client.post(f"/api/materials/{one['material_id']}/purge").status_code == 200
-        released = client.post(f"/api/materials/{two['material_id']}/ai-index")
-        assert released.status_code == 200
-        assert released.json()["status"] == "ready"
+        assert client.get(f"/api/materials/{two['material_id']}/ai-index").json()["status"] == "ready"
 
     with _client(root) as restarted:
         assert restarted.get(f"/api/materials/{two['material_id']}/ai-index").json()["status"] == "ready"
 
 
-def test_shared_hash_conflict_code_has_no_user_facing_message_today(tmp_path: Path):
-    """C1 已将 `revision_fingerprint_conflict` 加入 error map。
+def test_revision_fingerprint_conflict_error_mapping_exists():
+    """C1 added revision_fingerprint_conflict to the error map.
 
-    C0 记录它缺失为 P14-P1-03 的摩擦；C1 修复后，用户会看到
-    "内容指纹冲突"而非通用重试文案。
+    Even though P14-P0-05 fix prevents this conflict in normal use (materials
+    with shared content now get distinct fingerprints), the error code mapping
+    must remain for backward compatibility and edge cases.
     """
     shared = (ROOT / "app" / "static" / "js" / "api.js").read_text(encoding="utf-8")
     assert "request_failed:'请求失败，请重试'" in shared

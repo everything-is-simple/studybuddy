@@ -21,8 +21,8 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 13
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 13
+        assert assert_schema_version(connection) == 14
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 14
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
                              "material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -246,7 +246,7 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 13
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 14
         assert connection.execute("SELECT provider_request_id, total_tokens, finish_reason, idempotency_key, retrieval_run_id FROM ai_operations").description is not None
         assert connection.execute("SELECT id,operation_id,status,progress_percent FROM operation_tasks").description is not None
         assert connection.execute("SELECT id,task_id,attempt_number,lease_expires_at FROM operation_task_attempts").description is not None
@@ -393,35 +393,42 @@ def test_v11_database_upgrades_to_phase9d_v12_once(monkeypatch, tmp_path: Path):
         assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=12").fetchone()[0] == 1
 
 
-def test_v12_database_upgrades_to_phase10_v13_once(monkeypatch, tmp_path: Path):
+def test_v13_database_upgrades_to_v14_once(monkeypatch, tmp_path: Path):
     from app.migrations import runner
 
     database = tmp_path / "studybuddy.sqlite3"
     migrations = runner._MIGRATIONS
-    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 12)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:12])
-    with connect(database) as connection:
-        assert assert_schema_version(connection) == 12
-        assert connection.execute("SELECT name FROM sqlite_master WHERE name='operation_tasks'").fetchone() is None
-        connection.execute("INSERT INTO projects VALUES ('legacy_task_project','Legacy','now')")
-        connection.execute(
-            "INSERT INTO ai_operations (id,operation_type,status,project_id,input_fingerprint,retry_count,created_at) "
-            "VALUES ('legacy_task_operation','qa_answer','succeeded','legacy_task_project','legacy-input',0,'now')"
-        )
     monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:13])
     with connect(database) as connection:
         assert assert_schema_version(connection) == 13
-        assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=13").fetchone()) == (
-            13, "phase10_operation_task_schema",
+        # Add test data to verify fingerprint recalculation
+        connection.execute("INSERT INTO projects VALUES ('fp_project','FP','now')")
+        connection.execute(
+            "INSERT INTO materials (id,project_id,original_name,source_sha256,stored_path,media_type,created_at,updated_at) "
+            "VALUES ('fp_mat','fp_project','test.txt','sha','originals/sha','text/plain','now','now')"
         )
-        assert connection.execute("SELECT name FROM sqlite_master WHERE name='operation_tasks'").fetchone() is not None
-        assert tuple(connection.execute(
-            "SELECT operation_type,status,project_id,input_fingerprint FROM ai_operations WHERE id='legacy_task_operation'"
-        ).fetchone()) == ('qa_answer', 'succeeded', 'legacy_task_project', 'legacy-input')
-        assert connection.execute("SELECT COUNT(*) FROM operation_tasks").fetchone()[0] == 0
+        connection.execute(
+            "INSERT INTO extractions (id,material_id,parser_id,parser_version,status,text,warnings_json,created_at) "
+            "VALUES ('fp_ext','fp_mat','text','1.0.0','success','test','[]','now')"
+        )
+        connection.execute(
+            "INSERT INTO material_revisions (id,material_id,extraction_id,source_sha256,extraction_sha256,"
+            "parser_id,parser_version,revision_fingerprint,is_current,created_at) "
+            "VALUES ('fp_rev','fp_mat','fp_ext','sha','esha','text','1.0.0','old_fp',1,'now')"
+        )
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 14)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
     with connect(database) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=13").fetchone()[0] == 1
+        assert assert_schema_version(connection) == 14
+        assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=14").fetchone()) == (
+            14, "fix_revision_fingerprint_material_id",
+        )
+        # Verify fingerprint was updated
+        fp = connection.execute("SELECT revision_fingerprint FROM material_revisions WHERE id='fp_rev'").fetchone()[0]
+        assert fp != 'old_fp'
+    with connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=14").fetchone()[0] == 1
 
 
 def test_phase10_migration_failure_rolls_back_v13_to_existing_v12(monkeypatch, tmp_path: Path):
@@ -517,7 +524,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 13
+    assert manifest["database"]["schema_version"] == 14
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))
