@@ -16,7 +16,7 @@
 |---|---|---|---|
 | `index.html` | 应用入口、导航、能力说明 | `browser_frontend_static_baseline.spec.js`、`browser_frontend_shared_layer.spec.js` | baseline |
 | `today.html` | 计划摘要、任务、来源状态和材料入口 | `browser_static_core.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
-| `materials.html` | 导入、搜索、分页、删除、恢复、格式拒绝提示 | `browser_static_core.spec.js`、`browser_material_management.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
+| `materials.html` | 导入、搜索、分页、删除、恢复、格式拒绝提示、批量 ZIP 导出 | `browser_static_core.spec.js`、`browser_material_management.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js`、`browser_p1_4_c3_batch_export.spec.js` | covered |
 | `material-detail.html` | 详情、解析解释、导出、索引、citation 定位、问答跳转 | `browser_static_core.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_1_material_qa_migration.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
 | `qa.html` | 索引、同步问答、history、citation 跳转 | `browser_static_core.spec.js`、`browser_qa.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_4_real_input_restart.spec.js` | covered |
 | `plans.html` | 列表、详情、状态/来源读取 | `browser_frontend_matrix.spec.js`、`browser_frontend_state_matrix.spec.js`、`browser_learning_pages.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
@@ -41,7 +41,6 @@
 以下能力均已在能力矩阵标记为 `legacy_only`、`not_exposed` 或 `a3_pages`：
 
 - 计划、笔记、卡片、题目和练习的尚未迁移写操作；
-- 材料批量导出（后端 `/api/materials/export` 存在，正式 `/app` 页面未提供控件；P1-4 台账 P14-P0-02/P2-01）；
 - 全局任务列表；
 - Provider 配置写入、密钥保存和连接测试；
 - capture archive；

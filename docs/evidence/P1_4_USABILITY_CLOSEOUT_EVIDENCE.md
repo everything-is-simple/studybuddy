@@ -161,4 +161,17 @@ C0 切片完成：真实 PDF/DOCX/PPTX/MD/中文长名 TXT 的完整链路已实
 - **Focused 结果**：`C:/miniconda/py310/python.exe -m pytest backend/tests/test_p1_4_c2_explainability.py backend/tests/test_p1_4_restart_durability.py::test_plan_item_source_state_lives_on_source_links_not_items -q` 为 `5 passed`；完整后端分组回归在 C2 修复旧事实断言后，已验证分组 `488 passed, 3 skipped`（全量命令因 10 分钟窗口超时，最终全量数字未重宣称）。source-size 与 `audit-frontend-contract.py --strict` 均通过，后者 `0 findings`。
 - **安全检查（L2）**：C2 页面和真实 DOM 断言无 `stored_path`、路径、SQL、traceback、`api_key`；导入拒绝列表只渲染 `safeError` 用户文案；没有新增 API、schema、原始 provider 响应或正文泄露路径。
 
-C2 结论：`implemented / scoped browser-pass`，来源状态真实路径达到 L2/L3（含正常重启回读），解析提示与拒绝提示达到 L2；真实 OCR、通用解析准确率、多进程、强杀恢复和新空目录 backup/restore 在本切片为 `not_verified`。下一步建议进入 C3 `/app` 批量导出，但需先确认它是否属于基本日常链。
+C2 结论：`implemented / scoped browser-pass`，来源状态真实路径达到 L2/L3（含正常重启回读），解析提示与拒绝提示达到 L2；真实 OCR、通用解析准确率、多进程、强杀恢复和新空目录 backup/restore 在本切片为 `not_verified`。
+
+### C3 `/app` 批量导出（L2/L3，P2 可用性补全）
+
+C3 复用既有 `POST /api/materials/export`，未新增或修改 API、schema、响应字段、ZIP 布局、状态码或幂等语义。正式 `/app/materials.html` 新增当前页选择、已选数量，以及“原件 ZIP / 文本 ZIP / 全部 ZIP”三种操作。选择范围只保留当前可见 active 页；筛选、翻页、刷新、上传后刷新和切换回收站都会清空，避免导出不可见材料。无选择和导出中按钮禁用，失败后恢复并允许重试。
+
+验证工具与环境：`C:/miniconda/py310/python.exe`、本地 Uvicorn、Playwright Chromium、隔离 `H:/studybuddy-test/runs/p1-4-c3-batch-export` data root。命令 `npx playwright test backend/tests/browser_p1_4_c3_batch_export.spec.js --workers=1 --reporter=line` 结果 `2 passed`：
+
+1. 从正式 `/app/materials.html` 选择中文 TXT 与 Markdown，分别下载并解压三种 ZIP，核对 entry 路径、中文文件名及正文；筛选后选择清零；正常停服重启后重新选择并再次导出 4 个 entries。该路径建立 L2，并对持久材料的重启后再次导出建立限定 L3 证据。
+2. 模拟 `413 export_too_large`，页面显示安全可操作文案，按钮恢复，解除故障后重试成功；删除材料并切到回收站后不显示批量工具栏或 checkbox。DOM 不出现 raw error code、`stored_path`、路径、SQL、traceback 或 `api_key`。
+
+Focused gate：`test_p1_4_c3_batch_export.py`、`test_material_export.py`、`test_api_input_boundaries.py` 和 governance 共 `29 passed`；关联 `/app` browser `13 passed`；C3 重复 browser gate `4 passed`，其中失败路径在同一事件循环双击并断言只发一个请求；source-size、diff check 和 `audit-frontend-contract.py --strict`（0 findings）通过。完整 backend 为 `504 passed, 3 skipped`。最新完整 Chromium 为 `150 passed, 4 skipped, 1 failed`：唯一失败是 C3 未修改的 P1-2 计划成功文案被异步“计划已加载”覆盖；该 P1-2 spec 隔离重复两轮为 `6 passed`。因此 C3 自身为 browser-pass，但不把完整 Chromium 记为全绿。C3 归类为 P2 可用性补全，不再把它描述为当前每日学习链的 P0 阻断。
+
+C3 的 `not_verified` 边界：256 MiB 极限真实 ZIP、200 项上限的性能/内存、磁盘满、下载中浏览器/服务强杀、Windows ACL、网络盘、多 worker、backup→verify→新空目录 restore 均未在本切片验证。下一步进入 C4 时应按 P2-02~P2-06 分别冻结 contract，不把规模、任务列表、source-link、cram 和跨天趋势混成一次改动。

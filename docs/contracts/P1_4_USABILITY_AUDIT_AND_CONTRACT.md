@@ -297,7 +297,7 @@
 | ID | 现象 | 层 | 影响剧本步骤 | 分级 | 修复动作 | 验证方式 |
 |---|---|---|---|---|---|---|
 | P14-P0-01 | 真实混合资料（尤其复杂 DOCX、图片/扫描 PDF、图片页 PPTX）尚未证明能完成解析→索引→检索→citation 回原文；当前 gate fixture 不能代表真实输入。 | L2/L3 | B1-1~B1-5、B2-1~B2-6 | P0 | 先建立真实、脱敏、可重复的样本与验收剧本；只修复被实测证明的 parser/链路断点，不扩大格式承诺。 | 隔离 data root；逐种真实文件执行导入、详情、索引、检索、citation 定位；记录每环产出和失败码；停服重启后重新打开页面。 |
-| P14-P0-02 | `/app` 没有批量材料导出控件，用户完成入库后若要导出一批原件/文本必须回退 `/legacy` 或使用后台接口。 | L2 | B1-6 | P0 | 若确认批量导出属于基本日常链，在不改已有 export contract 的前提下迁移一个正式 `/app` 操作入口；否则把该边界明确降为 P2/兼容能力。 | Playwright 从 `/app/materials.html` 选择多项并导出；验证 ZIP 内容、失败重试、隐私边界及重启后的材料可导出。 |
+| P14-P0-02 | `/app` 原无批量材料导出控件，用户必须回退 `/legacy` 或使用后台接口。 | L2/L3 | B1-6 | 降为 P2 后由 C3 关闭 | **C3 已修复**：不改 export contract，在正式 `/app/materials.html` 提供当前页多选及原件/文本/全部 ZIP；筛选、翻页、刷新和回收站会清空选择，避免隐式导出不可见材料。 | `browser_p1_4_c3_batch_export.spec.js` 从 `/app` 验证三种 ZIP、中文名/内容、失败重试、回收站、正常重启后再次导出，2 passed；focused backend/static/governance 29 passed。 |
 | P14-P0-03 | `/app` 领域写操作虽有局部 browser evidence，但本次没有覆盖每个已达写操作的“写入→停服→重启→页面回读”；整体不能证明每天使用的数据状态可复现。 | L3 | B1-2、B2-6、B3-3~B3-7、B4-3~B4-5、B5-6~B5-7 | P0 | 建立按写操作族拆分的重启验收矩阵；发现实际丢失或状态错乱后，只修复对应最小边界。未发现问题前不得为了“补测试”改业务代码。 | 每族使用独立临时 data root，启动两次服务；第二次通过对应 `/app` 页面读取 id/title/status/source status/progress/result；记录 `durable` 或 `NOT_DURABLE`。 |
 | P14-P0-04 | `/app` 的完整理解链对真实 Provider、真实格式和 source lifecycle 的组合没有一次完整 real-pass；回答成功不等于 citation 真定位、重启后仍可读。 | L2/L3 | B2-2~B2-6 | P0 | 先做真实 Provider/测试替身的链路验收；若断点是页面字段漂移或路由错误，再做最小修复；不以 fake/demo 结果扩大声明。 | 真实或明确标注的 Provider 配置下，索引→提问→线程→citation→原文 offset；删除/purge 后检查 `source_deleted/source_unavailable`；重启复读。 |
 | P14-P0-05 | 同内容不同文件名的第二个材料无法建立索引：`/api/materials/{id}/ai-index` 与 `/ai-index/tasks` 固定返回 `400 revision_fingerprint_conflict`，该材料因此无法用于检索/问答/citation（`/api/qa/ask` 返回 `409 retrieval_not_ready`）；删除第一个材料不释放指纹，只有 purge 才释放。 | L2/L3 | B1-2、B2-2~B2-6 | P0 | 需要单独决定 revision 指纹契约：要么改为每材料一条 revision（涉及连续 migration 与回滚），要么在导入层明确共享 revision 并保证两份材料可检索。C0 已把当前真相固定为测试，不在 C0 内改行为。 | 已有：`test_shared_hash_second_material_cannot_be_indexed_today`。修复时需补：migration/rollback、两份材料各自可检索与 citation 定位、重启复读、backup/restore 不自动修复。 |
@@ -318,7 +318,7 @@
 
 | ID | 现象 | 层 | 影响剧本步骤 | 分级 | 修复动作 | 验证方式 |
 |---|---|---|---|---|---|---|
-| P14-P2-01 | `/app` 没有批量导出正式入口（若 P0-02 经评审不视为基本链，则在此保留）。 | L2 | B1-6 | P2 | 迁移现有 `/api/materials/export` 到正式页，复用既有 ZIP/隐私 contract。 | `/app` 多选导出 browser spec + export backend regression。 |
+| P14-P2-01 | `/app` 原没有批量导出正式入口。 | L2/L3 | B1-6 | P2，C3 已关闭 | 正式页已复用 `/api/materials/export` 的既有 ZIP/隐私 contract，支持当前页选择、三种导出模式、安全失败和重试。 | C3 Chromium 2 passed；关联 browser 13 passed；`test_material_export.py` 与输入边界回归通过。 |
 | P14-P2-02 | `tasks.html` 只有已知 task id 的读取、取消、重试，没有全局任务列表、筛选和排序。 | L2 | B1-1、B2-2 | P2 | 先冻结全局 task-list 公共 contract，再实现页面；不得用前端扫描或 mock 伪造列表。 | 新 contract 的 API 输入边界、分页/筛选、页面空/失败/重试和真实 task 流程。 |
 | P14-P2-03 | `/app` 没有完整手工 source-link 工作区；模块/学习项的 source linking 主要依赖上下文或后端细粒度 route。 | L2 | B2-6、B5-3 | P2 | 明确 source link 的用户场景和安全字段后再接正式控件；复用 revision/chunk/span/citation contract。 | 页面创建/删除 link 后刷新、来源生命周期刷新、无越权材料/路径泄露。 |
 | P14-P2-04 | cram-goals / cram sessions 仍无正式 `/app` 页面；当前普通 practice 路径不能代表冲刺学习工作流。 | L2 | B3-7、B4-4 | P2 | 单独立项迁移 cram workflow，冻结页面/状态/幂等/隐私 contract。 | `/app` 完整 cram browser path、重启回读、错误/过期/来源生命周期。 |
@@ -364,6 +364,6 @@
 | C0 真实输入与重启复现证据补齐 | `implemented + scoped real-pass` | 不修改 `backend/app/`；新增 `test_p1_4_real_input_chain.py`、`test_p1_4_restart_durability.py`、`browser_p1_4_real_input_restart.spec.js`。真实 PDF/DOCX/PPTX/MD/中文长名 TXT 全链已实测；`/app` 主要写操作族重启后均 `durable`；新发现 P14-P0-05。证据：[`../evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`](../evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md)。 |
 | C1 幂等与反馈 | `implemented / backend-pass + browser-pass` | P14-P1-01: review.html 添加 Idempotency-Key；P14-P1-02: 验证 5 个关键详情页已有 generation guard（note-detail, plan-detail, practice-session, practice-result, review），其他页面未强制添加；P14-P1-03: 错误码映射从 20 个扩充到 41 个，覆盖 C0 发现的所有未映射码。Focused backend 5 passed（`test_p1_4_c1_idempotency_feedback.py`）。完整基线：backend 491 passed, 3 skipped；browser 147 passed, 4 skipped。 |
 | C2 来源与解析可解释性 | `implemented / backend-pass + browser-pass` | P14-P1-04/P1-05/P1-06；`test_p1_4_c2_explainability.py` 4 passed，真实 Chromium 2 passed，关联 browser 矩阵 7 passed；L2/L3 范围和 not_verified 边界见 evidence 文档 |
-| C3 `/app` 批量导出 | 未开始 | P14-P0-02 或 P2-01 |
-| C4 规模与完整工作流 | 未开始 | P14-P2-02~P2-06 |
-| P14-P0-05 revision 指纹修复 | 待单独决策 | 需连续 migration 与 API 决定，不得在可用性切片中附带完成 |
+| C3 `/app` 批量导出 | `implemented / backend-pass + browser-pass` | P14-P0-02/P2-01 按 P2 可用性补全关闭；复用既有 API，无 schema/API 变更。C3 Chromium 2 passed，关联 browser 13 passed，focused backend/static/governance 29 passed；L2/L3 与 not_verified 边界见 evidence。 |
+| C4 规模与完整工作流 | 未开始 | P14-P2-02~P2-06（P2-01 已由 C3 关闭） |
+| P14-P0-05 revision 指纹修复 | 已完成 | schema v14 在指纹中加入 material_id；独立 migration/rollback、共享内容索引和依赖数据保留测试已通过。 |

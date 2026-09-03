@@ -20,7 +20,7 @@
 | `index.html` | 产品入口、导航、能力边界说明 | `static_verified` | 应用壳和移动导航由 shared-layer browser tests 覆盖；首页聚合仍未批准。 |
 | `today.html` | 活动计划节奏摘要、计划项读取、材料跳转 | `static_verified` | `browser_static_core.spec.js`；C2 从 plan `source_links` 映射来源状态，非 valid 来源禁用材料跳转；真实 valid→source_deleted→restart 为 L2/L3 scoped evidence。 |
 | `materials.html` | 导入、搜索、分页、删除、恢复、回收站 | `static_verified` | static-core/material-management browser tests；P1-4 C0 另以真实 PDF/DOCX/PPTX/MD/中文长名 TXT 验证导入→详情→索引→重启回读；C2 对 DOC/PPT/RTF/XML 提供转换/拒绝提示（`browser_p1_4_c2_explainability.spec.js`）。 |
-| `materials.html` | 批量导出（原件/文本 ZIP） | `legacy_only` | 后端 `/api/materials/export` 存在且有回归证据，但正式 `/app` 页面没有导出控件；P1-4 台账记为 P14-P0-02/P2-01，未迁移前不得写成 `/app` 已支持。 |
+| `materials.html` | 当前页多选、批量导出原件/文本/全部 ZIP | `static_verified` | P1-4 C3 复用既有 `/api/materials/export`；正式 `/app` Chromium 验证三种 ZIP、中文名/内容、失败重试、回收站边界和正常重启后再次导出（`browser_p1_4_c3_batch_export.spec.js`，2 passed）。 |
 | `material-detail.html` | 读取材料详情、下载原件/文本、进入问答 | `static_verified` | static-core browser tests；C2 详情显示解析状态、解析器、warning 和空/失败/拒绝的下一步提示。 |
 | `material-detail.html` | 从详情触发索引 | `static_verified` | P1-1 已迁移「建立 AI 索引」按钮；P1-4 C0 以真实 PDF 验证索引建立并在重启后仍显示已建立。 |
 | `qa.html` | 材料范围、同步问答、材料级索引、history | `static_verified` | static-core/QA browser tests；同步请求不是后台任务。 |
