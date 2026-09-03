@@ -175,3 +175,27 @@ C3 复用既有 `POST /api/materials/export`，未新增或修改 API、schema�
 Focused gate：`test_p1_4_c3_batch_export.py`、`test_material_export.py`、`test_api_input_boundaries.py` 和 governance 共 `29 passed`；关联 `/app` browser `13 passed`；C3 重复 browser gate `4 passed`，其中失败路径在同一事件循环双击并断言只发一个请求；source-size、diff check 和 `audit-frontend-contract.py --strict`（0 findings）通过。完整 backend 为 `504 passed, 3 skipped`。最新完整 Chromium 为 `150 passed, 4 skipped, 1 failed`：唯一失败曾是 C3 未修改的 P1-2 计划成功文案被异步“计划已加载”覆盖。后续独立根因修复确认：点击已选计划会发出冗余 detail/rhythm 请求，旧 `selectPlan()` 可晚于 mutation 刷新并覆盖成功反馈。`plans.html` 现对当前计划重复选择 no-op，并以独立 selection/mutation generation 阻止过期选择写状态；确定性延迟响应、P1-2 和 Phase 9A 组合重复门禁为 `35 passed`。修复后的完整 Chromium 为 `152 passed, 4 skipped`，完整 backend 为 `506 passed, 3 skipped`；4/3 个 skip 均为既有 opt-in real smoke。C3 归类为 P2 可用性补全，不再把它描述为当前每日学习链的 P0 阻断。
 
 C3 的 `not_verified` 边界：256 MiB 极限真实 ZIP、200 项上限的性能/内存、磁盘满、下载中浏览器/服务强杀、Windows ACL、网络盘、多 worker、backup→verify→新空目录 restore 均未在本切片验证。下一步进入 C4 时应按 P2-02~P2-06 分别冻结 contract，不把规模、任务列表、source-link、cram 和跨天趋势混成一次改动。
+
+### C4-0 拆分与 C4-1 `/app` cram 冲刺工作流（L2/L3）
+
+C4-0 将原“规模与完整工作流”拆为 C4-1 cram、C4-2 source-link、C4-3 task-list、C4-4 周趋势、C4-5 规模测量和最终 C4-6 backup/restore gate。本文本次只记录 C4-1；没有实施或关闭 C4-2～C4-6。
+
+C4-1 在 `practice.html` 增加冲刺目标创建、列表、详情、`draft -> active -> completed`、归档、ready/valid 题目选择与 session 创建。`practice-session.html` 继续复用既有 start/submit/finish；URL 携带 `cram_goal_id`，`practice-result.html` 因此读取既有 cram result endpoint。普通 session 不携带该参数，继续读取普通 result endpoint。未新增或修改 API、migration、schema、后端状态机或错误码。
+
+页面契约把过去的 `target_date` 表达为派生的“已过目标日期”：历史目标仍可见、可归档，但不提供激活或新建 session；不会写入伪造状态或启动自动排程。选题仅包含 `ready` 且全部 citation 为 `valid` 的题目；无引用的 user-created ready 题仍允许。写操作使用共享 `Idempotency-Key` 与 busy guard；修复了 busy 结束时误启用原本因空题而禁用按钮的问题，失败后恢复原始业务禁用状态。
+
+可复现结果：
+
+```text
+npx playwright test backend/tests/browser_p1_4_c4_cram.spec.js --workers=1 --reporter=line --timeout=60000
+2 passed
+
+C:/miniconda/py310/python.exe -m pytest backend/tests/test_phase9c_api.py backend/tests/test_phase9c_domain.py backend/tests/test_phase9c_source_lifecycle.py backend/tests/test_phase9c_backup_restore.py -q
+21 passed
+```
+
+Chromium 第一条从正式 `/app` 创建目标、激活、选择题目、创建 cram session、开始、提交、结束、读取 cram result、完成目标；正常停服重启后从目标列表与 session 列表回读，并再次进入结果页。随后创建普通 practice session，确认结果页仍走普通路径。第二条覆盖已有空题库、API 历史过期目标、真实 material/index/citation 题在 source delete 后从候选中移除、同一事件循环双击只发一个请求、500 安全失败后重试成功。DOM 断言不出现 `answer_key`、`answer_json`、traceback、`stored_path` 或本地路径。
+
+最终回归：完整 backend 为 `506 passed, 3 skipped`；完整 Chromium 为 `154 passed, 4 skipped`。3/4 个 skip 均为既有 opt-in real ASR/Provider smoke。相关组合 Chromium（C4-1、普通 practice、推荐、visual）为 `14 passed`；后端 Phase 9C + contract/governance 组合为 `39 passed`；source-size、`git diff --check` 与前端 contract audit（0 findings）通过。
+
+C4-1 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-04。L3 仅指同一 local single-process、SQLite、本地磁盘 data root 上正常停服重启后的目标/session/result 回读；强杀、断电、多 worker、跨时区日期显示、backup→verify→新空目录 restore、自动提醒/选题和真实规模仍为 `not_verified`，并分别留给后续切片或明确 non-goal。
