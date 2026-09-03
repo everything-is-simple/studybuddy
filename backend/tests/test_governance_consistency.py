@@ -107,7 +107,7 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "Phase 9A" in status
     assert "v9" in status
     assert "contracts/PHASE9A_DOMAIN_CONTRACT.md" in status
-    assert "Current schema version: **13**." in migration_doc
+    assert "Current schema version: **14**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
     assert "10 | phase9b_material_learning_schema" in migration_doc
     assert "11 | phase9c_exercise_feedback_schema" in migration_doc
@@ -244,6 +244,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "P1-3-MANUAL-TEST.md",
         "P1-3-STATUS.md",
         "P1-3-SUMMARY.md",
+        "P14_P0_05_COMPLETED.md",
     }
     assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
     for directory in ("contracts", "evidence", "operations", "archive"):
