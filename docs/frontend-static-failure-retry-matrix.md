@@ -15,7 +15,7 @@
 | 静态页面 | 静态页已暴露能力 | failure/retry/安全证据 | 状态 |
 |---|---|---|---|
 | `index.html` | 应用入口、导航、能力说明 | `browser_frontend_static_baseline.spec.js`、`browser_frontend_shared_layer.spec.js` | baseline |
-| `today.html` | 计划摘要、任务、来源状态和材料入口 | `browser_static_core.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
+| `today.html` | 计划摘要、任务、近七日趋势、来源状态和材料入口 | `browser_static_core.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_p1_4_c2_explainability.spec.js`、`browser_p1_4_c4_4_weekly_trend.spec.js` | covered |
 | `materials.html` | 导入、搜索、分页、删除、恢复、格式拒绝提示、批量 ZIP 导出 | `browser_static_core.spec.js`、`browser_material_management.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js`、`browser_p1_4_c3_batch_export.spec.js` | covered |
 | `material-detail.html` | 详情、解析解释、导出、索引、citation 定位、问答跳转 | `browser_static_core.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_1_material_qa_migration.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
 | `qa.html` | 索引、同步问答、history、citation 跳转 | `browser_static_core.spec.js`、`browser_qa.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_4_real_input_restart.spec.js` | covered |

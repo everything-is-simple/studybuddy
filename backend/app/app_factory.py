@@ -61,7 +61,7 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          delete_plan_item_source_link, get_study_source_links, list_study_source_candidates,
                          refresh_study_source_links,
                          get_rhythm_settings, save_rhythm_settings,
-                         rhythm_summary, list_rhythm_allocations, create_rhythm_allocation,
+                         rhythm_summary, study_weekly_trend, list_rhythm_allocations, create_rhythm_allocation,
                          update_rhythm_allocation, delete_rhythm_allocation, list_notes, get_note,
                          create_user_note, update_note, update_note_blocks, create_note_block,
                          update_note_block, delete_note_block, link_note_module, unlink_note_module,

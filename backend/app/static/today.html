@@ -28,6 +28,7 @@
 <h2>今日概览</h2>
 <div id="summary-status" class="notice" role="status" aria-live="polite">正在加载今日概览...</div>
 <div id="summary" class="rhythm-summary" hidden></div>
+<div id="weekly-status" class="notice mt-16" role="status" aria-live="polite">正在加载近七天趋势…</div><div id="weekly-trend" class="rhythm-summary" hidden></div>
 </section>
 
 <section class="card mt-24" data-od-id="today-tasks">
@@ -45,6 +46,7 @@ const pageRequest=sbApi.setPageScope('today');
 const summaryStatus=document.querySelector('#summary-status');
 const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
+const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
 const tasks=document.querySelector('#tasks');
 let loadGeneration=0;
 
@@ -90,6 +92,8 @@ summaryStatus.textContent=sbApi.safeError(e)
 }
 }
 
+async function loadWeeklyTrend(generation){try{const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});if(generation!==loadGeneration)return;const plans=Array.isArray(plansData)?plansData:plansData.items||[];const plan=plans.find(item=>item.status==='active')||plans[0];if(!plan){weeklyStatus.textContent='暂无周趋势数据';return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){weeklyStatus.className='notice warn';weeklyStatus.textContent=sbApi.safeError(e)}}
+
 async function loadTasks(generation){
 try{
 const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
@@ -134,7 +138,7 @@ taskStatus.textContent=sbApi.safeError(e)
 }
 
 const generation=++loadGeneration;
-await Promise.all([loadSummary(generation),loadTasks(generation)])
+await Promise.all([loadSummary(generation),loadWeeklyTrend(generation),loadTasks(generation)])
 })();
 </script>
 </body>
