@@ -114,15 +114,16 @@ title.textContent=text(item.title||item.item_title||'未命名任务');
 meta.append(title);
 const source=document.createElement('div');
 source.className='task-source';
-const sourceStatus=text(item.source_link_status||item.source_status||'valid');
+const sourceStatus=sbState.sourceForItem(item,plan.source_links);
 source.textContent=`来源状态: ${sbState.source(sourceStatus)}`;
 meta.append(source);
 li.append(meta);
+const materialId=sbState.materialForItem(item,plan.source_links);
 const action=document.createElement('a');
 action.className='btn';
-action.href=item.material_id?`/app/material-detail.html?material=${encodeURIComponent(item.material_id)}`:'#';
+action.href=materialId?`/app/material-detail.html?material=${encodeURIComponent(materialId)}`:'#';
 action.textContent=item.status==='completed'?'查看':'开始';
-if(!item.material_id)action.style.pointerEvents='none';
+if(!materialId||sourceStatus!=='valid'){action.setAttribute('aria-disabled','true');action.style.pointerEvents='none';}
 li.append(action);
 tasks.append(li)
 })

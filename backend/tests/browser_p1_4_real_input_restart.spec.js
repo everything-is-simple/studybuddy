@@ -174,9 +174,8 @@ test('P1-4 C0 unsupported real formats stay honest in the /app import result', a
   await expect(page.locator('#items li')).toHaveCount(2, {timeout: 20000});
   await expect(page.locator('#items')).toContainText('legacy.doc');
   await expect(page.locator('#items')).toContainText('已拒绝');
-  // Recorded current truth (P14-P1-03/P14-P1-06): the failure list still shows
-  // the raw backend code instead of user-facing guidance. It is safe (no path,
-  // SQL or traceback) but not yet explainable.
-  await expect(page.locator('.upload-failures')).toContainText('requires_converter');
+  // C2 maps parser rejection codes to actionable user-facing guidance.
+  await expect(page.locator('.upload-failures')).toContainText('请转换为 PDF 或 DOCX');
+  await expect(page.locator('.upload-failures')).not.toContainText('requires_converter');
   await expect(page.locator('body')).not.toContainText(/traceback|H:\\|SELECT |api_key|stored_path/i);
 });

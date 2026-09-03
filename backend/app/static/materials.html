@@ -27,9 +27,9 @@
 <section class="card" data-od-id="materials-upload">
 <h2>导入材料</h2>
 <div class="upload-area" id="upload-area" tabindex="0" role="button" aria-label="点击或拖放文件以导入">
-<input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.doc,.docx,.pptx">
+<input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.docx,.pptx">
 <p><strong>点击选择文件</strong>或拖放到此处</p>
-<p class="muted">支持 PDF、TXT、Markdown、Word、PowerPoint</p>
+<p class="muted">支持 PDF、UTF-8 TXT、Markdown、DOCX、PPTX。DOC、PPT、RTF 请先转换为 PDF 或 DOCX。</p>
 </div>
 <div class="mt-12">
 <label>
@@ -145,7 +145,8 @@ const details=document.createElement('ul');
 details.className='upload-failures';
 failed.forEach(item=>{
 const li=document.createElement('li');
-li.textContent=`${item.original_name}: ${item.error_code||'失败'}`;
+const failure=item.error_code?sbApi.safeError({code:item.error_code}):'导入失败，请重试';
+li.textContent=`${item.original_name}: ${failure}`;
 details.append(li)
 });
 uploadStatus.append(details)
