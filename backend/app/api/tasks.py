@@ -3,6 +3,21 @@ from __future__ import annotations
 
 def register_routes(app, context: dict[str, object]) -> None:
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
+    @app.get("/api/tasks")
+    def task_list(status: str | None = None, task_kind: str | None = None,
+                  operation_type: str | None = None, limit: int = 25,
+                  offset: int = 0) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return list_operation_tasks_public(connection, project_id=app.state.config.project_id,
+                                                   status=status, task_kind=task_kind,
+                                                   operation_type=operation_type, limit=limit, offset=offset)
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=400, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="task_list_failed") from None
+
     @app.get("/api/tasks/{task_id}")
     def task_status(task_id: str) -> dict[str, object]:
         if not task_id or len(task_id) > 120:

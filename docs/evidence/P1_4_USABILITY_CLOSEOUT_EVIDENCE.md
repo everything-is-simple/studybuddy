@@ -204,4 +204,10 @@ C4-2 在 `plans.html` 提供模块/学习项 owner 选择、当前资料 chunk �
 
 验证：`test_p1_4_c4_2_source_links.py` `2 passed`；`browser_p1_4_c4_2_source_links.spec.js` 已覆盖正式 `/app` 添加/删除/刷新、来源生命周期、失败安全重试与归档保护。源码大小、`git diff --check` 与前端 contract audit `0 findings` 通过。C4-2 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-03。L3 限定正常停服重启/同一 SQLite data root；backup/restore 专项、强杀、多 worker 与规模仍未验证。
 
+### C4-3 task-list contract（API + `/app` static）
+
+C4-3 冻结并实现 `GET /api/tasks`：仅返回当前 project 的脱敏公共 task rows，支持 `status`、`task_kind`、`operation_type` 筛选，`limit` 默认 25、范围 1–100，`offset >= 0`，按 `created_at,id` 倒序，并返回 `items/total/limit/offset`。无 schema/migration 变更；既有单任务 read/cancel/retry 路径保持不变。`tasks.html` 已从“待实现”提示切换为真实列表、状态筛选、空态、失败提示、刷新和详情入口，并保留原有详情动作。
+
+验证：`test_p1_4_c4_3_task_list.py` `1 passed`；`browser_a4.spec.js` 与 `browser_frontend_system_matrix.spec.js` 组合 `11 passed`；frontend contract audit `0 findings`，source-size 与 `git diff --check` 通过。既有 browser fixture 仍覆盖任务状态标签及详情动作；C4-3 的正式真实任务列表 success-path 尚未单独加入专用 Chromium fixture，因此当前结论为 `implemented / scoped API+static`，不是完整 L3 声明。C4-4~C4-6 未实施。
+
 C4-1 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-04。L3 仅指同一 local single-process、SQLite、本地磁盘 data root 上正常停服重启后的目标/session/result 回读；强杀、断电、多 worker、跨时区日期显示、backup→verify→新空目录 restore、自动提醒/选题和真实规模仍为 `not_verified`，并分别留给后续切片或明确 non-goal。

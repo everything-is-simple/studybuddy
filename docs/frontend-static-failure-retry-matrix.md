@@ -33,7 +33,7 @@
 | `review.html` | 错题/详情、复盘、标记、反馈、redo、归档 | `browser_practice_workflow.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `reports.html` | 脱敏报告列表读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `settings.html` | Provider/系统就绪只读状态 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
-| `tasks.html` | 单任务 read/cancel/retry | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js` | covered |
+| `tasks.html` | 全局列表/筛选/分页、单任务 read/cancel/retry | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js`、`test_p1_4_c4_3_task_list.py` | covered |
 | `settings-provider.html` | capabilities/readiness 只读 | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js` | covered |
 
 ## 非静态页操作边界

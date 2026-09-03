@@ -43,9 +43,9 @@
 <div class="filters">
 <select id="status-filter" aria-label="状态筛选">
 <option value="">全部状态</option>
-<option value="pending">等待中</option>
+<option value="queued">等待中</option>
 <option value="running">运行中</option>
-<option value="success">已完成</option>
+<option value="succeeded">已完成</option>
 <option value="failed">失败</option>
 <option value="cancelled">已取消</option>
 </select>
@@ -82,6 +82,7 @@ const info=document.querySelector('#info');
 const statusFilter=document.querySelector('#status-filter');
 const applyFilters=document.querySelector('#apply-filters');
 const refreshBtn=document.querySelector('#refresh-btn');
+let listGeneration=0;let listBusy=false;
 
 const taskDetailSection=document.querySelector('#task-detail-section');
 const detailState=document.querySelector('#detail-state');
@@ -102,7 +103,7 @@ loadTaskDetail(taskId);
 pollTimer=setInterval(()=>loadTaskDetail(taskId),3000);
 window.addEventListener('pagehide',()=>clearInterval(pollTimer),{once:true})
 }else{
-state.textContent='当前无全局任务列表'
+loadTaskList();
 }
 
 async function loadTaskDetail(id){
@@ -144,22 +145,23 @@ card.append(header);
 const dl=document.createElement('dl');
 dl.className='task-meta';
 
-addMeta(dl,'任务类型',text(data.kind)||'未知');
+addMeta(dl,'任务类型',text(data.task_kind)||text(data.operation_type)||'未知');
 addMeta(dl,'状态',sbState.label(data.status));
 if(data.created_at)addMeta(dl,'创建于',formatDate(data.created_at));
 if(data.started_at)addMeta(dl,'开始于',formatDate(data.started_at));
-if(data.completed_at)addMeta(dl,'完成于',formatDate(data.completed_at));
+if(data.finished_at)addMeta(dl,'完成于',formatDate(data.finished_at));
 if(data.error_code)addMeta(dl,'错误码',text(data.error_code));
-if(data.retries)addMeta(dl,'重试次数',String(data.retries));
+if(data.retry_count!=null)addMeta(dl,'重试次数',String(data.retry_count));
 
 card.append(dl);
 
-if(data.progress!=null&&data.progress>=0&&data.progress<=100){
+if(data.progress_percent!=null&&data.progress_percent>=0&&data.progress_percent<=100){
+const progress=data.progress_percent;
 const progressBar=document.createElement('div');
 progressBar.className='progress-bar';
 const progressFill=document.createElement('div');
 progressFill.className='progress-fill';
-progressFill.style.width=data.progress+'%';
+progressFill.style.width=progress+'%';
 progressFill.setAttribute('role','progressbar');progressFill.setAttribute('aria-valuemin','0');progressFill.setAttribute('aria-valuemax','100');progressFill.setAttribute('aria-valuenow',String(data.progress));
 progressBar.append(progressFill);
 card.append(progressBar);
@@ -167,7 +169,7 @@ card.append(progressBar);
 const progressLabel=document.createElement('p');
 progressLabel.className='muted';
 progressLabel.classList.add('item-meta');
-progressLabel.textContent=`进度：${data.progress}%`;
+progressLabel.textContent=`进度：${progress}%`;
 card.append(progressLabel)
 }
 
@@ -195,13 +197,20 @@ card.append(actions);
 taskDetail.append(card)
 }
 
+async function loadTaskList(){
+const run=++listGeneration;state.textContent='加载中…';error.hidden=true;tasks.replaceChildren();
+try{const params=new URLSearchParams();if(statusFilter.value)params.set('status',statusFilter.value);const data=await sbApi.json('/api/tasks?'+params,{signal:pageRequest.signal});if(run!==listGeneration)return;const items=Array.isArray(data.items)?data.items:[];state.textContent=items.length?`共 ${data.total||0} 个任务`:'当前无全局任务列表';if(!items.length){tasks.append(Object.assign(document.createElement('p'),{className:'muted',textContent:'暂无任务'}));return}items.forEach(renderTaskCard)}catch(e){if(run!==listGeneration)return;state.textContent='加载失败';error.textContent=sbApi.safeError(e);error.hidden=false}}
+function renderTaskCard(data){const card=document.createElement('article');card.className='task-card';const h3=document.createElement('h3');h3.textContent=text(data.task_id).slice(0,12)+'…';card.append(h3,createStatusBadge(data.status));const meta=document.createElement('p');meta.className='muted';meta.textContent=`${text(data.operation_type)||'任务'} · ${data.progress_percent||0}% · ${formatDate(data.created_at)}`;card.append(meta);const open=document.createElement('a');open.className='btn';open.href=`/app/tasks.html?task_id=${encodeURIComponent(data.task_id)}`;open.textContent='查看详情';card.append(open);tasks.append(card)}
+
 function createStatusBadge(status){
 const badge=document.createElement('span');
 badge.className='task-status '+status;
 const statusMap={
 pending:'等待中',
+queued:'等待中',
 running:'运行中',
 success:'已完成',
+succeeded:'已完成',
 failed:'失败',
 cancelled:'已取消'
 };
@@ -254,10 +263,8 @@ loadTaskDetail(taskId)
 }
 };
 
-applyFilters.onclick=()=>{
-// Future: filter implementation when we have a list endpoint
-alert('筛选功能待实现：当前仅支持单任务查看')
-}
+applyFilters.onclick=()=>loadTaskList();
+refreshBtn.onclick=()=>taskId?loadTaskDetail(taskId):loadTaskList();
 })();
 </script>
 </body>

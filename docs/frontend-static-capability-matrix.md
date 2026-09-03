@@ -45,7 +45,7 @@
 | `classroom.html` | 采集/报告只读兼容列表、报告详情、交付边界说明 | `static_verified` | learning/Phase 9D/system-matrix tests。 |
 | `classroom.html` | 正式报告页、JSON/Markdown 导出、只读审计工作区 | `static_verified` | `reports.html` 已提供此正式路径；保持 `delivery=off`、allowlisted dry-run 和 append-only audit 边界。 |
 | `tasks.html` | 单任务读取、cancel、retry、状态/进度显示 | `static_verified` | A4/system-matrix tests；仅批准的 `embedding_index` 任务可由 runner 执行。 |
-| `tasks.html` | 全局任务列表/筛选 | `not_exposed` | 后端没有全局 task-list API；页面不得伪造列表。 |
+| `tasks.html` | 全局任务列表/筛选、分页、任务详情/取消/重试 | `static_verified` | C4-3 复用新增 project-scoped `GET /api/tasks` 与既有详情/取消/重试；列表只展示脱敏公共字段，支持状态筛选、空态、失败和刷新。 |
 | `settings-provider.html` | capabilities/readiness 只读状态 | `static_verified` | A4/system-matrix tests。 |
 | `settings-provider.html` | Provider 配置写入、密钥保存、连接测试 | `not_exposed` | 后端没有获批的安全配置写入契约；浏览器不得保存或回显密钥。 |
 | `reports.html` | 独立报告列表、脱敏摘要读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；导出/审计扩展仍按后续能力边界处理。 |
