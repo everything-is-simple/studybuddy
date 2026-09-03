@@ -87,8 +87,8 @@ def test_upgrade_preflight_requires_matching_verified_backup_and_is_non_mutating
 
     result = upgrade_preflight(source, backup)
     assert result == {
-        "status": "ready", "error_code": None, "database_schema_version": 13,
-        "backup_schema_version": 13, "target_schema_version": 13,
+        "status": "ready", "error_code": None, "database_schema_version": 14,
+        "backup_schema_version": 14, "target_schema_version": 14,
         "migration_required": False, "backup_verified": True,
     }
     assert database.read_bytes() == before
@@ -107,20 +107,20 @@ def test_upgrade_preflight_requires_matching_verified_backup_and_is_non_mutating
 def test_upgrade_preflight_accepts_verified_pre_upgrade_history_without_migrating(tmp_path: Path, monkeypatch):
     source = tmp_path / "source"
     migrations = runner._MIGRATIONS
-    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 12)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:12])
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:13])
     make_data(source)
     backup = tmp_path / "backup"
     backup_data(source, backup)
     assert verify_backup(backup)["status"] == "valid"
 
-    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 14)
     monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
     before = (source / "studybuddy.sqlite3").read_bytes()
     result = upgrade_preflight(source, backup)
-    assert result["database_schema_version"] == 12
-    assert result["backup_schema_version"] == 12
-    assert result["target_schema_version"] == 13
+    assert result["database_schema_version"] == 13
+    assert result["backup_schema_version"] == 13
+    assert result["target_schema_version"] == 14
     assert result["migration_required"] is True
     assert (source / "studybuddy.sqlite3").read_bytes() == before
 
@@ -141,8 +141,8 @@ def test_upgrade_preflight_rejects_known_unwritable_root_without_mutation(tmp_pa
 def test_pre_upgrade_backup_restores_without_migration_then_explicit_startup_upgrades(tmp_path: Path, monkeypatch):
     source = tmp_path / "source"
     migrations = runner._MIGRATIONS
-    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 12)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:12])
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:13])
     make_data(source)
     backup = tmp_path / "backup"
     backup_data(source, backup)
@@ -150,14 +150,14 @@ def test_pre_upgrade_backup_restores_without_migration_then_explicit_startup_upg
     restored = tmp_path / "restored"
     assert restore_backup(restored, backup, confirm=True)["status"] == "restored"
     with sqlite3.connect(restored / "studybuddy.sqlite3") as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 12
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
 
-    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 13)
+    monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 14)
     monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
     with TestClient(create_app(AppConfig(data_root=restored))):
         pass
     with sqlite3.connect(restored / "studybuddy.sqlite3") as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
 
 
 def test_upgrade_preflight_rejects_corrupt_or_missing_original_without_repair(tmp_path: Path):
