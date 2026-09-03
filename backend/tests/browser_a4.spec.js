@@ -53,7 +53,9 @@ test('A4 provider page loads capabilities and safely recovers from API failure',
   await expect(page.locator('#state')).toHaveText('已加载');
   await expect(page.locator('#capabilities')).toBeVisible();
   await expect(page.locator('#health-status')).toContainText('系统就绪');
-  await expect(page.locator('body')).toContainText('Provider 配置写入契约尚未完成批准');
+  await expect(page.locator('body')).toContainText('测试通过 ≠ 已保存');
+  await expect(page.locator('#provider-test')).toBeVisible();
+  await expect(page.locator('#email-test')).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/H:\\|sqlite|SELECT|Traceback|api[_-]?key|secret|token/i);
   await page.route('**/api/ai/capabilities', route => route.fulfill({
     status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'private_provider_error', path: 'H:/secret' }),
@@ -72,6 +74,37 @@ test('A4 provider page loads capabilities and safely recovers from API failure',
   await expect(page.locator(':focus-visible')).toHaveCount(1);
   expect(errors.consoleErrors.filter(value => !value.includes('Failed to load resource'))).toEqual([]);
   expect(errors.pageErrors).toEqual([]);
+});
+
+test('P1-5-1 provider form tests connection and clears secret input', async ({ page }) => {
+  await page.route('**/api/system/provider-connection-test', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }),
+  }));
+  await page.goto(`${BASE}/app/settings-provider.html`);
+  await page.locator('#provider-model').fill('synthetic-model');
+  await page.locator('#provider-url').fill('https://loopback.invalid/v1');
+  await page.locator('#provider-key').fill('TEST_SECRET_DO_NOT_LEAK_7d0f');
+  await page.locator('#provider-form').evaluate(form => form.requestSubmit());
+  await expect(page.locator('#provider-result')).toContainText('测试通过');
+  await expect(page.locator('#provider-key')).toHaveValue('');
+  await expect(page.locator('body')).not.toContainText('TEST_SECRET_DO_NOT_LEAK_7d0f');
+});
+
+test('P1-5-1 email form sends selected channel and keeps no save control', async ({ page }) => {
+  let requestBody;
+  await page.route('**/api/system/email-connection-test', async route => {
+    requestBody = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }) });
+  });
+  await page.goto(`${BASE}/app/settings-provider.html`);
+  await page.locator('#email-channel').selectOption('feishu');
+  await page.locator('#feishu-webhook').fill('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
+  await page.locator('#email-form').evaluate(form => form.requestSubmit());
+  await expect(page.locator('#email-result')).toContainText('测试通过');
+  await expect.poll(() => requestBody).toMatchObject({ channel: 'feishu', feishu_webhook: 'TEST_WEBHOOK_DO_NOT_LEAK_5a21' });
+  await expect(page.locator('#feishu-webhook')).toHaveValue('');
+  await expect(page.locator('body')).not.toContainText('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
+  await expect(page.locator('button', { hasText: '保存' })).toHaveCount(0);
 });
 
 test('A4 capture page creates a session and keeps failure state safe', async ({ page }) => {
