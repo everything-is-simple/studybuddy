@@ -88,6 +88,17 @@ from contextlib import asynccontextmanager
 from . import lifespan as lifespan_module
 from .http_errors import _phase9d_http_status, _provider_http_status
 from .http_helpers import _checked_original_path, _download_name, _rename_name
+from .connection_test import (
+    ConnectionTestError,
+    provider_llm_connection_test,
+    provider_embedding_connection_test,
+    smtp_connection_test,
+    feishu_connection_test,
+)
+from .schemas.connection_test import (
+    ProviderConnectionTestRequest,
+    EmailConnectionTestRequest,
+)
 from .services.imports import _item, _process_file, _valid_filename, store_original
 from .schemas import *  # Re-exported through app.main for compatibility.
 
