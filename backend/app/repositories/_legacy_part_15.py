@@ -14,6 +14,40 @@ from ._legacy_part_11 import *
 from ._legacy_part_12 import *
 from ._legacy_part_13 import *
 from ._legacy_part_14 import *
+TASK_LIST_STATUSES = {"queued", "running", "cancel_requested", "succeeded", "failed", "cancelled", "stale"}
+
+def list_operation_tasks_public(connection: sqlite3.Connection, *, project_id: str,
+                                status: str | None = None, task_kind: str | None = None,
+                                operation_type: str | None = None, limit: int = 25,
+                                offset: int = 0) -> dict[str, object]:
+    if not project_id or limit < 1 or limit > 100 or offset < 0:
+        raise ValueError("task_invalid_request")
+    if status is not None and status not in TASK_LIST_STATUSES:
+        raise ValueError("task_invalid_filter")
+    params: list[object] = [project_id]
+    where = ["t.project_id=?"]
+    if status is not None:
+        where.append("t.status=?"); params.append(status)
+    if task_kind is not None:
+        if not task_kind or len(task_kind) > 100:
+            raise ValueError("task_invalid_filter")
+        where.append("t.task_kind=?"); params.append(task_kind)
+    if operation_type is not None:
+        if not operation_type or len(operation_type) > 100:
+            raise ValueError("task_invalid_filter")
+        where.append("o.operation_type=?"); params.append(operation_type)
+    clause = " AND ".join(where)
+    total = connection.execute(
+        "SELECT COUNT(*) FROM operation_tasks t JOIN ai_operations o ON o.id=t.operation_id WHERE " + clause,
+        params,
+    ).fetchone()[0]
+    rows = connection.execute(
+        "SELECT t.id FROM operation_tasks t JOIN ai_operations o ON o.id=t.operation_id WHERE " + clause +
+        " ORDER BY t.created_at DESC,t.id DESC LIMIT ? OFFSET ?", params + [limit, offset],
+    ).fetchall()
+    return {"items": [get_operation_task_public(connection, task_id=str(row["id"]), project_id=project_id) for row in rows],
+            "total": int(total), "limit": limit, "offset": offset}
+
 def get_operation_task_public(connection: sqlite3.Connection, *, task_id: str,
                               project_id: str) -> dict[str, object]:
     task = get_operation_task(connection, task_id=task_id, project_id=project_id)

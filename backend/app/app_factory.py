@@ -41,7 +41,7 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          list_materials_page, list_deleted_materials_page, material_state, persist_qa_answer,
                          purge_material, reclaim_stale_qa_operations, reclaim_stale_embedding_operations,
                          create_embedding_index_operation, create_task_backed_embedding_operation,
-                         finish_embedding_index_operation, get_operation_task_public, rename_material, restore_material, run_chunk_retrieval,
+                         finish_embedding_index_operation, get_operation_task_public, list_operation_tasks_public, rename_material, restore_material, run_chunk_retrieval,
                          request_operation_task_cancel,
                          run_hybrid_retrieval, run_vector_retrieval, save_material_with_extraction, soft_delete_material,
                          validate_citation_key, qa_request_fingerprint, create_deck, get_deck,

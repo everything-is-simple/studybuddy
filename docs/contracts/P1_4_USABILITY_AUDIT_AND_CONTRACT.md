@@ -319,7 +319,7 @@
 | ID | 现象 | 层 | 影响剧本步骤 | 分级 | 修复动作 | 验证方式 |
 |---|---|---|---|---|---|---|
 | P14-P2-01 | `/app` 原没有批量导出正式入口。 | L2/L3 | B1-6 | P2，C3 已关闭 | 正式页已复用 `/api/materials/export` 的既有 ZIP/隐私 contract，支持当前页选择、三种导出模式、安全失败和重试。 | C3 Chromium 2 passed；关联 browser 13 passed；`test_material_export.py` 与输入边界回归通过。 |
-| P14-P2-02 | `tasks.html` 只有已知 task id 的读取、取消、重试，没有全局任务列表、筛选和排序。 | L2 | B1-1、B2-2 | P2 | 先冻结全局 task-list 公共 contract，再实现页面；不得用前端扫描或 mock 伪造列表。 | 新 contract 的 API 输入边界、分页/筛选、页面空/失败/重试和真实 task 流程。 |
+| P14-P2-02 | `tasks.html` 只有已知 task id 的读取、取消、重试，没有全局任务列表、筛选和排序。 | L2 | B1-1、B2-2 | P2，C4-3 已关闭 | `GET /api/tasks` 提供 project-scoped、分页、按 status/task_kind/operation_type 筛选的脱敏列表；默认 limit 25，允许 1–100，offset >= 0；稳定按 created_at/id 倒序。页面复用既有详情/取消/重试。 | `test_p1_4_c4_3_task_list.py` 覆盖分页、筛选、边界与 project scope；正式 `/app/tasks.html` 覆盖列表/空/失败/刷新及详情路径。 |
 | P14-P2-03 | `/app` 没有完整手工 source-link 工作区；模块/学习项的 source linking 主要依赖上下文或后端细粒度 route。 | L2 | B2-6、B5-3 | P2，C4-2 已关闭 | C4-2 已冻结并实现模块/学习项 source workspace、当前候选、创建/删除/显式 refresh；复用 revision/chunk/span/citation contract，未新增 schema。 | `browser_p1_4_c4_2_source_links.spec.js` 覆盖 `/app` 添加/删除/刷新、soft-delete/restore 生命周期、失败重试、owner scope、归档计划保护与隐私。 |
 | P14-P2-04 | cram-goals / cram sessions 原无正式 `/app` 页面；当前普通 practice 路径不能代表冲刺学习工作流。 | L2/L3 | B3-7、B4-4 | P2，C4-1 已关闭 | C4-1 已复用既有 cram API，在 `practice.html` 提供目标生命周期、有效题目选择、会话与 cram result 路径；未新增 API/schema。 | `browser_p1_4_c4_cram.spec.js` 覆盖完整 `/app` 路径、正常重启回读、空题、过期目标、来源失效、重复点击、失败重试与普通 practice 回归。 |
 | P14-P2-05 | 一周后“看得出变化”缺少正式周趋势/聚合视图；`today.html` 主要是当天摘要。 | L2 | B5-7 | P2 | 在不新增 schema 的前提下评估现有 progress/report 聚合是否足够；若需新公共数据，另立 contract。 | 跨天、跨时区、改系统时区、周起止边界和历史数据增长 browser/API evidence。 |
