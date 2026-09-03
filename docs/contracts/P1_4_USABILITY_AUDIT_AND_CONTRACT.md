@@ -323,7 +323,7 @@
 | P14-P2-03 | `/app` 没有完整手工 source-link 工作区；模块/学习项的 source linking 主要依赖上下文或后端细粒度 route。 | L2 | B2-6、B5-3 | P2，C4-2 已关闭 | C4-2 已冻结并实现模块/学习项 source workspace、当前候选、创建/删除/显式 refresh；复用 revision/chunk/span/citation contract，未新增 schema。 | `browser_p1_4_c4_2_source_links.spec.js` 覆盖 `/app` 添加/删除/刷新、soft-delete/restore 生命周期、失败重试、owner scope、归档计划保护与隐私。 |
 | P14-P2-04 | cram-goals / cram sessions 原无正式 `/app` 页面；当前普通 practice 路径不能代表冲刺学习工作流。 | L2/L3 | B3-7、B4-4 | P2，C4-1 已关闭 | C4-1 已复用既有 cram API，在 `practice.html` 提供目标生命周期、有效题目选择、会话与 cram result 路径；未新增 API/schema。 | `browser_p1_4_c4_cram.spec.js` 覆盖完整 `/app` 路径、正常重启回读、空题、过期目标、来源失效、重复点击、失败重试与普通 practice 回归。 |
 | P14-P2-05 | 一周后“看得出变化”缺少正式周趋势/聚合视图；`today.html` 主要是当天摘要。 | L2 | B5-7 | P2，C4-4 已实现 scoped contract | 新增只读 `GET /api/study/plans/{plan_id}/rhythm/weekly-trend`；按配置 IANA timezone 将 progress events 聚合到以请求 `local_date` 为结束日的固定 7 日窗口，默认使用该时区今天；不新增 schema，不修改 progress/plan/rhythm。 | 7 日边界、跨时区事件归属、空态、失败/隐私和真实 `/app/today.html` 展示；仅声明单 plan、正常 SQLite 读取。 |
-| P14-P2-06 | 资料页没有面向用户的批量结果筛选/排序、失败项重试队列和大批量导入进度视图。 | L2 | B1-1、B1-2、B1-5 | P2 | 先用真实规模基线确认是否达到摩擦阈值，再设计不新增 schema 的页面能力。 | 真实资料数量增长、页面加载时间、失败重试、重复点击和取消行为测量。 |
+| P14-P2-06 | 资料页没有面向用户的批量结果筛选/排序、失败项重试队列和大批量导入进度视图。 | L2 | B1-1、B1-2、B1-5 | P2，C4-5 测量进行中 | 先用真实规模基线确认是否达到摩擦阈值，再设计不新增 schema 的页面能力；本阶段只测量，不以测量脚本替代产品能力。 | 记录真实/合成规模、页面/API 响应时间、返回上限、失败重试、重复点击和取消行为；不提前新增聚合 API/schema。 |
 | P14-P2-07 | Provider 配置写入、密钥保存和连接测试没有获批的安全公共契约。 | L1/L2 | B2-2、B3-4 | P2（当前保持不暴露） | 不在本任务实现；若重新立项，必须先冻结密钥边界、存储、验证、日志脱敏和备份规则。 | 安全 contract、密钥不进 DOM/URL/log/backup artifact、连接测试失败边界和重启验证。 |
 
 ### 9.4 P3 不做或保持 not_verified
