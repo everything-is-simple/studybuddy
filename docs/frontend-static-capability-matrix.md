@@ -36,10 +36,10 @@
 | `exercises.html` | 练习集/题目读取、draft/来源状态、题目确认 | `static_verified` | learning/state-matrix browser tests。 |
 | `exercises.html` | 创建、生成、编辑、拒绝、归档、作答/attempt | `static_verified` | P1-3 `/app` 页面提供练习集/题目创建、生成、编辑、确认、拒绝、归档与作答入口；浏览器验收覆盖创建→详情→编辑及答案 key 隐私边界。 |
 | `practice.html` | 会话、结果、错题读取、练习会话启动 | `static_verified` | learning browser tests；状态和读取边界已审计。 |
-| `practice-session.html` | 独立练习会话详情读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；写操作仍由兼容页边界承载。 |
-| `practice-result.html` | 独立练习结果读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；不暴露答案 key。 |
+| `practice.html` | cram 目标创建/激活/完成/归档、有效题目选择与 session 创建 | `static_verified` | P1-4 C4-1 复用既有 API；完整路径、过期/空题/来源/重复/重试与正常重启由 `browser_p1_4_c4_cram.spec.js` 覆盖。 |
+| `practice-session.html` | 普通与 cram 会话详情、start/submit/finish | `static_verified` | Practice workflow 与 C4-1 browser evidence；cram URL 保留 `cram_goal_id`。 |
+| `practice-result.html` | 普通与 cram 结果读取 | `static_verified` | 按是否有 `cram_goal_id` 使用既有对应 endpoint；不暴露答案 key。 |
 | `review.html` | 独立错题与薄弱点读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；不新增复盘写操作。 |
-| `practice.html` | 创建会话、逐题作答、finish、反馈、redo、冲刺 | `legacy_only` | 后端和旧 workspace 契约已存在；完整练习会话、finish/redo 等行为不属于 P1-3，仍待独立迁移验收。 |
 | `capture.html` | fake/loopback 会话创建、上传、fake 转写、草稿编辑、确认、拒绝 | `static_verified` | A4/Phase 9D browser tests；真实 ASR 仍未通过 B1。 |
 | `capture.html` | archive | `not_exposed` | 正式 API 固定返回 `capture_invalid_state`；不能伪造归档成功控件。 |
 | `classroom.html` | 采集/报告只读兼容列表、报告详情、交付边界说明 | `static_verified` | learning/Phase 9D/system-matrix tests。 |

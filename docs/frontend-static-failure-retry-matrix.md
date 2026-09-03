@@ -25,9 +25,9 @@
 | `note-detail.html` | 独立详情、内容/引用/来源状态读取 | `browser_frontend_page_contract.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `cards.html` | 卡组/卡片读取、状态/来源读取 | `browser_frontend_matrix.spec.js`、`browser_frontend_state_matrix.spec.js`、`browser_learning_pages.spec.js` | covered |
 | `exercises.html` | 练习集/题目读取、确认、状态/来源读取 | `browser_frontend_matrix.spec.js`、`browser_frontend_state_matrix.spec.js`、`browser_learning_pages.spec.js` | covered |
-| `practice.html` | 会话、结果、错题读取、启动 | `browser_frontend_matrix.spec.js`、`browser_learning_pages.spec.js` | covered |
-| `practice-session.html` | 独立会话详情读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
-| `practice-result.html` | 独立练习结果读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
+| `practice.html` | 会话、结果、错题读取、启动；cram 目标/选题/session 的空、过期、来源失效、重复提交与失败重试 | `browser_frontend_matrix.spec.js`、`browser_learning_pages.spec.js`、`browser_p1_4_c4_cram.spec.js` | covered |
+| `practice-session.html` | 普通/cram 会话详情、start/submit/finish 与重试 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js`、`browser_practice_workflow.spec.js`、`browser_p1_4_c4_cram.spec.js` | covered |
+| `practice-result.html` | 普通/cram 结果读取与安全重试 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js`、`browser_practice_workflow.spec.js`、`browser_p1_4_c4_cram.spec.js` | covered |
 | `capture.html` | fake/loopback 创建、上传、转写、草稿确认/拒绝 | `browser_a4.spec.js`、`browser_phase9d.spec.js`、`browser_frontend_system_matrix.spec.js` | covered |
 | `classroom.html` | 采集/报告兼容读取、交付边界 | `browser_phase9d.spec.js`、`browser_frontend_system_matrix.spec.js`、`browser_learning_pages.spec.js` | covered |
 | `review.html` | 错题/详情、复盘、标记、反馈、redo、归档 | `browser_practice_workflow.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |

@@ -321,7 +321,7 @@
 | P14-P2-01 | `/app` 原没有批量导出正式入口。 | L2/L3 | B1-6 | P2，C3 已关闭 | 正式页已复用 `/api/materials/export` 的既有 ZIP/隐私 contract，支持当前页选择、三种导出模式、安全失败和重试。 | C3 Chromium 2 passed；关联 browser 13 passed；`test_material_export.py` 与输入边界回归通过。 |
 | P14-P2-02 | `tasks.html` 只有已知 task id 的读取、取消、重试，没有全局任务列表、筛选和排序。 | L2 | B1-1、B2-2 | P2 | 先冻结全局 task-list 公共 contract，再实现页面；不得用前端扫描或 mock 伪造列表。 | 新 contract 的 API 输入边界、分页/筛选、页面空/失败/重试和真实 task 流程。 |
 | P14-P2-03 | `/app` 没有完整手工 source-link 工作区；模块/学习项的 source linking 主要依赖上下文或后端细粒度 route。 | L2 | B2-6、B5-3 | P2 | 明确 source link 的用户场景和安全字段后再接正式控件；复用 revision/chunk/span/citation contract。 | 页面创建/删除 link 后刷新、来源生命周期刷新、无越权材料/路径泄露。 |
-| P14-P2-04 | cram-goals / cram sessions 仍无正式 `/app` 页面；当前普通 practice 路径不能代表冲刺学习工作流。 | L2 | B3-7、B4-4 | P2 | 单独立项迁移 cram workflow，冻结页面/状态/幂等/隐私 contract。 | `/app` 完整 cram browser path、重启回读、错误/过期/来源生命周期。 |
+| P14-P2-04 | cram-goals / cram sessions 原无正式 `/app` 页面；当前普通 practice 路径不能代表冲刺学习工作流。 | L2/L3 | B3-7、B4-4 | P2，C4-1 已关闭 | C4-1 已复用既有 cram API，在 `practice.html` 提供目标生命周期、有效题目选择、会话与 cram result 路径；未新增 API/schema。 | `browser_p1_4_c4_cram.spec.js` 覆盖完整 `/app` 路径、正常重启回读、空题、过期目标、来源失效、重复点击、失败重试与普通 practice 回归。 |
 | P14-P2-05 | 一周后“看得出变化”缺少正式周趋势/聚合视图；`today.html` 主要是当天摘要。 | L2 | B5-7 | P2 | 在不新增 schema 的前提下评估现有 progress/report 聚合是否足够；若需新公共数据，另立 contract。 | 跨天、跨时区、改系统时区、周起止边界和历史数据增长 browser/API evidence。 |
 | P14-P2-06 | 资料页没有面向用户的批量结果筛选/排序、失败项重试队列和大批量导入进度视图。 | L2 | B1-1、B1-2、B1-5 | P2 | 先用真实规模基线确认是否达到摩擦阈值，再设计不新增 schema 的页面能力。 | 真实资料数量增长、页面加载时间、失败重试、重复点击和取消行为测量。 |
 | P14-P2-07 | Provider 配置写入、密钥保存和连接测试没有获批的安全公共契约。 | L1/L2 | B2-2、B3-4 | P2（当前保持不暴露） | 不在本任务实现；若重新立项，必须先冻结密钥边界、存储、验证、日志脱敏和备份规则。 | 安全 contract、密钥不进 DOM/URL/log/backup artifact、连接测试失败边界和重启验证。 |
@@ -347,6 +347,21 @@
 4. **C3 `/app` 批量导出切片（P14-P0-02 或 P2-01）：** 只有确认它是基本日常链后才按 P0 处理；否则排到 P2。
 5. **C4 规模与完整工作流切片（P14-P2-02~P2-06）：** 需要各自 contract 和真实规模/跨天证据，不与可靠性修复混合。
 6. **P3 项目：** 不进入本任务阶段 D。
+
+### 10.1 C4-0 拆分与契约预备（2026-09-03）
+
+C4 不作为单次实现交付。P14-P2-02～P2-06 分别拆为 C4-1 cram、C4-2 source-link、C4-3 task-list、C4-4 周趋势、C4-5 规模测量，最终另做 C4-6 backup/restore 专项 gate；后续切片不得借 C4-1 扩大 API 或 schema。
+
+C4-1 冻结边界：
+
+- 只复用 `GET/POST /api/study/cram-goals`、目标详情/状态动作、`POST .../sessions`、`GET .../result` 与既有 practice session start/submit/finish；不新增 migration、endpoint、字段或错误码。
+- 正式入口为 `practice.html`，cram session 复用 `practice-session.html`；页面用 `cram_goal_id` URL 参数选择 cram result endpoint。无该参数时普通 practice result 行为保持不变。
+- 目标状态只展示并触发后端已允许的 `draft -> active -> completed` 与任意合法状态到 `archived`；完成仍要求至少一个 finished/expired cram session。
+- 选题仅显示 `status=ready` 且全部 citation 状态为 `valid` 的题目。无 citation 的 user-created ready 题允许进入；来源已删除/不可用/stale 的引用题不进入选择。
+- 目标日期已过是 UI 派生状态，不写入数据库、不伪造新状态：历史目标可见且可归档，但页面不提供激活或新建 session 动作。新目标表单使用当天作为最小日期。
+- 所有写操作由共享请求层附加 `Idempotency-Key`，并用页面 busy guard 阻止同一事件循环重复提交；失败后恢复原先业务禁用状态并允许合法重试。
+- DOM 只渲染公开 goal/session/result/题目字段；不得渲染 `answer_key`、`answer_json`、路径、SQL、traceback、secret 或原始后端错误。
+- 不做自动选题、排程、提醒、Provider 调用、计划/进度/节奏改写，也不实施 C4-2～C4-6。
 
 ### 阶段 C 停止条件
 - 阶段 A、B 问题已合并为单一台账；

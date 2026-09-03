@@ -25,6 +25,16 @@
 </div>
 
 <div class="grid">
+<section class="card span-12" data-od-id="cram-workspace">
+<div class="section-heading"><div><h2>冲刺目标</h2><p class="muted">创建明确的考试目标，并从已确认且来源有效的题目中组建限时练习。</p></div><button class="btn" id="refresh-cram" type="button">刷新冲刺</button></div>
+<div id="cram-status" class="notice" role="status" aria-live="polite">正在加载冲刺目标...</div>
+<form id="cram-goal-form" class="stack mt-12">
+<label for="cram-title">目标名称</label><input id="cram-title" maxlength="200" required placeholder="例如：期末考试冲刺">
+<div class="form-row"><div><label for="cram-date">目标日期</label><input id="cram-date" type="date" required></div><div><label for="cram-count">目标题数</label><input id="cram-count" type="number" min="1" max="200" value="10" required></div></div>
+<button class="btn btn-primary" id="create-cram-goal" type="submit">创建冲刺目标</button>
+</form>
+<div class="grid mt-16"><div class="span-5"><h3>目标列表</h3><ul id="cram-goals" class="session-list"></ul></div><div class="span-7"><h3>目标详情</h3><div id="cram-detail" class="notice muted">选择一个目标查看操作。</div></div></div>
+</section>
 <section class="card span-12" data-od-id="practice-recommendations"><h2>推荐练习</h2><div id="recommendation-status" class="notice" role="status" aria-live="polite">正在加载推荐...</div><div id="recommendations" class="stack"></div><div class="stack-actions mt-12"><label for="recommendation-limit">推荐数量</label><select id="recommendation-limit"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select><button class="btn btn-primary" id="create-recommended-session" type="button" disabled>创建练习会话</button><button class="btn" id="refresh-recommendations" type="button">刷新推荐</button></div></section>
 <section class="card span-6" data-od-id="practice-sessions">
 <h2>练习会话</h2>
@@ -47,11 +57,12 @@
 </div>
 </main>
 </div>
-<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
+<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/cram.js"></script>
 <script src="/app/js/shell.js"></script>
 <script>
 (function(){
 const pageRequest=sbApi.setPageScope('practice');
+sbCram.mount({request:pageRequest});
 const sessionStatus=document.querySelector('#session-status');
 const sessions=document.querySelector('#sessions');
 const refreshSessions=document.querySelector('#refresh-sessions');
@@ -103,7 +114,7 @@ status.className='status-badge '+(session.status||'draft');
 status.textContent=sbState.label(session.status||'draft');
 title.append(status);
 const sessionLink=document.createElement('a');
-sessionLink.href=`/app/practice-session.html?session_id=${encodeURIComponent(session.id)}`;
+const sessionQuery=new URLSearchParams({session_id:session.id});if(session.session_kind==='cram'&&session.cram_goal_id)sessionQuery.set('cram_goal_id',session.cram_goal_id);sessionLink.href='/app/practice-session.html?'+sessionQuery.toString();
 sessionLink.className='session-link';
 sessionLink.textContent='打开会话';
 sessionLink.addEventListener('click',event=>event.stopPropagation());
