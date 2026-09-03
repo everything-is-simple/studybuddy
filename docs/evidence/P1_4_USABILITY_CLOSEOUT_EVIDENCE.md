@@ -198,4 +198,10 @@ Chromium 第一条从正式 `/app` 创建目标、激活、选择题目、创建
 
 最终回归：完整 backend 为 `506 passed, 3 skipped`；完整 Chromium 为 `154 passed, 4 skipped`。3/4 个 skip 均为既有 opt-in real ASR/Provider smoke。相关组合 Chromium（C4-1、普通 practice、推荐、visual）为 `14 passed`；后端 Phase 9C + contract/governance 组合为 `39 passed`；source-size、`git diff --check` 与前端 contract audit（0 findings）通过。
 
+### C4-2 `/app` source-link 工作区（L2/L3）
+
+C4-2 在 `plans.html` 提供模块/学习项 owner 选择、当前资料 chunk 候选、添加/删除与显式刷新；后端新增公开 DELETE 路由和 identity-only candidates GET，未新增 schema/migration。DELETE 严格校验 project 与 owner scope；归档计划的 item link 删除返回 `409 study_plan_edit_not_allowed`。来源状态仍由服务端计算，soft-delete 后为 `source_deleted`，restore 后只有显式 refresh 才恢复为 `valid`；不返回正文、stored_path 或 SQL。
+
+验证：`test_p1_4_c4_2_source_links.py` `2 passed`；`browser_p1_4_c4_2_source_links.spec.js` 已覆盖正式 `/app` 添加/删除/刷新、来源生命周期、失败安全重试与归档保护。源码大小、`git diff --check` 与前端 contract audit `0 findings` 通过。C4-2 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-03。L3 限定正常停服重启/同一 SQLite data root；backup/restore 专项、强杀、多 worker 与规模仍未验证。
+
 C4-1 结论为 `implemented / scoped browser-pass`，关闭 P14-P2-04。L3 仅指同一 local single-process、SQLite、本地磁盘 data root 上正常停服重启后的目标/session/result 回读；强杀、断电、多 worker、跨时区日期显示、backup→verify→新空目录 restore、自动提醒/选题和真实规模仍为 `not_verified`，并分别留给后续切片或明确 non-goal。
