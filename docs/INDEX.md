@@ -29,6 +29,8 @@
 ### 常用分类入口
 
 - [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 候选及 Formal 边界。
+- [`contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md`](contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md)：Provider（AI LLM/Embedding）和 Email（SMTP/Feishu）配置安全契约，secret 生命周期、runtime-only source、connection-test 触发机制和 backup/restore 边界。
+- [`evidence/P1_5_0_CONTRACT_EVIDENCE.md`](evidence/P1_5_0_CONTRACT_EVIDENCE.md)：P1-5-0 契约冻结审计发现和治理测试覆盖。
 - [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)：Phase 9D 限定范围 closeout。
 - [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：local-v1 release candidate drill。
 - [`operations/AI_PROVIDER_SETUP.md`](operations/AI_PROVIDER_SETUP.md)：真实 Provider 的显式 opt-in 配置边界。
