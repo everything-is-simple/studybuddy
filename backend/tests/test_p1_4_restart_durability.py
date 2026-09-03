@@ -305,6 +305,6 @@ def test_material_index_status_labels_are_within_the_shared_state_vocabulary(tmp
     assert before == "not_indexed"
     assert after == "ready"
     assert "ready:" in shared
-    # Recorded gap: `not_indexed` has no shared label, so the page falls back to
-    # the generic unknown-state wording. Tracked as P14-P1-04 in the P1-4 ledger.
-    assert "not_indexed:" not in shared
+    # C2 closes the recorded gap: the shared vocabulary now explains the
+    # initial index state instead of falling back to generic unknown wording.
+    assert "not_indexed:" in shared

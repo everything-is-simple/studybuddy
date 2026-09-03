@@ -151,4 +151,14 @@ clean
 
 C0 切片完成：真实 PDF/DOCX/PPTX/MD/中文长名 TXT 的完整链路已实测，`/app` 主要写操作族的重启复现已逐族验证，真实拒绝与降级行为已固定为测试。C0 是 `implemented + scoped real-pass`，覆盖范围严格限定为本文件第 2、9 节所述的工具、Provider 与输入类别；不等于全局 real-pass。
 
-下一步建议按台账顺序进入 C1（幂等与反馈：P14-P1-01/P1-02/P1-03），并单独决定 P14-P0-05 的修复方式。
+### C2 来源与解析可解释性（L2/L3，限定范围）
+
+验证工具与环境：`C:/miniconda/py310/python.exe`、本地 Uvicorn、Playwright Chromium，`STUDYBUDDY_AI_PROVIDER=fake`，隔离 `H:/studybuddy-test/runs/p1-4-c2-explainability` data root。真实路径命令：`npx playwright test backend/tests/browser_p1_4_c2_explainability.spec.js --workers=1 --reporter=line`，结果 `2 passed`。
+
+- **P14-P1-04（L2/L3）**：计划 API 的 `items` 不带来源状态，页面现在从 `source_links` 按 `plan_item_id`/`module_id` 映射；无链接显示“未关联来源”，`source_deleted` 等非 valid 状态显示真实文案并禁用材料入口。真实 Chromium 创建计划→关联 DOCX→页面显示 valid→删除材料→停服重启→页面显示 source_deleted，1 条路径通过。关联历史页面矩阵 `7 passed`；既有 restart durability 事实测试同步为修复后预期。
+- **P14-P1-05（L2）**：材料详情显示解析状态、解析器、warning 和下一步。真实 Chromium 生成并上传 image-only PDF、含段落 DOCX、无文字 PPTX，分别验证无文字层 OCR 指引、DOCX 复杂对象 warning、PPTX 空正文转换/重试指引。该验证确认页面提示可读，不证明 OCR 或解析通用准确率。
+- **P14-P1-06（L2）**：`materials.html` accept 更新为 `.pdf,.txt,.md,.docx,.pptx`；DOC/PPT/RTF/XML 明确需转换或不支持。真实上传 4 个拒绝样本，页面显示用户文案，不显示 `requires_converter`/`unsupported_rtf`/`unsupported_format` 原始码；后端拒绝 contract 未改变。
+- **Focused 结果**：`C:/miniconda/py310/python.exe -m pytest backend/tests/test_p1_4_c2_explainability.py backend/tests/test_p1_4_restart_durability.py::test_plan_item_source_state_lives_on_source_links_not_items -q` 为 `5 passed`；完整后端分组回归在 C2 修复旧事实断言后，已验证分组 `488 passed, 3 skipped`（全量命令因 10 分钟窗口超时，最终全量数字未重宣称）。source-size 与 `audit-frontend-contract.py --strict` 均通过，后者 `0 findings`。
+- **安全检查（L2）**：C2 页面和真实 DOM 断言无 `stored_path`、路径、SQL、traceback、`api_key`；导入拒绝列表只渲染 `safeError` 用户文案；没有新增 API、schema、原始 provider 响应或正文泄露路径。
+
+C2 结论：`implemented / scoped browser-pass`，来源状态真实路径达到 L2/L3（含正常重启回读），解析提示与拒绝提示达到 L2；真实 OCR、通用解析准确率、多进程、强杀恢复和新空目录 backup/restore 在本切片为 `not_verified`。下一步建议进入 C3 `/app` 批量导出，但需先确认它是否属于基本日常链。

@@ -13,7 +13,7 @@ test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=sta
 test.afterEach(()=>{if(server&&!server.killed)server.kill();server=null});
 
 test('A3-PAGES plan and note details render safe source lifecycle and return navigation',async({page})=>{
-  await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'本周计划',status:'active',description:'安全计划摘要',items:[{id:'item-1',title:'阅读材料',status:'completed',source_link_status:'source_deleted'}]});
+  await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'本周计划',status:'active',description:'安全计划摘要',items:[{id:'item-1',title:'阅读材料',status:'completed'}],source_links:[{id:'link-1',plan_item_id:'item-1',status:'source_deleted'}]});
   await page.goto(`${BASE}/app/plan-detail.html?plan_id=plan-1`);
   await expect(page.locator('#plan-detail')).toContainText('本周计划');
   await expect(page.locator('#plan-detail')).toContainText('来源：来源已删除');

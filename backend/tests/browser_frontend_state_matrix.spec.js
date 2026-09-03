@@ -43,7 +43,7 @@ test('card and exercise source degradation does not expose raw status as the onl
 test('plan and note detail display source degradation as user labels',async({page})=>{
   await mock(page,'**/api/study/goals',[]);await mock(page,'**/api/study/modules',[]);
   await mock(page,'**/api/study/plans',[{id:'plan-1',title:'计划',status:'active',item_count:1}]);
-  await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'计划',items:[{id:'item-1',title:'学习项',source_link_status:'source_deleted'}]});
+  await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'计划',items:[{id:'item-1',title:'学习项'}],source_links:[{id:'link-1',plan_item_id:'item-1',status:'source_deleted'}]});
   await page.goto(`${BASE}/app/plans.html`);await page.locator('#plans .plan-item').click();await expect(page.locator('#plan-detail')).toContainText('来源: 来源已删除');
   await page.unrouteAll({behavior:'ignoreErrors'});
   await mock(page,'**/api/study/notes',[{id:'note-1',title:'笔记',note_type:'ai_draft'}]);
