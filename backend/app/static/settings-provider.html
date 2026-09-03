@@ -8,192 +8,86 @@
 </head>
 <body>
 <div class="app-shell">
-<header class="topbar">
-<div class="topbar-inner">
-<a class="brand" href="/app/">StudyBuddy</a>
-<nav class="nav" data-nav aria-label="主导航"></nav>
+<header class="topbar"><div class="topbar-inner">
+<a class="brand" href="/app/">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav>
 <span class="status-dot" data-system-status>检查系统状态…</span>
-</div>
-</header>
+</div></header>
 <main class="main">
-<div class="hero">
-<div>
-<p class="eyebrow">系统设置</p>
-<h1>Provider 能力状态</h1>
-<p class="lead">查看当前配置的 AI Provider 能力与连接状态。</p>
-</div>
-</div>
+<div class="hero"><div><p class="eyebrow">系统设置</p><h1>Provider 与 Email</h1><p class="lead">填写运行时配置、测试连接，然后复制环境变量片段。页面不会保存配置。</p></div></div>
 
 <section class="card" data-od-id="provider-config-notice">
-<h2>配置说明</h2>
+<h2>安全与生效说明</h2>
 <div class="config-notice">
-<p><strong>注意：</strong>Provider 配置写入契约尚未完成批准。</p>
-<p class="mt-8 mb-0">当前页面仅显示后端配置的能力状态，不支持在浏览器中修改 Provider 配置、保存密钥或执行连接测试。</p>
+<p><strong>测试通过 ≠ 已保存。</strong>本页面是“组装 → 校验 → 导出”工具，不提供配置保存或热重载。</p>
+<p class="mt-8 mb-0">密钥仅用于本次连接测试。请将复制的环境变量交给本地启动环境，修改环境变量后重启 StudyBuddy；服务端不会回显、保存或备份密钥。</p>
 </div>
 </section>
 
-<section class="card mt-24" data-od-id="provider-capabilities">
-<div class="section-label">
-<h2>能力状态</h2>
-<span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
+<section class="card mt-24" data-od-id="provider-connection-test">
+<div class="section-label"><h2>AI Provider 连接测试</h2><span class="muted">不会改变当前配置</span></div>
+<form id="provider-form" class="stack" novalidate>
+<div class="form-row">
+<div class="field"><label for="provider-type">类型</label><select id="provider-type" name="provider_type"><option value="llm">LLM</option><option value="embedding">Embedding</option></select></div>
+<div class="field"><label for="provider-model">Model ID</label><input id="provider-model" name="model_id" autocomplete="off" required></div>
 </div>
-<div id="error" class="error" role="alert" hidden></div>
-<div id="loading" aria-hidden="true">
-<div class="capability-card skeleton">
-<div class="skeleton-text skeleton-40"></div>
-<div class="skeleton-text skeleton-60"></div>
-<div class="skeleton-text skeleton-80"></div>
+<div class="form-row">
+<div class="field"><label for="provider-url">Base URL</label><input id="provider-url" name="base_url" type="url" autocomplete="off" placeholder="https://api.example.com/v1" required></div>
+<div class="field"><label for="provider-key">API Key</label><input id="provider-key" name="api_key" type="password" autocomplete="off" spellcheck="false" required></div>
 </div>
+<div class="form-row">
+<div class="field"><label for="provider-timeout">Timeout（秒）</label><input id="provider-timeout" name="timeout_seconds" type="number" min="0.1" max="120" step="0.1" value="30"></div>
+<div class="field"><label for="provider-env">环境变量片段</label><button class="btn" type="button" id="provider-copy">复制到剪贴板（仅内存生成）</button></div>
 </div>
-<div id="capabilities" class="capability-grid" hidden></div>
+<div id="provider-result" class="notice" role="status" aria-live="polite" hidden></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="provider-test">测试 Provider 连接</button><span class="muted">测试使用固定 synthetic payload，不发送学习材料。</span></div>
+</form>
 </section>
 
-<section class="card mt-24" data-od-id="provider-health">
-<h2>系统健康状态</h2>
-<div id="health-status" role="status" aria-live="polite">
-<p class="muted">检查中…</p>
+<section class="card mt-24" data-od-id="email-connection-test">
+<div class="section-label"><h2>Email 连接测试</h2><span class="muted">SMTP 或 Feishu</span></div>
+<form id="email-form" class="stack" novalidate>
+<div class="field"><label for="email-channel">渠道</label><select id="email-channel" name="channel"><option value="smtp">SMTP</option><option value="feishu">Feishu Webhook</option></select></div>
+<div id="smtp-fields" class="stack">
+<div class="form-row"><div class="field"><label for="smtp-host">SMTP Host</label><input id="smtp-host" name="smtp_host" autocomplete="off" value="smtp.qq.com"></div><div class="field"><label for="smtp-port">SMTP Port</label><input id="smtp-port" name="smtp_port" type="number" min="1" max="65535" value="465"></div></div>
+<div class="form-row"><div class="field"><label for="smtp-username">SMTP Username</label><input id="smtp-username" name="smtp_username" autocomplete="off"></div><div class="field"><label for="smtp-password">SMTP Password</label><input id="smtp-password" name="smtp_password" type="password" autocomplete="off" spellcheck="false"></div></div>
+<div class="form-row"><div class="field"><label for="smtp-sender">Sender</label><input id="smtp-sender" name="smtp_sender" type="email" autocomplete="off"></div><div class="field"><label for="smtp-recipient">Recipient</label><input id="smtp-recipient" name="smtp_recipient" type="email" autocomplete="off"></div></div>
+<div class="field"><label for="smtp-secure">连接方式</label><select id="smtp-secure" name="smtp_secure"><option value="true">TLS / SSL</option><option value="false">STARTTLS / 明文（按服务商要求）</option></select></div>
 </div>
+<div id="feishu-fields" class="stack" hidden>
+<div class="field"><label for="feishu-webhook">Feishu Webhook</label><input id="feishu-webhook" name="feishu_webhook" type="password" autocomplete="off" spellcheck="false"></div>
+</div>
+<div class="field"><label for="email-timeout">Timeout（秒）</label><input id="email-timeout" name="timeout_seconds" type="number" min="0.1" max="120" step="0.1" value="10"></div>
+<div id="email-result" class="notice" role="status" aria-live="polite" hidden></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="email-test">测试 Email 连接</button><span class="muted">测试正文不含学习材料。</span></div>
+</form>
 </section>
-</main>
-</div>
-<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
-<script src="/app/js/shell.js"></script>
+
+<section class="card mt-24" data-od-id="provider-capabilities"><div class="section-label"><h2>当前能力状态</h2><span id="state" class="muted" role="status" aria-live="polite">加载中…</span></div><div id="error" class="error" role="alert" hidden></div><div id="loading" aria-hidden="true"><div class="capability-card skeleton"><div class="skeleton-text skeleton-40"></div><div class="skeleton-text skeleton-60"></div><div class="skeleton-text skeleton-80"></div></div></div><div id="capabilities" class="capability-grid" hidden></div></section>
+<section class="card mt-24" data-od-id="provider-health"><h2>系统健康状态</h2><div id="health-status" role="status" aria-live="polite"><p class="muted">检查中…</p></div></section>
+</main></div>
+<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script>
 <script>
 (function(){
 const pageRequest=sbApi.setPageScope('settings-provider');
-const state=document.querySelector('#state');
-const error=document.querySelector('#error');
-const loading=document.querySelector('#loading');
-const capabilities=document.querySelector('#capabilities');
-const healthStatus=document.querySelector('#health-status');
-
-function text(value){return typeof value==='string'?value:''}
-function bool(value){return value===true}
-
-let loadGeneration=0;
-async function load(){
-const generation=++loadGeneration;
-state.textContent='加载中…';
-error.hidden=true;
-loading.hidden=false;
-capabilities.hidden=true;
-try{
-const data=await sbApi.json('/api/ai/capabilities',{signal:pageRequest.signal});
-if(generation!==loadGeneration)return;
-renderCapabilities(data);
-state.textContent='已加载';
-loading.hidden=true;
-capabilities.hidden=false
-}catch(e){
-state.textContent='加载失败';
-error.textContent=sbApi.safeError(e);
-error.hidden=false;
-loading.hidden=true
-}
-}
-
-function renderCapabilities(data){
-capabilities.replaceChildren();
-
-// LLM Provider
-const llm=data.llm||data;
-if(llm){
-const card=createCapabilityCard(
-'LLM Provider',
-llm.available?'available':'unavailable',
-llm.available?'可用':'不可用',
-{
-'Provider ID':text(llm.provider_id||llm.embedding_provider||'未配置'),
-'Model ID':text(llm.model_id||llm.embedding_model||'未配置'),
-'支持':formatCapabilities(llm)
-}
-);
-capabilities.append(card)
-}
-
-// Embedding Provider
-const embedding=data.embedding;
-if(embedding){
-const card=createCapabilityCard(
-'Embedding Provider',
-embedding.available?'available':'unavailable',
-embedding.available?'可用':'不可用',
-{
-'Provider ID':text(embedding.provider_id||embedding.embedding_provider||'未配置'),
-'Model ID':text(embedding.model_id||embedding.embedding_model||'未配置'),
-'维度':embedding.dimensions?String(embedding.dimensions):'未知',
-'最大输入字符':embedding.max_text_chars?String(embedding.max_text_chars):'未知'
-}
-);
-capabilities.append(card)
-}else if(!data.embedding&&data.available){
-// Legacy response without explicit embedding
-const card=createCapabilityCard(
-'Embedding Provider',
-'unavailable',
-'未配置',
-{'说明':'后端未显式配置 Embedding Provider'}
-);
-capabilities.append(card)
-}
-}
-
-function createCapabilityCard(title,statusClass,statusText,meta){
-const card=document.createElement('div');
-card.className='capability-card';
-
-const header=document.createElement('div');
-header.className='capability-header';
-
-const h3=document.createElement('h3');
-h3.textContent=title;
-header.append(h3);
-
-const status=document.createElement('span');
-status.className='capability-status '+statusClass;
-status.textContent=statusText;
-header.append(status);
-
-card.append(header);
-
-if(meta&&Object.keys(meta).length>0){
-const dl=document.createElement('dl');
-dl.className='capability-meta';
-Object.entries(meta).forEach(([key,value])=>{
-const dt=document.createElement('dt');
-dt.textContent=key;
-const dd=document.createElement('dd');
-dd.textContent=value;
-dl.append(dt,dd)
-});
-card.append(dl)
-}
-
-return card
-}
-
-function formatCapabilities(cap){
-const parts=[];
-if(bool(cap.supports_chat))parts.push('对话');
-if(bool(cap.supports_completion))parts.push('补全');
-if(bool(cap.supports_streaming))parts.push('流式');
-if(bool(cap.supports_tools))parts.push('工具调用');
-if(bool(cap.supports_json_mode))parts.push('JSON 模式');
-return parts.length?parts.join('、'):'无明确声明'
-}
-
-async function checkHealth(){
-try{
-const data=await sbApi.json('/api/readiness',{signal:pageRequest.signal});
-healthStatus.replaceChildren();const badge=document.createElement('p');badge.className='badge badge-success';badge.textContent='系统就绪';healthStatus.append(badge)
-}catch(e){
-const msg=sbApi.safeError(e);
-healthStatus.replaceChildren();const badge=document.createElement('p');badge.className='badge badge-warn';badge.textContent=msg;healthStatus.append(badge)
-}
-}
-
-load();
-checkHealth()
+const $=id=>document.getElementById(id), errorMessages={
+invalid_provider_type:'Provider 类型无效',provider_invalid_config:'Provider 配置无效，请检查 Base URL、Model ID 和密钥',provider_connection_failed:'Provider 连接失败，请检查网络和地址',provider_timeout:'Provider 请求超时，请稍后重试',provider_auth_failed:'Provider 认证失败，请检查 API Key',provider_forbidden:'Provider 拒绝访问',provider_rate_limited:'Provider 请求过于频繁，请稍后重试',provider_unavailable:'Provider 暂时不可用',provider_protocol_error:'Provider 响应格式无效',provider_response_too_large:'Provider 响应过大',invalid_channel:'Email 渠道无效',delivery_configuration_invalid:'Email 配置无效，请检查字段',delivery_connection_failed:'Email 连接失败，请检查网络和地址',delivery_timeout:'Email 连接超时，请稍后重试',delivery_auth_failed:'Email 认证失败，请检查凭据',delivery_failed:'Email 发送测试失败',delivery_response_too_large:'Email 测试响应过大',connection_test_failed:'连接测试失败，请稍后重试'};
+function message(e){return errorMessages[e.code]||sbApi.safeError(e)}
+function formValues(form){const data={};new FormData(form).forEach((value,key)=>{data[key]=value});data.timeout_seconds=Number(data.timeout_seconds);return data}
+function result(el,ok,text){el.hidden=false;el.className='notice '+(ok?'status-success':'status-failed');el.textContent=text}
+function clearSecretFields(form){form.querySelectorAll('input[type=password]').forEach(input=>{input.value=''});}
+function providerEnv(){const f=formValues($('provider-form'));const prefix=f.provider_type==='embedding'?'STUDYBUDDY_EMBEDDING':'STUDYBUDDY_AI';const lines=[prefix+'_PROVIDER='+f.provider_type,prefix+'_MODEL='+f.model_id,prefix+'_BASE_URL='+f.base_url,prefix+'_API_KEY='+f.api_key];return lines.join('\n')}
+function emailEnv(){const f=formValues($('email-form'));if(f.channel==='feishu')return 'STUDYBUDDY_REPORT_DELIVERY_FEISHU_WEBHOOK='+f.feishu_webhook;return ['STUDYBUDDY_REPORT_DELIVERY_SMTP_HOST='+f.smtp_host,'STUDYBUDDY_REPORT_DELIVERY_SMTP_PORT='+f.smtp_port,'STUDYBUDDY_REPORT_DELIVERY_SMTP_USERNAME='+f.smtp_username,'STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD='+f.smtp_password].join('\n')}
+async function copyText(text,form,resultEl){try{await navigator.clipboard.writeText(text);result(resultEl,true,'环境变量片段已复制；仍需在本地环境中应用并重启。')}catch(_){result(resultEl,false,'无法访问剪贴板，请在本地安全环境中手动组装环境变量；密钥不会显示在页面上。')}clearSecretFields(form)}
+$('provider-copy').addEventListener('click',()=>copyText(providerEnv(),$('provider-form'),$('provider-result')));
+$('email-channel').addEventListener('change',e=>{$('smtp-fields').hidden=e.target.value!=='smtp';$('feishu-fields').hidden=e.target.value!=='feishu'});
+$('provider-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,button=$('provider-test'),out=$('provider-result');sbUi.busy(button,true,'测试 Provider 连接');try{await sbApi.json('/api/system/provider-connection-test',{method:'POST',body:JSON.stringify(formValues(form))});result(out,true,'连接测试通过。测试通过 ≠ 已保存；请应用环境变量并重启。')}catch(err){result(out,false,message(err))}finally{sbUi.busy(button,false);clearSecretFields(form)}});
+$('email-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,values=formValues(form),out=$('email-result'),button=$('email-test');const payload=values.channel==='smtp'?{channel:'smtp',smtp_host:values.smtp_host,smtp_port:Number(values.smtp_port),smtp_secure:values.smtp_secure==='true',smtp_username:values.smtp_username,smtp_password:values.smtp_password,smtp_sender:values.smtp_sender,smtp_recipient:values.smtp_recipient,timeout_seconds:values.timeout_seconds}:{channel:'feishu',feishu_webhook:values.feishu_webhook,timeout_seconds:values.timeout_seconds};sbUi.busy(button,true,'测试 Email 连接');try{await sbApi.json('/api/system/email-connection-test',{method:'POST',body:JSON.stringify(payload)});result(out,true,'连接测试通过。测试通过 ≠ 已保存；请应用环境变量并重启。')}catch(err){result(out,false,message(err))}finally{sbUi.busy(button,false);clearSecretFields(form)}});
+const state=$('state'),error=$('error'),loading=$('loading'),capabilities=$('capabilities'),healthStatus=$('health-status');function text(v){return typeof v==='string'?v:''}function bool(v){return v===true}
+function createCard(title,available,meta){const card=document.createElement('div');card.className='capability-card';const header=document.createElement('div');header.className='capability-header';const h3=document.createElement('h3');h3.textContent=title;header.append(h3);const badge=document.createElement('span');badge.className='capability-status '+(available?'available':'unavailable');badge.textContent=available?'可用':'不可用';header.append(badge);card.append(header);const dl=document.createElement('dl');dl.className='capability-meta';Object.entries(meta).forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd)});card.append(dl);return card}
+function renderCapabilities(data){capabilities.replaceChildren();const llm=data.llm||data;if(llm)capabilities.append(createCard('LLM Provider',!!llm.available,{'Provider ID':text(llm.provider_id||'未配置'),'Model ID':text(llm.model_id||'未配置'),'支持':bool(llm.supports_chat)?'对话':'无明确声明'}));if(data.embedding)capabilities.append(createCard('Embedding Provider',!!data.embedding.available,{'Provider ID':text(data.embedding.provider_id||'未配置'),'Model ID':text(data.embedding.model_id||'未配置'),'维度':data.embedding.dimensions?String(data.embedding.dimensions):'未知'}))}
+async function load(){try{const data=await sbApi.json('/api/ai/capabilities',{signal:pageRequest.signal});renderCapabilities(data);state.textContent='已加载';loading.hidden=true;capabilities.hidden=false}catch(e){state.textContent='加载失败';error.textContent=sbApi.safeError(e);error.hidden=false;loading.hidden=true}}
+async function checkHealth(){try{await sbApi.json('/api/readiness',{signal:pageRequest.signal});healthStatus.innerHTML='<p class="badge badge-success">系统就绪</p>'}catch(e){healthStatus.textContent=sbApi.safeError(e)}}
+load();checkHealth();
 })();
 </script>
 </body>

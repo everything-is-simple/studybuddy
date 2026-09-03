@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -199,21 +200,17 @@ def test_p1_5_0_frontend_remains_readonly() -> None:
     settings_provider_path = ROOT / "backend/app/static/settings-provider.html"
     settings_provider = settings_provider_path.read_text(encoding="utf-8")
 
-    # 验证只读提示存在
-    assert "只读" in settings_provider or "read-only" in settings_provider.lower() \
-        or "配置写入契约尚未完成批准" in settings_provider
+    # P1-5-1 允许测试连接表单提交，但页面必须明确保持 test-only。
+    assert "测试通过 ≠ 已保存" in settings_provider
+    assert "不会改变当前配置" in settings_provider
+    assert "provider-connection-test" in settings_provider
+    assert "email-connection-test" in settings_provider
 
-    # 验证没有保存按钮（排除注释）
-    lines = [line for line in settings_provider.split("\n") if not line.strip().startswith("<!--")]
-    html_without_comments = "\n".join(lines)
-
-    # 允许"保存"出现在提示文本中，但不应有实际保存按钮
-    # 使用启发式：检查是否有 type="submit" 或 onclick 提交逻辑
-    if 'type="submit"' in html_without_comments or 'type=\\"submit\\"' in html_without_comments:
-        # 可能有提交按钮，需进一步检查是否用于配置保存
-        # 这里简单检查是否有 save/保存相关的 ID 或 class
-        if "save" in html_without_comments.lower() or "保存" in html_without_comments:
-            pytest.fail("settings-provider.html 可能包含配置保存按钮")
+    # 不得出现配置保存按钮或任何持久化路径。
+    assert not re.search(r"id=[\"'][^\"']*(?:save|保存)[^\"']*[\"']", settings_provider, re.I)
+    assert "localStorage" not in settings_provider
+    assert "sessionStorage" not in settings_provider
+    assert "/api/system/config" not in settings_provider
 
     # 检查 api.js 是否有配置保存函数
     api_js_path = ROOT / "backend/app/static/js/api.js"
