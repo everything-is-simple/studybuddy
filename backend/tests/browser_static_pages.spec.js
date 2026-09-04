@@ -59,15 +59,17 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     server = startServer();
     await waitReady();
 
-    // ── 2. /app/ today page ────────────────────────────────────────────────
+    // ── 2. /app/ is a compatibility alias for the single Today page ──────
     await page.goto(`${BASE}/app/`);
+    await expect(page).toHaveURL(`${BASE}/app/today.html`);
     await expect(page).toHaveTitle(/StudyBuddy.*今天/i);
+    await expect(page.locator('h1')).toContainText('你的学习日程');
     await expect(page.locator('.brand')).toHaveText('StudyBuddy');
+    await expect(page.locator('.brand')).toHaveAttribute('href', '/app/today.html');
     await expect(page.locator('[data-nav]')).toBeVisible();
     await expect(page.locator('[data-system-status]')).toBeVisible();
-    await expect(page.locator('[data-od-id="today-main"]')).toBeVisible();
+    await expect(page.locator('#summary-status')).toBeVisible();
     await expect(page.locator('a[href="/app/materials.html"]').first()).toBeVisible();
-    await expect(page.locator('.footer-note')).toContainText('原入口');
 
     // Nav links all resolve
     const navLinks = await page.locator('[data-nav] a').all();
@@ -174,6 +176,7 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
       /Traceback|File ".*\.py"/i,
     ];
     await page.goto(`${BASE}/app/`);
+    await expect(page).toHaveURL(`${BASE}/app/today.html`);
     const rootText = await page.locator('body').textContent();
     for (const pat of privacyPatterns) {
       expect(rootText).not.toMatch(pat);

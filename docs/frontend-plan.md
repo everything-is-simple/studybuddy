@@ -56,16 +56,16 @@
 
 ## 1. 产品目标与用户任务
 
-### 1.0 当前产物基线（以 `backend/app/templates/index.html` 为准）
+### 1.0 当前产物基线（以 `backend/app/static/` 为准）
 
 本节是当前实现快照，不是目标信息架构：
 
-- `/` 已由 `backend/app/api/web.py` 重定向至 `/app/today.html`；正式 static root 为 `backend/app/static/`，由 app factory 以 `StaticFiles(directory=..., html=True)` 挂载到 `/app`；`/legacy` 保留旧 UI 兼容入口。
-- 旧内嵌 workspace 仍保留完整历史行为，但正式 `/app/` 已提供 21 个静态页面；A3/A4 页面已按声明范围通过 browser/keyboard/narrow/privacy 契约。
-- 当前真实交互通过页面内 `fetch()` 调用后端 API；已保留重复提交保护、幂等键、过期响应保护、失败提示、重试入口、citation 定位、草稿确认/拒绝/归档和文件下载等行为。
-- 旧入口导航仍是同页锚点（材料、问答、卡片与练习、练习反馈、学习计划、资料笔记、课堂与报告），不是独立页面路由；A3-1 新增的 `/app/` 灰盒已提供今天、资料、材料详情、问答四个独立页面，但尚未替换旧入口，也没有任务中心、Provider 配置写入页或系统诊断页。
-- 正式 `/app/` 页面已使用共享 `tokens.css`/`app.css` Neutral Modern 层；旧 `/legacy` 保持兼容，不将旧页面样式状态误写成正式视觉系统完成。
-- 当前课堂采集明确触发的是 `deterministic` 转写；报告页面明确展示脱敏快照，delivery 仅允许默认 off/allowlisted dry-run，live 仍固定拒绝。不得把这些 UI 存在误写成真实 ASR 或 live delivery 已通过。
+- `/` 已由 `backend/app/api/web.py` 重定向至 `/app/today.html`；`/app/` 和 `/app/index.html` 也通过兼容页进入同一个 `today.html`。正式 static root 为 `backend/app/static/`，由 app factory 以 `StaticFiles(directory=..., html=True)` 挂载到 `/app`；`/legacy` 保留旧 UI 兼容入口。
+- 正式 `/app/` 已提供 21 个静态 HTML 文件，其中 `index.html` 只负责兼容跳转，不再承载第二套 Today 或能力声明；其余正式页面品牌链接统一返回 `/app/today.html`。
+- 当前真实交互通过共享 `api.js` 及页面脚本调用后端 API；已保留重复提交保护、幂等键、过期响应保护、失败提示、重试入口、citation 定位、草稿确认/拒绝/归档和文件下载等行为。这些脚本是全局共享脚本，尚不是真正的 ES Modules。
+- P2-USE 已提供本机 OCR/ASR 自动探测、能力仪表盘、`data_root/config/settings.json` 配置持久化及 Provider/Email 先测后存；secret 不由读取 API 回显、不进 SQLite/backup，delivery 开关仍默认关闭且不可通过保存凭据开启。
+- 正式 `/app/` 页面已使用共享 `tokens.css`/`app.css` Neutral Modern 层；旧 `/legacy` 保持兼容。
+- 真实 OCR/ASR 与外部 Provider 只能按 `STATUS.md` 记录的精确本机/provider/model/input scope 声明；通用能力和 live delivery 仍未验证或未批准。
 
 因此，后文出现“必须提供”“目标页面”“A3/A4/B0-B4/D0-D1”时，均表示按路线门禁推进的迁移目标；出现“当前 UI/当前产物”时，均以本节事实为准。迁移期间优先保留上述已有行为，再逐页迁移并补回归测试。
 
@@ -99,16 +99,16 @@
 | 材料管理 | 单文件、批量/文件夹导入、列表、搜索、分页、软删/恢复/永久删除、原文/提取文本导出 | 资料库、导入反馈、回收站、详情、版本/来源状态、导出确认 | 已有旧 workspace，待拆屏 |
 | AI 索引与检索 | lexical/vector/hybrid、显式 indexing、任务化 embedding index、retry/cancel、source lifecycle 过滤 | 索引状态、模式摘要、失败重试、不可引用状态 | 后端已具备，待统一 UI |
 | Q&A | thread/history、scope、多材料、同步 ask、citation detail/定位、幂等、stale response 保护 | 对话页、材料范围、引用侧栏、重试与错误引导 | 旧 UI 已有，需产品化迁移 |
-| Provider | capabilities、fake/demo、generic configured/unverified、精确 Provider evidence | Provider 状态和能力说明；若无安全配置写入 API，不做假设置表单 | 当前产物已显示能力状态；无配置写入/连接测试页 |
-| 目标/模块/计划 | goal、knowledge module、plan/item、DAG dependency、状态转换、progress event、source links | 学习总览、模块页、计划详情、依赖和进度记录 | 后端已具备，前端缺页 |
-| 学习节奏 | IANA timezone、daily/weekly rhythm、allocation、timeline/load/progress summary | 今日学习、周节奏、调整分配、超限/重复提示 | 后端已具备，前端缺页 |
-| 笔记 | user note、block、module link、citation source link、AI draft、confirm/reject/archive、导出 | 笔记编辑器、块级来源、AI 草稿审阅、版本保护 | 后端已具备，前端缺页 |
-| 卡片 | deck/card、AI draft、引用校验、confirm/reject/archive、review history | 卡组、卡片审阅、记忆结果、来源状态 | 后端已具备，前端缺页 |
-| 练习 | exercise set、MC/TF/short answer、draft/ready、attempt、deterministic grading | 练习会话、提交、结果、简答待人工复核 | 后端已具备，前端缺页 |
-| 错题/薄弱点 | mistake case、反馈、redo、archive、weak-point projection | 错题清单、反馈、再练、薄弱点摘要 | 后端已具备，前端缺页 |
-| 冲刺复习 | cram goal、session、结果，且不改写 plan/progress/rhythm | 冲刺目标、限时练习、结果页 | 后端已具备，前端缺页 |
-| 课堂采集 | capture session、音频资产、fake/loopback transcription、draft edit/confirm/reject/archive、S2 接入 | 上传、任务/转写状态、分段草稿、确认门 | 9D scope 后端/UI 部分已有，需正式拆页 |
-| 报告 | report snapshot、daily/weekly/monthly/exam_alert、脱敏 preview/export | 报告列表、预览、导出、来源降级提示 | 后端已具备，前端缺页 |
+| Provider | capabilities、连接测试、外置配置持久化、精确 Provider evidence | Provider 状态、显式测试、测试通过后保存和安全清除 | `settings.html`/`settings-provider.html` 已接入；secret 不回显、不进浏览器存储/SQLite/backup |
+| 目标/模块/计划 | goal、knowledge module、plan/item、DAG dependency、状态转换、progress event、source links | 学习总览、模块页、计划详情、依赖和进度记录 | `plans.html` 写工作区和 `plan-detail.html` 只读详情已存在；两页职责及 Today 交接仍待冻结 |
+| 学习节奏 | IANA timezone、daily/weekly rhythm、allocation、timeline/load/progress summary | 今日学习、周节奏、调整分配、超限/重复提示 | 计划页可配置；Today 尚未按当前日期 allocation 严格生成任务 |
+| 笔记 | user note、block、module link、citation source link、AI draft、confirm/reject/archive、导出 | 笔记编辑器、块级来源、AI 草稿审阅、版本保护 | `notes.html` 写工作区和 `note-detail.html` 只读详情已存在；职责交接仍待冻结 |
+| 卡片 | deck/card、AI draft、引用校验、confirm/reject/archive、review history | 卡组、卡片审阅、记忆结果、来源状态 | `cards.html` 已接入限定范围读写路径 |
+| 练习 | exercise set、MC/TF/short answer、draft/ready、attempt、deterministic grading | 练习会话、提交、结果、简答待人工复核 | `exercises.html` 与 practice 三页链已接入；结果到具体复盘上下文仍待补齐 |
+| 错题/薄弱点 | mistake case、反馈、redo、archive、weak-point projection | 错题清单、反馈、再练、薄弱点摘要 | `review.html` 已接入限定范围读写路径 |
+| 冲刺复习 | cram goal、session、结果，且不改写 plan/progress/rhythm | 冲刺目标、限时练习、结果页 | `practice.html` 与 session/result 已接入限定范围路径 |
+| 课堂采集 | capture session、音频/图片资产、OCR/ASR draft edit/confirm/reject、S2 接入 | 上传、能力状态、转写/OCR、草稿、确认门 | `capture.html` 已接入；真实能力只按 P2-USE 精确本机 scope 声明，确认后的跨页交接仍待完善 |
+| 报告 | report snapshot、daily/weekly/monthly/exam_alert、脱敏 preview/export | 报告列表、预览、导出、来源降级提示 | `reports.html` 已提供只读查看和 JSON/Markdown 导出；创建入口仍在综合课堂工作区 |
 | 交付 | 默认 off、allowlisted dry-run、live 仍拒绝、append-only delivery audit | 只显示安全审计和 dry-run；不显示“已发送” | 当前产物已有交付检查/审计；仍不是 live delivery |
 | 任务/运行 | 单进程 task runner；approved `embedding_index` enqueue/read/cancel/retry；liveness/health/readiness/diagnostics | 全局任务状态、重试/取消、系统状态入口 | 后端已验证；当前产物仅有部分运行/交付状态表达，尚无正式任务/诊断页，A3/A4 迁移时立即接入；其它 task kind 必须显示“尚未接入任务运行器” |
 | 备份/恢复 | operator CLI/manifest/verify/restore；不在浏览器暴露内部路径 | 只读运行状态与安全指引，不复制 CLI 管理面板 | 前端不纳入 MVP 操作面 |
@@ -152,11 +152,11 @@
 
 ### 3.2 页面文件原则
 
-每个独立用户任务一个 HTML 文件；`index.html` 只作为“今天”入口，不承载全产品长页面。
+每个独立用户任务一个 HTML 文件；唯一正式 Today 是 `today.html`，`index.html` 仅作为 `/app/` 和旧书签的兼容跳转，不承载第二套首页。
 
 ```text
 <正式静态根目录>/
-├── index.html                     # 今天 / 总览（当前已落地于 backend/app/static/）
+├── index.html                     # /app/ 兼容跳转至 today.html
 ├── plans.html                     # 目标、模块、计划列表
 ├── plan-detail.html               # 单个计划、items、依赖、进度、节奏
 ├── materials.html                 # 资料库、搜索、索引、回收站入口
@@ -189,7 +189,7 @@
     └── settings.js
 ```
 
-**A3-1 结果**：正式 static root 已冻结为 `backend/app/static/`，app factory 挂载为 `/app`，当前提供 `index.html`、`materials.html`、`material-detail.html`、`qa.html` 以及共享 `css/app.css`、`js/api.js`、`js/shell.js`。旧 `/` 保留为迁移期兼容入口；缓存头/版本化刷新策略和何时切换 `/` 仍是 TODO。不得把 `/app/index.html` 的灰盒交付误写成四页完整功能迁移。
+**当前结果**：正式 static root 已冻结为 `backend/app/static/` 并挂载为 `/app`；21 个静态 HTML 文件存在。`/`、`/app/`、`/app/index.html` 统一进入 `/app/today.html`，`/legacy` 保留兼容。`index.html` 只是跳转兼容页，不计作第二套产品首页；缓存头/版本化刷新策略仍是 TODO。
 
 ## 4. 低保真 draft 草图（先评审任务，再做视觉）
 
@@ -405,7 +405,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 |---|---|---|
 | A3-1 静态资源 | 正式目录、`StaticFiles` mount、HTML 路由、缓存/刷新策略、旧 `/` 兼容 | 已确认并实现：`backend/app/static/` → `/app`；缓存细则与旧入口最终切换仍 TODO |
 | A3-2 页面读 API | 总览聚合是否需要新安全 endpoint，或由现有多个 API 组合 | ✅ 已通过：Chromium 路由、材料列表/详情、问答线程、窄屏 360px、键盘 Tab/Enter、隐私边界（无路径/SQL/密钥泄露）全部通过 56 项浏览器测试。 |
-| A3-3 Provider 设置 | 现有 capabilities 只提供状态快照；配置写入、脱敏回读、连接测试是否已有正式 API | 当前计划不得假定存在 |
+| A3-3 Provider 设置 | capabilities、显式连接测试、配置写入、脱敏回读 | P2-USE 已实现：`GET/PUT /api/system/settings`、clear 与 connection-test；secret 只返回 set 标记，delivery 开关不开放持久化 |
 | A3-4 任务 | `/api/tasks/{task_id}`、cancel、retry 与 enqueue/read 的完整页面字段 | 已有局部能力，需固定公共响应合同 |
 | A3-5 计划/节奏 | 列表、详情、progress、rhythm、source refresh 的错误和分页策略 | 后端已具备，需 API mapping 测试 |
 | A3-6 笔记/学习 | notes、cards、exercises、practice、mistakes、weak-points、cram 的列表/详情字段 | 后端已具备，需确认前端最小 payload |
@@ -420,7 +420,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 ### A3：正式前端根与核心阅读闭环
 
 1. 冻结 API/行为/旧 workspace 兼容基线。
-2. ✅ 确认并挂载唯一正式 static root：`backend/app/static/` → `/app`；旧 `/` 暂保留兼容。
+2. ✅ 确认并挂载唯一正式 static root：`backend/app/static/` → `/app`；`/`、`/app/`、`/app/index.html` 已统一进入 Today，旧工作区仅保留在 `/legacy`。
 3. ✅ 建立首版应用壳、共享 API/导航/状态样式；完整 Neutral Modern 迁移仍随页面迁移继续。
 4. ✅ 交付 Draft A–D 灰盒：`index.html`、`materials.html`、`material-detail.html`、`qa.html`。
 5. 迁移导入、搜索、索引、thread、citation、定位、导出和窄屏/键盘行为。
@@ -430,7 +430,7 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 
 ### A4：Provider 设置与课堂采集边界（按权威路线图）
 
-1. `settings.html` / `settings-provider.html`：先接入 capabilities、readiness、diagnostics 和当前任务状态；只有后端形成安全的配置写入/验证契约后，才开放对应配置动作。密钥不回显、不持久化到浏览器。
+1. `settings.html` / `settings-provider.html`：已接入 capabilities、自检、连接测试和外置配置持久化。密钥不回显、不持久化到浏览器、不进入 SQLite/backup；Email 凭据保存不启用 delivery。
 2. `capture.html`：接入 Phase 9D 已验证的 deterministic fake/loopback 上传、草稿编辑、确认/拒绝/归档和 source lifecycle；真实转写动作由能力状态与 B1 门禁共同控制，未通过时只显示阻塞原因。
 3. `tasks.html`（如 A0 静态资源与路由契约确认后需要独立入口）：仅展示后端明确批准的 `embedding_index` enqueue/read/retry/cancel；其它操作显示“尚未接入任务运行器”。
 
@@ -519,9 +519,9 @@ AI 草稿与用户内容视觉分层；确认前不写入正式用户笔记语�
 - [x] **正式页面拆分（A3-PAGES）**：已补齐 `plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`；替代页保持现有混合页面入口作为回退。首批页面只消费既有已冻结 API，覆盖缺少标识、failure/retry、来源生命周期、导航回退、只读和隐私边界；历史 A3-PAGES gate 快照为 `117 passed, 3 skipped`，专项证据 `13 passed`；当前完整 browser 基线为 `144 passed, 4 skipped`。报告 JSON/Markdown 导出与只读审计已在 B3 scope 内迁移；不代表未迁移练习写操作或 Provider 配置写入已完成。
 - [x] **Neutral Modern 视觉迁移（A3-VISUAL）**：A3-PAGES 已通过；Neutral Modern token、组件、响应式、焦点和状态视觉已统一，剩余局部 CSS 已收敛到共享样式。全部 21 个 `/app/*.html` 无局部 `<style>`；`browser_frontend_visual_matrix.spec.js` 覆盖 shared tokens、card、360/1920、触控目标和 focus ring（`2 passed`）。不得将此项扩大解释为 Provider 写入、报告导出/审计或练习写流程已完成。
 - [x] **后续行为切片（A3-VISUAL 后）**：Practice workflow 第二阶段已完成 scoped closeout：`practice-session.html` 覆盖公开题目、start/submit/finish、nested result、expired/source warning、retry/stale 安全边界，`practice-result.html` 使用真实 nested summary，`review.html` 支持 detail、feedback、review、mark-mistake、redo、archive；专项 browser `7 passed`，完整 backend `468 passed, 3 skipped`，完整 browser `144 passed, 4 skipped`。B3 reports export/audit 已完成限定范围接入；Provider 写入仍需安全后端契约，`not_exposed` 不迁移也不伪造。
-- [x] **旧 `/` 入口**：`/` 已重定向到 `/app/today.html`；完整旧单页保留在 `/legacy` 作为兼容回退。
+- [x] **正式入口统一**：`/`、`/app/`、`/app/index.html` 统一进入 `/app/today.html`；全部正式页面品牌链接返回 Today；完整旧单页仅保留在 `/legacy`。
 - [ ] **首页聚合 API**：当前由多个已验证 API 组合；是否新增聚合 endpoint 仍是产品/后端契约决策。
-- [ ] **Provider 配置**：后端是否批准配置写入和 connection-test？若没有，设置页只做状态说明。
+- [x] **Provider 配置**：P2-USE 已实现显式 connection-test 与测试通过后保存；配置在 data_root 外置 JSON 中免重启生效，secret 不回显、不进 SQLite/backup，delivery 开关仍不开放持久化。
 - [ ] **Today 的默认主行动**：按“计划任务 > 待审草稿 > 导入材料 > Provider 状态说明”还是其它优先级？Provider 配置仅在正式写入契约获批后才可作为可执行动作。
 - [x] **导航显示策略**：报告、课堂采集和设置入口已显示；真实能力由状态/门禁限制，未批准操作不暴露。
 - [ ] **capture 入口**：确认 transcript 后的 material/revision 命名与用户可见文案。

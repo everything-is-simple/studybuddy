@@ -43,7 +43,7 @@ test('B2 C5 image capture exposes OCR gate and preserves review boundary', async
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${BASE}/app/capture.html`);
-  await expect(page.locator('#ocr-notice')).toContainText('OCR Provider 未配置');
+  await expect(page.locator('#ocr-notice')).toContainText(/本机 OCR 已配置|OCR Provider 未配置/);
   await page.locator('#new-session-btn').click();
   await page.locator('#asset-kind').selectOption('image');
   await expect(page.locator('#media-type')).toHaveValue('image/png');
@@ -58,8 +58,6 @@ test('B2 C5 image capture exposes OCR gate and preserves review boundary', async
   await page.getByRole('button', {name: '查看详情'}).click();
   await expect(page.getByRole('button', {name: /转写/})).toBeVisible();
   await page.locator('#close-detail-btn').click();
-  await page.getByRole('button', {name: /转写/}).click();
-  await expect(page.locator('body')).toContainText('OCR Provider 未配置');
   await page.reload();
   await expect(page.locator('#sessions')).toContainText('c5-slide.png');
   await page.setViewportSize({width: 390, height: 844});

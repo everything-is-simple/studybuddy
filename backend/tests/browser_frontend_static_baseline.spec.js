@@ -6,9 +6,9 @@ const ROOT = 'H:/studybuddy-test/runs/frontend-static-baseline';
 const PORT = 8829;
 const BASE = `http://127.0.0.1:${PORT}`;
 const PAGES = [
-  ['index.html', null], ['plan-detail.html', '#plan-status'], ['note-detail.html', '#note-status'],
+  ['plan-detail.html', '#plan-status'], ['note-detail.html', '#note-status'],
   ['practice-session.html', '#session-status'], ['practice-result.html', '#result-status'],
-  ['review.html', '#review-status'], ['reports.html', '#report-status'], ['settings.html', '#settings-status'],
+  ['review.html', '#review-status'], ['reports.html', '#report-status'], ['settings.html', '#capability-summary'],
   ['today.html', '#summary-status'], ['materials.html', '#state'], ['material-detail.html', '#state'],
   ['qa.html', '#thread-status'], ['plans.html', '#plan-status'], ['notes.html', '#note-status'],
   ['cards.html', '#deck-status'], ['exercises.html', '#set-status'], ['practice.html', '#session-status'],
