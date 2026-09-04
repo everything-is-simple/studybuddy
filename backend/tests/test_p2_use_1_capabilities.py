@@ -216,9 +216,17 @@ def test_public_projection_hides_secrets_and_paths(tmp_path: Path) -> None:
 
 def test_settings_reject_unknown_keys_and_bad_values(tmp_path: Path) -> None:
     root = tmp_path / "data"
-    with pytest.raises(SettingsError) as unknown:
-        save_settings(root, {"report_delivery_smtp_password": "nope"})
-    assert unknown.value.code == "settings_unknown_key"
+    # Delivery credentials are storable, but the delivery switches are not: mode,
+    # enablement and per-use authorization stay runtime-only security controls.
+    for guarded in ("report_delivery_mode", "report_delivery_enabled",
+                    "report_delivery_authorized"):
+        with pytest.raises(SettingsError) as unknown:
+            save_settings(root, {guarded: "on"})
+        assert unknown.value.code == "settings_unknown_key"
+
+    with pytest.raises(SettingsError) as bad_target:
+        save_settings(root, {"report_delivery_smtp_targets": "missing-separator"})
+    assert bad_target.value.code == "settings_invalid_value"
 
     for payload in ({"ai_base_url": "ftp://example.com"},
                     {"ai_base_url": "http://evil.example.com"},
@@ -393,3 +401,44 @@ def test_settings_clear_endpoint_resets_capabilities(client: TestClient) -> None
     assert cleared.status_code == 200
     assert cleared.json()["capabilities"]["qa"]["status"] == STATUS_NOT_CONFIGURED
     assert cleared.json()["settings"]["ai_api_key_set"] is False
+
+
+def test_stored_delivery_credentials_reach_the_resolved_config(tmp_path: Path) -> None:
+    """Email credentials persist, but the delivery switch stays a security control."""
+    root = tmp_path / "data"
+    save_settings(root, {
+        "report_delivery_smtp_host": "smtp.example.com",
+        "report_delivery_smtp_port": 465,
+        "report_delivery_smtp_secure": True,
+        "report_delivery_smtp_username": "sender@example.com",
+        "report_delivery_smtp_password": "app-specific-code",
+        "report_delivery_smtp_targets": "parent=guardian@example.com",
+    })
+    base = AppConfig(data_root=root)
+    resolved = resolve_config(base, settings=load_settings(root), detection=None)
+
+    assert resolved.report_delivery_smtp_host == "smtp.example.com"
+    assert resolved.report_delivery_smtp_port == 465
+    assert resolved.report_delivery_smtp_secure is True
+    assert resolved.report_delivery_smtp_username == "sender@example.com"
+    assert resolved.report_delivery_smtp_password_runtime == "app-specific-code"
+    assert resolved.report_delivery_smtp_targets == (("parent", "guardian@example.com"),)
+    # Outbound delivery is not switched on by storing credentials.
+    assert resolved.report_delivery_mode == base.report_delivery_mode
+    assert resolved.report_delivery_enabled is base.report_delivery_enabled
+
+    snapshot = capability_snapshot(resolved, None)
+    assert snapshot["capabilities"]["report"]["delivery_configured"] is True
+    assert snapshot["delivery_mode"] == base.report_delivery_mode
+    body = json.dumps(snapshot)
+    assert "app-specific-code" not in body and "guardian@example.com" not in body
+
+
+def test_environment_delivery_credentials_win_over_stored_ones(tmp_path: Path,
+                                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    root = tmp_path / "data"
+    save_settings(root, {"report_delivery_smtp_host": "stored.example.com"})
+    monkeypatch.setenv("STUDYBUDDY_REPORT_DELIVERY_SMTP_HOST", "env.example.com")
+    resolved = resolve_config(AppConfig(data_root=root, report_delivery_smtp_host="env.example.com"),
+                              settings=load_settings(root), detection=None)
+    assert resolved.report_delivery_smtp_host == "env.example.com"

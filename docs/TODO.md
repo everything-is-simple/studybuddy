@@ -366,10 +366,16 @@ revision → chunks → retrieval → citations → Q&A
 - [x] P2-USE-3：配置可持久化（针对顽疾 ② 后半）。**已完成 2026-09-04。**
   AI key 与组件路径写入 `data_root` 下独立配置文件（不进 SQLite、不进 backup、不进 git），改完免重启生效；配置页从「只测不存」升级为「测 + 存」。本项明确推翻 P1-5-3 的「不引入持久化」结论。
   实现：`backend/app/local_settings.py`（`<data_root>/config/settings.json`，原子写入、白名单校验、大小上限、secret 只存不回显）、`GET/PUT /api/system/settings`、`POST /api/system/settings/clear`。
-  实测：备份集只含 `database.sqlite3` 与 `manifest.json`，secret 不在备份内；`settings.json` 已被 `.gitignore` 命中。`report_delivery` 凭据刻意不纳入持久化。
+  实测：备份集只含 `database.sqlite3` 与 `manifest.json`，secret 不在备份内；`settings.json` 已被 `.gitignore` 命中。
+  **2026-09-04 修订（使用者报的真实缺陷）**：`settings-provider.html` 测试通过后根本没有保存按钮，只能手抄环境变量。现改为「先测后存」：测通才出现「保存此配置」，修改表单则收回该按钮（`providerVerified`/`emailVerified` 护卫）。Email 凭据改为可持久化（host/port/secure/username/password/targets），但 `report_delivery_mode`/`_enabled`/`_authorized` 三个开关仍不入白名单：**存下凭据不等于开启投递**。`report_delivery_smtp_targets` 格式为 `label=收件人`，label 限 ASCII。回归：`test_p1_5_0_governance.py` 改为验证先测后存，`browser_p1_5_configuration_security.spec.js` 新增 3 项。
 - [x] P2-USE-4：真实全链跑通（针对顽疾 ③）。**已完成 2026-09-04。**
   真实材料链路已在本机 live 服务器（`127.0.0.1:8787`）跑通：真实文本层 PDF + 桌面真实 DOCX 导入解析 → 板书 PNG 真实 PaddleOCR（5 段，置信度 0.941-0.999）→ 真实 MP3 whisper.cpp 转写（592 字符 / 14 段）→ 分块索引（4 材料 5 chunk）→ 词法检索带引用 → 问答带 citation 回溯到 span → 生成卡片/练习草稿（`ai_generated` + `draft` + source_revision + citation）→ 计划 + 节奏 + 进度事件 → 周报 markdown 导出。
   修掉的真实缺陷：转写端点未把配置的 timeout 预算传给仓储层，仓储默认 30s 覆盖了配置的 120s，导致本机冷启动加载 PaddleOCR 模型必然 504 `provider_timeout`（回归测试 `backend/tests/test_p2_use_transcribe_timeout.py`）。
+
+- [x] P2-USE-5：真实外部 provider 接入（使用者提供真实凭据后的后续切片）。**已完成 2026-09-04。**
+  本机实测 7/7 能力全亮：LLM = Agnes `agnes-2.5-flash`（真实云端）、Embedding = Mistral `mistral-embed`（1024 维，真实云端）、OCR/ASR = 本机探测。真实向量索引已建（全部材料 mistral dim=1024 `ready`），真实 hybrid 检索 + 真实 Agnes 问答带可校验 citation 已跑通（电路试卷 PDF：叠加定理、功率分配、JK 计数器三题均命中真实 chunk 并回溯到 span）。
+  修掉的真实缺陷：Embedding connection-test 沿用 LLM 的1 KB 响应上限，而一个 1024 维向量回应约 19 KB，导致**任何真实 embedding provider 都必然 `provider_response_too_large`**。新增 `MAX_EMBEDDING_TEST_RESPONSE_BYTES = 256 KiB`（仍有界），回归测试 `test_p1_5_2_0_connection_test.py` 新增 2 项。
+  本机网络现状（环境事实，非代码缺陷）：`api.deepseek.com`、`ark.cn-beijing.volces.com`、`smtp.qq.com`、`smtp.163.com` 的 TLS 握手均 `SSLEOFError`（TCP 可达、TLS 被断），故 DeepSeek/火山引擎/QQ 邮箱投递当前无法验收；Agnes 与 Mistral 可达。公益/中转类端点多为 Cloudflare 1010 或无供应。
 
 ## P2：后续独立项目
 

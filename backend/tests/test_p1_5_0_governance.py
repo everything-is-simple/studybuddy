@@ -194,29 +194,47 @@ def test_p1_5_0_backup_manifest_excludes_credentials() -> None:
     # 如果 B4 契约中没有明确声明，则通过 BACKUP_RESTORE.md 的声明即可
 
 
-def test_p1_5_0_frontend_remains_readonly() -> None:
-    """验证前端配置页面保持只读状态，不提供保存功能。"""
-    # 检查 settings-provider.html
+def test_p1_5_0_frontend_config_page_is_test_then_save() -> None:
+    """验证配置页保持“先测后存”，且持久化只走白名单 settings 接口。
+
+    P2-USE-3 推翻了 P1-5-0 的“前端只读”结论：要求使用者手抄环境变量才能开启已安装
+    能力是缺陷，不是安全控制。保留的真安全约束是：先测后存、不写浏览器存储、
+    不回显密钥、对外投递仍默认关闭。
+    """
     settings_provider_path = ROOT / "backend/app/static/settings-provider.html"
     settings_provider = settings_provider_path.read_text(encoding="utf-8")
 
-    # P1-5-1 允许测试连接表单提交，但页面必须明确保持 test-only。
-    assert "测试通过 ≠ 已保存" in settings_provider
-    assert "不会改变当前配置" in settings_provider
+    # 测试入口保留，且测试本身不改配置。
     assert "provider-connection-test" in settings_provider
     assert "email-connection-test" in settings_provider
+    assert "测试不改变当前配置" in settings_provider
 
-    # 不得出现配置保存按钮或任何持久化路径。
-    assert not re.search(r"id=[\"'][^\"']*(?:save|保存)[^\"']*[\"']", settings_provider, re.I)
+    # 保存按钮存在，但默认隐藏，只在测通后显现。
+    assert 'id="provider-save"' in settings_provider
+    assert 'id="email-save"' in settings_provider
+    assert re.search(r'id="provider-save"[^>]*hidden', settings_provider)
+    assert re.search(r'id="email-save"[^>]*hidden', settings_provider)
+    assert "$('provider-save').hidden=false" in settings_provider
+    assert "$('email-save').hidden=false" in settings_provider
+    # A passing test is required before saving, and editing the form withdraws it.
+    assert "if(!providerVerified)return" in settings_provider
+    assert "if(!emailVerified)return" in settings_provider
+    assert "dropProviderVerification" in settings_provider
+    assert "dropEmailVerification" in settings_provider
+
+    # 持久化只能走白名单 settings 接口，不得写浏览器存储。
+    assert "/api/system/settings" in settings_provider
     assert "localStorage" not in settings_provider
     assert "sessionStorage" not in settings_provider
     assert "/api/system/config" not in settings_provider
 
-    # 检查 api.js 是否有配置保存函数
+    # 对外投递开关不得从本页打开。
+    for guarded in ("report_delivery_mode", "report_delivery_enabled",
+                    "report_delivery_authorized"):
+        assert guarded not in settings_provider
+
     api_js_path = ROOT / "backend/app/static/js/api.js"
     api_js = api_js_path.read_text(encoding="utf-8")
-
-    # 验证不存在配置保存函数
     forbidden_functions = [
         "saveProviderConfig",
         "saveEmailConfig",

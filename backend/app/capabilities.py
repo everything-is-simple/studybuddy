@@ -132,6 +132,29 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
 
     ocr_enabled_final = ocr_enabled
 
+    delivery_smtp_host = base.report_delivery_smtp_host
+    delivery_smtp_port = base.report_delivery_smtp_port
+    delivery_smtp_secure = base.report_delivery_smtp_secure
+    delivery_smtp_username = base.report_delivery_smtp_username
+    delivery_smtp_password = base.report_delivery_smtp_password_runtime
+    delivery_smtp_targets = base.report_delivery_smtp_targets
+    delivery_feishu_webhook = base.report_delivery_feishu_webhook
+    if not _env_present("STUDYBUDDY_REPORT_DELIVERY_SMTP_HOST") and stored.get("report_delivery_smtp_host"):
+        delivery_smtp_host = str(stored["report_delivery_smtp_host"])
+    if not _env_present("STUDYBUDDY_REPORT_DELIVERY_SMTP_PORT") and stored.get("report_delivery_smtp_port"):
+        delivery_smtp_port = int(stored["report_delivery_smtp_port"])
+    if (not _env_present("STUDYBUDDY_REPORT_DELIVERY_SMTP_SECURE")
+            and "report_delivery_smtp_secure" in stored):
+        delivery_smtp_secure = bool(stored["report_delivery_smtp_secure"])
+    if not _env_present("STUDYBUDDY_REPORT_DELIVERY_SMTP_USERNAME") and stored.get("report_delivery_smtp_username"):
+        delivery_smtp_username = str(stored["report_delivery_smtp_username"])
+    if not _env_present("STUDYBUDDY_REPORT_DELIVERY_SMTP_PASSWORD") and stored.get("report_delivery_smtp_password"):
+        delivery_smtp_password = str(stored["report_delivery_smtp_password"])
+    if not _env_present("STUDYBUDDY_REPORT_DELIVERY_SMTP_TARGETS") and stored.get("report_delivery_smtp_targets"):
+        delivery_smtp_targets = _parse_delivery_targets(str(stored["report_delivery_smtp_targets"]))
+    if not _env_present("STUDYBUDDY_REPORT_DELIVERY_FEISHU_WEBHOOK") and stored.get("report_delivery_feishu_webhook"):
+        delivery_feishu_webhook = str(stored["report_delivery_feishu_webhook"])
+
     return replace(
         base,
         ai_provider_id=ai_provider, ai_model_id=ai_model, ai_base_url=ai_base_url,
@@ -142,7 +165,30 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
         ocr_enabled=ocr_enabled_final, ocr_source=ocr_source,
         asr_provider_id=asr_provider, asr_model_id=asr_model,
         asr_runtime_path=asr_runtime, asr_model_path=asr_model_path, asr_source=asr_source,
+        report_delivery_smtp_host=delivery_smtp_host,
+        report_delivery_smtp_port=delivery_smtp_port,
+        report_delivery_smtp_secure=delivery_smtp_secure,
+        report_delivery_smtp_username=delivery_smtp_username,
+        report_delivery_smtp_password_runtime=delivery_smtp_password,
+        report_delivery_smtp_targets=delivery_smtp_targets,
+        report_delivery_feishu_webhook=delivery_feishu_webhook,
     )
+
+
+def _parse_delivery_targets(raw: str) -> tuple[tuple[str, str], ...]:
+    """Parse a stored `label=target,label=target` string. Bad entries are dropped."""
+    pairs: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for item in raw.split(","):
+        item = item.strip()
+        if not item or item.count("=") != 1:
+            continue
+        label, target = (part.strip() for part in item.split("=", 1))
+        if not label or not target or label in seen:
+            continue
+        seen.add(label)
+        pairs.append((label, target))
+    return tuple(pairs)
 
 
 def _state(status: str, *, reason: str | None = None, provider_id: str | None = None,
@@ -234,7 +280,11 @@ def capability_snapshot(config: AppConfig, detection: DetectionResult | None = N
     if config.embedding_provider_id is None and config.ai_provider_id == "fake":
         embedding = _state(STATUS_AVAILABLE, provider_id="fake", model_id="fake-embedding-v1",
                            source="demo")
-    report = _state(STATUS_AVAILABLE, provider_id="local", model_id="deterministic-projection")
+    report = _state(STATUS_AVAILABLE, provider_id="local", model_id="deterministic-projection",
+                    detail={"delivery_configured": bool(
+                        config.report_delivery_smtp_host and config.report_delivery_smtp_username
+                        and config.report_delivery_smtp_password_runtime
+                        and config.report_delivery_smtp_targets)})
     capabilities = {
         "import_parse": _state(STATUS_AVAILABLE, provider_id="local",
                                model_id="txt+md+pdf+docx+pptx"),
