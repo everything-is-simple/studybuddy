@@ -356,14 +356,20 @@ revision → chunks → retrieval → citations → Q&A
 > 验收标准是**使用者能用**，不是文档齐。本主线不产出新的 evidence/contract 文档；状态只写入 `STATUS.md` 与本文件。
 > 针对三大顽疾：① 开箱即锁死（本机装了 PaddleOCR/RapidOCR/whisper.cpp，系统一个都不用）；② 开能力靠手抄 60+ 个 env，配置页「只测不存」；③ 交付物错位，每轮只产出 md。
 
-- [ ] P2-USE-1：能力自动探测 + 默认开启（针对顽疾 ①）。
+- [x] P2-USE-1：能力自动探测 + 默认开启（针对顽疾 ①）。**已完成 2026-09-04。**
   启动时探测本机 PaddleOCR/RapidOCR 模型目录、whisper 运行时与模型；探到且结构有效则该能力默认可用，探不到显示 `not_installed`，不再要求手抄 env。显式 env 与 UI 配置优先于探测结果；`report_delivery` 继续默认 `off`。
-- [ ] P2-USE-2：能力仪表盘（针对顽疾 ② 前半）。
-  `settings.html` 顶部一排能力灯：导入解析 / OCR / ASR / 索引 / 问答 / 生成 / 报告，每个显示 `可用 / 未配置 / 未安装 / 已关闭` 加一键自检，附安全的缺失原因，不显示绝对路径与 secret。
-- [ ] P2-USE-3：配置可持久化（针对顽疾 ② 后半）。
-  AI key 与组件路径写入 `data_root` 下独立配置文件（不进 SQLite、不进 backup、不进 git），改完免重启生效；`settings-provider.html` 从「只测不存」升级为「测 + 存」。本项明确推翻 P1-5-3 的「不引入持久化」结论。
-- [ ] P2-USE-4：真实全链跑通（针对顽疾 ③）。
-  一门真实课程 PDF + 一张真实板书照片 + 一段真实录音 → 导入 → OCR/转写 → 索引 → 问答 → 生成卡片 → 排进计划 → 出报告。只修跑不通的地方；卡壳点直接作为 bug 进本清单，不新开审计切片，不写新证据文档。
+  实现：`backend/app/capability_detect.py`（只读探测，0.05s，不下载/不联网/不导入推理包）、`backend/app/capabilities.py`（env > 存储配置 > 探测的优先级解析）。
+  本机实测：零环境变量启动即 `ocr=available(paddleocr/PP-OCRv5)`、`asr=available(whisper-cpp/ggml-large-v3-turbo)`，`source=detected`。
+- [x] P2-USE-2：能力仪表盘（针对顽疾 ② 前半）。**已完成 2026-09-04。**
+  `settings.html` 顶部一排能力灯：导入解析 / OCR / ASR / 索引 / 问答 / 生成 / 报告，每个显示 `可用 / 降级可用 / 未配置 / 未安装 / 已关闭` 加一键自检，附安全的缺失原因，不显示绝对路径与 secret。
+  实现：`GET /api/system/capabilities`、`POST /api/system/capabilities/self-check`、`backend/app/static/settings.html` 仪表盘。`not_installed` 优先于 `disabled`，缺依赖不会被开关掩盖。
+- [x] P2-USE-3：配置可持久化（针对顽疾 ② 后半）。**已完成 2026-09-04。**
+  AI key 与组件路径写入 `data_root` 下独立配置文件（不进 SQLite、不进 backup、不进 git），改完免重启生效；配置页从「只测不存」升级为「测 + 存」。本项明确推翻 P1-5-3 的「不引入持久化」结论。
+  实现：`backend/app/local_settings.py`（`<data_root>/config/settings.json`，原子写入、白名单校验、大小上限、secret 只存不回显）、`GET/PUT /api/system/settings`、`POST /api/system/settings/clear`。
+  实测：备份集只含 `database.sqlite3` 与 `manifest.json`，secret 不在备份内；`settings.json` 已被 `.gitignore` 命中。`report_delivery` 凭据刻意不纳入持久化。
+- [x] P2-USE-4：真实全链跑通（针对顽疾 ③）。**已完成 2026-09-04。**
+  真实材料链路已在本机 live 服务器（`127.0.0.1:8787`）跑通：真实文本层 PDF + 桌面真实 DOCX 导入解析 → 板书 PNG 真实 PaddleOCR（5 段，置信度 0.941-0.999）→ 真实 MP3 whisper.cpp 转写（592 字符 / 14 段）→ 分块索引（4 材料 5 chunk）→ 词法检索带引用 → 问答带 citation 回溯到 span → 生成卡片/练习草稿（`ai_generated` + `draft` + source_revision + citation）→ 计划 + 节奏 + 进度事件 → 周报 markdown 导出。
+  修掉的真实缺陷：转写端点未把配置的 timeout 预算传给仓储层，仓储默认 30s 覆盖了配置的 120s，导致本机冷启动加载 PaddleOCR 模型必然 504 `provider_timeout`（回归测试 `backend/tests/test_p2_use_transcribe_timeout.py`）。
 
 ## P2：后续独立项目
 

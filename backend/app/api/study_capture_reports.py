@@ -121,12 +121,14 @@ def register_routes(app, context: dict[str, object]) -> None:
                 if not (config.ocr_enabled and config.ocr_provider_id == "paddleocr"):
                     raise ProviderError("transcription_provider_not_configured")
                 provider_id, model_id = config.ocr_provider_id, config.ocr_model_id
+                timeout_seconds = config.ocr_timeout_seconds
                 provider_kwargs = {"ocr_model_root": str(config.ocr_model_root) if config.ocr_model_root else None,
                                    "timeout_seconds": config.ocr_timeout_seconds,
                                    "max_output_bytes": config.ocr_max_output_bytes}
             else:
                 provider_id = config.asr_provider_id or "fake"
                 model_id = config.asr_model_id if config.asr_provider_id else "fake-capture-v1"
+                timeout_seconds = config.asr_timeout_seconds
                 provider_kwargs = {"runtime_path": str(config.asr_runtime_path) if config.asr_runtime_path else None,
                                    "model_path": str(config.asr_model_path) if config.asr_model_path else None,
                                    "timeout_seconds": config.asr_timeout_seconds,
@@ -138,6 +140,9 @@ def register_routes(app, context: dict[str, object]) -> None:
                     capture_session_id=capture_id, provider=provider,
                     idempotency_key=idempotency_key,
                     max_upload_bytes=config.max_upload_bytes,
+                    # Without this the repository default (30s) silently overrode the
+                    # configured budget, so a cold local model load always timed out.
+                    timeout_seconds=timeout_seconds,
                 )
         except ProviderError as error:
             raise HTTPException(status_code=503, detail="transcription_provider_not_configured") from None
