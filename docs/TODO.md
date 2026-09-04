@@ -334,8 +334,10 @@ revision → chunks → retrieval → citations → Q&A
   产出：`docs/contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`、`docs/evidence/P1_6_0_AUDIT_EVIDENCE.md`、`backend/tests/test_p1_6_0_governance.py`。已核对 B1 ASR、B2 OCR、B3 reports、B4 delivery 的现有 scoped closeout、not_verified 边界、输入集/取消/并发/失败恢复/跨环境/真实用户路径缺口，并冻结 P1-6-1 至 P1-6-6 建议顺序。无 `backend/app/`、schema、migration、API 或运行时能力修改；delivery 继续 `off`。
 +- [x] P1-6-1：B1 ASR 输入集与可取消性验证（依赖 P1-6-0）。
 +  已使用非敏感 synthetic fixture 和 canonical `whisper-cpp` adapter 验证非 audio/空输入拒绝、TXT/SRT bounded output、timeout/受控中断、partial output/临时目录清理、stdout/stderr 丢弃和原始内容不进入命令参数。证据：`docs/evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md`；`backend/tests/test_formal_asr.py` focused `7 passed, 1 skipped`。本项不提供 graceful cancel API，不扩大语言、模型、OS、并发或通用 ASR real-pass 声明。
-+- [ ] P1-6-2：B2 OCR 输入集与失败恢复验证（依赖 P1-6-1）。
-+  使用非敏感 synthetic fixture 和显式 PaddleOCR gate 验证 PNG/JPEG/WebP、空/损坏/超大图片、timeout/retry、draft/source lifecycle；不扩大通用 OCR real-pass 声明。
++- [x] P1-6-2：B2 OCR 输入集与失败恢复验证（依赖 P1-6-1）。
++  已使用真实 PNG/JPEG/WebP 解码与 fake PaddleOCR 输出验证三种已批准 MIME、空/损坏图片、像素/字节上限、timeout 后临时目录清理，并复用现有 draft/source lifecycle 与显式 retry 回归。证据：`docs/evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md`；B2/Phase 9D focused `18 passed`。本项不扩大通用 OCR 准确率、并发、取消、跨环境或 global real-pass 声明。
++- [ ] P1-6-3：B3 reports 跨环境与恢复矩阵验证（依赖 P1-6-2）。
++  使用 deterministic report projection 验证 IANA timezone/window、空/退化 source、export boundary、restart/restore replay；保持 read-only，不引入 PDF/HTML、AI narrative 或 delivery。
 - [ ] P1-7：真实自用观察期（由使用者本人执行，非编码任务）。
   连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
   产出：卡壳记录，回流进 P1-4 台账作为 P1/P2 条目。
