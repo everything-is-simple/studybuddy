@@ -17,6 +17,13 @@ function startServer(deliveryMode = 'off') {
   delete env.STUDYBUDDY_AI_MODEL;
   delete env.STUDYBUDDY_AI_BASE_URL;
   delete env.STUDYBUDDY_AI_API_KEY;
+  env.STUDYBUDDY_ASR_PROVIDER = 'fake';
+  env.STUDYBUDDY_ASR_MODEL = 'fake-capture-v1';
+  delete env.STUDYBUDDY_ASR_RUNTIME;
+  delete env.STUDYBUDDY_ASR_MODEL_PATH;
+  env.STUDYBUDDY_OCR_ENABLED = 'false';
+  delete env.STUDYBUDDY_OCR_PROVIDER;
+  delete env.STUDYBUDDY_OCR_MODEL_ROOT;
   return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {
     cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true,
   });
