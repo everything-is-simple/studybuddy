@@ -12,7 +12,7 @@
 - [x] 文件材料管理 v1：导入、批量/文件夹导入、列表、搜索、分页、生命周期、回收站、导出及主要 Chromium 验收。
 - [x] A3-4：静态前端核心页面 API 集成完成（材料、材料详情、问答、今天四个页面）
 - [x] A3-5：学习功能页面完成（cards/exercises/plans/notes/practice/classroom 六个页面，覆盖 Phase 8/9A/9B/9C/9D）
-- [x] A3-6：根路由迁移完成，`/` 重定向到 `/app/today.html`，`/legacy` 保留旧 UI 兼容性
+- [x] 正式入口统一：`/`、`/app/`、`/app/index.html` 和全部正式页面品牌链接均进入 `/app/today.html`；`index.html` 仅保留兼容跳转，`/legacy` 保留旧 UI 兼容性。
 - [x] A3：静态前端迁移及限定范围浏览器验收完成；不等于完整 frontend-plan 页面架构和视觉系统完成
 - [x] E2E 用户流程测试：10 个端到端测试场景，覆盖导入、问答、学习、导航、错误恢复等完整用户旅程
 
@@ -320,8 +320,8 @@ revision → chunks → retrieval → citations → Q&A
   产出：`docs/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md`、`docs/evidence/P1_5_0_CONTRACT_EVIDENCE.md`、`backend/tests/test_p1_5_0_governance.py`（9 passed）。契约冻结 secret 字段分类（5 个 `repr=False`）、runtime-only 环境变量来源、capabilities API 不暴露 secret、delivery 默认关闭、backup 不含 credentials、前端保持只读、稳定错误码、connection-test 触发机制（显式/不自动/不改状态）、preset 契约（非敏感元数据）。无 `backend/app/` 代码、schema、migration、API 修改。后续切片 P1-5-1（配置 UI）、P1-5-2（connection-test）、P1-5-3（持久化评估）、P1-5-4（browser evidence）、P1-5-5（泄漏扫描）等待契约批准后启动。
 - [x] P1-5-2：实施 connection-test（Provider + Email）。
   产出：`backend/app/connection_test.py`（4 函数）、`POST /api/system/provider-connection-test`、`POST /api/system/email-connection-test`、`backend/app/schemas/connection_test.py`、`docs/evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`。测试：28 passed（16 adapter 单元 + 12 API 集成）。固定 synthetic payload、响应限制（1 KB）、稳定错误码、显式触发、secret 不暴露。范围：mock-only；真实网络、并发、性能未覆盖。
-- [x] P1-5-1：配置 UI（只测不存）。
-  产出：`backend/app/static/settings-provider.html`；Provider（LLM/Embedding）与 Email（SMTP/Feishu）表单、稳定错误码中文提示、P1-5-2 connection-test 按钮、客户端内存生成环境变量片段。密码与 webhook 字段在测试/复制后清空；无保存 endpoint、无 localStorage/sessionStorage、无 URL 持久化、无服务端 secret 回显。测试：focused Playwright 13 passed（串行 `--workers=1`），全量后端 558 passed / 3 skipped。范围：mock/loopback；真实 Provider/Email 网络、browser evidence、leak scan 留待 P1-5-4/P1-5-5。
+- [x] P1-5-1 / P2-USE-3：配置 UI 从历史“只测不存”升级为“先测后存”。
+  `settings-provider.html` 提供 Provider（LLM/Embedding）与 Email（SMTP/Feishu）显式连接测试，测试通过后才显示保存，表单修改会撤销验证；`settings.html` 提供能力仪表盘和配置读取/保存/清除。配置写入 data_root 外置 JSON，免重启生效；无 localStorage/sessionStorage、URL 持久化、SQLite/backup secret 或服务端 secret 回显。保存 Email 凭据不启用 delivery；真实范围以 P2-USE-5 和 `STATUS.md` 为准。
 +- [x] P1-5-4：Provider / Email 配置 browser evidence。
   产出：`docs/evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md`、`backend/tests/browser_p1_5_configuration_security.spec.js`、`backend/tests/test_p1_5_4_browser_security.py`。覆盖页面结构、无自动 connection-test、Provider/SMTP/Feishu 成功与失败、Clipboard 成功/拒绝、DOM/outerHTML/URL/history/cookie/storage、刷新/后退与 secret 清理。专用 Playwright 5 passed（串行），治理 4 passed；不代表 real Provider/SMTP/Feishu pass。未覆盖真实网络、非 Chromium、恶意扩展和 OS 剪贴板历史。
 +- [x] P1-5-5：Provider / Email secret 泄漏扫描。

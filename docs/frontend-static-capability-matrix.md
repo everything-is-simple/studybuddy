@@ -1,8 +1,8 @@
 # 静态前端能力矩阵
 
 > 状态：`A3-FC-3-2 / closed`；A3-PAGES 与 A3-VISUAL 已完成声明范围。
-> 更新：2026-08-31
-> 范围：只描述 `/app/*.html` 的当前真实能力；不把旧 `/legacy` workspace、后端 API 存在或历史浏览器证据自动视为静态页面已经迁移。`/app` 是默认正式入口，`/legacy` 只作为迁移期兼容回退；矩阵中的 `legacy_only` 是后续必须逐项补齐的正式集成工作。
+> 更新：2026-09-04
+> 范围：只描述 `/app/*.html` 的当前真实能力；不把旧 `/legacy` workspace、后端 API 存在或历史浏览器证据自动视为静态页面已经迁移。`/`、`/app/` 与 `/app/index.html` 统一进入 `/app/today.html`；`index.html` 仅是兼容跳转页，`/legacy` 只作为兼容回退。
 
 ## 状态定义
 
@@ -17,7 +17,7 @@
 
 | 静态页面 | 能力 | 当前状态 | 证据或边界 |
 |---|---|---|---|
-| `index.html` | 产品入口、导航、能力边界说明 | `static_verified` | 应用壳和移动导航由 shared-layer browser tests 覆盖；首页聚合仍未批准。 |
+| `index.html` | `/app/` 与旧书签兼容跳转 | `static_verified` | 使用 `location.replace` 进入唯一正式 Today 页 `/app/today.html`，并提供无脚本链接回退；不再承载第二套首页或能力声明。 |
 | `today.html` | 活动计划节奏摘要、计划项读取、材料跳转、近七日完成趋势 | `static_verified` | `browser_static_core.spec.js`；C2 从 plan `source_links` 映射来源状态，非 valid 来源禁用材料跳转；真实 valid→source_deleted→restart 为 L2/L3 scoped evidence。 |
 | `materials.html` | 导入、搜索、分页、删除、恢复、回收站 | `static_verified` | static-core/material-management browser tests；P1-4 C0 另以真实 PDF/DOCX/PPTX/MD/中文长名 TXT 验证导入→详情→索引→重启回读；C2 对 DOC/PPT/RTF/XML 提供转换/拒绝提示（`browser_p1_4_c2_explainability.spec.js`）。 |
 | `materials.html` | 当前页多选、批量导出原件/文本/全部 ZIP | `static_verified` | P1-4 C3 复用既有 `/api/materials/export`；正式 `/app` Chromium 验证三种 ZIP、中文名/内容、失败重试、回收站边界和正常重启后再次导出（`browser_p1_4_c3_batch_export.spec.js`，2 passed）。 |
@@ -46,10 +46,11 @@
 | `classroom.html` | 正式报告页、JSON/Markdown 导出、只读审计工作区 | `static_verified` | `reports.html` 已提供此正式路径；保持 `delivery=off`、allowlisted dry-run 和 append-only audit 边界。 |
 | `tasks.html` | 单任务读取、cancel、retry、状态/进度显示 | `static_verified` | A4/system-matrix tests；仅批准的 `embedding_index` 任务可由 runner 执行。 |
 | `tasks.html` | 全局任务列表/筛选、分页、任务详情/取消/重试 | `static_verified` | C4-3 复用新增 project-scoped `GET /api/tasks` 与既有详情/取消/重试；列表只展示脱敏公共字段，支持状态筛选、空态、失败和刷新。 |
-| `settings-provider.html` | capabilities/readiness 只读状态 | `static_verified` | A4/system-matrix tests。 |
-| `settings-provider.html` | Provider 配置写入、密钥保存、连接测试 | `not_exposed` | 后端没有获批的安全配置写入契约；浏览器不得保存或回显密钥。 |
+| `settings-provider.html` | capabilities/readiness、Provider/Email 连接测试 | `static_verified` | 显式测试且不自动触发；稳定错误映射和 secret 清理由 P1-5 browser security tests 覆盖。 |
+| `settings-provider.html` | 测试通过后保存 Provider/Email 凭据 | `static_verified` | P2-USE-3 已提供 `PUT /api/system/settings`；修改表单会撤销验证，读取响应只返回 secret-set 标记而不回显 secret。Email 凭据保存不会启用 delivery。 |
+| `settings.html` | 能力仪表盘、自检、本机/AI/Embedding 配置读取、保存和清除 | `static_verified` | `GET/PUT /api/system/settings`、`POST /api/system/settings/clear` 与 capability self-check；配置位于 data_root 外置 JSON，不进 SQLite/backup，修改免重启。 |
 | `reports.html` | 独立报告列表、脱敏摘要读取 | `static_verified` | `browser_frontend_static_baseline.spec.js`；导出/审计扩展仍按后续能力边界处理。 |
-| `settings.html` | 独立系统设置只读聚合、Provider/就绪状态跳转 | `static_verified` | `browser_frontend_static_baseline.spec.js`；不开放配置写入或密钥保存。 |
+| `settings.html` | 系统入口及 Provider/任务/采集跳转 | `static_verified` | 与上述能力仪表盘和配置操作共页；出站 delivery 开关仍不在可持久化白名单。 |
 
 ## A3-FC-3-2 收口要求
 

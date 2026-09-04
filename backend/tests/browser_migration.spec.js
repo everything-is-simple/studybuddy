@@ -52,12 +52,30 @@ test('A3-6: legacy route still accessible', async ({ page }) => {
   expect(bodyText).toContain('材料');
 });
 
-test('A3-6: direct /app/ access still works', async ({ page }) => {
+test('formal app aliases and brand links resolve to the single Today entry', async ({ page }) => {
+  for (const path of ['/app/', '/app/index.html']) {
+    await page.goto(`${BASE}${path}`);
+    await expect(page).toHaveURL(`${BASE}/app/today.html`);
+    await expect(page.locator('h1')).toContainText('你的学习日程');
+  }
+
+  const pages = [
+    'today.html', 'plans.html', 'plan-detail.html', 'materials.html',
+    'material-detail.html', 'qa.html', 'notes.html', 'note-detail.html',
+    'cards.html', 'exercises.html', 'practice.html', 'practice-session.html',
+    'practice-result.html', 'review.html', 'capture.html', 'classroom.html',
+    'reports.html', 'tasks.html', 'settings.html', 'settings-provider.html',
+  ];
+  for (const name of pages) {
+    await page.goto(`${BASE}/app/${name}`);
+    await expect(page.locator('.brand')).toHaveAttribute('href', '/app/today.html');
+  }
+
   await page.goto(`${BASE}/app/materials.html`);
-  await expect(page.locator('h1')).toContainText('你的学习材料');
-  
-  await page.goto(`${BASE}/app/qa.html`);
-  await expect(page.locator('h1')).toContainText('围绕材料提问');
+  await page.locator('.brand').click();
+  await expect(page).toHaveURL(`${BASE}/app/today.html`);
+  await page.goBack();
+  await expect(page).toHaveURL(`${BASE}/app/materials.html`);
 });
 
 test('A3-6: navigation from root works correctly', async ({ page }) => {

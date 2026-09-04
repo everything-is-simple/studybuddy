@@ -1,8 +1,8 @@
 # 静态前端失败与重试覆盖矩阵
 
 > 状态：`A3-FC-3-2 / closed evidence index`
-> 更新：2026-08-31
-> 本文件把 `/app` 静态页的已暴露能力与现有浏览器证据对应起来。`/app` 是默认正式入口；`legacy_only` 和 `not_exposed` 不以静态页操作测试伪造成功路径，详见 [`frontend-static-capability-matrix.md`](frontend-static-capability-matrix.md)。
+> 更新：2026-09-04
+> 本文件把 `/app` 静态页的已暴露能力与现有浏览器证据对应起来。`/`、`/app/`、`/app/index.html` 统一进入 `/app/today.html`；`legacy_only` 和 `not_exposed` 不以静态页操作测试伪造成功路径，详见 [`frontend-static-capability-matrix.md`](frontend-static-capability-matrix.md)。
 
 ## 状态定义
 
@@ -14,7 +14,7 @@
 
 | 静态页面 | 静态页已暴露能力 | failure/retry/安全证据 | 状态 |
 |---|---|---|---|
-| `index.html` | 应用入口、导航、能力说明 | `browser_frontend_static_baseline.spec.js`、`browser_frontend_shared_layer.spec.js` | baseline |
+| `index.html` | `/app/` 与旧书签兼容跳转到唯一 Today 页 | `browser_migration.spec.js`、`browser_static_pages.spec.js` | covered |
 | `today.html` | 计划摘要、任务、近七日趋势、来源状态和材料入口 | `browser_static_core.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_p1_4_c2_explainability.spec.js`、`browser_p1_4_c4_4_weekly_trend.spec.js` | covered |
 | `materials.html` | 导入、搜索、分页、删除、恢复、格式拒绝提示、批量 ZIP 导出 | `browser_static_core.spec.js`、`browser_material_management.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js`、`browser_p1_4_c3_batch_export.spec.js` | covered |
 | `material-detail.html` | 详情、解析解释、导出、索引、citation 定位、问答跳转 | `browser_static_core.spec.js`、`browser_frontend_page_contract.spec.js`、`browser_p1_1_material_qa_migration.spec.js`、`browser_p1_4_real_input_restart.spec.js`、`browser_p1_4_c2_explainability.spec.js` | covered |
@@ -32,9 +32,9 @@
 | `classroom.html` | 采集/报告兼容读取、交付边界 | `browser_phase9d.spec.js`、`browser_frontend_system_matrix.spec.js`、`browser_learning_pages.spec.js` | covered |
 | `review.html` | 错题/详情、复盘、标记、反馈、redo、归档 | `browser_practice_workflow.spec.js`、`browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
 | `reports.html` | 脱敏报告列表读取 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
-| `settings.html` | Provider/系统就绪只读状态 | `browser_frontend_static_baseline.spec.js`、`browser_a3_pages.spec.js` | covered |
+| `settings.html` | 能力仪表盘、自检、配置读取/保存/清除 | `browser_frontend_static_baseline.spec.js`、`browser_p1_5_configuration_security.spec.js` | covered |
 | `tasks.html` | 全局列表/筛选/分页、单任务 read/cancel/retry | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js`、`test_p1_4_c4_3_task_list.py` | covered |
-| `settings-provider.html` | capabilities/readiness 只读 | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js` | covered |
+| `settings-provider.html` | capabilities/readiness、显式连接测试、测试通过后保存且不回显 secret | `browser_a4.spec.js`、`browser_frontend_system_matrix.spec.js`、`browser_p1_5_configuration_security.spec.js` | covered |
 
 ## 非静态页操作边界
 
@@ -42,7 +42,7 @@
 
 - 计划、笔记、卡片、题目和练习的尚未迁移写操作；
 - 全局任务列表；
-- Provider 配置写入、密钥保存和连接测试；
+- Provider/Email 凭据现已支持显式连接测试后保存；未暴露的是 report delivery 的 enable/mode/per-use authorization，保存凭据不能开启外发；
 - capture archive；
 - 历史 classroom 兼容入口以外的报告操作；正式 `reports.html` 已覆盖 JSON/Markdown export 与只读审计工作区。
 

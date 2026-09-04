@@ -58,7 +58,7 @@ test('A3-PAGES practice session and result render approved read-only data',async
   await expect(page).toHaveURL(/\/app\/practice\.html$/);
 });
 
-test('A3-PAGES review reports and settings retain safe read-only boundaries',async({page})=>{
+test('A3-PAGES review reports and settings retain safe current boundaries',async({page})=>{
   await mock(page,'**/api/study/mistakes',[{id:'mistake-1',question:'错题',mistake_fact:'概念混淆',weak_point:'基础概念'}]);
   await page.goto(`${BASE}/app/review.html`);
   await expect(page.locator('#review-list')).toContainText('基础概念');
@@ -68,9 +68,12 @@ test('A3-PAGES review reports and settings retain safe read-only boundaries',asy
   await expect(page.locator('#report-list')).toContainText('脱敏周报');
   await expect(page.locator('body')).not.toContainText('已发送');
   await page.unrouteAll({behavior:'ignoreErrors'});
-  await mock(page,'**/api/ai/capabilities',{provider_id:'fake'});await mock(page,'**/api/readiness',{status:'ready'});
   await page.goto(`${BASE}/app/settings.html`);
-  await expect(page.locator('#settings-content')).toContainText('Provider：fake');
-  await expect(page.locator('#settings-content')).toContainText('系统：就绪');
-  await expect(page.locator('body')).not.toContainText(/api.?key|secret|保存配置|连接测试/i);
+  await expect(page.locator('#capability-summary')).not.toContainText('正在探测');
+  await expect(page.locator('#capability-grid')).toBeVisible();
+  await expect(page.locator('#ai-save')).toBeVisible();
+  await expect(page.locator('#embedding-save')).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toHaveCount(2);
+  for(const field of await page.locator('input[type="password"]').all())await expect(field).toHaveValue('');
+  await expect(page.locator('body')).not.toContainText(/private_provider_error|stored_path|traceback/i);
 });
