@@ -12,7 +12,7 @@ from ..embedding import (
     FakeEmbeddingProvider,
 )
 from ._capture import DeterministicFakeCaptureProvider, LoopbackCaptureProvider, WhisperCliCaptureProvider
-from ._ocr import PaddleImageOcrProvider
+from ._ocr import OcrFallbackProvider, PaddleImageOcrProvider, RapidImageOcrProvider
 from ._core import (
     FAKE_PROVIDER_ID,
     PROVIDER_NOT_CONFIGURED,
@@ -113,12 +113,27 @@ class ProviderRegistry:
     def capture_provider(self, *, runtime_path: str | None = None, model_path: str | None = None,
                          ocr_model_root: str | None = None, timeout_seconds: float = 120.0,
                          max_output_bytes: int = 262144) -> CaptureTranscriptionProvider:
-        if self.provider_id == "paddleocr":
-            if self.model_id not in (None, "", PaddleImageOcrProvider.model_id) or not ocr_model_root:
+        if self.provider_id in {"paddleocr", "rapidocr", "ocr-fallback"}:
+            if not ocr_model_root:
                 raise ProviderError("transcription_provider_not_configured")
             try:
-                return PaddleImageOcrProvider(ocr_model_root, timeout_seconds=timeout_seconds,
-                                              max_output_bytes=max_output_bytes)
+                if self.provider_id == "rapidocr":
+                    if self.model_id not in (None, "", RapidImageOcrProvider.model_id):
+                        raise ProviderError("transcription_provider_not_configured")
+                    return RapidImageOcrProvider(ocr_model_root, timeout_seconds=timeout_seconds,
+                                                 max_output_bytes=max_output_bytes)
+                if self.provider_id == "paddleocr":
+                    if self.model_id not in (None, "", PaddleImageOcrProvider.model_id):
+                        raise ProviderError("transcription_provider_not_configured")
+                    return PaddleImageOcrProvider(ocr_model_root, timeout_seconds=timeout_seconds,
+                                                  max_output_bytes=max_output_bytes)
+                primary = PaddleImageOcrProvider(ocr_model_root, timeout_seconds=timeout_seconds,
+                                                 max_output_bytes=max_output_bytes)
+                fallback = RapidImageOcrProvider(ocr_model_root, timeout_seconds=timeout_seconds,
+                                                 max_output_bytes=max_output_bytes)
+                return OcrFallbackProvider(primary, fallback)
+            except ProviderError:
+                raise
             except Exception:
                 raise ProviderError("transcription_provider_not_configured") from None
         if self.provider_id in {FAKE_PROVIDER_ID, None, ""}:

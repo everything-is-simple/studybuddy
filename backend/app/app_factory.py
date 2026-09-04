@@ -19,7 +19,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .adapters.file_parsers import ParseOptions, parse_file
+from .capabilities import capability_snapshot, resolve_config
+from .capability_detect import detect_all
 from .config import AppConfig, config_from_environment
+from .local_settings import SettingsError, clear_settings, load_settings, public_settings, save_settings
 from .db_audit import run_audit
 from .diagnostics import DiagnosticError, collect_diagnostics
 from .import_locks import acquire_hash_lock, release_hash_lock
@@ -99,6 +102,7 @@ from .schemas.connection_test import (
     ProviderConnectionTestRequest,
     EmailConnectionTestRequest,
 )
+from .schemas.local_settings import LocalSettingsClearRequest, LocalSettingsRequest
 from .services.imports import _item, _process_file, _valid_filename, store_original
 from .schemas import *  # Re-exported through app.main for compatibility.
 
@@ -126,10 +130,27 @@ def create_app(config: AppConfig | None = None, *, index_html: str) -> FastAPI:
             yield
 
     app = FastAPI(title="StudyBuddy", lifespan=application_lifespan)
-    app.state.config = config or config_from_environment()
+    base_config = config or config_from_environment()
+    app.state.base_config = base_config
+    # Detection runs once per process; it is read-only and does not touch the network.
+    try:
+        app.state.detection = detect_all(
+            ocr_model_root=base_config.ocr_model_root,
+            asr_runtime=base_config.asr_runtime_path,
+            asr_model=base_config.asr_model_path,
+            preferred_base=base_config.data_root,
+        ) if base_config.auto_detect_enabled else None
+    except OSError:
+        app.state.detection = None
+    app.state.config = resolve_config(base_config, detection=app.state.detection)
     app.state.ready = False
     app.state.startup_state = "not_started"
     app.state.audit_reasons = ()
+
+    def refresh_config() -> AppConfig:
+        """Re-layer stored settings so UI configuration applies without a restart."""
+        app.state.config = resolve_config(app.state.base_config, detection=app.state.detection)
+        return app.state.config
 
     def readiness_snapshot() -> tuple[str, str | None]:
         if not app.state.ready:
@@ -175,7 +196,8 @@ def create_app(config: AppConfig | None = None, *, index_html: str) -> FastAPI:
             reset_correlation(tokens)
 
     context = dict(globals())
-    context.update({"readiness_snapshot": readiness_snapshot, "INDEX_HTML": index_html})
+    context.update({"readiness_snapshot": readiness_snapshot, "INDEX_HTML": index_html,
+                    "refresh_config": refresh_config})
     register_all_routes(app, context)
     static_root = Path(__file__).parent / "static"
     if static_root.is_dir():

@@ -1,9 +1,9 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-08-31（B4 Delivery C6 scoped closeout evidence 已同步）
+> 更新：2026-09-01（执行方向修订：证据梯子 → 可用优先；活动主线改为 P2-USE）
 > 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；最近完成的后端回归为 **499 passed, 3 skipped**（C2 后旧事实断言同步后，后续全量重跑超过工具时间窗口，未宣称最终全量数字），完整 Chromium 为 **147 passed, 4 skipped**（C1: 后端从 486 增加 5 个测试；历史基线为 468 passed / 144 passed）。此前的文件导入重启、Phase 9C 会话刷新和 Phase 9B 节奏刷新竞态已修复；所有 skip 均为 opt-in 真实 smoke。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
-> 执行原则：一次只推进一个可验收闭环；每项完成必须有代码、测试、文档和可复现证据。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收。
+> 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-USE（可用优先）**；P1-6 系列已降级为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
 
 ## 已完成（不再作为待办）
 
@@ -329,22 +329,41 @@ revision → chunks → retrieval → citations → Q&A
 +- [x] P1-5-3：配置持久化评估。
   产出：`docs/contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`、`backend/tests/test_p1_5_3_persistence.py`（10 passed）。已按 secret 暴露面、backup 污染、migration 代价、是否免重启、契约冲突、可逆性评估五个方案（环境变量现状 / SQLite 配置表 / `data_root` JSON / 运行时热重载 / OS 凭据库）。**决策：不引入持久化**，维持现状。根据：backup 为全库复制（`backup.py:190-193`），SQLite 是 secret 最差载体且无选择性排除机制；`AppConfig` 为 frozen dataclass、启动时加载一次（`app_factory.py:129`），不做热重载时 A/B 方案无真实 UX 收益；热重载技术上可行（provider/registry/task runner 均为每请求构造）但需跨 13 个 API 模块引入请求级配置快照，应独立立项。P1-5-1 据此定型为“组装 → 校验 → 导出”：表单输入与范围校验、测试连接按钮、客户端生成环境变量片段，无保存 endpoint、无浏览器存储。未改 `backend/app/`、schema（保持 v14）、migration 或 API；P1-5-0 契约无需修订。
 - [ ] P1-6：扩大 B1 ASR、B2 OCR、B3 reports、B4 delivery 的验证范围。
-  产出：输入集、取消、并发、失败恢复、跨环境与真实用户路径证据，逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass。P1-6-0 已完成审计与契约冻结，后续按 P1-6-1 起逐项执行。
+  **降级为背景项（2026-09-01）**：本系列不再是活动工作项。原因：P1-6-3 被执行成 P1-6-3-0～P1-6-3-7 的证据梯子，产出多份 md 却没让使用者多用上一个功能。活动主线改为下方 **P2-USE**。恢复条件：三大顽疾全部关闭、真实全链跑通之后再按需重启，且每个子项必须附带可用性改动。已完成的 P1-6-0/1/2 结论保留，仅用于限制能力声明的上限。
+  **方向调整（2026-08-31）**：P1-6-3 证据梯子暂停，优先"能用优先"切片——自动探测本地组件、能力仪表盘、配置可持久化、真实材料全链验证。验收标准改为"用户实际能用"，不再是"证据文档齐全"。卡壳点直接进 TODO 作为 bug 修复，不新开审计切片。P1-6-0 审计与 P1-6-3-0 组件审计的结论保留作为技术参考，但不阻塞可用性推进。
 - [x] P1-6-0：完成 B1-B4 扩大验证范围审计与契约冻结。
   产出：`docs/contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`、`docs/evidence/P1_6_0_AUDIT_EVIDENCE.md`、`backend/tests/test_p1_6_0_governance.py`。已核对 B1 ASR、B2 OCR、B3 reports、B4 delivery 的现有 scoped closeout、not_verified 边界、输入集/取消/并发/失败恢复/跨环境/真实用户路径缺口，并冻结 P1-6-1 至 P1-6-6 建议顺序。无 `backend/app/`、schema、migration、API 或运行时能力修改；delivery 继续 `off`。
 +- [x] P1-6-1：B1 ASR 输入集与可取消性验证（依赖 P1-6-0）。
 +  已使用非敏感 synthetic fixture 和 canonical `whisper-cpp` adapter 验证非 audio/空输入拒绝、TXT/SRT bounded output、timeout/受控中断、partial output/临时目录清理、stdout/stderr 丢弃和原始内容不进入命令参数。证据：`docs/evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md`；`backend/tests/test_formal_asr.py` focused `7 passed, 1 skipped`。本项不提供 graceful cancel API，不扩大语言、模型、OS、并发或通用 ASR real-pass 声明。
 +- [x] P1-6-2：B2 OCR 输入集与失败恢复验证（依赖 P1-6-1）。
 +  已使用真实 PNG/JPEG/WebP 解码与 fake PaddleOCR 输出验证三种已批准 MIME、空/损坏图片、像素/字节上限、timeout 后临时目录清理，并复用现有 draft/source lifecycle 与显式 retry 回归。证据：`docs/evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md`；B2/Phase 9D focused `18 passed`。本项不扩大通用 OCR 准确率、并发、取消、跨环境或 global real-pass 声明。
-+- [ ] P1-6-3：B3 reports 跨环境与恢复矩阵验证（依赖 P1-6-2）。
++- [x] P1-6-3-0：真实 OCR 组件与当前 Formal 边界审计（依赖 P1-6-2）。
++  已核对本机 PaddleOCR/RapidOCR 版本、模型 inventory、Composer C1、Integration C2 记录、Formal provider/operation/schema/API 边界。旧 RapidOCR Integration 记录可证明真实格式 smoke，但严格新 C2 门禁仍未通过：fallback 为硬编码 decision、未实际注入主失败并验证调用链、模型路径/hash 与 backup/restore non-call 证据不足。证据：`docs/evidence/P1_6_3_0_COMPONENT_AUDIT_EVIDENCE.md`、`docs/evidence/P1_6_3_1_OCR_INTEGRATION_EVIDENCE.md`。状态：`planned/audit-draft` / `integration-not-passed`；不进入 Formal contract。
++  该审计结论继续有效，但**只用于限制能力声明**：RapidOCR 不得被宣称为已验证 fallback。它不阻止探测 RapidOCR 是否安装、不阻止 UI 显示其状态，也不阻止使用者启用已完成 C0-C6 的 PaddleOCR 主路径。
++- [✗] P1-6-3-1～P1-6-3-7：**已取消立项（2026-09-01）**。原 RapidOCR C2 修复、Formal fallback contract freeze、独立实现、真实 acceptance、source lifecycle、browser evidence、scoped closeout 七个子切片全部撤销。取消原因：证据梯子先行、可用性滞后。RapidOCR fallback 若将来仍需要，必须在 P2-USE 完成后作为一个「先能用、后补证据」的单一切片重新立项。
++- [ ] P1-6-3：B3 reports 跨环境与恢复矩阵验证（依赖 P1-6-2；本任务 P1-6-3 OCR 扩展不得与该历史条目混淆）。
 +  使用 deterministic report projection 验证 IANA timezone/window、空/退化 source、export boundary、restart/restore replay；保持 read-only，不引入 PDF/HTML、AI narrative 或 delivery。
 - [ ] P1-7：真实自用观察期（由使用者本人执行，非编码任务）。
-  连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
-  产出：卡壳记录，回流进 P1-4 台账作为 P1/P2 条目。
+  **提前启动（2026-08-31）**：不再等待 P1-6 完成，与 P1-USE 并行。连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
+  产出：卡壳记录，回流进 TODO 作为 bug 直接修复，不新开审计切片。
   该项不是 P1-4 的勾选门槛；`real-pass` 声明需要它，`P1-4 completed` 不需要。
 - [ ] TTS：独立重新立项；edge-tts 7.2.8 是免费但在线的显式用户操作候选，先冻结网络 opt-in、音频保留/清理、隐私和失败契约，再决定 Composer -> Integration -> Formal。
 - [ ] D0-D2：明确暂缓。只有 P1-4 完成、现有 Web 功能均已正式 `/app` 集成并通过正常与失败用户路径验证后，才可重新评审 Tauri Windows threat-model/spike、最小安装包或 macOS 可行性；当前不得启动桌面施工。
 - [ ] E0-E6：现代前端框架迁移仅为第二步 draft；只有维护复杂度、复杂交互或多用户 Web 产品决策触发后，才按 `ROADMAP_CAPABILITIES.md` 评估和实施。
+
+## P2-USE：可用优先（当前唯一活动主线，2026-09-01 立项）
+
+> 验收标准是**使用者能用**，不是文档齐。本主线不产出新的 evidence/contract 文档；状态只写入 `STATUS.md` 与本文件。
+> 针对三大顽疾：① 开箱即锁死（本机装了 PaddleOCR/RapidOCR/whisper.cpp，系统一个都不用）；② 开能力靠手抄 60+ 个 env，配置页「只测不存」；③ 交付物错位，每轮只产出 md。
+
+- [ ] P2-USE-1：能力自动探测 + 默认开启（针对顽疾 ①）。
+  启动时探测本机 PaddleOCR/RapidOCR 模型目录、whisper 运行时与模型；探到且结构有效则该能力默认可用，探不到显示 `not_installed`，不再要求手抄 env。显式 env 与 UI 配置优先于探测结果；`report_delivery` 继续默认 `off`。
+- [ ] P2-USE-2：能力仪表盘（针对顽疾 ② 前半）。
+  `settings.html` 顶部一排能力灯：导入解析 / OCR / ASR / 索引 / 问答 / 生成 / 报告，每个显示 `可用 / 未配置 / 未安装 / 已关闭` 加一键自检，附安全的缺失原因，不显示绝对路径与 secret。
+- [ ] P2-USE-3：配置可持久化（针对顽疾 ② 后半）。
+  AI key 与组件路径写入 `data_root` 下独立配置文件（不进 SQLite、不进 backup、不进 git），改完免重启生效；`settings-provider.html` 从「只测不存」升级为「测 + 存」。本项明确推翻 P1-5-3 的「不引入持久化」结论。
+- [ ] P2-USE-4：真实全链跑通（针对顽疾 ③）。
+  一门真实课程 PDF + 一张真实板书照片 + 一段真实录音 → 导入 → OCR/转写 → 索引 → 问答 → 生成卡片 → 排进计划 → 出报告。只修跑不通的地方；卡壳点直接作为 bug 进本清单，不新开审计切片，不写新证据文档。
 
 ## P2：后续独立项目
 
@@ -355,7 +374,9 @@ revision → chunks → retrieval → citations → Q&A
 
 ## 明确暂不做
 
-在 Phase 7 收口和后续产品路线明确前，不并行推进：OCR、ASR、ZIP import、文件夹 export、外部 vector database、复杂后台队列、多用户/协作、云同步、订阅/账户系统。
+> 本节为历史条目。OCR、ASR 已分别完成 B1/B2 门禁并在 P2-USE 中转为「默认探测启用」，不再属于暂不做范围。
+
+仍不并行推进：ZIP import、文件夹 export、外部 vector database、复杂后台队列、多用户/协作、云同步、订阅/账户系统。
 
 ## 每个 TODO 的交付模板
 
@@ -364,5 +385,7 @@ revision → chunks → retrieval → citations → Q&A
 3. API 输入和失败边界；
 4. 浏览器用户路径（若有 UI）；
 5. 安全性检查；
-6. 文档/状态同步；
+6. 状态同步（`STATUS.md` + 本文件）；
 7. 可复现命令或测试 artifact。
+
+**2026-09-01 附加约束**：第 6 项不再包含「新建 evidence/contract 文档」。只有在同一切片确实改动了 `backend/app/` 或 `backend/app/static/`、且使用者可从浏览器或 CLI 实际操作时，才允许新增证据文档。纯审计、纯契约、纯状态切片不得作为活动工作项，除非使用者明确要求。

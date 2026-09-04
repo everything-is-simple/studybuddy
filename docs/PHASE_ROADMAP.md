@@ -217,7 +217,7 @@ Phase 9A、Phase 9B 与 Phase 9C 已分别在明确范围内完成；Phase 9D �
 
 ## 后续能力、架构与桌面化路线
 
-Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分、A3/A4 静态前端交付和 B1-B4 各自 scoped C0-C6 closeout 已完成；项目下一步是把已验证但仍在 `/legacy` 的学习写操作逐项集成到默认 `/app`，并扩大 B1-B4 的验证范围。桌面安装包在现有系统功能完成正式集成并经过用户路径验证前明确暂缓，不启动 Tauri spike。C0 已选 ASR 为 `H:/WhisperCli`/whisper.cpp `large-v3-turbo`，OCR 为 PaddleOCR 主路径与 RapidOCR ONNX 回退，PPTX 为 formal-pptx + MarkItDown + 图片页 OCR；edge-tts 是免费在线、显式用户操作的 TTS future candidate，未进入当前 Phase 9D 批准范围。本机 CLI/运行时/PPTX 转换预检不等于 Composer C1、Integration、Formal 或真实能力完成。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) 与 [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
+Phase 10 的 local v1 scoped closeout 后，A1/A2 及 A2.X 的行为保持型后端结构拆分、A3/A4 静态前端交付和 B1-B4 各自 scoped C0-C6 closeout 已完成；项目下一步是把已验证但仍在 `/legacy` 的学习写操作逐项集成到默认 `/app`，并扩大 B1-B4 的验证范围。桌面安装包在现有系统功能完成正式集成并经过用户路径验证前明确暂缓，不启动 Tauri spike。C0 已选 ASR 为 `H:/WhisperCli`/whisper.cpp `large-v3-turbo`，OCR 为 PaddleOCR 主路径与 RapidOCR ONNX 回退，PPTX 为 formal-pptx + MarkItDown + 图片页 OCR；edge-tts 是免费在线、显式用户操作的 TTS future candidate，未进入当前 Phase 9D 批准范围。P1-6-3-0 已审计真实 OCR 组件：本机组件/模型存在，旧 RapidOCR Integration 格式 smoke 可重跑，但严格 C2 fallback/timeout/model-provenance/backup non-call 门禁尚未通过，因此 Formal fallback contract、实现和 acceptance 均被阻塞。本机 CLI/运行时/PPTX 转换预检不等于 Composer C1、Integration、Formal 或真实能力完成。完整任务、组件状态门禁、Tauri sidecar 风险和第二步前端框架迁移草案见 [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md) 与 [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)。该路线当前为 `planned`，不改变 Phase 10 完成结论，也不表示真实 OCR/ASR/live delivery 或桌面安装包已经完成。
 
 ## 固定执行顺序
 

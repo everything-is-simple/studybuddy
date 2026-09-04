@@ -2,7 +2,36 @@
 
 ## Project scope
 
-StudyBuddy is a local, single-process study-material management system built around FastAPI, SQLite, local hash-derived original storage, and a browser UI. AI and learning features are implemented only when the relevant roadmap gate is explicitly complete.
+StudyBuddy is a local, single-process **capability-integration system** for study material: it wires AI providers and local open-source components (OCR, ASR, parsers) into a browser UI backed by FastAPI, SQLite and local hash-derived original storage. It does not train models. Its job is to turn the user's own real material into searchable, answerable, practiceable, schedulable local study assets.
+
+The core scenario is one chain:
+
+```text
+采集/导入 → 解析文本 → 切分索引 → 检索问答（带引用）
+        → 生成卡片/练习（草稿，需确认） → 计划与节奇
+        → 练习/错题/弱点 → 报告复盘
+```
+
+Seven capability domains: import/parse, OCR, ASR, index, Q&A, generation, report. Each must be independently observable and independently degradable.
+
+## Delivery principle: usable first (2026-09-01 revision, supersedes evidence-ladder-first)
+
+This revision exists because the previous mode produced audit and evidence documents faster than usable capability. It is binding.
+
+- Every active slice must change **what the user can actually do**. A slice is not complete because a document exists.
+- Do not create a new `docs/evidence/*.md` or `docs/contracts/*.md` unless the same slice also changed `backend/app/` or `backend/app/static/` in a way the user can exercise from the browser or CLI.
+- Audit-only, contract-only, and status-only slices may not be the active work item unless the user explicitly asks for one.
+- Prefer fixing the blocking defect over documenting the blocking defect.
+- A blocked component gate (for example an unfinished Composer/Integration gate) blocks *claiming that component verified*. It does not block shipping detection, UI status, configuration, or the rest of the chain.
+- Honesty rules stay: `implemented` is not `real-pass`, and unverified dimensions stay labeled `not_verified`. Honest labeling is a reporting duty, never a reason to withhold working capability from the user.
+
+### Out-of-box defaults
+
+- Capabilities must be **discoverable, not hand-configured**. At startup the system probes for required local components; when a component is present and structurally valid, its capability is enabled by default.
+- A missing component surfaces as `not_installed` / `not_configured` in the UI. It must never be a silent disable.
+- Requiring the user to hand-copy environment variables to switch on an installed local capability is a defect, not a security control.
+- Configuration written through the UI must persist under `data_root` outside SQLite, must be excluded from backups and Git, and must not require a restart.
+- Outbound network delivery (`report_delivery`) stays default-off and per-use authorized. That one really is a security control.
 
 ## Repository rules
 
@@ -59,7 +88,7 @@ Before reporting a change complete:
 
 1. Run focused tests for the changed area.
 2. Run the complete backend test suite when infrastructure, migrations, storage, or API behavior changes.
-3. Update the relevant documentation and TODO status.
+3. Update `docs/STATUS.md` and `docs/TODO.md` only. Do not add a new evidence document for a slice that shipped no user-visible change.
 4. Report limitations honestly; `implemented` is not the same as `real-pass`.
 
 ## Safety and deployment boundaries
