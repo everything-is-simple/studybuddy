@@ -1,6 +1,8 @@
 # StudyBuddy 能力补齐、架构拆分与桌面化路线图
 
-> 状态：`A3-FC closed / A3-PAGES closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout / B3 C0-C6 scoped closeout / B4 C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。B0 候选治理脚手架已完成，B1 ASR、B2 PaddleOCR、B3 报告和 B4 外发均已在各自声明 scope 内完成 C0-C6；D0-D1 桌面门禁仍未开始。当前完整回归基线以 `STATUS.md` 为准：backend `468 passed, 3 skipped`、Chromium `144 passed, 4 skipped`。
+> 状态：`A3-FC closed / A3-PAGES closed / A3-VISUAL closed / Practice workflow phase two scoped closeout / B1 ASR C0-C6 scoped closeout / B2 OCR C0-C6 scoped closeout / B3 C0-C6 scoped closeout / B4 C0-C6 scoped closeout`。本路线图在现有 local v1（Phase 10 Gate J）之后执行；它不修改既有完成结论，也不将真实 OCR、通用真实 ASR、真实外发或桌面安装包视为已实现。B0 候选治理脚手架已完成，B1 ASR、B2 PaddleOCR、B3 报告和 B4 外发均已在各自声明 scope 内完成 C0-C6；D0-D1 桌面门禁仍未开始。当前完整回归基线以 `STATUS.md` 为准。
+>
+> **2026-09-01 执行方向修订**：已完成的组件门禁结论不变，但后续驱动力从「扩大证据范围」改为「让已验证能力真正被用上」。B0-B4 门禁体系继续管约**能力声明**，不再管约能力是否默认可用：本机已安装且结构有效的组件应被探测并默认启用，未安装则在 UI 显示 `not_installed`。要求使用者手抄环境变量才能启用已装本地能力属于缺陷，不是安全控制；唯一例外是对外网络投递（`report_delivery`），继续默认 `off` 且逐次授权。当前活动主线见 `docs/TODO.md` 的 P2-USE。
 >
 > 批准日期：2026-08-29。第一步目标为：在保持本地数据与现有行为契约的前提下，拆分后端和前端边界，按 Composer -> Integration -> Formal 流水线补齐已批准能力，并以时间盒验证 Tauri 桌面封装。第二步仅为前端框架迁移草案。
 
@@ -248,7 +250,7 @@ backend/app/
 3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
 4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
 
-**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`。B1 ASR、B2 PaddleOCR、B3 report 和 B4 delivery 均已在各自精确 scope 完成 C0-C6 scoped closeout；当前状态和限制以 `docs/STATUS.md` 为准。RapidOCR 是仅完成 C1 smoke 的回退候选，Tesseract 是兼容后备，TTS/PPTX 图片页 OCR 尚未进入 Formal。C0 选型仍冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`；组件 catalog 只记录可复核来源、版本、scope 与未验证范围，不得把限定 smoke 外推为通用能力。
+**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`。B1 ASR、B2 PaddleOCR、B3 report 和 B4 delivery 均已在各自精确 scope 完成 C0-C6 scoped closeout；当前状态和限制以 `docs/STATUS.md` 为准。RapidOCR 已有 C1 smoke 和一份可重跑的真实格式 Integration 记录，但 P1-6-3-0 复核确认其严格 C2 尚未通过：真实 fallback 调用链、显式模型路径/hash、bounded execution、backup/restore non-call 与 durable governance 证据不完整；因此仍不允许进入 Formal。Tesseract 是兼容后备，TTS/PPTX 图片页 OCR 尚未进入 Formal。C0 选型仍冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`；组件 catalog 只记录可复核来源、版本、scope 与未验证范围，不得把限定 smoke 外推为通用能力。
 
 **通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
 
@@ -272,7 +274,7 @@ backend/app/
 
 ### B2：真实 OCR 组件流水线
 
-**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR 已完成 Composer C1、Integration C2、Formal C3 contract freeze、C4 implementation、C5 acceptance 与 C6 scoped closeout；RapidOCR 仍是独立 smoke candidate，未自动纳入 Formal。
+**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR 已完成 Composer C1、Integration C2、Formal C3 contract freeze、C4 implementation、C5 acceptance 与 C6 scoped closeout；RapidOCR 的真实 PNG/JPEG/WebP Integration smoke 已复跑，但严格 P1-6-3 C2 仍为 `not_passed`，未自动纳入 Formal。下一独立切片只能修复 C2，不能提前冻结 fallback contract 或实现 provider。
 
 **Composer smoke：**
 

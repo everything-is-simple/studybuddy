@@ -1,4 +1,206 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyBuddy · 设置</title><link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css"></head>
-<body><div class="app-shell"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/today.html">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header><main class="main"><div class="hero"><div><p class="eyebrow">系统设置</p><h1>运行状态</h1><p class="lead">查看 Provider、系统就绪状态和任务入口。</p></div></div><section class="card"><div id="settings-status" class="notice" role="status" aria-live="polite">正在加载设置…</div><div id="settings-content"></div><a class="btn mt-16" href="/app/settings-provider.html">Provider 状态</a><a class="btn mt-16" href="/app/tasks.html">任务状态</a></section></main></div><script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script><script>(function(){const request=sbApi.setPageScope('settings'),status=document.querySelector('#settings-status'),content=document.querySelector('#settings-content');async function load(){const results=await Promise.allSettled([sbApi.json('/api/ai/capabilities',{signal:request.signal}),sbApi.json('/api/readiness',{signal:request.signal})]);status.textContent='设置状态已加载';status.hidden=true;content.replaceChildren();const provider=document.createElement('p');const capabilities=results[0].status==='fulfilled'?results[0].value:null;provider.textContent='Provider：'+(capabilities?.provider_id||capabilities?.provider||'未配置');content.append(provider);const ready=document.createElement('p');const readiness=results[1].status==='fulfilled'?results[1].value:null;ready.textContent='系统：'+(readiness?.status==='ready'?'就绪':'暂不可用');content.append(ready);if(results.some(result=>result.status==='rejected')){const warning=document.createElement('p');warning.className='notice warn';warning.textContent='部分系统状态暂不可用，可重试';content.append(warning)}}load()})();</script></body></html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 设置</title>
+<link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar"><div class="topbar-inner">
+<a class="brand" href="/app/today.html">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav>
+<span class="status-dot" data-system-status>检查系统状态…</span>
+</div></header>
+<main class="main">
+<div class="hero"><div><p class="eyebrow">系统设置</p><h1>能力与运行状态</h1><p class="lead">七项能力的可用状态由启动探测得出：本机装好的组件默认启用，缺失的显示未安装，不需要手抄环境变量。</p></div></div>
+
+<section class="card" data-od-id="capability-dashboard">
+<div class="section-label"><h2>能力仪表盘</h2><span id="capability-summary" class="muted" role="status" aria-live="polite">正在探测…</span></div>
+<div id="capability-error" class="notice warn" role="alert" hidden></div>
+<div id="capability-loading" aria-hidden="true"><div class="capability-card skeleton"><div class="skeleton-text skeleton-40"></div><div class="skeleton-text skeleton-60"></div><div class="skeleton-text skeleton-80"></div></div></div>
+<div id="capability-grid" class="capability-grid" hidden></div>
+<div class="stack-actions mt-16"><button class="btn btn-primary" type="button" id="capability-recheck">重新自检</button><button class="btn" type="button" id="capability-refresh">刷新状态</button><span class="muted">自检只读探测本机组件，不下载模型、不访问网络。</span></div>
+</section>
+
+<section class="card mt-24" data-od-id="ai-provider-settings">
+<div class="section-label"><h2>AI Provider（问答与生成）</h2><span class="muted">保存后立即生效，无需重启</span></div>
+<div class="config-notice"><p class="mb-0">密钥保存在 <code class="code-inline">data_root</code> 下的本地配置文件，不进入数据库、不进入备份、不进入 Git，也不会被任何接口回显。</p></div>
+<form id="ai-form" class="stack mt-16">
+<div class="form-row">
+<div class="field"><label for="ai-provider">Provider ID</label><input id="ai-provider" name="ai_provider_id" autocomplete="off" placeholder="例如 deepseek 或 openai" required></div>
+<div class="field"><label for="ai-model">Model ID</label><input id="ai-model" name="ai_model_id" autocomplete="off" placeholder="例如 deepseek-chat" required></div>
+</div>
+<div class="form-row">
+<div class="field"><label for="ai-url">Base URL</label><input id="ai-url" name="ai_base_url" type="url" autocomplete="off" placeholder="https://api.deepseek.com" required></div>
+<div class="field"><label for="ai-key">API Key</label><input id="ai-key" name="ai_api_key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示不修改已保存的密钥"></div>
+</div>
+<div id="ai-result" class="notice" role="status" aria-live="polite" hidden></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="ai-save">保存并生效</button><button class="btn" type="button" id="ai-clear">清除已保存配置</button><a class="btn" href="/app/settings-provider.html">先测试连接</a></div>
+</form>
+</section>
+
+<section class="card mt-24" data-od-id="embedding-settings">
+<div class="section-label"><h2>Embedding（索引与检索）</h2><span class="muted">未配置时检索质量会降级</span></div>
+<form id="embedding-form" class="stack">
+<div class="form-row">
+<div class="field"><label for="embedding-provider">Provider ID</label><input id="embedding-provider" name="embedding_provider_id" autocomplete="off" placeholder="例如 openai" required></div>
+<div class="field"><label for="embedding-model">Model ID</label><input id="embedding-model" name="embedding_model_id" autocomplete="off" placeholder="例如 text-embedding-3-small" required></div>
+</div>
+<div class="form-row">
+<div class="field"><label for="embedding-url">Base URL</label><input id="embedding-url" name="embedding_base_url" type="url" autocomplete="off" placeholder="https://api.openai.com/v1" required></div>
+<div class="field"><label for="embedding-key">API Key</label><input id="embedding-key" name="embedding_api_key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示不修改已保存的密钥"></div>
+</div>
+<div id="embedding-result" class="notice" role="status" aria-live="polite" hidden></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="embedding-save">保存并生效</button><button class="btn" type="button" id="embedding-clear">清除已保存配置</button></div>
+</form>
+</section>
+
+<section class="card mt-24" data-od-id="local-component-settings">
+<div class="section-label"><h2>本机组件（OCR / 转写）</h2><span class="muted">探测到即默认启用</span></div>
+<form id="local-form" class="stack">
+<div class="field"><label for="ocr-enabled">图片 OCR</label><select id="ocr-enabled" name="ocr_enabled"><option value="">跟随探测结果</option><option value="true">强制启用</option><option value="false">强制关闭</option></select></div>
+<div class="field"><label for="ocr-root">OCR 模型目录（可选，留空使用探测结果）</label><input id="ocr-root" name="ocr_model_root" autocomplete="off" spellcheck="false" placeholder="仅当自动探测失败时填写"></div>
+<div class="form-row">
+<div class="field"><label for="asr-runtime">转写可执行文件（可选）</label><input id="asr-runtime" name="asr_runtime_path" autocomplete="off" spellcheck="false" placeholder="仅当自动探测失败时填写"></div>
+<div class="field"><label for="asr-model">转写模型文件（可选）</label><input id="asr-model" name="asr_model_path" autocomplete="off" spellcheck="false" placeholder="仅当自动探测失败时填写"></div>
+</div>
+<div id="local-result" class="notice" role="status" aria-live="polite" hidden></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="local-save">保存并生效</button><button class="btn" type="button" id="local-clear">清除本机组件覆盖</button><span class="muted">已保存的路径不会被回显，只显示“已设置”。</span></div>
+</form>
+</section>
+
+<section class="card mt-24" data-od-id="settings-links">
+<h2>其他入口</h2>
+<div class="stack-actions"><a class="btn" href="/app/settings-provider.html">Provider 连接测试</a><a class="btn" href="/app/tasks.html">任务状态</a><a class="btn" href="/app/capture.html">采集与转写</a></div>
+</section>
+</main></div>
+<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script>
+<script>
+(function(){
+const pageRequest=sbApi.setPageScope('settings');
+const $=id=>document.getElementById(id);
+const LABELS={import_parse:'导入解析',ocr:'图片 OCR',asr:'录音转写',index:'索引',qa:'问答',generation:'生成',report:'报告'};
+const ORDER=['import_parse','ocr','asr','index','qa','generation','report'];
+const STATUS={available:{text:'可用',cls:'available',badge:'badge badge-success'},degraded:{text:'降级可用',cls:'',badge:'badge badge-warn'},not_configured:{text:'未配置',cls:'',badge:'badge badge-warn'},not_installed:{text:'未安装',cls:'unavailable',badge:'badge badge-warn'},disabled:{text:'已关闭',cls:'unavailable',badge:'badge'}};
+const REASONS={paddleocr_package_missing:'未安装 PaddleOCR 运行库',rapidocr_package_missing:'未安装 RapidOCR 运行库',onnxruntime_missing:'未安装 ONNX Runtime',rapidocr_models_not_found:'RapidOCR 模型文件缺失',rapidocr_package_unreadable:'RapidOCR 安装目录不可读',ocr_model_root_not_found:'未找到本机 OCR 模型目录',ocr_model_root_invalid:'指定的 OCR 模型目录结构不完整',ocr_disabled_by_configuration:'已按配置关闭',asr_runtime_not_found:'未找到本机转写程序',asr_runtime_invalid:'指定的转写程序不存在',asr_model_not_found:'未找到转写模型文件',provider_not_configured:'尚未填写 Provider',provider_credentials_missing:'缺少 Base URL 或 API Key',embedding_provider_not_configured:'关键词检索可用；配置 Embedding 后才有向量与混合检索'};
+const SOURCES={detected:'来源：本机探测',settings:'来源：本页保存',environment:'来源：启动环境变量',demo:'来源：演示模式',unset:'来源：尚未配置'};
+const SETTING_ERRORS={settings_invalid_value:'填写内容无效，请检查格式',settings_unknown_key:'配置项不受支持',settings_empty_payload:'没有需要保存的内容',settings_payload_too_large:'配置内容过大',settings_write_failed:'配置写入失败，请重试',capability_probe_failed:'本机组件探测失败，请重试'};
+function message(error){return SETTING_ERRORS[error.code]||sbApi.safeError(error)}
+function notice(el,ok,text){el.hidden=false;el.className='notice '+(ok?'status-success':'status-failed');el.textContent=text}
+
+function renderCapabilities(data){
+  const grid=$('capability-grid'),summary=$('capability-summary');
+  grid.replaceChildren();
+  ORDER.forEach(key=>{
+    const item=data.capabilities[key];if(!item)return;
+    const state=STATUS[item.status]||STATUS.not_configured;
+    const card=document.createElement('article');card.className='capability-card';
+    const header=document.createElement('div');header.className='capability-header';
+    const title=document.createElement('h3');title.textContent=LABELS[key]||key;
+    const badge=document.createElement('span');badge.className=state.badge;badge.textContent=state.text;
+    header.append(title,badge);card.append(header);
+    const lamp=document.createElement('p');lamp.className=('capability-status '+state.cls).trim();
+    lamp.textContent=item.provider_id?item.provider_id:state.text;card.append(lamp);
+    const meta=document.createElement('dl');meta.className='capability-meta';
+    function row(label,value){if(!value)return;const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;meta.append(dt,dd)}
+    row('模型',item.model_id);
+    row('说明',item.reason?(REASONS[item.reason]||item.reason):'');
+    row('配置',SOURCES[item.source]||'');
+    if(meta.childElementCount)card.append(meta);
+    grid.append(card);
+  });
+  grid.hidden=false;$('capability-loading').hidden=true;
+  const extra=data.ocr_fallback_installed?'；OCR 兜底组件已安装':'';
+  const degraded=data.degraded_count?'，降级 '+data.degraded_count:'';
+  summary.textContent='可用 '+data.ready_count+' / '+data.total_count+degraded+'，报告投递：'+(data.delivery_mode==='off'?'已关闭':data.delivery_mode)+extra;
+}
+
+function fillSettings(settings){
+  $('ai-provider').value=settings.ai_provider_id||'';
+  $('ai-model').value=settings.ai_model_id||'';
+  $('ai-url').value=settings.ai_base_url||'';
+  $('ai-key').placeholder=settings.ai_api_key_set?'已保存，留空表示不修改':'留空表示不修改已保存的密钥';
+  $('embedding-provider').value=settings.embedding_provider_id||'';
+  $('embedding-model').value=settings.embedding_model_id||'';
+  $('embedding-url').value=settings.embedding_base_url||'';
+  $('embedding-key').placeholder=settings.embedding_api_key_set?'已保存，留空表示不修改':'留空表示不修改已保存的密钥';
+  $('ocr-enabled').value=typeof settings.ocr_enabled==='boolean'?String(settings.ocr_enabled):'';
+  $('ocr-root').placeholder=settings.ocr_model_root_set?'已设置（不回显），填写新值可覆盖':'仅当自动探测失败时填写';
+  $('asr-runtime').placeholder=settings.asr_runtime_path_set?'已设置（不回显），填写新值可覆盖':'仅当自动探测失败时填写';
+  $('asr-model').placeholder=settings.asr_model_path_set?'已设置（不回显），填写新值可覆盖':'仅当自动探测失败时填写';
+}
+
+async function loadCapabilities(){
+  $('capability-error').hidden=true;
+  try{renderCapabilities(await sbApi.json('/api/system/capabilities',{signal:pageRequest.signal}))}
+  catch(error){if(error.name==='AbortError')return;$('capability-loading').hidden=true;const box=$('capability-error');box.hidden=false;box.textContent='能力状态加载失败，可点击刷新状态重试';$('capability-summary').textContent='状态未知'}
+}
+async function loadSettings(){
+  try{fillSettings((await sbApi.json('/api/system/settings',{signal:pageRequest.signal})).settings||{})}
+  catch(error){if(error.name!=='AbortError')notice($('ai-result'),false,'已保存配置读取失败，可刷新页面重试')}
+}
+
+async function save(payload,resultEl,button,label){
+  sbUi.busy(button,true,label);
+  try{
+    const data=await sbApi.json('/api/system/settings',{method:'PUT',body:JSON.stringify(payload)});
+    fillSettings(data.settings||{});renderCapabilities(data);
+    notice(resultEl,true,'已保存并立即生效');
+    ['ai-key','embedding-key'].forEach(id=>{$(id).value=''});
+  }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
+  finally{sbUi.busy(button,false,label)}
+}
+async function clearKeys(keys,resultEl,button,label){
+  sbUi.busy(button,true,label);
+  try{
+    const data=await sbApi.json('/api/system/settings/clear',{method:'POST',body:JSON.stringify({keys:keys})});
+    fillSettings(data.settings||{});renderCapabilities(data);
+    notice(resultEl,true,'已清除，配置立即生效');
+  }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
+  finally{sbUi.busy(button,false,label)}
+}
+
+$('ai-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  const form=event.currentTarget;
+  if(!form.checkValidity()){notice($('ai-result'),false,'请完整填写 Provider、Model 与 Base URL');return}
+  const payload={ai_provider_id:$('ai-provider').value.trim(),ai_model_id:$('ai-model').value.trim(),ai_base_url:$('ai-url').value.trim()};
+  if($('ai-key').value)payload.ai_api_key=$('ai-key').value;
+  sbSubmit.once('ai-settings',()=>save(payload,$('ai-result'),$('ai-save'),'保存并生效'));
+});
+$('ai-clear').addEventListener('click',()=>sbSubmit.once('ai-clear',()=>clearKeys(['ai_provider_id','ai_model_id','ai_base_url','ai_api_key'],$('ai-result'),$('ai-clear'),'清除已保存配置')));
+
+$('embedding-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  if(!event.currentTarget.checkValidity()){notice($('embedding-result'),false,'请完整填写 Provider、Model 与 Base URL');return}
+  const payload={embedding_provider_id:$('embedding-provider').value.trim(),embedding_model_id:$('embedding-model').value.trim(),embedding_base_url:$('embedding-url').value.trim()};
+  if($('embedding-key').value)payload.embedding_api_key=$('embedding-key').value;
+  sbSubmit.once('embedding-settings',()=>save(payload,$('embedding-result'),$('embedding-save'),'保存并生效'));
+});
+$('embedding-clear').addEventListener('click',()=>sbSubmit.once('embedding-clear',()=>clearKeys(['embedding_provider_id','embedding_model_id','embedding_base_url','embedding_api_key'],$('embedding-result'),$('embedding-clear'),'清除已保存配置')));
+
+$('local-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  const payload={},choice=$('ocr-enabled').value;
+  if(choice==='')payload.ocr_enabled='';else payload.ocr_enabled=choice==='true';
+  ['ocr-root:ocr_model_root','asr-runtime:asr_runtime_path','asr-model:asr_model_path'].forEach(pair=>{
+    const [id,key]=pair.split(':'),value=$(id).value.trim();if(value)payload[key]=value;
+  });
+  sbSubmit.once('local-settings',()=>save(payload,$('local-result'),$('local-save'),'保存并生效'));
+});
+$('local-clear').addEventListener('click',()=>sbSubmit.once('local-clear',()=>clearKeys(['ocr_enabled','ocr_model_root','asr_runtime_path','asr_model_path'],$('local-result'),$('local-clear'),'清除本机组件覆盖')));
+
+$('capability-refresh').addEventListener('click',()=>loadCapabilities());
+$('capability-recheck').addEventListener('click',()=>sbSubmit.once('capability-recheck',async()=>{
+  const button=$('capability-recheck');sbUi.busy(button,true,'重新自检');
+  try{renderCapabilities(await sbApi.json('/api/system/capabilities/self-check',{method:'POST',body:JSON.stringify({})}))}
+  catch(error){if(error.name!=='AbortError'){const box=$('capability-error');box.hidden=false;box.textContent=message(error)}}
+  finally{sbUi.busy(button,false,'重新自检')}
+}));
+
+loadCapabilities();loadSettings();
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -16,6 +17,111 @@ PADDLEPADDLE_VERSION = "3.3.1"
 PADDLE_UNCERTAIN_THRESHOLD = 0.85
 MAX_OCR_PIXELS = 12_000_000
 SUPPORTED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
+
+
+class RapidImageOcrProvider:
+    """Offline RapidOCR ONNX provider for the explicit fallback scope."""
+
+    provider_id = "rapidocr"
+    model_id = "ch_PP-OCRv4_det_infer+ch_PP-OCRv4_rec_infer"
+
+    def __init__(self, model_root: Path | str | None = None, *, timeout_seconds: float = 120.0,
+                 max_output_bytes: int = 524288) -> None:
+        self.model_root = Path(model_root) if model_root else None
+        self.timeout_seconds = timeout_seconds
+        self.max_output_bytes = max_output_bytes
+        if timeout_seconds <= 0 or max_output_bytes < 1:
+            raise CaptureProviderError("transcription_provider_not_configured")
+
+    def transcribe(self, request: CaptureTranscriptionRequest) -> CaptureTranscriptionResult:
+        if request.asset_kind != "image":
+            raise CaptureProviderError("capture_asset_type_not_supported")
+        return self.recognize(ImageOcrRequest(request.media_type, request.content_sha256, request.content))
+
+    def recognize(self, request: ImageOcrRequest) -> CaptureTranscriptionResult:
+        if request.media_type not in SUPPORTED_IMAGE_TYPES or not request.content:
+            raise CaptureProviderError("capture_asset_type_not_supported")
+        if len(request.content) > 50 * 1024 * 1024:
+            raise CaptureProviderError("capture_asset_too_large")
+        if hashlib.sha256(request.content).hexdigest() != request.content_sha256:
+            raise CaptureProviderError("transcription_failed")
+        temporary_root = Path(tempfile.mkdtemp(prefix="studybuddy-rapidocr-"))
+        try:
+            suffix = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}[request.media_type]
+            input_path = temporary_root / f"input{suffix}"
+            input_path.write_bytes(request.content)
+            PaddleImageOcrProvider._validate_image(input_path)
+            from rapidocr_onnxruntime import RapidOCR
+            engine = RapidOCR()
+            result, _ = engine(str(input_path))
+            segments: list[dict[str, object]] = []
+            for item in result or []:
+                if len(item) < 3:
+                    continue
+                text = str(item[1]).strip()
+                if not text:
+                    continue
+                confidence = max(0.0, min(1.0, float(item[2])))
+                segments.append({"text": text, "confidence": confidence,
+                                 "quality": "clear" if confidence >= PADDLE_UNCERTAIN_THRESHOLD else "uncertain"})
+            if not segments:
+                raise CaptureProviderError("transcript_empty_or_invalid")
+            if len(json.dumps(segments, ensure_ascii=False).encode("utf-8")) > self.max_output_bytes:
+                raise CaptureProviderError("payload_too_large")
+            return CaptureTranscriptionResult(segments=segments, language="ch")
+        except CaptureProviderError:
+            raise
+        except TimeoutError:
+            raise CaptureProviderError("provider_timeout") from None
+        except Exception:
+            raise CaptureProviderError("transcription_failed") from None
+        finally:
+            shutil.rmtree(temporary_root, ignore_errors=True)
+
+
+class OcrFallbackProvider:
+    """Run PaddleOCR once, then RapidOCR once for explicitly allowed failures."""
+
+    provider_id = "ocr-fallback"
+    model_id = "paddleocr+rapidocr"
+
+    _FALLBACK_ERRORS = {
+        "transcription_provider_not_configured", "provider_unavailable", "provider_timeout",
+        "transcript_empty_or_invalid", "transcription_failed",
+    }
+
+    def __init__(self, primary: ImageOcrProvider, fallback: ImageOcrProvider) -> None:
+        self.primary = primary
+        self.fallback = fallback
+        self.last_fallback_reason: str | None = None
+        self.last_primary_error: str | None = None
+
+    def transcribe(self, request: CaptureTranscriptionRequest) -> CaptureTranscriptionResult:
+        if request.asset_kind != "image":
+            raise CaptureProviderError("capture_asset_type_not_supported")
+        try:
+            result = self.primary.transcribe(request)
+            self.last_fallback_reason = None
+            self.last_primary_error = None
+            return result
+        except CaptureProviderError as error:
+            if error.code not in self._FALLBACK_ERRORS:
+                raise
+            self.last_primary_error = error.code
+            self.last_fallback_reason = {
+                "transcription_provider_not_configured": "primary_unavailable",
+                "provider_unavailable": "primary_unavailable",
+                "provider_timeout": "primary_timeout",
+                "transcript_empty_or_invalid": "primary_empty_result",
+                "transcription_failed": "primary_failed",
+            }[error.code]
+        try:
+            return self.fallback.transcribe(request)
+        except CaptureProviderError as error:
+            raise CaptureProviderError(
+                "payload_too_large" if error.code == "payload_too_large" else
+                "provider_timeout" if error.code == "provider_timeout" else "transcription_failed"
+            ) from None
 
 
 class PaddleImageOcrProvider:

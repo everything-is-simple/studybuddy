@@ -39,7 +39,11 @@ DEFAULT_OCR_PROVIDER = None
 DEFAULT_OCR_MODEL = "PP-OCRv5_server_det+PP-OCRv5_server_rec"
 DEFAULT_OCR_TIMEOUT_SECONDS = 120.0
 DEFAULT_OCR_MAX_OUTPUT_BYTES = 524288
+# Environment-derived configuration stays explicit: an unset gate reads False.
+# Out-of-box enablement happens in the resolve step (see capabilities.py), where a
+# locally detected, structurally valid component turns the capability on.
 DEFAULT_OCR_ENABLED = False
+DEFAULT_AUTO_DETECT = True
 
 
 @dataclass(frozen=True)
@@ -95,6 +99,12 @@ class AppConfig:
     ocr_timeout_seconds: float = DEFAULT_OCR_TIMEOUT_SECONDS
     ocr_max_output_bytes: int = DEFAULT_OCR_MAX_OUTPUT_BYTES
     ocr_enabled: bool = DEFAULT_OCR_ENABLED
+    # Provenance of optional local capability configuration, for UI display only.
+    ocr_source: str = "unset"
+    asr_source: str = "unset"
+    # Explicit construction is explicit: direct AppConfig(...) never probes the host.
+    # `config_from_environment()` turns probing on (STUDYBUDDY_AUTO_DETECT=0 opts out).
+    auto_detect_enabled: bool = False
     # B4 runtime delivery settings remain opt-in and are never persisted.
     report_delivery_smtp_host: str = DEFAULT_REPORT_DELIVERY_SMTP_HOST
     report_delivery_smtp_port: int = DEFAULT_REPORT_DELIVERY_SMTP_PORT
@@ -322,6 +332,7 @@ def config_from_environment() -> AppConfig:
         ocr_timeout_seconds=_env_float("STUDYBUDDY_OCR_TIMEOUT_SECONDS", DEFAULT_OCR_TIMEOUT_SECONDS, minimum=0.1, maximum=600.0),
         ocr_max_output_bytes=_env_int("STUDYBUDDY_OCR_MAX_OUTPUT_BYTES", DEFAULT_OCR_MAX_OUTPUT_BYTES, minimum=1, maximum=16 * 1024 * 1024),
         ocr_enabled=_env_bool("STUDYBUDDY_OCR_ENABLED", DEFAULT_OCR_ENABLED),
+        auto_detect_enabled=_env_bool("STUDYBUDDY_AUTO_DETECT", DEFAULT_AUTO_DETECT),
         report_delivery_smtp_host=_env_delivery_smtp_host(),
         report_delivery_smtp_port=_env_int("STUDYBUDDY_REPORT_DELIVERY_SMTP_PORT", DEFAULT_REPORT_DELIVERY_SMTP_PORT, minimum=1, maximum=65535),
         report_delivery_smtp_secure=_env_bool("STUDYBUDDY_REPORT_DELIVERY_SMTP_SECURE", DEFAULT_REPORT_DELIVERY_SMTP_SECURE),

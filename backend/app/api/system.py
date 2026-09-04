@@ -27,9 +27,77 @@ def register_routes(app, context: dict[str, object]) -> None:
             return {"status": "ready"}
         raise HTTPException(status_code=503, detail={"status": status, "reason": reason})
 
+    @app.get("/api/system/capabilities")
+    def system_capabilities() -> dict[str, object]:
+        """Seven capability lights for the dashboard.
+
+        Re-reads stored settings so a UI configuration change takes effect without
+        a restart. Never returns filesystem paths, secrets, or raw provider errors.
+        """
+        config = refresh_config()
+        return capability_snapshot(config, getattr(app.state, "detection", None))
+
+    @app.post("/api/system/capabilities/self-check")
+    def system_capability_self_check() -> dict[str, object]:
+        """Re-probe local components on explicit request, then re-resolve config."""
+        base = getattr(app.state, "base_config", app.state.config)
+        try:
+            app.state.detection = detect_all(
+                ocr_model_root=base.ocr_model_root,
+                asr_runtime=base.asr_runtime_path,
+                asr_model=base.asr_model_path,
+                preferred_base=base.data_root,
+            ) if base.auto_detect_enabled else None
+        except OSError:
+            raise HTTPException(status_code=500, detail="capability_probe_failed") from None
+        config = refresh_config()
+        snapshot = capability_snapshot(config, getattr(app.state, "detection", None))
+        return {**snapshot, "checked": True}
+
+    @app.get("/api/system/settings")
+    def read_local_settings() -> dict[str, object]:
+        """Stored local settings. Secrets are reported as presence flags only."""
+        stored = load_settings(app.state.config.data_root)
+        return {"settings": public_settings(stored)}
+
+    @app.put("/api/system/settings")
+    def write_local_settings(request: LocalSettingsRequest) -> dict[str, object]:
+        """Persist local settings under `data_root`, then apply without a restart.
+
+        Explicit empty strings clear the corresponding stored value.
+        """
+        supplied = request.model_dump(exclude_unset=True)
+        if not supplied:
+            raise HTTPException(status_code=400, detail="settings_empty_payload")
+        cleared = [key for key, value in supplied.items() if isinstance(value, str) and not value.strip()]
+        updates = {key: value for key, value in supplied.items() if key not in cleared and value is not None}
+        try:
+            if cleared:
+                clear_settings(app.state.config.data_root, cleared)
+            stored = save_settings(app.state.config.data_root, updates) if updates \
+                else load_settings(app.state.config.data_root)
+        except SettingsError as error:
+            status = 500 if error.code == "settings_write_failed" else 400
+            raise HTTPException(status_code=status, detail=error.code) from None
+        config = refresh_config()
+        return {"settings": public_settings(stored),
+                **capability_snapshot(config, getattr(app.state, "detection", None))}
+
+    @app.post("/api/system/settings/clear")
+    def clear_local_settings(request: LocalSettingsClearRequest) -> dict[str, object]:
+        """Remove selected stored settings keys, or every stored key."""
+        try:
+            stored = clear_settings(app.state.config.data_root, request.keys)
+        except SettingsError as error:
+            status = 500 if error.code == "settings_write_failed" else 400
+            raise HTTPException(status_code=status, detail=error.code) from None
+        config = refresh_config()
+        return {"settings": public_settings(stored),
+                **capability_snapshot(config, getattr(app.state, "detection", None))}
+
     @app.get("/api/ai/capabilities")
     def ai_capabilities() -> dict[str, object]:
-        config = app.state.config
+        config = refresh_config()
         if config.ai_provider_id == "fake":
             llm = provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
         else:
