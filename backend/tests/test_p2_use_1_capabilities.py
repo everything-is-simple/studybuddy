@@ -381,6 +381,80 @@ def test_settings_endpoint_clears_with_empty_string(client: TestClient) -> None:
     assert "ai_provider_id" not in cleared.json()["settings"]
 
 
+def test_a_configured_component_path_is_validated_not_assumed(tmp_path: Path) -> None:
+    """A supplied component path must be probed against that path.
+
+    Startup detection scans conventional locations. If a configured path were
+    layered on top of that earlier result, a mistyped OCR model directory would
+    keep reporting `available` while every real transcription fails, because the
+    provider validates the directory itself and refuses to construct.
+    """
+    base = _config(tmp_path)
+    good = _detection()
+
+    resolved = resolve_config(base, settings={"ocr_model_root": str(tmp_path / "typo")},
+                              detection=good)
+    state = capability_snapshot(resolved, good)["capabilities"]["ocr"]
+    assert state["status"] != STATUS_AVAILABLE
+    assert state["reason"] == "ocr_model_root_invalid"
+
+    asr = resolve_config(base, settings={"asr_runtime_path": str(tmp_path / "missing.exe")},
+                         detection=good)
+    asr_state = capability_snapshot(asr, good)["capabilities"]["asr"]
+    assert asr_state["status"] != STATUS_AVAILABLE
+    assert asr_state["reason"] == "asr_runtime_invalid"
+
+    # Detection still wins when nothing is configured by hand.
+    untouched = capability_snapshot(resolve_config(base, settings={}, detection=good), good)
+    assert untouched["capabilities"]["ocr"]["status"] == STATUS_AVAILABLE
+    assert untouched["capabilities"]["asr"]["status"] == STATUS_AVAILABLE
+
+
+def test_local_component_form_payload_is_accepted(client: TestClient) -> None:
+    """The local-component form's own payload shape must reach the settings layer.
+
+    Its OCR switch defaults to "follow detection", which submits an empty string,
+    and its path fields are optional. A schema that only accepts a real boolean
+    rejects that default before any settings logic runs, which makes the whole
+    section unsavable for the common case.
+    """
+    follow_detection = client.put("/api/system/settings", json={"ocr_enabled": ""})
+    assert follow_detection.status_code == 200
+    assert "ocr_enabled" not in follow_detection.json()["settings"]
+
+    with_path = client.put("/api/system/settings", json={
+        "ocr_enabled": "", "ocr_model_root": "models/ocr", "asr_enabled": "",
+    })
+    assert with_path.status_code == 200
+    assert with_path.json()["settings"]["ocr_model_root_set"] is True
+
+    forced = client.put("/api/system/settings", json={"ocr_enabled": False})
+    assert forced.status_code == 200
+    assert forced.json()["settings"]["ocr_enabled"] is False
+
+    # An explicit empty string clears a previously forced switch.
+    restored = client.put("/api/system/settings", json={"ocr_enabled": ""})
+    assert restored.status_code == 200
+    assert "ocr_enabled" not in restored.json()["settings"]
+
+
+def test_delivery_port_and_secure_accept_the_form_blank(client: TestClient) -> None:
+    """Blanking a numeric or boolean delivery field must clear it, not 422."""
+    saved = client.put("/api/system/settings", json={
+        "report_delivery_smtp_port": 465, "report_delivery_smtp_secure": True,
+    })
+    assert saved.status_code == 200
+    assert saved.json()["settings"]["report_delivery_smtp_port"] == 465
+
+    cleared = client.put("/api/system/settings", json={
+        "report_delivery_smtp_port": "", "report_delivery_smtp_secure": "",
+    })
+    assert cleared.status_code == 200
+    settings = cleared.json()["settings"]
+    assert "report_delivery_smtp_port" not in settings
+    assert "report_delivery_smtp_secure" not in settings
+
+
 def test_settings_endpoint_rejects_bad_input_safely(client: TestClient) -> None:
     empty = client.put("/api/system/settings", json={})
     assert empty.status_code == 400 and empty.json()["detail"] == "settings_empty_payload"

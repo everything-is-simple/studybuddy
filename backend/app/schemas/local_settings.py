@@ -12,7 +12,14 @@ controls, so storing an SMTP password never turns outbound delivery on.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
+
+# An explicit empty string is the clear instruction for every field, including
+# the boolean and integer ones. Without this the form's "follow detection" and
+# "leave blank" choices are rejected before any settings logic runs.
+Clearable = Literal[""]
 
 
 class LocalSettingsRequest(BaseModel):
@@ -32,15 +39,15 @@ class LocalSettingsRequest(BaseModel):
     ocr_provider_id: str | None = None
     ocr_model_id: str | None = None
     ocr_model_root: str | None = None
-    ocr_enabled: bool | None = None
+    ocr_enabled: bool | Clearable | None = None
     asr_provider_id: str | None = None
     asr_model_id: str | None = None
     asr_runtime_path: str | None = None
     asr_model_path: str | None = None
-    asr_enabled: bool | None = None
+    asr_enabled: bool | Clearable | None = None
     report_delivery_smtp_host: str | None = None
-    report_delivery_smtp_port: int | None = None
-    report_delivery_smtp_secure: bool | None = None
+    report_delivery_smtp_port: int | Clearable | None = None
+    report_delivery_smtp_secure: bool | Clearable | None = None
     report_delivery_smtp_username: str | None = None
     report_delivery_smtp_password: str | None = None
     report_delivery_smtp_targets: str | None = None

@@ -29,7 +29,7 @@ MAX_SETTINGS_BYTES = 64 * 1024
 _FORMAT = "studybuddy-local-settings"
 _FORMAT_VERSION = 1
 
-# Only these keys are accepted. Delivery credentials are deliberately excluded:
+# Only these keys are accepted. Delivery credentials may be persisted locally;
 # outbound delivery stays runtime-only, default-off and per-use authorized.
 _TEXT_KEYS = frozenset({
     "ai_provider_id", "ai_model_id", "ai_base_url",

@@ -147,7 +147,7 @@ async function save(payload,resultEl,button,label){
     const data=await sbApi.json('/api/system/settings',{method:'PUT',body:JSON.stringify(payload)});
     fillSettings(data.settings||{});renderCapabilities(data);
     notice(resultEl,true,'已保存并立即生效');
-    ['ai-key','embedding-key'].forEach(id=>{$(id).value=''});
+    ['ai-key','embedding-key','ocr-root','asr-runtime','asr-model'].forEach(id=>{$(id).value=''});
   }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
   finally{sbUi.busy(button,false,label)}
 }
