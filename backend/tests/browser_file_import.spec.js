@@ -8,7 +8,7 @@ const RUN_ROOT = 'H:/studybuddy-test/runs/formal-file-import-final';
 const ARTIFACT = 'H:/studybuddy-test/artifacts/formal-file-import-final/latest.json';
 const FIXTURES = 'H:/studybuddy-test/fixtures/kaobuddy-foundation';
 const VALID_EMPTY = path.join(RUN_ROOT, 'valid-empty.docx');
-const PORT = 8787;
+const PORT = 8850;
 const BASE = `http://127.0.0.1:${PORT}`;
 const LIMIT = 50 * 1024 * 1024;
 
@@ -172,7 +172,7 @@ function makeBoundaryFiles() {
     const payload = {
       component: 'formal-file-import-final', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass',
       python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
-      startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8787',
+      startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8850',
       browser_test_command: 'npx playwright test backend/tests/browser_file_import.spec.js --workers=1 --reporter=line',
       cases: records, fifty_mib: {limit: LIMIT, exact_status: exactStatus, over_status: overStatus, over_detail: overDetail, material_count_before_over: beforeCount + 1, material_count_after_over: afterOverMaterials, original_count: countFiles(path.join(RUN_ROOT, 'originals'), /^original$/), temporary_count: countFiles(RUN_ROOT, /^\.incoming-/)},
       duplicate_hash_reuse: duplicatePayload, database_counts: counts, refresh_readback: refreshReadback, restart_readback: {passed: true, material_count: beforeRestart},
