@@ -329,7 +329,11 @@ revision → chunks → retrieval → citations → Q&A
 +- [x] P1-5-3：配置持久化评估。
   产出：`docs/contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`、`backend/tests/test_p1_5_3_persistence.py`（10 passed）。已按 secret 暴露面、backup 污染、migration 代价、是否免重启、契约冲突、可逆性评估五个方案（环境变量现状 / SQLite 配置表 / `data_root` JSON / 运行时热重载 / OS 凭据库）。**决策：不引入持久化**，维持现状。根据：backup 为全库复制（`backup.py:190-193`），SQLite 是 secret 最差载体且无选择性排除机制；`AppConfig` 为 frozen dataclass、启动时加载一次（`app_factory.py:129`），不做热重载时 A/B 方案无真实 UX 收益；热重载技术上可行（provider/registry/task runner 均为每请求构造）但需跨 13 个 API 模块引入请求级配置快照，应独立立项。P1-5-1 据此定型为“组装 → 校验 → 导出”：表单输入与范围校验、测试连接按钮、客户端生成环境变量片段，无保存 endpoint、无浏览器存储。未改 `backend/app/`、schema（保持 v14）、migration 或 API；P1-5-0 契约无需修订。
 - [ ] P1-6：扩大 B1 ASR、B2 OCR、B3 reports、B4 delivery 的验证范围。
-  产出：输入集、取消、并发、失败恢复、跨环境与真实用户路径证据，逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass。优先级在 P1-4 台账产出后重新评估。
+  产出：输入集、取消、并发、失败恢复、跨环境与真实用户路径证据，逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass。P1-6-0 已完成审计与契约冻结，后续按 P1-6-1 起逐项执行。
+- [x] P1-6-0：完成 B1-B4 扩大验证范围审计与契约冻结。
+  产出：`docs/contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`、`docs/evidence/P1_6_0_AUDIT_EVIDENCE.md`、`backend/tests/test_p1_6_0_governance.py`。已核对 B1 ASR、B2 OCR、B3 reports、B4 delivery 的现有 scoped closeout、not_verified 边界、输入集/取消/并发/失败恢复/跨环境/真实用户路径缺口，并冻结 P1-6-1 至 P1-6-6 建议顺序。无 `backend/app/`、schema、migration、API 或运行时能力修改；delivery 继续 `off`。
++- [ ] P1-6-1：B1 ASR 输入集与可取消性验证（依赖 P1-6-0）。
++  先使用非敏感 fixture 和 canonical `whisper-cpp` 显式 gate 验证输入分类、timeout/cancel、临时目录与子进程清理，不扩大语言、模型、OS 或通用 ASR real-pass 声明。
 - [ ] P1-7：真实自用观察期（由使用者本人执行，非编码任务）。
   连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
   产出：卡壳记录，回流进 P1-4 台账作为 P1/P2 条目。

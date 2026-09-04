@@ -36,6 +36,8 @@
 - [`evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`](evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md)：P1-5-2 connection-test 实现证据，包含 adapter、API、测试覆盖和未验证边界。
 - [`evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md`](evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md)：P1-5-4 浏览器配置安全证据，覆盖 secret 生命周期、DOM/URL/storage 和 mock connection-test。
 - [`evidence/P1_5_5_SECRET_LEAK_SCAN_EVIDENCE.md`](evidence/P1_5_5_SECRET_LEAK_SCAN_EVIDENCE.md)：P1-5-5 synthetic secret 扫描证据、范围与未验证边界。
+- [`contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`](contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md)：P1-6-0 B1-B4 扩大验证范围、门禁与后续切片契约。
+- [`evidence/P1_6_0_AUDIT_EVIDENCE.md`](evidence/P1_6_0_AUDIT_EVIDENCE.md)：P1-6-0 B1-B4 缺口审计、立项顺序与未验证边界。
 - [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)：Phase 9D 限定范围 closeout。
 - [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：local-v1 release candidate drill。
 - [`operations/AI_PROVIDER_SETUP.md`](operations/AI_PROVIDER_SETUP.md)：真实 Provider 的显式 opt-in 配置边界。
