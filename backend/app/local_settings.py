@@ -36,10 +36,13 @@ _TEXT_KEYS = frozenset({
     "embedding_provider_id", "embedding_model_id", "embedding_base_url",
     "ocr_provider_id", "ocr_model_id", "ocr_model_root",
     "asr_provider_id", "asr_model_id", "asr_runtime_path", "asr_model_path",
+    "report_delivery_smtp_host", "report_delivery_smtp_username", "report_delivery_smtp_targets",
+    "report_delivery_feishu_webhook",
 })
-_SECRET_KEYS = frozenset({"ai_api_key", "embedding_api_key"})
-_BOOL_KEYS = frozenset({"ocr_enabled", "asr_enabled"})
-ALLOWED_KEYS = _TEXT_KEYS | _SECRET_KEYS | _BOOL_KEYS
+_SECRET_KEYS = frozenset({"ai_api_key", "embedding_api_key", "report_delivery_smtp_password"})
+_BOOL_KEYS = frozenset({"ocr_enabled", "asr_enabled", "report_delivery_smtp_secure"})
+_INT_KEYS = frozenset({"report_delivery_smtp_port"})
+ALLOWED_KEYS = _TEXT_KEYS | _SECRET_KEYS | _BOOL_KEYS | _INT_KEYS
 
 _MAX_VALUE_CHARS = 1000
 _PROVIDER_ID_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
@@ -82,6 +85,23 @@ def _validated_text(key: str, value: object) -> str | None:
         except ValueError:
             raise SettingsError("settings_invalid_value") from None
         return trimmed.rstrip("/")
+    if key == "report_delivery_smtp_targets":
+        # Format: label1=email1@example.com,label2=email2@example.com
+        seen_labels: set[str] = set()
+        for item in trimmed.split(","):
+            item = item.strip()
+            if not item:
+                continue
+            if item.count("=") != 1:
+                raise SettingsError("settings_invalid_value")
+            label, target = (part.strip() for part in item.split("=", 1))
+            if (not label or not target or len(label) > 100 or len(target) > 500
+                    or any(not (char.isascii() and (char.isalnum() or char in "._-")) for char in label)):
+                raise SettingsError("settings_invalid_value")
+            if label in seen_labels:
+                raise SettingsError("settings_invalid_value")
+            seen_labels.add(label)
+        return trimmed
     return trimmed
 
 
@@ -112,6 +132,19 @@ def _validated_bool(value: object) -> bool | None:
     raise SettingsError("settings_invalid_value")
 
 
+def _validated_int(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError:
+            pass
+    raise SettingsError("settings_invalid_value")
+
+
 def normalize_settings(payload: dict[str, object]) -> dict[str, object]:
     """Validate a settings payload, dropping empty values. Raises on bad input."""
     if not isinstance(payload, dict):
@@ -125,6 +158,8 @@ def normalize_settings(payload: dict[str, object]) -> dict[str, object]:
             resolved: object | None = _validated_secret(value)
         elif key in _BOOL_KEYS:
             resolved = _validated_bool(value)
+        elif key in _INT_KEYS:
+            resolved = _validated_int(value)
         else:
             resolved = _validated_text(key, value)
         if resolved is not None:
@@ -159,6 +194,8 @@ def load_settings(data_root: Path | str) -> dict[str, object]:
                 resolved: object | None = _validated_secret(value)
             elif key in _BOOL_KEYS:
                 resolved = _validated_bool(value)
+            elif key in _INT_KEYS:
+                resolved = _validated_int(value)
             else:
                 resolved = _validated_text(key, value)
         except SettingsError:
