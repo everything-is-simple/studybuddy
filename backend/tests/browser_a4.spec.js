@@ -81,6 +81,7 @@ test('P1-5-1 provider form tests connection and clears secret input', async ({ p
     status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }),
   }));
   await page.goto(`${BASE}/app/settings-provider.html`);
+  await page.locator('#provider-id').fill('synthetic-provider');
   await page.locator('#provider-model').fill('synthetic-model');
   await page.locator('#provider-url').fill('https://loopback.invalid/v1');
   await page.locator('#provider-key').fill('TEST_SECRET_DO_NOT_LEAK_7d0f');
@@ -98,10 +99,11 @@ test('P1-5-1 email form sends selected channel and keeps no save control', async
   });
   await page.goto(`${BASE}/app/settings-provider.html`);
   await page.locator('#email-channel').selectOption('feishu');
-  await page.locator('#feishu-webhook').fill('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
+  await page.locator('#feishu-webhook').fill('https://open.feishu.cn/hook/TEST_WEBHOOK_DO_NOT_LEAK_5a21');
   await page.locator('#email-form').evaluate(form => form.requestSubmit());
   await expect(page.locator('#email-result')).toContainText('测试通过');
-  await expect.poll(() => requestBody).toMatchObject({ channel: 'feishu', feishu_webhook: 'TEST_WEBHOOK_DO_NOT_LEAK_5a21' });
+  await expect.poll(() => requestBody).toMatchObject({ channel: 'feishu' });
+  expect(requestBody.feishu_webhook).toContain('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
   await expect(page.locator('#feishu-webhook')).toHaveValue('');
   await expect(page.locator('body')).not.toContainText('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
   await expect(page.locator('button', { hasText: '保存' })).toHaveCount(0);

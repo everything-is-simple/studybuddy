@@ -34,6 +34,7 @@
 - [`../backend/app/static/settings-provider.html`](../backend/app/static/settings-provider.html)：P1-5-1 Provider/Email 只测不存配置 UI。
 - [`evidence/P1_5_0_CONTRACT_EVIDENCE.md`](evidence/P1_5_0_CONTRACT_EVIDENCE.md)：P1-5-0 契约冻结审计发现和治理测试覆盖。
 - [`evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`](evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md)：P1-5-2 connection-test 实现证据，包含 adapter、API、测试覆盖和未验证边界。
+- [`evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md`](evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md)：P1-5-4 浏览器配置安全证据，覆盖 secret 生命周期、DOM/URL/storage 和 mock connection-test。
 - [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)：Phase 9D 限定范围 closeout。
 - [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：local-v1 release candidate drill。
 - [`operations/AI_PROVIDER_SETUP.md`](operations/AI_PROVIDER_SETUP.md)：真实 Provider 的显式 opt-in 配置边界。
