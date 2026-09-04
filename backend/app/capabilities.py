@@ -81,6 +81,9 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
     if detection is None and base.auto_detect_enabled:
         detection = detect.detect_all(ocr_model_root=ocr_root, asr_runtime=asr_runtime,
                                       asr_model=asr_model_path, preferred_base=base.data_root)
+    elif detection is not None and base.auto_detect_enabled:
+        detection = _probe_configured_paths(detection, ocr_root, asr_runtime, asr_model_path,
+                                           preferred_base=base.data_root)
 
     if detection is not None:
         if ocr_source == _SOURCE_UNSET and detection.paddle_ocr.available:
@@ -175,6 +178,26 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
     )
 
 
+def _probe_configured_paths(detection: DetectionResult, ocr_root: Path | None,
+                            asr_runtime: Path | None, asr_model: Path | None,
+                            *, preferred_base: Path | None) -> DetectionResult:
+    """Validate explicitly configured component paths against those paths.
+
+    Startup detection scans conventional locations once. A path supplied by the
+    operator or through the UI must be probed on its own terms, otherwise a
+    mistyped model directory keeps reporting a usable capability while every real
+    call fails: the provider validates the directory itself and refuses to build.
+    Paths that detection already found are not probed again.
+    """
+    updated = detection
+    if ocr_root is not None and detection.paddle_ocr.path != ocr_root:
+        updated = replace(updated, paddle_ocr=detect.detect_paddle_ocr(ocr_root))
+    if asr_runtime is not None and detection.whisper_asr.path != asr_runtime:
+        updated = replace(updated, whisper_asr=detect.detect_whisper_asr(
+            asr_runtime, asr_model, preferred_base=preferred_base))
+    return updated
+
+
 def _parse_delivery_targets(raw: str) -> tuple[tuple[str, str], ...]:
     """Parse a stored `label=target,label=target` string. Bad entries are dropped."""
     pairs: list[tuple[str, str]] = []
@@ -214,6 +237,10 @@ def _ocr_state(config: AppConfig, detection: DetectionResult | None) -> dict[str
     probe = detection.paddle_ocr if detection else None
     if probe is not None and probe.status == STATUS_NOT_INSTALLED:
         return _state(STATUS_NOT_INSTALLED, reason=probe.reason, source=config.ocr_source)
+    if probe is not None and not probe.available and config.ocr_model_root is not None:
+        # A configured model root that does not validate is a configuration
+        # error, not a working capability: the provider refuses to construct.
+        return _state(probe.status, reason=probe.reason, source=config.ocr_source)
     usable = bool(config.ocr_provider_id and config.ocr_model_root) or bool(probe and probe.available)
     if not config.ocr_enabled:
         if not usable:
@@ -231,6 +258,11 @@ def _ocr_state(config: AppConfig, detection: DetectionResult | None) -> dict[str
 
 def _asr_state(config: AppConfig, detection: DetectionResult | None) -> dict[str, object]:
     probe = detection.whisper_asr if detection else None
+    if (probe is not None and not probe.available and not config.demo_mode
+            and (config.asr_runtime_path is not None or config.asr_model_path is not None)):
+        # Same rule as OCR: a configured runtime or model that does not validate
+        # must report its probe reason instead of a usable capability.
+        return _state(probe.status, reason=probe.reason, source=config.asr_source)
     if config.asr_provider_id and config.asr_runtime_path and config.asr_model_path:
         return _state(STATUS_AVAILABLE, provider_id=config.asr_provider_id,
                       model_id=config.asr_model_id, source=config.asr_source)
@@ -273,6 +305,10 @@ def _index_state(config: AppConfig, embedding: dict[str, object]) -> dict[str, o
 
 def capability_snapshot(config: AppConfig, detection: DetectionResult | None = None) -> dict[str, object]:
     """Seven capability lights for the dashboard. No paths, no secrets."""
+    if detection is not None and config.auto_detect_enabled:
+        detection = _probe_configured_paths(detection, config.ocr_model_root,
+                                            config.asr_runtime_path, config.asr_model_path,
+                                            preferred_base=config.data_root)
     llm = _provider_state(config.ai_provider_id, config.ai_model_id,
                           config.ai_api_key, config.ai_base_url)
     embedding = _provider_state(config.embedding_provider_id, config.embedding_model_id,

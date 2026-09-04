@@ -24,3 +24,27 @@ test('P2-USE-3 save appears only after a passing test and persists without echoi
 test('P2-USE-3 editing a verified form withdraws the save affordance',async({page})=>{await page.route('**/api/system/provider-connection-test',route=>route.fulfill({status:200,contentType:'application/json',body:'{"status":"ok"}'}));await open(page);await page.locator('#provider-id').fill('synthetic-provider');await page.locator('#provider-model').fill('synthetic-model');await page.locator('#provider-url').fill('https://loopback.invalid/v1');await page.locator('#provider-key').fill('TEST_SECRET_DO_NOT_LEAK_7d0f');await page.locator('#provider-form').evaluate(f=>f.requestSubmit());await expect(page.locator('#provider-save')).toBeVisible();await page.locator('#provider-model').fill('changed-model');await expect(page.locator('#provider-save')).toBeHidden()});
 
 test('P2-USE-3 email save stores credentials but never switches delivery on',async({page})=>{let saved;await page.route('**/api/system/email-connection-test',route=>route.fulfill({status:200,contentType:'application/json',body:'{"status":"ok"}'}));await page.route('**/api/system/settings',async route=>{if(route.request().method()==='PUT'){saved=route.request().postDataJSON();return route.fulfill({status:200,contentType:'application/json',body:'{"settings":{},"capabilities":{},"ready_count":0,"total_count":7}'})}return route.continue()});await open(page);await expect(page.locator('#email-save')).toBeHidden();await page.locator('#smtp-username').fill('sender@example.test');await page.locator('#smtp-password').fill('TEST_SMTP_PASSWORD_DO_NOT_LEAK_29ce');await page.locator('#smtp-sender').fill('sender@example.test');await page.locator('#smtp-recipient').fill('recipient@example.test');await page.locator('#email-form').evaluate(f=>f.requestSubmit());await expect(page.locator('#email-save')).toBeVisible();await page.locator('#email-save').click();await expect(page.locator('#email-result')).toContainText('\u5df2\u4fdd\u5b58');await expect.poll(()=>saved).toMatchObject({report_delivery_smtp_host:'smtp.qq.com',report_delivery_smtp_port:465,report_delivery_smtp_secure:true,report_delivery_smtp_targets:'primary=recipient@example.test'});expect(saved.report_delivery_smtp_password).toBe('TEST_SMTP_PASSWORD_DO_NOT_LEAK_29ce');expect(Object.keys(saved)).not.toContain('report_delivery_mode');expect(Object.keys(saved)).not.toContain('report_delivery_enabled');expect(Object.keys(saved)).not.toContain('report_delivery_authorized');await expect(page.locator('#smtp-password')).toHaveValue('');expect(await noLeak(page,'TEST_SMTP_PASSWORD_DO_NOT_LEAK_29ce')).toBe(true)});
+
+test('P2-USE-6 local component form saves with its own default selections against a live server',async({page})=>{
+  await page.goto(`${BASE}/app/settings.html`);
+  await expect(page.locator('#local-save')).toBeVisible();
+  // Default state: OCR switch on "follow detection", every path blank.
+  await expect(page.locator('#ocr-enabled')).toHaveValue('');
+  await page.locator('#local-form').evaluate(f=>f.requestSubmit());
+  await expect(page.locator('#local-result')).toContainText('已保存');
+  await expect(page.locator('#local-result')).toHaveClass(/status-success/);
+  // A forced switch plus a path also round-trips, and the path is never echoed.
+  await page.locator('#ocr-enabled').selectOption('false');
+  await page.locator('#ocr-root').fill('models/ocr');
+  await page.locator('#local-form').evaluate(f=>f.requestSubmit());
+  await expect(page.locator('#local-result')).toContainText('已保存');
+  await page.reload();
+  await expect(page.locator('#ocr-enabled')).toHaveValue('false');
+  await expect(page.locator('#ocr-root')).toHaveValue('');
+  await expect(page.locator('#ocr-root')).toHaveAttribute('placeholder',/已设置/);
+  expect(await noLeak(page,'models/ocr')).toBe(true);
+  // Clearing the override returns the switch to "follow detection".
+  await page.locator('#local-clear').click();
+  await expect(page.locator('#local-result')).toContainText('已清除');
+  await expect(page.locator('#ocr-enabled')).toHaveValue('');
+});
