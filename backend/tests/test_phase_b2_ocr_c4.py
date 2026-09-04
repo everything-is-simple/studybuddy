@@ -12,6 +12,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+import app.providers._ocr as ocr_module
 from app.config import AppConfig, config_from_environment
 from app.providers import CaptureProviderError, ImageOcrRequest, PaddleImageOcrProvider, provider_registry
 from app.main import create_app
@@ -95,6 +96,65 @@ def test_paddle_provider_enforces_output_limit(tmp_path: Path, monkeypatch: pyte
     _install_fake_paddle(monkeypatch, [_Page(["long text"], [0.95])])
     with pytest.raises(CaptureProviderError, match="payload_too_large"):
         PaddleImageOcrProvider(tmp_path, max_output_bytes=1).recognize(_request(content))
+
+
+def test_p1_6_2_accepts_png_jpeg_and_webp_after_real_image_decode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    provider = _provider(tmp_path)
+    _install_fake_paddle(monkeypatch, [_Page(["decoded text"], [0.95])])
+    for media_type, suffix in (("image/png", "png"), ("image/jpeg", "jpg"), ("image/webp", "webp")):
+        content_path = tmp_path / f"fixture.{suffix}"
+        Image.new("RGB", (80, 40), "white").save(content_path, format="JPEG" if suffix == "jpg" else suffix.upper())
+        result = provider.recognize(_request(content_path.read_bytes(), media_type))
+        assert result.segments[0]["text"] == "decoded text"
+        assert result.language == "ch"
+
+
+def test_p1_6_2_rejects_empty_and_corrupt_supported_images(tmp_path: Path):
+    provider = _provider(tmp_path)
+    for content in (b"", b"not-a-real-image"):
+        with pytest.raises(CaptureProviderError) as error:
+            provider.recognize(_request(content, "image/png"))
+        assert error.value.code in {"capture_asset_type_not_supported", "transcription_failed"}
+
+
+def test_p1_6_2_pixel_and_byte_limits_fail_before_ocr(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    provider = _provider(tmp_path)
+    content_path = tmp_path / "large.png"
+    Image.new("RGB", (80, 40), "white").save(content_path)
+    content = content_path.read_bytes()
+    monkeypatch.setattr(ocr_module, "MAX_OCR_PIXELS", 10)
+    _install_fake_paddle(monkeypatch, [_Page(["must not run"], [0.95])])
+    with pytest.raises(CaptureProviderError, match="capture_asset_too_large"):
+        provider.recognize(_request(content))
+
+    oversized = b"x" * (50 * 1024 * 1024 + 1)
+    with pytest.raises(CaptureProviderError, match="capture_asset_too_large"):
+        provider.recognize(_request(oversized))
+
+
+def test_p1_6_2_timeout_cleans_temp_root_and_maps_stable_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    provider = _provider(tmp_path,)
+    content_path = tmp_path / "fixture.png"
+    Image.new("RGB", (80, 40), "white").save(content_path)
+    temp_root = tmp_path / "controlled-ocr-temp"
+
+    def make_temp_root(*_args: object, **_kwargs: object) -> str:
+        temp_root.mkdir()
+        return str(temp_root)
+
+    class TimeoutOCR:
+        def predict(self, _image_path: str) -> list[object]:
+            raise TimeoutError("bounded timeout")
+
+    monkeypatch.setattr(ocr_module.tempfile, "mkdtemp", make_temp_root)
+    monkeypatch.setattr(provider, "_load", lambda: TimeoutOCR())
+    with pytest.raises(CaptureProviderError, match="provider_timeout"):
+        provider.recognize(_request(content_path.read_bytes()))
+    assert not temp_root.exists()
 
 
 def test_image_api_does_not_fallback_when_ocr_is_disabled(tmp_path: Path):

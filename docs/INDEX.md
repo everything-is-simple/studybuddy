@@ -39,6 +39,7 @@
 - [`contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`](contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md)：P1-6-0 B1-B4 扩大验证范围、门禁与后续切片契约。
 - [`evidence/P1_6_0_AUDIT_EVIDENCE.md`](evidence/P1_6_0_AUDIT_EVIDENCE.md)：P1-6-0 B1-B4 缺口审计、立项顺序与未验证边界。
 - [`evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md`](evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md)：P1-6-1 B1 ASR 输入拒绝、timeout/受控中断与清理证据。
+- [`evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md`](evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md)：P1-6-2 B2 OCR 图片输入、边界拒绝与 timeout 清理证据。
 - [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)：Phase 9D 限定范围 closeout。
 - [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：local-v1 release candidate drill。
 - [`operations/AI_PROVIDER_SETUP.md`](operations/AI_PROVIDER_SETUP.md)：真实 Provider 的显式 opt-in 配置边界。
