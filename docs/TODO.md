@@ -332,8 +332,10 @@ revision → chunks → retrieval → citations → Q&A
   产出：输入集、取消、并发、失败恢复、跨环境与真实用户路径证据，逐项立项和验收；不得把现有 scoped closeout 外推为通用或 global real-pass。P1-6-0 已完成审计与契约冻结，后续按 P1-6-1 起逐项执行。
 - [x] P1-6-0：完成 B1-B4 扩大验证范围审计与契约冻结。
   产出：`docs/contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`、`docs/evidence/P1_6_0_AUDIT_EVIDENCE.md`、`backend/tests/test_p1_6_0_governance.py`。已核对 B1 ASR、B2 OCR、B3 reports、B4 delivery 的现有 scoped closeout、not_verified 边界、输入集/取消/并发/失败恢复/跨环境/真实用户路径缺口，并冻结 P1-6-1 至 P1-6-6 建议顺序。无 `backend/app/`、schema、migration、API 或运行时能力修改；delivery 继续 `off`。
-+- [ ] P1-6-1：B1 ASR 输入集与可取消性验证（依赖 P1-6-0）。
-+  先使用非敏感 fixture 和 canonical `whisper-cpp` 显式 gate 验证输入分类、timeout/cancel、临时目录与子进程清理，不扩大语言、模型、OS 或通用 ASR real-pass 声明。
++- [x] P1-6-1：B1 ASR 输入集与可取消性验证（依赖 P1-6-0）。
++  已使用非敏感 synthetic fixture 和 canonical `whisper-cpp` adapter 验证非 audio/空输入拒绝、TXT/SRT bounded output、timeout/受控中断、partial output/临时目录清理、stdout/stderr 丢弃和原始内容不进入命令参数。证据：`docs/evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md`；`backend/tests/test_formal_asr.py` focused `7 passed, 1 skipped`。本项不提供 graceful cancel API，不扩大语言、模型、OS、并发或通用 ASR real-pass 声明。
++- [ ] P1-6-2：B2 OCR 输入集与失败恢复验证（依赖 P1-6-1）。
++  使用非敏感 synthetic fixture 和显式 PaddleOCR gate 验证 PNG/JPEG/WebP、空/损坏/超大图片、timeout/retry、draft/source lifecycle；不扩大通用 OCR real-pass 声明。
 - [ ] P1-7：真实自用观察期（由使用者本人执行，非编码任务）。
   连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
   产出：卡壳记录，回流进 P1-4 台账作为 P1/P2 条目。

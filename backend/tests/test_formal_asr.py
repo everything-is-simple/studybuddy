@@ -81,6 +81,65 @@ def test_whisper_cli_adapter_timeout_and_output_limit_are_safe(tmp_path: Path, m
         WhisperCliCaptureProvider(executable, model, max_output_bytes=10).transcribe(_request())
 
 
+def test_p1_6_1_rejects_empty_and_non_audio_input_before_runtime(tmp_path: Path, monkeypatch):
+    executable, model = _runtime(tmp_path)
+    calls: list[object] = []
+    monkeypatch.setattr(capture_module.subprocess, "run", lambda *args, **kwargs: calls.append(args))
+    provider = WhisperCliCaptureProvider(executable, model)
+
+    with pytest.raises(CaptureProviderError, match="transcription_failed"):
+        provider.transcribe(CaptureTranscriptionRequest(
+            asset_kind="image", media_type="image/png", content_sha256="b" * 64, content=b"image",
+        ))
+    with pytest.raises(CaptureProviderError, match="transcription_failed"):
+        provider.transcribe(CaptureTranscriptionRequest(
+            asset_kind="audio", media_type="audio/wav", content_sha256="c" * 64, content=b"",
+        ))
+    assert calls == []
+
+
+def test_p1_6_1_success_cleans_temp_root_and_keeps_content_out_of_command(tmp_path: Path, monkeypatch):
+    executable, model = _runtime(tmp_path)
+    seen: dict[str, object] = {}
+
+    def run(command, *, cwd, stdout, stderr, timeout, check):
+        seen.update(command=command, cwd=Path(cwd), timeout=timeout, stdout=stdout, stderr=stderr, check=check)
+        Path(cwd, "input.txt").write_text("bounded transcript", encoding="utf-8")
+
+    monkeypatch.setattr(capture_module.subprocess, "run", run)
+    request = CaptureTranscriptionRequest(
+        asset_kind="audio", media_type="audio/wav", content_sha256="d" * 64,
+        content=b"PRIVATE_AUDIO_SENTINEL",
+    )
+    result = WhisperCliCaptureProvider(executable, model, timeout_seconds=3.5).transcribe(request)
+
+    assert result.segments[0]["text"] == "bounded transcript"
+    command = [str(value) for value in seen["command"]]
+    assert "PRIVATE_AUDIO_SENTINEL" not in " ".join(command)
+    assert seen["timeout"] == 3.5
+    assert seen["stdout"] is capture_module.subprocess.DEVNULL
+    assert seen["stderr"] is capture_module.subprocess.DEVNULL
+    assert not Path(str(seen["cwd"])).exists()
+
+
+def test_p1_6_1_timeout_cleans_temp_root_and_maps_controlled_cancel(tmp_path: Path, monkeypatch):
+    executable, model = _runtime(tmp_path)
+    seen_root: dict[str, Path] = {}
+
+    def timeout(_command, *, cwd, stdout, stderr, timeout, check):
+        seen_root["path"] = Path(cwd)
+        Path(cwd, "partial.txt").write_text("partial", encoding="utf-8")
+        raise capture_module.subprocess.TimeoutExpired("main.exe", timeout)
+
+    monkeypatch.setattr(capture_module.subprocess, "run", timeout)
+    with pytest.raises(CaptureProviderError) as error:
+        WhisperCliCaptureProvider(executable, model, timeout_seconds=0.01).transcribe(_request())
+
+    assert error.value.code == "provider_timeout"
+    assert not seen_root["path"].exists()
+    assert not list(tmp_path.glob("studybuddy-asr-*"))
+
+
 def test_formal_registry_requires_explicit_runtime_and_model(tmp_path: Path):
     with pytest.raises(Exception, match="transcription_provider_not_configured"):
         provider_registry("whisper-cpp", "ggml-large-v3-turbo").capture_provider()
