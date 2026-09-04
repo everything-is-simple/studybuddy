@@ -25,6 +25,7 @@ from app.connection_test import (  # noqa: E402
     EMBEDDING_TEST_PAYLOAD,
     FEISHU_TEST_PAYLOAD,
     MAX_TEST_RESPONSE_BYTES,
+    MAX_EMBEDDING_TEST_RESPONSE_BYTES,
 )
 
 
@@ -317,3 +318,50 @@ def test_connection_test_error_has_stable_code() -> None:
     error = ConnectionTestError("provider_timeout")
     assert error.code == "provider_timeout"
     assert str(error) == "provider_timeout"
+
+
+def test_embedding_connection_test_allows_a_real_vector_response() -> None:
+    """P2-USE: a real embedding reply is far larger than the 1 KB LLM cap.
+
+    Found while configuring a real provider: `mistral-embed` returns a
+    1024-dimension vector, roughly 19 KB, so the shared 1 KB limit made every
+    real embedding test fail with `provider_response_too_large` even though the
+    provider answered correctly. The read stays bounded, just at a size an
+    embedding provider can actually return.
+    """
+    vector = [0.0123456789] * 1024
+    body = json.dumps({"data": [{"embedding": vector, "index": 0}],
+                       "model": "mistral-embed"}).encode("utf-8")
+    assert len(body) > MAX_TEST_RESPONSE_BYTES
+
+    mock_response = MagicMock()
+    mock_response.headers.get.return_value = str(len(body))
+    mock_response.read.return_value = body
+    mock_response.__enter__ = lambda self: self
+    mock_response.__exit__ = lambda self, *args: None
+
+    with patch("app.connection_test.urlopen", return_value=mock_response):
+        result = provider_embedding_connection_test(
+            base_url="https://api.example.com/v1",
+            api_key="test-key",
+            model_id="mistral-embed",
+        )
+    assert result == {"status": "ok"}
+
+
+def test_embedding_connection_test_still_bounds_an_oversized_response() -> None:
+    oversized = b"x" * (MAX_EMBEDDING_TEST_RESPONSE_BYTES + 1)
+    mock_response = MagicMock()
+    mock_response.headers.get.return_value = None
+    mock_response.read.return_value = oversized
+    mock_response.__enter__ = lambda self: self
+    mock_response.__exit__ = lambda self, *args: None
+
+    with patch("app.connection_test.urlopen", return_value=mock_response):
+        with pytest.raises(ConnectionTestError) as exc:
+            provider_embedding_connection_test(
+                base_url="https://api.example.com/v1",
+                api_key="test-key",
+                model_id="mistral-embed",
+            )
+    assert exc.value.code == "provider_response_too_large"

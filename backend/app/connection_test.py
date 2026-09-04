@@ -23,6 +23,10 @@ from urllib.request import Request, urlopen
 
 # Maximum response body size for connection tests (1 KB)
 MAX_TEST_RESPONSE_BYTES = 1024
+# Embedding responses carry a full vector, so a 1 KB cap can never be satisfied:
+# a 1024-dimension `mistral-embed` reply measures about 19 KB. The read stays
+# bounded, just at a size an embedding provider can actually return.
+MAX_EMBEDDING_TEST_RESPONSE_BYTES = 256 * 1024
 
 # Synthetic test payloads
 LLM_TEST_PAYLOAD = {
@@ -177,13 +181,13 @@ def provider_embedding_connection_test(
             length = response.headers.get("Content-Length")
             if length is not None:
                 try:
-                    if int(length) > MAX_TEST_RESPONSE_BYTES:
+                    if int(length) > MAX_EMBEDDING_TEST_RESPONSE_BYTES:
                         raise ConnectionTestError("provider_response_too_large")
                 except ValueError:
                     pass
 
-            body = response.read(MAX_TEST_RESPONSE_BYTES + 1)
-            if len(body) > MAX_TEST_RESPONSE_BYTES:
+            body = response.read(MAX_EMBEDDING_TEST_RESPONSE_BYTES + 1)
+            if len(body) > MAX_EMBEDDING_TEST_RESPONSE_BYTES:
                 raise ConnectionTestError("provider_response_too_large")
 
             try:

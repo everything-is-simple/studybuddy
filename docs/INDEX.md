@@ -31,7 +31,7 @@
 - [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 候选及 Formal 边界。
 - [`contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md`](contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md)：Provider（AI LLM/Embedding）和 Email（SMTP/Feishu）配置安全契约，secret 生命周期、runtime-only source、connection-test 触发机制和 backup/restore 边界。
 - [`contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`](contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md)：配置持久化五方案评估与“不引入持久化”决策，并定型 P1-5-1 配置 UI 为“组装 → 校验 → 导出”。
-- [`../backend/app/static/settings-provider.html`](../backend/app/static/settings-provider.html)：P1-5-1 Provider/Email 只测不存配置 UI。
+- [`../backend/app/static/settings-provider.html`](../backend/app/static/settings-provider.html)：Provider/Email 配置 UI，先测后存（P2-USE-3 起支持保存并立即生效）。
 - [`evidence/P1_5_0_CONTRACT_EVIDENCE.md`](evidence/P1_5_0_CONTRACT_EVIDENCE.md)：P1-5-0 契约冻结审计发现和治理测试覆盖。
 - [`evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`](evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md)：P1-5-2 connection-test 实现证据，包含 adapter、API、测试覆盖和未验证边界。
 - [`evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md`](evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md)：P1-5-4 浏览器配置安全证据，覆盖 secret 生命周期、DOM/URL/storage 和 mock connection-test。

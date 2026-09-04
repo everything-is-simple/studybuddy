@@ -53,9 +53,11 @@ test('A4 provider page loads capabilities and safely recovers from API failure',
   await expect(page.locator('#state')).toHaveText('已加载');
   await expect(page.locator('#capabilities')).toBeVisible();
   await expect(page.locator('#health-status')).toContainText('系统就绪');
-  await expect(page.locator('body')).toContainText('测试通过 ≠ 已保存');
+  await expect(page.locator('body')).toContainText('先测后存');
   await expect(page.locator('#provider-test')).toBeVisible();
   await expect(page.locator('#email-test')).toBeVisible();
+  await expect(page.locator('#provider-save')).toBeHidden();
+  await expect(page.locator('#email-save')).toBeHidden();
   await expect(page.locator('body')).not.toContainText(/H:\\|sqlite|SELECT|Traceback|api[_-]?key|secret|token/i);
   await page.route('**/api/ai/capabilities', route => route.fulfill({
     status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'private_provider_error', path: 'H:/secret' }),
@@ -91,13 +93,14 @@ test('P1-5-1 provider form tests connection and clears secret input', async ({ p
   await expect(page.locator('body')).not.toContainText('TEST_SECRET_DO_NOT_LEAK_7d0f');
 });
 
-test('P1-5-1 email form sends selected channel and keeps no save control', async ({ page }) => {
+test('P1-5-1 email form sends selected channel and reveals save only after a pass', async ({ page }) => {
   let requestBody;
   await page.route('**/api/system/email-connection-test', async route => {
     requestBody = route.request().postDataJSON();
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }) });
   });
   await page.goto(`${BASE}/app/settings-provider.html`);
+  await expect(page.locator('#email-save')).toBeHidden();
   await page.locator('#email-channel').selectOption('feishu');
   await page.locator('#feishu-webhook').fill('https://open.feishu.cn/hook/TEST_WEBHOOK_DO_NOT_LEAK_5a21');
   await page.locator('#email-form').evaluate(form => form.requestSubmit());
@@ -106,7 +109,7 @@ test('P1-5-1 email form sends selected channel and keeps no save control', async
   expect(requestBody.feishu_webhook).toContain('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
   await expect(page.locator('#feishu-webhook')).toHaveValue('');
   await expect(page.locator('body')).not.toContainText('TEST_WEBHOOK_DO_NOT_LEAK_5a21');
-  await expect(page.locator('button', { hasText: '保存' })).toHaveCount(0);
+  await expect(page.locator('#email-save')).toBeVisible();
 });
 
 test('A4 capture page creates a session and keeps failure state safe', async ({ page }) => {
