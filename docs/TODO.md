@@ -389,14 +389,14 @@ revision → chunks → retrieval → citations → Q&A
   回归：`browser_plans_today_progress.spec.js` 扩展为 `6 passed`，覆盖进度历史、三类 Today 空态，以及失败注入 → 安全文案（不泄露路径/traceback/SQL）→ 重试恢复；`audit-frontend-contract.py --strict` 仍 0 findings 且 `today.html` retry 信号由「否」转「是」。
   同时更正 [`frontend-static-failure-retry-matrix.md`](frontend-static-failure-retry-matrix.md)：`today.html` 旧标 `covered` 与「无重试控件」事实矛盾，已按修复后状态改写，并补充「只读页同样需要重试入口」的判定口径。
 
-- [x] P2-FE-2：整体设计合同（第二阶段）。**场景 1、场景 2 已冻结 2026-09-05；场景 3 保持 skeleton。**
+- [x] P2-FE-2：整体设计合同（第二阶段）。**场景 1、场景 2、场景 3 已全部冻结 2026-09-05。**
   单一合同 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md) 已定义统一格式，并完成场景 1“计划 → 今天 → 进度”和场景 2“材料导入 → 解析 → 索引 → 问答（带引用）”的流程图、页面状态机、真实 selector 元素行为表、API 契约对照与 browser evidence。场景 2 覆盖 `/app/materials.html`、`material-detail.html`、`qa.html`、`tasks.html`，并明确同步索引、异步入队、内部检索管道、引用失效和 `/legacy` evidence 的边界。
   本轮真实可用改动：修复 `/app/materials.html` 单文件成功导入错误显示为 `0/1`，并让 `material-detail.html` 建索引后重读真实索引状态，空文本不再误报为“AI 索引已建立”。新增 focused browser evidence 2 项；focused Chromium `26 passed`，完整 backend `623 passed, 3 skipped`，完整 Chromium 分批合计 `177 passed, 4 skipped`。27 个唯一 `unreached` path key（展开 HTTP method 为 31 行）已逐项定性；扫描当前仍为前端端点 103、`direct 99 / dynamic 11 / unreached 27`。
   场景 3“练习会话 → 结果 → 错题复盘”不在本轮实施，继续以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源，待后续完成总合同整合与按场景实施。
   尚未完成：P2-FE-3 剩余 `/legacy` 等价证据迁移与内联脚本模块化；场景 2 的异步索引正式入口和 purge 是否开放仍按合同保持边界。
 
-- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：材料导入、回收站/导出、QA 核心链路三批正式 `/app` evidence 已完成。**
-  本轮（P2-FE-3-3）完成：新增 `browser_p2_fe3_qa_app.spec.js`（4 test），覆盖正式 `/app/qa.html` 的真实材料选择、索引前置提示、回答生成、引用跳转高亮、`?material=` 预选、失败安全文案与重试、重复提交只发一次请求、多材料多引用、线程列表失败、390px 无横向溢出、Provider 未配置提示；唯一产品改动是为 `qa.html` 补上 `#material-picker` 真实材料勾选列表（之前只能手工输入材料 ID）。
+- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：场景 2 五批正式证据迁移已完成；场景 3 合同已冻结，等待实施。**
+  本轮（P2-FE-3-5）完成：新增 `browser_p2_fe3_qa_p6c_app.spec.js`（2 test），覆盖 P6-C 跨页连接（材料列表勾选→QA 预选→引用跳转→材料详情→导出→返回，删除后导出禁用）；`materials.html` 新增 `#goto-qa` 按钮实现材料列表→QA 预选跳转。场景 2 五批总计 15 test，状态为 `implemented / scoped-browser-pass`。
   本轮回归：focused browser `29 passed, 1 skipped`；backend `623 passed, 3 skipped`；完整 Chromium `187 passed, 4 skipped`（192 tests，`browser_material_search.spec.js` 一次既有时序失败单独重跑 `2 passed`）。
   尚未完成：
   1. **`/legacy` 证据迁移**：`browser_qa.spec.js` 与部分历史材料管理 spec 仍为 legacy-only 证据；正式 QA 线程工作区多会话切换、rate-limit/unavailable 映射、真实外部 provider 路径仍 `not_verified`。purge 继续保持 `not_exposed`，异步 `/ai-index/tasks` 队列 UI 保持 `not_exposed`。
