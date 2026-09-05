@@ -3,7 +3,7 @@ const {spawn,spawnSync}=require('child_process');
 const fs=require('fs');
 
 const ROOT='H:/studybuddy-test/runs/p1-4-c4-cram';
-const PORT=8863;
+const PORT=8864;
 const BASE=`http://127.0.0.1:${PORT}`;
 const PYTHON='C:/miniconda/py310/python.exe';
 let server;

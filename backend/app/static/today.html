@@ -57,7 +57,7 @@ try{
 const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
 if(generation!==loadGeneration)return;
 const plans=Array.isArray(plansData)?plansData:plansData.items||[];
-const plan=plans.find(item=>item.status==='active')||plans[0];
+const plan=plans.find(item=>item.status==='active');
 if(plan){
 const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/summary`,{signal:pageRequest.signal});
 if(generation!==loadGeneration)return;
@@ -92,15 +92,23 @@ summaryStatus.textContent=sbApi.safeError(e)
 }
 }
 
-async function loadWeeklyTrend(generation){try{const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});if(generation!==loadGeneration)return;const plans=Array.isArray(plansData)?plansData:plansData.items||[];const plan=plans.find(item=>item.status==='active')||plans[0];if(!plan){weeklyStatus.textContent='暂无周趋势数据';return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){weeklyStatus.className='notice warn';weeklyStatus.textContent=sbApi.safeError(e)}}
+async function loadWeeklyTrend(generation){try{const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});if(generation!==loadGeneration)return;const plans=Array.isArray(plansData)?plansData:plansData.items||[];const plan=plans.find(item=>item.status==='active');if(!plan){weeklyStatus.textContent='暂无周趋势数据';return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){weeklyStatus.className='notice warn';weeklyStatus.textContent=sbApi.safeError(e)}}
 
 async function loadTasks(generation){
 try{
 const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
 if(generation!==loadGeneration)return;
 const plans=Array.isArray(plansData)?plansData:plansData.items||[];
-const plan=plans.find(item=>item.status==='active')||plans[0];
-const items=plan&&Array.isArray(plan.items)?plan.items.filter(item=>item.status!=='archived'):[];
+const plan=plans.find(item=>item.status==='active');
+if(!plan){taskStatus.textContent='今日暂无任务';return}
+const [rhythm,detail]=await Promise.all([
+ sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm`,{signal:pageRequest.signal}),
+ sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}`,{signal:pageRequest.signal})
+]);
+const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:rhythm.settings?.timezone||'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const allocations=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/allocations`,{signal:pageRequest.signal});
+const allocationByItem=new Map(allocations.filter(item=>item.local_date===localDate).map(item=>[item.item_id,item]));
+const items=(detail.items||[]).filter(item=>item.status!=='archived'&&allocationByItem.has(item.id));
 if(!items.length){
 taskStatus.textContent='今日暂无任务';
 taskStatus.className='notice';
@@ -108,8 +116,11 @@ return
 }
 taskStatus.hidden=true;
 items.forEach(item=>{
+const allocation=allocationByItem.get(item.id);
 const li=document.createElement('li');
 li.className='task-item'+(item.status==='completed'?' completed':'');
+li.dataset.itemId=item.id;
+li.dataset.localDate=localDate;
 const meta=document.createElement('div');
 meta.className='task-meta';
 const title=document.createElement('div');
@@ -126,9 +137,15 @@ const materialId=sbState.materialForItem(item,plan.source_links);
 const action=document.createElement('a');
 action.className='btn';
 action.href=materialId?`/app/material-detail.html?material=${encodeURIComponent(materialId)}`:'#';
-action.textContent=item.status==='completed'?'查看':'开始';
+action.textContent='查看资料';
 if(!materialId||sourceStatus!=='valid'){action.setAttribute('aria-disabled','true');action.style.pointerEvents='none';}
-li.append(action);
+const progress=document.createElement('a');
+progress.className='btn btn-primary';
+progress.href=`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}&item_id=${encodeURIComponent(item.id)}&local_date=${encodeURIComponent(localDate)}&return_to=today`;
+progress.textContent=item.status==='completed'?'查看进度':'开始学习';
+const minutes=document.createElement('div');minutes.className='task-source';minutes.textContent=`计划 ${allocation.planned_minutes} 分钟 · ${localDate}`;
+meta.append(minutes);
+li.append(action,progress);
 tasks.append(li)
 })
 }catch(e){

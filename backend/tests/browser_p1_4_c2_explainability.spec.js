@@ -49,12 +49,19 @@ test('C2 source links drive plans and today without false valid fallback',async(
   const indexed=await post(request,`/api/materials/${source.material_id}/ai-index`,{});
   const retrieval=await post(request,'/api/retrieval',{query:'DOCX',material_ids:[source.material_id],mode:'lexical',top_k:3});
   await post(request,`/api/study/plans/${plan.id}/items/${item.id}/sources`,{material_id:source.material_id,revision_id:indexed.revision_id,chunk_id:retrieval.hits[0].chunk_id});
+  const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  await post(request,`/api/study/plans/${plan.id}/confirm`,{});
+  await post(request,`/api/study/plans/${plan.id}/activate`,{});
+  const rhythmResponse=await request.put(`${BASE}/api/study/plans/${plan.id}/rhythm`,{data:{cadence:'daily',timezone:'Asia/Shanghai',period_start:localDate,target_minutes:60}});
+  expect(rhythmResponse.ok(),await rhythmResponse.text()).toBeTruthy();
+  await post(request,`/api/study/plans/${plan.id}/rhythm/allocations`,{item_id:item.id,local_date:localDate,planned_minutes:30});
 
   await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`);
   await expect(page.locator('#plan-detail')).toContainText('来源: 来源有效');
   await page.goto(`${BASE}/app/today.html`);
   await expect(page.locator('#tasks')).toContainText('来源状态: 来源有效');
-  const action=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'}).locator('a');
+  const task=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'});
+  const action=task.getByRole('link',{name:'查看资料'});
   await expect(action).not.toHaveAttribute('aria-disabled','true');
   await expect(action).toHaveAttribute('href',new RegExp(encodeURIComponent(source.material_id)));
 
@@ -65,7 +72,7 @@ test('C2 source links drive plans and today without false valid fallback',async(
   await page.goto(`${BASE}/app/today.html`);
   const deleted=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'});
   await expect(deleted).toContainText('来源状态: 来源已删除');
-  await expect(deleted.locator('a')).toHaveAttribute('aria-disabled','true');
+  await expect(deleted.getByRole('link',{name:'查看资料'})).toHaveAttribute('aria-disabled','true');
   await expect(page.locator('body')).not.toContainText(/traceback|H:\\|SELECT |api_key|stored_path/i);
 });
 
