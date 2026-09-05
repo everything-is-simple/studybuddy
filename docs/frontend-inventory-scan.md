@@ -4,7 +4,7 @@
 
 - 静态页面：21
 - 共享资源：6
-- 浏览器 spec：57
+- 浏览器 spec：58
 - 去重后前端调用的 API 端点：104
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
@@ -17,8 +17,8 @@
 | classroom.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.2 KiB | 0 | 6 | 6 |
 | exercises.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.1 KiB | 0 | 8 | 8 |
 | index.html | 无 | 无 | 否 | 1 | 0.0 KiB | 0 | 0 | 1 |
-| material-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.2 KiB | 0 | 5 | 10 |
-| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.3 KiB | 0 | 6 | 17 |
+| material-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.2 KiB | 0 | 5 | 11 |
+| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.5 KiB | 0 | 6 | 18 |
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
 | plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.5 KiB | 0 | 3 | 6 |
@@ -166,7 +166,7 @@
 | exercises.html | practice.html, today.html | 4 | `#refresh-sets` 刷新列表 | form: `#exercise-create-form`, `#exercise-generate-form`, `#set-create-form`<br>input: `#exercise-material-ids`, `#exercise-topic`, `#new-exercise-answer`, `#new-exercise-prompt`, `#new-set-title`<br>select: `#new-exercise-type` |
 | index.html | today.html | 0 | 无 | 无 |
 | material-detail.html | materials.html, qa.html, today.html | 3 | `#index` 建立 AI 索引<br>`#export-original` 下载原文件<br>`#export-text` 导出解析文本 | 无 |
-| materials.html | material-detail.html, today.html | 7 | `#folder-btn` 选择文件夹导入<br>`#apply-filters` 应用筛选<br>`#view-deleted` 查看回收站<br>`#retry-materials` 重新加载材料<br>`#export-originals` 导出原件 ZIP<br>`#export-texts` 导出文本 ZIP<br>`#export-all` 导出全部 ZIP | input: `#file-input`, `#folder-input`, `#search-input`, `#select-page`<br>select: `#status-filter` |
+| materials.html | material-detail.html, today.html | 8 | `#folder-btn` 选择文件夹导入<br>`#apply-filters` 应用筛选<br>`#view-deleted` 查看回收站<br>`#retry-materials` 重新加载材料<br>`#goto-qa` 前往问答<br>`#export-originals` 导出原件 ZIP<br>`#export-texts` 导出文本 ZIP<br>`#export-all` 导出全部 ZIP | input: `#file-input`, `#folder-input`, `#search-input`, `#select-page`<br>select: `#status-filter` |
 | note-detail.html | notes.html, today.html | 1 | `#retry-note` 重试 | 无 |
 | notes.html | today.html | 5 | `#link-module` 关联到当前笔记<br>`#generate` 生成 AI 草稿<br>`#refresh` 刷新列表<br>`#refresh-notes` 刷新笔记 | form: `#create-form`<br>input: `#material-id`, `#module-title`, `#new-title`, `#topic`<br>textarea: `#new-content` |
 | plan-detail.html | plans.html, today.html | 2 | `#retry-plan` 重试<br>`#refresh-progress` 刷新进度 | 无 |
@@ -191,8 +191,8 @@
 | classroom.html | 6 | browser_e2e.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js |
 | exercises.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js |
 | index.html | 1 | browser_migration.spec.js |
-| material-detail.html | 10 | browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_real_input_restart.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
-| materials.html | 17 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_materials_app.spec.js, browser_p2_fe3_materials_management_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
+| material-detail.html | 11 | browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_p6c_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
+| materials.html | 18 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_materials_app.spec.js, browser_p2_fe3_materials_management_app.spec.js, browser_p2_fe3_qa_p6c_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | note-detail.html | 4 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
 | notes.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js |
 | plan-detail.html | 6 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_plans_today_progress.spec.js |
