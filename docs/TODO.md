@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
 > 更新：2026-09-05（执行方向修订：证据梯子 → 可用优先；P2-USE 五个切片已全部完成；活动主线转为 **P2-FE（前后端场景对齐）**）
-> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；本次完整回归为 **623 passed, 3 skipped**，完整 Chromium 为 **173 passed, 4 skipped**。skip 均为 opt-in 真实 smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**，并修掉 `today.html` 无重试控件的真实缺陷，详见 [`frontend-inventory-report.md`](frontend-inventory-report.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；本次完整回归为 **623 passed, 3 skipped**，完整 Chromium 为 **176 passed, 4 skipped**。skip 均为 opt-in 真实 smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，P1-6 系列仍为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
 
@@ -383,20 +383,21 @@ revision → chunks → retrieval → citations → Q&A
 > 技术路线不变：HTML + CSS + 原生 JS + FastAPI JSON API，不引入 Vue/React/TypeScript。正式前端为 `backend/app/static/` 下 21 个页面。
 
 - [x] P2-FE-1：前端事实盘点（第一阶段）。**已完成 2026-09-05。**
-  产出 `backend/scripts/scan-frontend-inventory.py`（只读扫描，可重复执行）、[`frontend-inventory-report.md`](frontend-inventory-report.md)（唯一权威结论）与自动产物 `frontend-inventory-scan.md`。核实事实：21 页面 / 6 共享资源 / 53 spec / 177 test；前端去重调用端点 102；后端 `/api/*` 声明 165 条、去重路径 137（`direct` 98 / `dynamic` 12 / `unreached` 27）；内联脚本合计 162.3 KiB，共享 CSS+JS 36.5 KiB；**0 页面内联 `<style>`、0 处绕过 `sbApi` 的直接 `fetch`、20/20 正式页面有请求 scope**。
+  产出 `backend/scripts/scan-frontend-inventory.py`（只读扫描，可重复执行）、[`frontend-inventory-report.md`](frontend-inventory-report.md)（唯一权威结论）与自动产物 `frontend-inventory-scan.md`。核实事实：21 页面 / 6 共享资源 / 53 spec / 177 test；前端去重调用端点 103；后端 `/api/*` 声明 165 条、去重路径 137（`direct` 99 / `dynamic` 11 / `unreached` 27）；内联脚本合计 167.8 KiB（第一阶段基线 162.3 KiB），共享 CSS+JS 36.5 KiB；**0 页面内联 `<style>`、0 处绕过 `sbApi` 的直接 `fetch`、20/20 正式页面有请求 scope**。
   结论：共享层已统一，`js/api.js` 不需要重构，直接作为第二阶段 API 契约事实来源。
   **本切片同时修掉一个真实用户可见缺陷（可用优先，不是纯审计）**：`today.html` 作为正式入口页，三个区块（今日概览 / 近七天趋势 / 今日任务）加载失败后只显示错误文案，**没有任何重试控件**，用户只能手动刷新浏览器。审计脚本此前放过它，因为 `write_without_retry_signal` 规则只检查有写操作的页面，而 Today 是只读页。修复：新增 `#retry-today`「重新加载」按钮（默认隐藏、任一区块失败时出现、恢复后隐藏），三个区块共享一次 active plan 查询（此前同一次加载重复请求 `/api/study/plans` 3 次），重试走 `sbSubmit.once` 防重复点击 + `sbUi.busy` 忙态 + `loadGeneration` 世代号丢弃过期响应，任务列表用 `replaceChildren()` 清空避免重复渲染。
-  回归：`browser_plans_today_progress.spec.js` 新增失败注入 → 安全文案（不泄露路径/traceback/SQL）→ 重试恢复三段断言，该 spec `3 passed`；`audit-frontend-contract.py --strict` 仍 0 findings 且 `today.html` retry 信号由「否」转「是」。
+  回归：`browser_plans_today_progress.spec.js` 扩展为 `6 passed`，覆盖进度历史、三类 Today 空态，以及失败注入 → 安全文案（不泄露路径/traceback/SQL）→ 重试恢复；`audit-frontend-contract.py --strict` 仍 0 findings 且 `today.html` retry 信号由「否」转「是」。
   同时更正 [`frontend-static-failure-retry-matrix.md`](frontend-static-failure-retry-matrix.md)：`today.html` 旧标 `covered` 与「无重试控件」事实矛盾，已按修复后状态改写，并补充「只读页同样需要重试入口」的判定口径。
 
-- [ ] P2-FE-2：整体设计合同（第二阶段）。**进行中。**
-  按**用户场景**而非按页面设计。每个场景闭环产出：场景流程图 → 页面状态机 → 元素行为表 → API 契约对照表，全部引用扫描出的真实控件 id 与端点分类。场景优先级：① 计划 → 今天 → 进度（已实现，作模板）；② 材料导入 → 解析 → 索引 → 问答（带引用）；③ 练习会话 → 结果 → 错题复盘。
-  待定性项：27 条 `unreached` 路由需逐项判定是「有意收敛」还是「正式页缺口」，其中笔记块级编辑（4 条）与计划目标/模块管理（7 条）最可能是真缺口。
+- [ ] P2-FE-2：整体设计合同（第二阶段）。**进行中：场景 1 模板与路由定性已完成。**
+  单一合同 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md) 已定义统一格式，并完成场景 1“计划 → 今天 → 进度”的流程图、页面状态机、真实 selector 元素行为表、API 契约对照与 browser evidence。配套可用改动：`plan-detail.html` 现在读取整份计划进度，展示五项摘要和倒序事件历史，读取失败不遮蔽计划详情且可重试；`today.html` 区分“完全无计划 / 已有计划未激活 / active 但今日无 allocation”，分别提供创建、激活、查看详情和安排今日学习出口。专项 browser spec `6 passed`。
+  27 个唯一 `unreached` path key（展开 HTTP method 为 31 行）已逐项定性；扫描因明确 progress 调用变为前端端点 103、`direct 99 / dynamic 11 / unreached 27`。重要更正：笔记块级 4 行是整体 `PUT .../blocks` 的有意收敛；真实缺口包括目标/模块查看、重命名和归档、依赖删除、exercise attempts、weak-points 与报告预览。`GET .../progress` 原为扫描器误归类的 `dynamic`，不是 `unreached`，本次从“只写不读”补成明确 `direct`。
+  尚未完成：场景 2“材料导入 → 解析 → 索引 → 问答（带引用）”与场景 3“练习会话 → 结果 → 错题复盘”目前只有骨架，仍需按同一四件套冻结后才能勾选本项。
 
 - [ ] P2-FE-3：按合同实施（第三阶段）。
   两项已确认推迟到本阶段、且不阻塞第二阶段的工作：
   1. **`/legacy` 证据迁移**：19 个 spec / 56 个 test（占 31.6%）只访问旧 `/legacy` 入口，不触碰任何 `/app` 页面。这些 test 全部通过，问题是它们验证的是旧入口行为，不能证明正式页面的等价能力。集中在资料导入/搜索/分页/回收站/导出（8 spec）与问答（`browser_qa.spec.js` 10 test）。需先有场景合同定义「正式页面上等价的成功路径」才能正确重写。
-  2. **内联脚本模块化**：162.3 KiB 分布在 20 页（最大 `plans.html` 19.5 KiB）。必须先出设计合同再拆，否则会按当前形状而非目标形状拆分。
+  2. **内联脚本模块化**：当前 167.8 KiB 分布在 20 页（第一阶段基线 162.3 KiB；最大 `plans.html` 19.5 KiB）。必须先出设计合同再拆，否则会按当前形状而非目标形状拆分。
 
 ## P2：后续独立项目
 

@@ -17,11 +17,11 @@
 
 - **共享层已经统一，不需要重构。** 20 个正式页面全部引用 `css/tokens.css` + `css/app.css` + `js/api.js` + `js/state.js` + `js/shell.js`（`practice.html` 额外引用 `js/cram.js`）。**0 个页面有内联 `<style>`，0 处绕过 `sbApi` 的直接 `fetch`，20 个页面都调用 `sbApi.setPageScope(...)`。** 唯一的 `fetch(` 出现在 `js/api.js` 内部实现里。
 - **`index.html` 是空的兼容跳转页**，不引用任何共享资源，只有一段跳转脚本，符合设计。
-- **内联脚本总量 162.3 KiB，分布在 20 个页面**，每页恰好 1 个 `<script>` 块。共享资源合计 36.5 KiB。最大的内联块是 `plans.html`（19.5 KiB）、`capture.html`（13.6 KiB）、`exercises.html`（11.1 KiB）。这是第三阶段的模块化对象，不是当前缺陷。
+- **内联脚本总量 167.8 KiB，分布在 20 个页面**，每页恰好 1 个 `<script>` 块。共享资源合计 36.5 KiB。最大的内联块是 `plans.html`（19.5 KiB）、`capture.html`（13.6 KiB）、`exercises.html`（11.1 KiB）。相较第一阶段的 162.3 KiB，增长来自场景 1 的进度历史和可操作空态；模块化仍是第三阶段对象。
 - **契约审计 0 发现项**：`audit-frontend-contract.py --strict` 退出码 0，覆盖 21 页面 / 168 后端路由，无 `missing_route`、`direct_fetch`、`legacy_field`、`json_without_content_type`、`missing_request_scope`、`write_without_retry_signal`、`undefined_css_token`。
 - **测试总量 177 个 browser test，分布在 53 个 spec**。其中 **19 个 spec（56 个 test）只访问旧 `/legacy` 入口**，不触碰任何 `/app` 页面。
 - **21 个页面全部至少被 1 个 spec 引用**，覆盖数从 `index.html` 的 1 个到 `materials.html` 的 14 个。
-- 后端 137 条去重 `/api/*` 路由路径中，**98 条**被前端字面调用（`direct`），**12 条**因页面用变量拼接末段而无法静态判定（`dynamic`），**27 条**未找到任何前端引用（`unreached`）。
+- 后端 137 条去重 `/api/*` 路由路径中，**99 条**被前端字面调用（`direct`），**11 条**因页面用变量拼接末段而无法静态判定（`dynamic`），**27 条**未找到任何前端引用（`unreached`）。场景 1 新增明确的进度历史读取后，前端去重调用端点由 102 增至 103。
 
 ## 2. 页面分组与实现状态
 
@@ -30,9 +30,9 @@
 | 组 | 页面 | 内联脚本 | API 数 | 覆盖 spec | 状态 |
 |---|---|---:|---:|---:|---|
 | 入口 | `index.html` | 0.0 KiB | 0 | 1 | 跳转页 |
-| 今天 | `today.html` | 6.2 KiB | 6 | 10 | 有实现 |
+| 今天 | `today.html` | 8.2 KiB | 6 | 10 | 有实现 |
 | 计划 | `plans.html` | 19.5 KiB | 21 | 12 | 有实现 |
-| 计划 | `plan-detail.html` | 4.3 KiB | 2 | 5 | 有实现 |
+| 计划 | `plan-detail.html` | 7.5 KiB | 3 | 5 | 有实现 |
 | 资料 | `materials.html` | 10.2 KiB | 6 | 14 | 有实现 |
 | 资料 | `material-detail.html` | 6.3 KiB | 5 | 10 | 有实现 |
 | 问答 | `qa.html` | 6.2 KiB | 5 | 12 | 有实现 |
@@ -78,7 +78,7 @@
 | `practice-result.html` | `practice.html`, `review.html`, `today.html` |
 | `material-detail.html` | `materials.html`, `qa.html`, `today.html` |
 | `exercises.html` / `practice.html` / `review.html` / `qa.html` / `plans.html` / `materials.html` / `notes.html` / `note-detail.html` / `plan-detail.html` / `practice-session.html` / `reports.html` | 各 1–2 个 + `today.html` |
-| `today.html` | 无静态出口（任务卡的"查看资料"/"开始学习"由 JS 动态生成） |
+| `today.html` | `plans.html`；任务卡的“查看资料”/“开始学习”和空态出口由 JS 动态生成 |
 
 这是第二阶段"场景流程图"必须明确的部分：详情页的进入与返回路径属于场景合同，不能只靠约定。
 
@@ -105,7 +105,7 @@
 
 ## 5. 后端路由覆盖分类
 
-137 条去重路由路径：`direct` 98 / `dynamic` 12 / `unreached` 27。
+137 条去重路由路径：`direct` 99 / `dynamic` 11 / `unreached` 27。
 
 `dynamic` 是扫描器的不确定项而非缺口。例如 `plans.html` 写成 `'/api/study/plans/' + id + '/' + action`，静态扫描只能得到 `/api/study/plans/{id}/{id}`，于是 `confirm`/`activate`/`pause`/`complete` 四个状态迁移都落入 `dynamic`。同类情况还有 `notes.html` 的 `confirm`/`reject`/`archive`/`blocks` 与 `practice.html` 的 cram 目标状态迁移。
 
@@ -115,9 +115,9 @@
 |---|---:|---|---|
 | 运维/探活 | 3 | `GET /api/health`、`/api/liveness`、`/api/metrics` | 有意不进 UI |
 | 检索内部管道 | 3 | `POST /api/retrieval`、`/api/context/assemble`、`/api/citation/validate` | 被问答链路间接使用，不是页面直调 |
-| 笔记块级编辑 | 4 | `PATCH/POST/DELETE .../blocks/{block_id}` 及其 `sources` | `note-detail.html` 目前只读，块级编辑未在正式页暴露 |
-| 计划目标/模块管理 | 7 | `GET/PATCH /api/study/goals/{id}`、`/modules/{id}`、`/archive`、依赖删除 | 需确认是缺口还是有意收敛 |
-| 学习资产读取 | 4 | `GET /api/study/decks/{id}`、`/exercise-sets/{id}`、`/exercises/{id}/attempts` 与 `POST .../attempts` | 列表页用集合端点替代了单资源端点 |
+| 笔记块级编辑 | 4 | `PATCH/POST/DELETE .../blocks/{block_id}` 及其 `sources` | 有意收敛到 `PUT .../blocks` 整体提交，不维护第二套编辑语义 |
+| 计划目标/模块管理 | 7 | `GET/PATCH /api/study/goals/{id}`、`/modules/{id}`、`/archive`、依赖删除 | 目标/模块查看、重命名、归档及依赖删除为正式页缺口 |
+| 学习资产读取 | 4 | `GET /api/study/decks/{id}`、`/exercise-sets/{id}`、`/exercises/{id}/attempts` 与 `POST .../attempts` | 详情读取推迟；exercise attempts 为场景 3 缺口 |
 | 报告交付与预览 | 4 | `/reports/{id}/preview`、`/delivery`、`/delivery-attempts`、`capture-sessions/{id}/archive` | `report_delivery` 默认关闭属安全边界 |
 | 其他 | 2 | `GET /api/study/weak-points`、`POST /api/materials/{id}/purge` | 需确认 |
 
@@ -134,7 +134,7 @@
 
 新增回归测试 `backend/tests/browser_plans_today_progress.spec.js` 第 3 个 test：拦截 `/api/study/plans` 返回 500 且 detail 内含伪造路径 `H:/studybuddy/secret_traceback`，断言三个区块都显示安全文案「请求失败」、页面不泄露路径/traceback/SQL，然后放开拦截、点击重试，断言任务卡、概览、7 天趋势全部恢复且重试按钮与状态提示都隐藏。
 
-该 spec 现为 3 passed。`audit-frontend-contract.py` 中 `today.html` 的 retry 信号已由「否」转为「是」。
+场景 1 继续补齐后，该 spec 现为 6 passed：除原失败重试外，还覆盖进度历史读取/倒序/刷新、单独 history 失败恢复，以及“完全无计划 / 计划未激活 / active 但今日无 allocation”三类可操作空态。`audit-frontend-contract.py` 中 `today.html` 的 retry 信号已由「否」转为「是」。
 
 ## 7. 判定：第一阶段完成
 
@@ -149,7 +149,7 @@
 
 明确**不阻塞**第二阶段、推迟到第三阶段的两项：
 
-1. **内联脚本模块化**（162.3 KiB / 20 页）—— 先出设计合同再改代码，否则会按当前形状而非目标形状拆分。
+1. **内联脚本模块化**（当前 167.8 KiB / 20 页；第一阶段基线 162.3 KiB）—— 先出设计合同再改代码，否则会按当前形状而非目标形状拆分。
 2. **`/legacy` 证据迁移**（19 spec / 56 test）—— 需要先有场景合同定义"正式页面上等价的成功路径"，才能正确重写这些 test。
 
 理由：共享层已统一，信息已足够支撑设计。不完美的盘点加完整的设计，胜过完美的盘点加没有设计。
@@ -160,7 +160,7 @@
 
 场景优先级：
 
-1. **计划 → 今天 → 进度**（已实现，作为模板参考）。待补的场景完整性定义：无 active plan、当天无 allocation、allocation 过期、来源失效、加载失败重试、刷新后状态恢复。第 6 节已补齐失败重试这一项。
+1. **计划 → 今天 → 进度**（已实现并作为完整模板）。已覆盖无计划、计划未激活、当天无 allocation、allocation 过期不进入 Today、来源失效、加载失败重试、进度历史和刷新后状态恢复；合同见 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。
 2. **材料导入 → 解析 → 索引 → 问答（带引用）**（核心链路，且 `/legacy` 证据集中在此）。
 3. **练习会话 → 结果 → 错题复盘**（已有 `browser_practice_workflow.spec.js` 与 workflow 合同文档可依据）。
 

@@ -23,6 +23,7 @@
 <p class="lead">查看今日分配的学习任务和进度。</p>
 </div>
 <div class="stack-actions">
+<a class="btn" href="/app/plans.html">管理计划</a>
 <button id="retry-today" class="btn" type="button" hidden>重新加载</button>
 </div>
 </div>
@@ -38,6 +39,7 @@
 <h2>今日任务</h2>
 <div id="task-status" class="notice" role="status" aria-live="polite">正在加载任务列表...</div>
 <ul id="tasks" class="task-list"></ul>
+<div id="today-exits" class="stack-actions" hidden></div>
 </section>
 </main>
 </div>
@@ -51,6 +53,7 @@ const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
 const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
 const tasks=document.querySelector('#tasks');
+const exits=document.querySelector('#today-exits');
 const retry=document.querySelector('#retry-today');
 let loadGeneration=0;
 let activePlanRequest=null;
@@ -62,6 +65,9 @@ function notice(element,extra){element.hidden=false;element.className=(element.d
 function pending(element,message){notice(element,'status-loading');element.textContent=message}
 function settled(element,message){notice(element,'');element.textContent=message}
 function fail(element,error){notice(element,'warn');element.textContent=sbApi.safeError(error);retry.hidden=false}
+// Empty states offer the next step instead of a dead end; links live outside the
+// notice so swapping notice classes never drops them.
+function showExits(links){exits.replaceChildren();links.forEach(entry=>{const link=document.createElement('a');link.className='btn';link.href=entry.href;link.textContent=entry.label;exits.append(link)});exits.hidden=!links.length}
 [summaryStatus,weeklyStatus,taskStatus].forEach(el=>{el.dataset.baseClass=el.className});
 
 // One shared active-plan lookup per load: the three sections used to fetch
@@ -69,14 +75,14 @@ function fail(element,error){notice(element,'warn');element.textContent=sbApi.sa
 function activePlan(signal){
 if(!activePlanRequest)activePlanRequest=sbApi.json('/api/study/plans',{signal}).then(data=>{
 const plans=Array.isArray(data)?data:data.items||[];
-return plans.find(item=>item.status==='active')||null
+return {plans,plan:plans.find(item=>item.status==='active')||null}
 });
 return activePlanRequest
 }
 
 async function loadSummary(generation){
 try{
-const plan=await activePlan(pageRequest.signal);
+const context=await activePlan(pageRequest.signal);const plan=context.plan;
 if(generation!==loadGeneration)return;
 if(plan){
 const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/summary`,{signal:pageRequest.signal});
@@ -103,7 +109,7 @@ div.append(value,label);
 summary.append(div)
 })
 }else{
-settled(summaryStatus,'暂无节奏数据')
+settled(summaryStatus,context.plans.length?'计划尚未启动':'还没有学习计划')
 }
 }catch(e){
 if(generation!==loadGeneration)return;
@@ -111,13 +117,13 @@ fail(summaryStatus,e)
 }
 }
 
-async function loadWeeklyTrend(generation){try{const plan=await activePlan(pageRequest.signal);if(generation!==loadGeneration)return;if(!plan){settled(weeklyStatus,'暂无周趋势数据');return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){if(generation!==loadGeneration)return;fail(weeklyStatus,e)}}
+async function loadWeeklyTrend(generation){try{const context=await activePlan(pageRequest.signal);const plan=context.plan;if(generation!==loadGeneration)return;if(!plan){settled(weeklyStatus,context.plans.length?'计划尚未启动，暂无周趋势':'还没有学习计划，暂无周趋势');return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){if(generation!==loadGeneration)return;fail(weeklyStatus,e)}}
 
 async function loadTasks(generation){
 try{
-const plan=await activePlan(pageRequest.signal);
+const context=await activePlan(pageRequest.signal);const plan=context.plan;
 if(generation!==loadGeneration)return;
-if(!plan){settled(taskStatus,'今日暂无任务');return}
+if(!plan){if(context.plans.length){const candidate=context.plans[0];settled(taskStatus,'计划尚未启动');showExits([{href:`/app/plans.html?plan_id=${encodeURIComponent(candidate.id)}`,label:'前往激活'}])}else{settled(taskStatus,'还没有学习计划');showExits([{href:'/app/plans.html',label:'创建学习计划'}])}return}
 const [rhythm,detail]=await Promise.all([
  sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm`,{signal:pageRequest.signal}),
  sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}`,{signal:pageRequest.signal})
@@ -127,7 +133,11 @@ const allocations=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.i
 const allocationByItem=new Map(allocations.filter(item=>item.local_date===localDate).map(item=>[item.item_id,item]));
 const items=(detail.items||[]).filter(item=>item.status!=='archived'&&allocationByItem.has(item.id));
 if(!items.length){
-settled(taskStatus,'今日暂无任务');
+settled(taskStatus,`计划「${text(plan.title)||'未命名计划'}」今日没有安排学习项`);
+showExits([
+ {href:`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}`,label:'查看计划详情'},
+ {href:`/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`,label:'安排今日学习'}
+]);
 return
 }
 taskStatus.hidden=true;
@@ -174,6 +184,8 @@ function resetSections(){
 retry.hidden=true;
 activePlanRequest=null;
 tasks.replaceChildren();
+exits.hidden=true;
+exits.replaceChildren();
 summary.hidden=true;
 weeklyTrend.hidden=true;
 pending(summaryStatus,'正在加载今日概览...');
