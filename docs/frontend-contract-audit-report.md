@@ -25,7 +25,7 @@
 | `materials.html` | 5 | 否 | 是 | 是 | 是 |
 | `note-detail.html` | 1 | 否 | 否 | 是 | 是 |
 | `notes.html` | 0 | 否 | 是 | 是 | 是 |
-| `plan-detail.html` | 1 | 否 | 否 | 是 | 是 |
+| `plan-detail.html` | 2 | 否 | 是 | 是 | 是 |
 | `plans.html` | 0 | 否 | 是 | 是 | 是 |
 | `practice-result.html` | 0 | 否 | 否 | 是 | 是 |
 | `practice-session.html` | 1 | 否 | 是 | 是 | 是 |
@@ -36,4 +36,4 @@
 | `settings-provider.html` | 5 | 否 | 是 | 是 | 是 |
 | `settings.html` | 4 | 否 | 是 | 是 | 是 |
 | `tasks.html` | 4 | 否 | 是 | 是 | 是 |
-| `today.html` | 3 | 否 | 否 | 否 | 是 |
+| `today.html` | 6 | 否 | 否 | 是 | 是 |

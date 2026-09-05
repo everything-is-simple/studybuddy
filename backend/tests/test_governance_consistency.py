@@ -238,6 +238,8 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "TODO.md",
         "ai-learning-architecture.md",
         "frontend-contract-audit-report.md",
+        "frontend-inventory-report.md",
+        "frontend-inventory-scan.md",
         "frontend-plan.md",
         "frontend-static-capability-matrix.md",
         "frontend-static-failure-retry-matrix.md",

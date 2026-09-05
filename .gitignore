@@ -19,6 +19,9 @@ backend/test-results/
 artifacts/
 runs/
 
+# regenerable machine-readable scan artifact (human .md report is tracked)
+docs/frontend-inventory-scan.json
+
 # pi API key material and local agent state (personal, never commit)
 .pi/
 .backup/

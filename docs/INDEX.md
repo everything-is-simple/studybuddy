@@ -17,7 +17,9 @@
 - [`MIGRATIONS.md`](MIGRATIONS.md)：schema version、migration runner 与升级规则。
 - [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)：backup / verify / restore 行为边界。
 - [`LOCAL_V1_USER_GUIDE.md`](LOCAL_V1_USER_GUIDE.md)：本地 v1 首次配置、启动、验收和日常使用。
-- [`frontend-plan.md`](frontend-plan.md)：保留的前端实现契约与范围。
+- [`frontend-plan.md`](frontend-plan.md)：保留的前端实现契约与范围（**目标设计**，不是当前实现快照）。
+- [`frontend-inventory-report.md`](frontend-inventory-report.md)：前端**事实盘点**（21 页面、共享层、测试与后端路由覆盖的当前事实与结论。
+- [`frontend-inventory-scan.md`](frontend-inventory-scan.md)：由 `backend/scripts/scan-frontend-inventory.py` 生成的逐页/逐端点可复算明细。
 
 ## 分类资料
 

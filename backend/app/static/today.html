@@ -22,6 +22,9 @@
 <h1>你的学习日程</h1>
 <p class="lead">查看今日分配的学习任务和进度。</p>
 </div>
+<div class="stack-actions">
+<button id="retry-today" class="btn" type="button" hidden>重新加载</button>
+</div>
 </div>
 
 <section class="card" data-od-id="today-summary">
@@ -48,16 +51,33 @@ const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
 const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
 const tasks=document.querySelector('#tasks');
+const retry=document.querySelector('#retry-today');
 let loadGeneration=0;
+let activePlanRequest=null;
 
 function text(value){return typeof value==='string'?value:''}
 
+// Keep each notice's layout classes when swapping loading/empty/failed state.
+function notice(element,extra){element.hidden=false;element.className=(element.dataset.baseClass||'notice')+(extra?' '+extra:'')}
+function pending(element,message){notice(element,'status-loading');element.textContent=message}
+function settled(element,message){notice(element,'');element.textContent=message}
+function fail(element,error){notice(element,'warn');element.textContent=sbApi.safeError(error);retry.hidden=false}
+[summaryStatus,weeklyStatus,taskStatus].forEach(el=>{el.dataset.baseClass=el.className});
+
+// One shared active-plan lookup per load: the three sections used to fetch
+// /api/study/plans separately, which tripled the request on every retry.
+function activePlan(signal){
+if(!activePlanRequest)activePlanRequest=sbApi.json('/api/study/plans',{signal}).then(data=>{
+const plans=Array.isArray(data)?data:data.items||[];
+return plans.find(item=>item.status==='active')||null
+});
+return activePlanRequest
+}
+
 async function loadSummary(generation){
 try{
-const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
+const plan=await activePlan(pageRequest.signal);
 if(generation!==loadGeneration)return;
-const plans=Array.isArray(plansData)?plansData:plansData.items||[];
-const plan=plans.find(item=>item.status==='active');
 if(plan){
 const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/summary`,{signal:pageRequest.signal});
 if(generation!==loadGeneration)return;
@@ -83,24 +103,21 @@ div.append(value,label);
 summary.append(div)
 })
 }else{
-summaryStatus.textContent='暂无节奏数据';
-summaryStatus.className='notice'
+settled(summaryStatus,'暂无节奏数据')
 }
 }catch(e){
-summaryStatus.className='notice warn';
-summaryStatus.textContent=sbApi.safeError(e)
+if(generation!==loadGeneration)return;
+fail(summaryStatus,e)
 }
 }
 
-async function loadWeeklyTrend(generation){try{const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});if(generation!==loadGeneration)return;const plans=Array.isArray(plansData)?plansData:plansData.items||[];const plan=plans.find(item=>item.status==='active');if(!plan){weeklyStatus.textContent='暂无周趋势数据';return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){weeklyStatus.className='notice warn';weeklyStatus.textContent=sbApi.safeError(e)}}
+async function loadWeeklyTrend(generation){try{const plan=await activePlan(pageRequest.signal);if(generation!==loadGeneration)return;if(!plan){settled(weeklyStatus,'暂无周趋势数据');return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){if(generation!==loadGeneration)return;fail(weeklyStatus,e)}}
 
 async function loadTasks(generation){
 try{
-const plansData=await sbApi.json('/api/study/plans',{signal:pageRequest.signal});
+const plan=await activePlan(pageRequest.signal);
 if(generation!==loadGeneration)return;
-const plans=Array.isArray(plansData)?plansData:plansData.items||[];
-const plan=plans.find(item=>item.status==='active');
-if(!plan){taskStatus.textContent='今日暂无任务';return}
+if(!plan){settled(taskStatus,'今日暂无任务');return}
 const [rhythm,detail]=await Promise.all([
  sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm`,{signal:pageRequest.signal}),
  sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}`,{signal:pageRequest.signal})
@@ -110,8 +127,7 @@ const allocations=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.i
 const allocationByItem=new Map(allocations.filter(item=>item.local_date===localDate).map(item=>[item.item_id,item]));
 const items=(detail.items||[]).filter(item=>item.status!=='archived'&&allocationByItem.has(item.id));
 if(!items.length){
-taskStatus.textContent='今日暂无任务';
-taskStatus.className='notice';
+settled(taskStatus,'今日暂无任务');
 return
 }
 taskStatus.hidden=true;
@@ -149,13 +165,35 @@ li.append(action,progress);
 tasks.append(li)
 })
 }catch(e){
-taskStatus.className='notice warn';
-taskStatus.textContent=sbApi.safeError(e)
+if(generation!==loadGeneration)return;
+fail(taskStatus,e)
 }
 }
 
+function resetSections(){
+retry.hidden=true;
+activePlanRequest=null;
+tasks.replaceChildren();
+summary.hidden=true;
+weeklyTrend.hidden=true;
+pending(summaryStatus,'正在加载今日概览...');
+pending(weeklyStatus,'正在加载近七天趋势…');
+pending(taskStatus,'正在加载任务列表...')
+}
+
+async function loadAll(){
 const generation=++loadGeneration;
+resetSections();
+sbUi.busy(retry,true,'重新加载');
+try{
 await Promise.all([loadSummary(generation),loadWeeklyTrend(generation),loadTasks(generation)])
+}finally{
+sbUi.busy(retry,false,'重新加载')
+}
+}
+
+retry.addEventListener('click',()=>sbSubmit.once('today-reload',loadAll));
+await loadAll()
 })();
 </script>
 </body>
