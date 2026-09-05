@@ -432,14 +432,15 @@ cancel/retry → confirm → POST → 重读详情
 
 `/app` 直接证据（scoped-browser-pass）：
 
-- `browser_p2_fe3_qa_app.spec.js` `4 passed`（本轮新增）：正式 `/app/qa.html` 的 `#material-picker` 真实材料选择并双向同步 `#materials`；未建索引时如实提示 `材料索引尚未建立`；`#index-btn` 后提问得到 `回答已生成`；`.citation-link` 跳转到 `material-detail.html?material=...&citation=...` 并高亮引用位置；`?material=` 预选保持；504 失败只显示 `Provider 请求超时` 且不泄露 detail/path/traceback，保留问题可直接重试；提交期间 `#submit-btn` 禁用且只发一次 `/api/qa/ask`；多材料范围得到 2 条引用；`/api/qa/threads` 失败显示 `请求失败，请重试`；390px 无横向溢出；Provider 未配置时 `#provider-status` 安全提示。
+- `browser_p2_fe3_qa_app.spec.js` `4 passed`（P2-FE-3-3）：正式 `/app/qa.html` 的 `#material-picker` 真实材料选择并双向同步 `#materials`；未建索引时如实提示 `材料索引尚未建立`；`#index-btn` 后提问得到 `回答已生成`；`.citation-link` 跳转到 `material-detail.html?material=...&citation=...` 并高亮引用位置；`?material=` 预选保持；504 失败只显示 `Provider 请求超时` 且不泄露 detail/path/traceback，保留问题可直接重试；提交期间 `#submit-btn` 禁用且只发一次 `/api/qa/ask`；多材料范围得到 2 条引用；`/api/qa/threads` 失败显示 `请求失败，请重试`；390px 无横向溢出；Provider 未配置时 `#provider-status` 安全提示。
+- `browser_p2_fe3_qa_threads_errors_app.spec.js` `3 passed`（P2-FE-3-4）：正式 `/app/qa.html` 线程工作区多会话切换（两次提问创建两个独立 `.thread-item`，分别展开/折叠，刷新后持久化）；`provider_rate_limited` (429) 映射为 `请求过于频繁，请稍后重试`，不泄露 `provider_rate_limited`/path/traceback；`provider_unavailable` (503) 映射为 `Provider 暂时不可用，请重试`，不泄露内部错误码。
 - `browser_p1_1_material_qa_migration.spec.js` `5 passed`：索引 + 正文展示；问答引用深链 + `#citation-location` 高亮；引用不可用安全文案（不泄露 traceback/path）；**单文件导入成功计数 1/1**；**空文本索引状态如实显示“没有可用于问答的正文”**（本轮新增 2 项）。
 - `browser_frontend_page_contract.spec.js`：materials 空态与失败安全、material-detail 缺 ID 安全、qa 空历史与 Provider 状态、线程过期响应丢弃。
 - `browser_e2e.spec.js` / `browser_static_core.spec.js` / `browser_learning_pages.spec.js` / `browser_migration.spec.js`：导入 → 问答 → 学习全链与跨页导航。
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；本轮新增的 `browser_p2_fe3_qa_app.spec.js` 已把其核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置）迁移到正式 `/app`，但线程工作区多会话切换、rate-limit/unavailable 错误映射、opt-in 真实外部 provider 路径仍只有 legacy 证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
+`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；P2-FE-3-3 的 `browser_p2_fe3_qa_app.spec.js` 已迁移核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置），P2-FE-3-4 的 `browser_p2_fe3_qa_threads_errors_app.spec.js` 已迁移线程工作区多会话切换与 rate-limit/unavailable 错误映射到正式 `/app`。剩余 `legacy_only` 维度：opt-in 真实外部 provider 路径、P6-C 跨页连接完整等价证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
