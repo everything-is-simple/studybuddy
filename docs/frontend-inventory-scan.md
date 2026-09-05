@@ -4,7 +4,7 @@
 
 - 静态页面：21
 - 共享资源：6
-- 浏览器 spec：54
+- 浏览器 spec：55
 - 去重后前端调用的 API 端点：103
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
@@ -18,7 +18,7 @@
 | exercises.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.1 KiB | 0 | 8 | 8 |
 | index.html | 无 | 无 | 否 | 1 | 0.0 KiB | 0 | 0 | 1 |
 | material-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.2 KiB | 0 | 5 | 10 |
-| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.0 KiB | 0 | 6 | 16 |
+| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.3 KiB | 0 | 6 | 17 |
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
 | plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.5 KiB | 0 | 3 | 6 |
@@ -191,7 +191,7 @@
 | exercises.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js |
 | index.html | 1 | browser_migration.spec.js |
 | material-detail.html | 10 | browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_real_input_restart.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
-| materials.html | 16 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_materials_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
+| materials.html | 17 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_materials_app.spec.js, browser_p2_fe3_materials_management_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | note-detail.html | 4 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
 | notes.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js |
 | plan-detail.html | 6 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_plans_today_progress.spec.js |
