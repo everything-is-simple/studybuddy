@@ -259,7 +259,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 
 ## 5. 场景 2：材料导入 → 解析 → 索引 → 问答（带引用）
 
-状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位）；`legacy_only`（/legacy 等价证据迁移未做）；`not_exposed`（异步入队、purge）。
+状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、回收站、删除/恢复和批量 ZIP 导出已有范围化 browser evidence）；`legacy_only`（QA 完整等价证据及部分历史材料管理证据仍保留在 `/legacy`）；`not_exposed`（异步入队、purge）。
 
 参与页面（真实代码已核实）：
 
@@ -437,7 +437,7 @@ cancel/retry → confirm → POST → 重读详情
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）以及材料管理的原有 legacy spec 仍保留并继续验证兼容入口；本轮新增 `browser_p2_fe3_materials_app.spec.js` 已覆盖正式 `/app` 的单文件/批量/文件夹导入、分页、搜索与列表失败重试。其余 legacy 证据仍不能直接证明正式页面等价能力，后续迁移归入 P2-FE-3。
+`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口；材料管理的原有 legacy spec 继续保留并验证兼容入口。本轮新增 `browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与前一批 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 

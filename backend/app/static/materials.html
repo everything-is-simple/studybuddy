@@ -113,6 +113,7 @@ let visibleIds=[];
 const selectedIds=new Set();
 let exportBusy=false;
 let uploadBusy=false;
+const mutationBusy=new Set();
 
 function text(value){return typeof value==='string'?value:''}
 function folderFiles(files){return files.map(file=>{const relative=file.webkitRelativePath||file.name;const name=relative.split(/[\\/]/).pop()||file.name;return new File([file],name,{type:file.type,lastModified:file.lastModified})})}
@@ -317,7 +318,7 @@ actions.className='item-actions';
 const del=document.createElement('button');
 del.className='btn';
 del.textContent='删除';
-del.onclick=()=>deleteMaterial(id,name);
+del.onclick=()=>deleteMaterial(id,name,del);
 actions.append(del);
 li.append(actions)
 }
@@ -327,7 +328,7 @@ actions.className='item-actions';
 const restore=document.createElement('button');
 restore.className='btn btn-primary';
 restore.textContent='恢复';
-restore.onclick=()=>restoreMaterial(id,name);
+restore.onclick=()=>restoreMaterial(id,name,restore);
 actions.append(restore);
 li.append(actions)
 }
@@ -383,22 +384,33 @@ exportBusy=false;updateSelection()
 }
 }
 
-async function deleteMaterial(id,name){
-if(!confirm(`确定删除材料"${name}"吗？`))return;
+async function deleteMaterial(id,name,button){
+if(mutationBusy.has(id)||!confirm(`确定删除材料"${name}"吗？`))return;
+mutationBusy.add(id);
+button.disabled=true;
 try{
 await sbApi.json(`/api/materials/${encodeURIComponent(id)}`,{method:'DELETE'});
 load()
 }catch(e){
 alert(sbApi.safeError(e))
+}finally{
+mutationBusy.delete(id);
+button.disabled=false
 }
 }
 
-async function restoreMaterial(id,name){
+async function restoreMaterial(id,name,button){
+if(mutationBusy.has(id))return;
+mutationBusy.add(id);
+button.disabled=true;
 try{
 await sbApi.json(`/api/materials/${encodeURIComponent(id)}/restore`,{method:'POST'});
 load()
 }catch(e){
 alert(sbApi.safeError(e))
+}finally{
+mutationBusy.delete(id);
+button.disabled=false
 }
 }
 

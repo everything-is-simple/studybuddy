@@ -1,6 +1,6 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-09-05（执行方向修订：证据梯子 → 可用优先；P2-USE 五个切片已全部完成；P2-FE-2 场景 2 合同已冻结，P2-FE-3 已完成材料管理第一批正式证据迁移；活动主线继续为 **P2-FE（前后端场景对齐）**）
+> 更新：2026-09-05（执行方向修订：证据梯子 → 可用优先；P2-USE 五个切片已全部完成；P2-FE-2 场景 2 合同已冻结，P2-FE-3 已完成材料管理导入及回收站/导出两批正式证据迁移；活动主线继续为 **P2-FE（前后端场景对齐）**）
 > 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；本次完整回归为 **623 passed, 3 skipped**，完整 Chromium 为 **176 passed, 4 skipped**。skip 均为 opt-in 真实 smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，P1-6 系列仍为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
@@ -395,12 +395,12 @@ revision → chunks → retrieval → citations → Q&A
   场景 3“练习会话 → 结果 → 错题复盘”不在本轮实施，继续以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源，待后续完成总合同整合与按场景实施。
   尚未完成：P2-FE-3 的 `/legacy` 等价证据迁移与内联脚本模块化；场景 2 的异步索引正式入口和 purge 是否开放仍按合同保持边界。
 
-- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：材料管理第一批正式 `/app` evidence 已完成。**
-  本轮完成：新增 `browser_p2_fe3_materials_app.spec.js`，覆盖正式 `/app` 的单文件/批量/文件夹导入、分页、搜索与列表失败重试；修复文件夹导入的 `webkitRelativePath` 安全字段未归一化问题，并保持 legacy 测试和 `/legacy` 兼容不变。
+- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：材料管理导入及回收站/导出两批正式 `/app` evidence 已完成。**
+  本轮完成：新增 `browser_p2_fe3_materials_management_app.spec.js`，覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、原件/文本/全部 ZIP 导出、导出失败恢复、响应式无横向溢出和删除重复提交保护；修复删除/恢复期间按钮未禁用的真实缺口，并保持 legacy 测试和 `/legacy` 兼容不变。
   尚未完成：
-  1. **`/legacy` 证据迁移**：原有材料管理和 `browser_qa.spec.js` 仍保留 legacy-only 证据；回收站、导出和 QA 等价证据尚未全部迁移到正式 `/app`。
+  1. **`/legacy` 证据迁移**：原有材料管理和 `browser_qa.spec.js` 仍保留 legacy-only 证据；QA 等价证据尚未迁移到正式 `/app`。purge 继续保持 `not_exposed`，不纳入普通回收站。
   2. **内联脚本模块化**：当前页面业务逻辑仍以内联脚本为主，必须继续按完整场景拆分，不能孤立迁移。
-  本轮回归：focused browser `32 passed`；backend `623 passed, 3 skipped`；Chromium 分批有效结果 `180 passed, 4 skipped`，一次既有 Phase 9C 时序失败单独重跑后 `3 passed`。
+  本轮回归：P2-FE-3-2 focused browser `13 passed`（其中正式新增测试 `3 passed`）；backend `623 passed, 3 skipped`；Chromium 完整回归尚待运行。
 
 ## P2：后续独立项目
 
