@@ -259,7 +259,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 
 ## 5. 场景 2：材料导入 → 解析 → 索引 → 问答（带引用）
 
-状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、回收站、删除/恢复和批量 ZIP 导出已有范围化 browser evidence）；`legacy_only`（QA 完整等价证据及部分历史材料管理证据仍保留在 `/legacy`）；`not_exposed`（异步入队、purge）。
+状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、回收站、删除/恢复和批量 ZIP 导出，以及正式 `/app/qa.html` 的材料选择、索引前置、提问、引用跳转、失败重试、重复提交保护和窄屏状态已有范围化 browser evidence）；`legacy_only`（QA 线程工作区多会话切换、rate-limit/unavailable 映射等等价证据和部分历史材料管理证据仍保留在 `/legacy`）；`not_exposed`（异步入队、purge）。
 
 参与页面（真实代码已核实）：
 
@@ -388,8 +388,9 @@ cancel/retry → confirm → POST → 重读详情
 | `material-detail.html #qa` | 进入问答 | `/app/qa.html?material=ID` | 材料不可用时禁用 |
 | `material-detail.html #export-original` / `#export-text` | 下载原件/解析文本 | 文件下载 | 材料不可用时禁用 |
 | `qa.html #provider-status` | Provider 能力检查 | configured/demo/not_configured 明示 | 检查失败可刷新重试 |
+| `qa.html #material-picker` | 列出真实材料并勾选写回 `#materials` | 勾选/取消同步材料范围 | 列表失败时提示可手动输入材料 ID |
 | `qa.html #qa-form` / `#question` / `#materials` / `#retrieval-mode` | 提问表单 | 空问题或空材料范围阻止提交 | `#submit-status` 安全文案 |
-| `qa.html #index-btn` | 对输入的材料 ID 逐个建立索引 | 索引建立完成 | 安全文案 + 可重试 |
+| `qa.html #index-btn` | 对选定材料逐个建立索引 | 索引建立完成 | 安全文案 + 可重试 |
 | `qa.html #submit-btn` | 提交问题（幂等 key + sbSubmit.once） | 回答已生成 + 线程重读 | 安全文案 + 可重试 |
 | `qa.html #thread-status` / `#threads` | 问答历史 | 线程列表 / 空态 | failed 安全文案 |
 | 动态“查看对话与引用” / `.thread-detail` | 内联加载线程消息与引用 | 消息 + `.citation-link` | 详情失败安全文案 |
@@ -403,7 +404,7 @@ cancel/retry → confirm → POST → 重读详情
 |---|---|---|---|---|
 | 导入单文件 | `POST /api/materials` | multipart `file`；返回 `{original_name,status,material_id,extraction_id,text_length,span_count,error_code,warnings}` | 材料记录的 `empty` 结果仍保留在列表中，但导入计数只把 `status==='success'` 计为成功；rejected/failed 逐项显示安全文案；单文件成功计数以 `status==='success'` 判定 | direct |
 | 批量导入 | `POST /api/materials/batch` | multipart `files[]`；返回 `{total,success,empty,rejected,failed,items[]}` | 以 `items` 中 `status==='success'` 计数 | direct |
-| 列表/搜索 | `GET /api/materials` | `status/q/limit/offset`；返回 `{items,total,has_more}` | 分页；`invalid_status`/`invalid_pagination` 安全文案 | direct |
+| 列表/搜索 | `GET /api/materials` | `status/q/limit/offset`；返回 `{items,total,has_more}` | 分页；`invalid_status`/`invalid_pagination` 安全文案；`qa.html #material-picker` 以 `limit=100&offset=0` 读取可选材料 | direct |
 | 回收站 | `GET /api/materials/deleted` | `limit/offset`；返回 `{items,total,has_more}` | 独立视图与分页 | direct |
 | 批量导出 | `POST /api/materials/export` | `{material_ids,include_original,include_text}`；返回 ZIP | zip 校验失败抛 `export_failed`；413/404 安全文案 | direct |
 | 删除材料 | `DELETE /api/materials/{id}` | 204 | 软删除；`material_not_found`/`material_delete_failed` 安全文案 | direct |
@@ -431,13 +432,14 @@ cancel/retry → confirm → POST → 重读详情
 
 `/app` 直接证据（scoped-browser-pass）：
 
+- `browser_p2_fe3_qa_app.spec.js` `4 passed`（本轮新增）：正式 `/app/qa.html` 的 `#material-picker` 真实材料选择并双向同步 `#materials`；未建索引时如实提示 `材料索引尚未建立`；`#index-btn` 后提问得到 `回答已生成`；`.citation-link` 跳转到 `material-detail.html?material=...&citation=...` 并高亮引用位置；`?material=` 预选保持；504 失败只显示 `Provider 请求超时` 且不泄露 detail/path/traceback，保留问题可直接重试；提交期间 `#submit-btn` 禁用且只发一次 `/api/qa/ask`；多材料范围得到 2 条引用；`/api/qa/threads` 失败显示 `请求失败，请重试`；390px 无横向溢出；Provider 未配置时 `#provider-status` 安全提示。
 - `browser_p1_1_material_qa_migration.spec.js` `5 passed`：索引 + 正文展示；问答引用深链 + `#citation-location` 高亮；引用不可用安全文案（不泄露 traceback/path）；**单文件导入成功计数 1/1**；**空文本索引状态如实显示“没有可用于问答的正文”**（本轮新增 2 项）。
 - `browser_frontend_page_contract.spec.js`：materials 空态与失败安全、material-detail 缺 ID 安全、qa 空历史与 Provider 状态、线程过期响应丢弃。
 - `browser_e2e.spec.js` / `browser_static_core.spec.js` / `browser_learning_pages.spec.js` / `browser_migration.spec.js`：导入 → 问答 → 学习全链与跨页导航。
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口；材料管理的原有 legacy spec 继续保留并验证兼容入口。本轮新增 `browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与前一批 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
+`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；本轮新增的 `browser_p2_fe3_qa_app.spec.js` 已把其核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置）迁移到正式 `/app`，但线程工作区多会话切换、rate-limit/unavailable 错误映射、opt-in 真实外部 provider 路径仍只有 legacy 证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
