@@ -61,6 +61,7 @@
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
 </div>
 <div id="error" class="error" role="alert" hidden></div>
+<button class="btn mt-12" id="retry-materials" type="button" hidden>重新加载材料</button>
 <div id="batch-export" class="batch-toolbar" hidden>
 <label class="batch-select-all"><input id="select-page" type="checkbox"> 选择当前页</label>
 <span id="selection-status" class="muted" role="status" aria-live="polite">已选择 0 份</span>
@@ -93,6 +94,7 @@ const viewDeleted=document.querySelector('#view-deleted');
 const items=document.querySelector('#items');
 const state=document.querySelector('#state');
 const error=document.querySelector('#error');
+const retryMaterials=document.querySelector('#retry-materials');
 const pagination=document.querySelector('#pagination');
 const listTitle=document.querySelector('#list-title');
 const batchExport=document.querySelector('#batch-export');
@@ -110,8 +112,10 @@ let loadGeneration=0;
 let visibleIds=[];
 const selectedIds=new Set();
 let exportBusy=false;
+let uploadBusy=false;
 
 function text(value){return typeof value==='string'?value:''}
+function folderFiles(files){return files.map(file=>{const relative=file.webkitRelativePath||file.name;const name=relative.split(/[\\/]/).pop()||file.name;return new File([file],name,{type:file.type,lastModified:file.lastModified})})}
 
 function resetSelection(){selectedIds.clear();visibleIds=[];updateSelection()}
 
@@ -161,14 +165,17 @@ if(e.target.files.length)handleUpload(Array.from(e.target.files))
 });
 
 folderInput.addEventListener('change',e=>{
-if(e.target.files.length)handleUpload(Array.from(e.target.files))
+if(e.target.files.length)handleUpload(folderFiles(Array.from(e.target.files)))
 });
 
 async function handleUpload(files){
+if(uploadBusy||!files.length)return;
+uploadBusy=true;
 uploadStatus.hidden=false;
 uploadStatus.className='notice';
 uploadStatus.textContent=`正在上传 ${files.length} 个文件...`;
 fileInput.disabled=true;
+folderBtn.disabled=true;
 try{
 const result=await sbSubmit.once('materials-upload',()=>files.length===1
 ?sbApi.upload('/api/materials',files[0])
@@ -198,9 +205,18 @@ load()
 uploadStatus.className='notice warn';uploadStatus.textContent=sbApi.safeError(e)+' 可重试。'
 }finally{
 fileInput.disabled=false;
-fileInput.value=''
+folderBtn.disabled=false;
+fileInput.value='';
+folderInput.value='';
+uploadBusy=false
 }
 }
+
+retryMaterials.addEventListener('click',()=>{
+if(retryMaterials.disabled)return;
+retryMaterials.disabled=true;
+load()
+});
 
 applyFilters.addEventListener('click',()=>{
 currentStatus=statusFilter.value;
@@ -230,6 +246,8 @@ resetSelection();
 const generation=++loadGeneration;
 state.textContent='加载中…';
 error.hidden=true;
+retryMaterials.hidden=true;
+retryMaterials.disabled=true;
 items.replaceChildren();
 pagination.hidden=true;
 try{
@@ -252,7 +270,9 @@ renderPage(data)
 }catch(e){
 state.textContent='加载失败';
 error.textContent=sbApi.safeError(e);
-error.hidden=false
+error.hidden=false;
+retryMaterials.hidden=false;
+retryMaterials.disabled=false
 }
 }
 

@@ -437,7 +437,7 @@ cancel/retry → confirm → POST → 重读详情
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未迁移到 `/app`）：`browser_qa.spec.js`（10 test）、`browser_material_pagination/search/recycle_bin/export/management/multi_file_import/folder_import` 仍只访问 `/legacy`，不能证明正式页面等价能力；迁移归入 P2-FE-3。
+`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）以及材料管理的原有 legacy spec 仍保留并继续验证兼容入口；本轮新增 `browser_p2_fe3_materials_app.spec.js` 已覆盖正式 `/app` 的单文件/批量/文件夹导入、分页、搜索与列表失败重试。其余 legacy 证据仍不能直接证明正式页面等价能力，后续迁移归入 P2-FE-3。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
@@ -470,7 +470,7 @@ practice.html 选择练习/建议
 ## 7. 实施顺序与门禁
 
 1. 场景 1 已作为模板完成实现与专项 browser evidence。
-2. 场景 2 四件套已冻结（本切片，2026-09-05）；`/legacy` 材料与 QA evidence 迁移、以及合同认定的正式页缺口（purge 决策、异步索引入口决策）进入 P2-FE-3 独立可用切片。
+2. 场景 2 四件套已冻结（本切片，2026-09-05）；本轮已开始并完成材料管理核心 `/app` evidence 迁移与列表失败重试补强；QA legacy evidence、回收站/导出等剩余等价证据，以及合同认定的正式页缺口（purge 决策、异步索引入口决策）继续进入 P2-FE-3 后续独立可用切片。
 3. 冻结场景 3 的四件套（以 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 为事实源），再补 attempt、weak-points 和归档行为。
 4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片。
 5. 每个切片运行 focused tests；涉及 API、存储或基础设施时运行完整 backend；所有用户页面变更运行完整 Chromium。
