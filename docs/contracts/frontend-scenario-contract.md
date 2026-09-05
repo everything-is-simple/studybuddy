@@ -446,29 +446,85 @@ cancel/retry → confirm → POST → 重读详情
 
 ## 6. 场景 3：练习会话 → 结果 → 错题复盘
 
-状态：`design-skeleton / not_frozen`。既有 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 已覆盖练习会话/结果/复盘单场景的绝大部分真实事实，本合同**不复制其内容**：场景 3 的流程、状态与 API 对照以该文档为事实源，本节只记录本合同范围内的整合骨架、参与页面和待补齐项。场景 3 的正式实施（P2-FE-2 冻结后、P2-FE-3）以本节 + 既有 practice-workflow-contract 共同为基线。
+状态：`contract-frozen`（2026-09-05）。既有 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 已覆盖练习会话/结果/复盘单场景的完整事实，本合同**不复制其内容**：场景 3 的流程、状态、API 对照、隐私边界、幂等语义和 browser evidence 矩阵以该文档为唯一事实源。本节只记录本合同范围内的整合骨架与正式 `/app` 页面迁移边界。
 
-### 6.1 已确认骨架
+### 6.1 核心流程（已确认，详见 frontend-practice-workflow-contract.md）
 
 ```text
 practice.html 选择练习/建议
   → practice-session.html start / submit / finish
   → practice-result.html 查看安全结果
-  → review.html 查看错题详情与来源
+  → review.html 查看错误详情与来源
   → feedback / review / mark-mistake / redo
   → 薄弱点汇总 → 下一轮练习
 ```
 
-参与页面暂定：`practice.html`、`practice-session.html`、`practice-result.html`、`review.html`、`exercises.html`。必须保持答案 key、内部 grading payload 和未批准正文不进入 DOM、URL、storage 或普通日志。
+### 6.2 参与页面与 API 映射（已冻结，详见 frontend-practice-workflow-contract.md 第 3 节）
 
-### 6.2 待补齐项
+| 页面 | 主要 API | 状态 |
+|---|---|---|
+| `practice.html` | `GET /api/study/practice-sessions` | 既有实现，需补正式 evidence |
+| `practice-session.html` | `GET /api/study/practice-sessions/{id}`<br>`POST .../start`<br>`POST .../items/{item_id}/submit`<br>`POST .../finish` | phase-two-implemented / scoped-browser-pass |
+| `practice-result.html` | `GET /api/study/practice-sessions/{id}/result` | phase-two-implemented / scoped-browser-pass |
+| `review.html` | `GET /api/study/mistakes`<br>`GET /api/study/mistakes/{id}`<br>`POST /api/study/attempts/{id}/review`<br>`POST /api/study/attempts/{id}/mark-mistake`<br>`POST /api/study/mistakes/{id}/feedback`<br>`POST /api/study/mistakes/{id}/redo`<br>`POST /api/study/mistakes/{id}/archive` | phase-two-implemented / scoped-browser-pass |
+| `exercises.html` | `GET /api/study/exercise-sets`<br>`GET /api/study/exercises` | 既有实现，需补正式 evidence |
 
-- `GET+POST /api/study/exercises/{exercise_id}/attempts` 的正式逐题行为；
-- `GET /api/study/weak-points` 的复盘展示与下一轮练习入口；
-- practice session archive 的入口、确认与状态迁移；
-- exercise-set/cram-goal 详情是否独立成页或收敛在现有工作区；
-- expired、archived、source unavailable、redo failed 的跨页恢复；
-- `/legacy` practice evidence 与正式 `/app` 页面的一一迁移表。
+### 6.3 强制边界（已冻结，详见 frontend-practice-workflow-contract.md 第 5 节）
+
+- **隐私**：答案 key、内部 grading payload、未批准正文永不进入 DOM、URL、storage 或普通日志。
+- **幂等**：submit 使用 `Idempotency-Key`；所有写操作通过 `sbApi`；重复点击单次请求；同 key replay 安全；不同答案不串结果。
+- **Stale response**：切换 session/题目/result/review 时旧响应不渲染；使用独立 generation/context 标识。
+- **失败恢复**：404/409/5xx/network 显示安全文案；失败后恢复按钮并提供 retry；不伪造成功。
+- **安全错误**：使用 `sbApi.safeError()`；不显示路径、SQL、traceback、secret、raw Provider 响应。
+
+### 6.4 P2-FE-3 正式证据迁移范围
+
+按 `frontend-practice-workflow-contract.md` 第 9 节的 browser evidence 矩阵，分批迁移：
+
+**第一批**（practice-session.html 核心路径）：
+- draft → start → active → submit → finish → result 成功路径
+- 重复点击单次请求
+- submit 失败 → retry → 恢复
+- expired / source unavailable 状态显示
+- 390x844 窄屏无横向溢出
+- 键盘操作与可见焦点
+
+**第二批**（practice-result.html 与跨页）：
+- result 读取成功路径
+- result → review 跨页导航
+- 刷新恢复非敏感上下文
+- DOM/URL 不含答案 key
+
+**第三批**（review.html 错题复盘）：
+- mistake list/detail 读取
+- feedback / review / mark-mistake 操作
+- redo 创建新 session → 跳转
+- archive 状态迁移
+- source unavailable / archived 安全显示
+
+**暂不迁移**（标记 `legacy_only` 或 `not_exposed`）：
+- weak-points 汇总页面（UI 暂不开放，标记 `not_exposed`）
+- cram-goal 详情页面（已有后端，UI 暂不开放，标记 `not_exposed`）
+- exercise-set 详情页面（已有后端，UI 已存在但 evidence 不足，标记 `not_verified`）
+- opt-in 真实外部 Provider 的练习生成路径（标记 `not_verified`）
+
+### 6.5 Browser evidence 文件命名约定
+
+- `browser_p2_fe3_practice_session_app.spec.js`：练习会话核心路径（第一批）
+- `browser_p2_fe3_practice_result_app.spec.js`：结果与跨页（第二批）
+- `browser_p2_fe3_practice_review_app.spec.js`：错题复盘（第三批）
+
+每个 spec 使用独立隔离的临时 data root，串行运行，覆盖 desktop + 390x844 + keyboard + reload + failure + privacy。
+
+### 6.6 实施顺序与门禁
+
+1. ✅ 场景 3 合同已冻结（本轮，2026-09-05）；
+2. 按 6.4 节三批顺序逐批实施，每批独立验证；
+3. 每批运行 focused backend/browser tests + 完整回归；
+4. 每批运行 contract audit、frontend inventory scan、source-size、diff check；
+5. 每批更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档；
+6. 每批独立 commit 并 push；
+7. 三批全部完成后，场景 3 状态从 `contract-frozen` 升级为 `implemented / scoped-browser-pass`。
 
 ## 7. 实施顺序与门禁
 
