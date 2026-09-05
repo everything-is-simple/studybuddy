@@ -68,3 +68,22 @@ test('P1-1 citation availability remains explicit without exposing internal erro
   await expect(page.locator('#body-location')).toContainText('引用定位失败');
   await expect(page.locator('body')).not.toContainText(/private_backend_failure|traceback|H:\/secret/i);
 });
+
+test('P1-1 materials page reports an accurate single-file import count', async ({page}) => {
+  await page.goto(`${BASE}/app/materials.html`);
+  await page.setInputFiles('#file-input', {name: 'p1-single.txt', mimeType: 'text/plain', buffer: Buffer.from('Single file import reports an accurate success count.')});
+  await expect(page.locator('#upload-status')).toContainText('已导入 1/1 个文件', {timeout: 15000});
+  await expect(page.locator('#items li')).toHaveCount(1);
+  await expect(page.locator('#upload-status')).not.toHaveClass(/warn/);
+});
+
+test('P1-1 material detail reports empty-text index status instead of claiming ready', async ({page}) => {
+  const response = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'p1-empty.txt', mimeType: 'text/plain', buffer: Buffer.from('')}}});
+  expect(response.ok()).toBe(true);
+  const material = await response.json();
+  expect(material.status).toBe('empty');
+  await page.goto(`${BASE}/app/material-detail.html?material=${encodeURIComponent(String(material.id || material.material_id))}`);
+  await page.locator('#index').click();
+  await expect(page.locator('#index-status')).toContainText('没有可用于问答的正文', {timeout: 15000});
+  await expect(page.locator('#index-status')).not.toContainText('AI 索引已建立');
+});

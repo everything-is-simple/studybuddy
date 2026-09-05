@@ -1,6 +1,6 @@
 # Frontend Scenario 前后端整体设计合同
 
-> 状态：`P2-FE-2 / scenario-1-implemented / scenarios-2-3-design-pending`
+> 状态：`P2-FE-2 / scenario-1 + scenario-2 frozen / scenario-3 skeleton`
 > 更新：2026-09-05
 >
 > 技术路线：HTML + CSS + 原生 JavaScript + FastAPI JSON API。
@@ -259,34 +259,191 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 
 ## 5. 场景 2：材料导入 → 解析 → 索引 → 问答（带引用）
 
-状态：`design-skeleton / not_frozen`。实施前必须按第 2 节补齐四件套。
+状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位）；`legacy_only`（/legacy 等价证据迁移未做）；`not_exposed`（异步入队、purge）。
 
-### 5.1 已确认骨架
+参与页面（真实代码已核实）：
+
+- `materials.html`：导入（单文件/批量/文件夹）、列表、筛选、搜索、分页、回收站、批量导出；
+- `material-detail.html`：解析状态、正文、索引状态与建立、引用定位、原件/文本导出；
+- `qa.html`：Provider 状态、材料范围、检索模式、提问、线程历史、引用回跳；
+- `tasks.html`：`embedding_index` 任务只读观测（列表/详情/取消/重试）。
+
+### 5.1 场景流程图
 
 ```text
-materials.html 导入
-  → material-detail.html 查看 revision / extraction / parse 状态
-  → 建立 AI index
-  → qa.html 选择材料并提问
-  → 检索命中 + citation
-  → 打开 citation 对应材料位置
+materials.html 进入材料库
+  导入材料（#upload-area 点击/拖放 / #folder-btn 文件夹）
+    ├─ 输入校验：accept 限制 .pdf,.txt,.md,.docx,.pptx；
+    │   无效文件名/超限/不支持格式 → 后端稳定错误码 → 安全文案
+    ├─ 上传中：`#upload-status`“正在上传 N 个文件...”
+    ├─ 解析中：后端同步完成，无独立前端态
+    ├─ 解析成功（status=success/empty）："已导入 n/total" → 列表重读
+    ├─ 解析失败（status=rejected/failed）：逐文件错误码列表 + 安全文案
+    └─ 上传异常：安全文案 + “可重试”
+  列表/筛选/搜索/分页/回收站 → 每项 → material-detail.html?material=ID
+  查看材料详情（GET /api/materials/{id}）
+    ├─ 解析状态：success/empty/rejected/failed + 解析器/文件类型/文本长度/片段数/提示
+    ├─ 空文本：下一步指导（OCR 生成可搜索 PDF，或上传 UTF-8 文本）
+    ├─ 失败/拒绝：错误码安全文案 + 转换/修复后重新导入
+    └─ 建立 AI 索引（#index → POST /ai-index，幂等 key）
+         ├─ 成功 → 重读真实索引状态（ready / empty）
+         ├─ 失败 → 安全文案 + 可重试
+         └─ 任务观测：tasks.html?task_id=... 观察 embedding_index 任务
+  进入问答（#qa → qa.html?material=ID，或“选择材料”）
+    ├─ Provider 状态（configured / demo / not_configured / 检查失败）
+    ├─ 材料范围（#materials，支持 URL material 预填）
+    ├─ 检索模式（hybrid / lexical / vector）
+    ├─ 提问（#submit-btn → POST /api/qa/ask，幂等 key）
+    │    ├─ 成功 → 回答生成 → 线程列表重读
+    │    ├─ 无命中/索引未就绪 → 稳定错误码安全文案
+    │    └─ 失败 → 安全文案 + 可重试
+    └─ 问答历史（#threads → GET /api/qa/threads → 线程详情 → .citation-link）
+         └─ 引用定位回原文（material-detail.html?material&citation=KEY）
+               ├─ valid → 高亮 #citation-location + scrollIntoView
+               ├─ source_deleted → 安全提示“引用来源已删除”
+               ├─ source_unavailable → 安全提示
+               └─ 定位失败 → 安全提示 + 可返回问答历史重试
 ```
 
-参与页面暂定：`materials.html`、`material-detail.html`、`tasks.html`、`qa.html`。必须覆盖同步索引、显式任务索引的取舍，解析空文本、格式拒绝、索引未就绪、来源删除/过期、问答无命中、Provider 未配置和失败重试。
+同步索引是正式 UI 当前采用的路径；异步 `POST .../ai-index/tasks` 是 approved 的 embedding 入队能力，仅由 `tasks.html` 只读观测，不在材料详情页伪造异步队列。引用必须保留 revision/chunk/span 定位并可回到材料；正式页面不得直接暴露 `/api/retrieval`、`/api/context/assemble`、`/api/citation/validate` 的内部 payload。
 
-正式问答页面不得直接暴露 `/api/retrieval`、`/api/context/assemble`、`/api/citation/validate` 的内部 payload；引用必须保留 revision/chunk 定位并可回到材料。现有只访问 `/legacy` 的导入/搜索/分页/回收站/导出和 QA spec，需在此合同冻结后迁移到 `/app`，不能当作正式页通过证据。
+### 5.2 页面状态机
 
-### 5.2 待决策项
+#### `materials.html`
 
-- `/ai-index` 同步路径与 `/ai-index/tasks` 异步路径的正式 UI 分工；
-- material purge 是否开放，以及二次确认、备份和不可恢复边界；
-- citation 深链的最小稳定字段；
-- 每个 loading/empty/failed/source-unavailable 状态的真实 selector；
-- 页面与 53 个现有 spec 的等价证据映射。
+```text
+initial → loading(GET /api/materials) → ready
+  ├─ items=[] → empty“还没有材料”（#state=暂无材料）
+  ├─ items>0 → 列表 + 分页（#pagination）
+  └─ failed → #error 安全文案；apply-filters/view-deleted/分页重新触发 load
+upload: submitting → succeeded(已导入 n/total) / failed(可重试)
+export: selecting → exporting(busy) → succeeded(download) / failed(可重试)
+view: active ↔ deleted（回收站，GET /api/materials/deleted）
+```
+
+`loadGeneration` 丢弃过期响应；上传/导出用 `sbSubmit.once` + busy 标志防重复提交；删除/恢复用原生确认对话框。
+
+#### `material-detail.html`
+
+```text
+无 material 参数 → title/state 安全失败（settled），#qa/#index/导出全部禁用
+有 material 参数 → loading(GET /api/materials/{id}) → ready
+  ├─ 解析态：success → 正文可用 + 可建立索引
+  │           empty → 正文空 + 下一步指导
+  │           rejected/failed → 错误码 + 转换指导
+  └─ failed → “材料不可用”安全文案 + 动作禁用
+索引：初始 not_indexed/empty/ready（GET /ai-index 并行）
+  indexing → POST /ai-index（幂等 key + indexing 锁）→ 成功后重读真实状态
+  failed → 安全文案 + 可重试（#index 恢复可点）
+引用：有 citation 参数 → locating → valid（高亮）/ source_deleted / source_unavailable / 定位失败
+导出：original/text → 链接跳转下载
+```
+
+`request` 为页面 scope，`pagehide` 时取消，避免过期响应覆盖新上下文。
+
+#### `qa.html`
+
+```text
+initial → provider 检查（GET /api/ai/capabilities）
+  ├─ configured/demo → 可提问
+  ├─ not_configured → “问答功能不可用”
+  └─ failed → “可刷新重试”
+ask: submitting → succeeded(回答已生成) / 记录但回答空 / failed(可重试)
+  ├─ 无 material_ids → 阻止提交“请先选择至少一个材料”
+  └─ 空问题 → 阻止提交
+threads: loading → ready / empty“暂无问答历史” / failed
+thread detail: loading → messages + citations / failed（动态 .thread-detail 安全文案）
+citation：可用 → material-detail 深链；source_deleted/source_unavailable → aria-disabled
+```
+
+`threadGeneration` 丢弃过期线程列表；`sbSubmit.once('qa-ask')` 合并重复提问。
+
+#### `tasks.html`（只读观测参与者）
+
+```text
+无 task_id → list loading / ready / empty / failed（#tasks）
+有 task_id → detail loading → 每 3s 轮询 GET /api/tasks/{id} → ready/failed
+cancel/retry → confirm → POST → 重读详情
+```
+
+### 5.3 元素行为表
+
+| 页面 / selector | 条件与行为 | 成功结果 | 失败与恢复 |
+|---|---|---|---|
+| `materials.html #upload-area` | 点击/拖放/键盘打开 `#file-input` | 触发上传 | 拖入无效仍被拦截，不离开页面 |
+| `materials.html #file-input` | 多选，accept `.pdf,.txt,.md,.docx,.pptx` | 单文件走 `/api/materials`，多文件走 `/api/materials/batch` | 超限/格式拒绝逐项安全文案 |
+| `materials.html #folder-btn` / `#folder-input` | 文件夹批量导入（webkitdirectory） | 与批量导入一致 | 同批量 |
+| `materials.html #upload-status` | 上传与解析结果展示（aria-live） | 已导入 n/total（success 计 n） | 失败可重试；8s 后隐藏 |
+| `materials.html #status-filter` / `#search-input` / `#apply-filters` | 按状态/关键词重读列表 | 列表与分页更新 | `#error` 安全文案 |
+| `materials.html #view-deleted` | active ↔ deleted 回收站视图 | 切换列表与标题 | `#error` 安全文案 |
+| `materials.html #select-page` / `.material-select` | 当前页/逐项勾选 | 计数更新、导出按钮解锁 | exportBusy 时禁用 |
+| `materials.html #export-originals` / `#export-texts` / `#export-all` | 按选择导出 ZIP | 下载 `studybuddy-materials.zip` | `#export-status` 安全文案 + 可重试 |
+| `materials.html #items li a` | 进入材料详情 | `/app/material-detail.html?material=ID` | 链接始终指向详情 |
+| `materials.html #items li .btn 删除/恢复` | 软删除/恢复单份材料 | 列表重读 | alert 安全文案，不伪造状态 |
+| `materials.html #pagination` | 上一页/下一页 | 按 offset 重读 | 无更多时禁用 |
+| `material-detail.html #content` | 材料信息（解析状态/解析器/文本长度/片段数/提示） | meta-grid 渲染 | `#state` 安全失败 |
+| `material-detail.html #body` / `#body-location` | 解析正文与引用定位 | 正文 + `#citation-location` 高亮 | 引用失败安全文案 |
+| `material-detail.html #index` | 建立 AI 索引（POST，幂等） | 重读真实索引状态（ready/empty） | 安全文案 + 可重试 |
+| `material-detail.html #index-status` | 索引状态展示（aria-live） | ready/empty/not_indexed 明示 | 暂不可用安全文案 |
+| `material-detail.html #qa` | 进入问答 | `/app/qa.html?material=ID` | 材料不可用时禁用 |
+| `material-detail.html #export-original` / `#export-text` | 下载原件/解析文本 | 文件下载 | 材料不可用时禁用 |
+| `qa.html #provider-status` | Provider 能力检查 | configured/demo/not_configured 明示 | 检查失败可刷新重试 |
+| `qa.html #qa-form` / `#question` / `#materials` / `#retrieval-mode` | 提问表单 | 空问题或空材料范围阻止提交 | `#submit-status` 安全文案 |
+| `qa.html #index-btn` | 对输入的材料 ID 逐个建立索引 | 索引建立完成 | 安全文案 + 可重试 |
+| `qa.html #submit-btn` | 提交问题（幂等 key + sbSubmit.once） | 回答已生成 + 线程重读 | 安全文案 + 可重试 |
+| `qa.html #thread-status` / `#threads` | 问答历史 | 线程列表 / 空态 | failed 安全文案 |
+| 动态“查看对话与引用” / `.thread-detail` | 内联加载线程消息与引用 | 消息 + `.citation-link` | 详情失败安全文案 |
+| 动态 `.citation-link` | 引用深链回材料 | `material-detail.html?material&citation=` | source_deleted/unavailable 置 `aria-disabled` |
+| `tasks.html #tasks` / `#task-detail` | 任务列表 / 详情（轮询） | 状态徽章 + 进度条 | `#error` / `#detail-error` 安全文案 |
+| `tasks.html` 动态取消/重试 | 对 pending/running 取消、failed/cancelled 重试 | confirm → POST → 重读 | alert 安全文案 |
+
+### 5.4 API 契约对照表
+
+| 行为 | Method / endpoint | 请求与响应关键字段 | 前端规则 / 失败语义 | 分类 |
+|---|---|---|---|---|
+| 导入单文件 | `POST /api/materials` | multipart `file`；返回 `{original_name,status,material_id,extraction_id,text_length,span_count,error_code,warnings}` | 材料记录的 `empty` 结果仍保留在列表中，但导入计数只把 `status==='success'` 计为成功；rejected/failed 逐项显示安全文案；单文件成功计数以 `status==='success'` 判定 | direct |
+| 批量导入 | `POST /api/materials/batch` | multipart `files[]`；返回 `{total,success,empty,rejected,failed,items[]}` | 以 `items` 中 `status==='success'` 计数 | direct |
+| 列表/搜索 | `GET /api/materials` | `status/q/limit/offset`；返回 `{items,total,has_more}` | 分页；`invalid_status`/`invalid_pagination` 安全文案 | direct |
+| 回收站 | `GET /api/materials/deleted` | `limit/offset`；返回 `{items,total,has_more}` | 独立视图与分页 | direct |
+| 批量导出 | `POST /api/materials/export` | `{material_ids,include_original,include_text}`；返回 ZIP | zip 校验失败抛 `export_failed`；413/404 安全文案 | direct |
+| 删除材料 | `DELETE /api/materials/{id}` | 204 | 软删除；`material_not_found`/`material_delete_failed` 安全文案 | direct |
+| 恢复材料 | `POST /api/materials/{id}/restore` | 返回材料 payload | `material_not_deleted`/`material_restore_failed` 安全文案 | direct |
+| 永久删除 | `POST /api/materials/{id}/purge` | 返回 `{status:'purged'}` | 破坏性；正式 UI 不开放，`decision-needed` | unreached |
+| 材料详情 | `GET /api/materials/{id}` | 返回材料/解析字段 `{id,original_name,media_type,status,parser_id,parser_version,text,warnings,error_code,extraction_id,created_at,updated_at,spans[]}`；后端剔除 `stored_path` | 前端对未返回的 `text_length/span_count` 使用 0 fallback；404 `material_not_found` 安全文案 | direct |
+| 下载原件 | `GET /api/materials/{id}/original` | 文件流 | 404 安全处理 | direct |
+| 导出文本 | `GET /api/materials/{id}/text` | text/plain | 404 安全处理 | direct |
+| 索引状态 | `GET /api/materials/{id}/ai-index` | 返回 `{status:not_indexed\|ready\|empty\|deleted,revision_id,chunk_count,is_current}` | 页面并行读取并明示状态 | direct |
+| 建立索引 | `POST /api/materials/{id}/ai-index` | 幂等 key；返回 `{status,chunk_count,embedding:{status,embedded_count},revision_id,index_operation_id}` | 成功后重读真实状态；失败安全文案可重试 | direct |
+| 异步入队 | `POST /api/materials/{id}/ai-index/tasks` | 幂等 key；202 返回 task | 正式 UI 用同步路径；`tasks.html` 只读观测；`intentional` | unreached |
+| 检索 | `POST /api/retrieval` | 内部管道 | `qa/ask` 内部调用，不直接暴露；`intentional` | unreached |
+| 上下文组装 | `POST /api/context/assemble` | 内部管道 | `qa/ask` 内部调用；`intentional` | unreached |
+| 引用校验 | `POST /api/citation/validate` | 内部管道 | 详情页走 `GET /api/qa/citations/{id}`；`intentional` | unreached |
+| AI 能力 | `GET /api/ai/capabilities` | 返回 `{llm_status,llm_provider,llm_model,llm_verification_status,ocr,asr,capture}` | qa.html/capture.html 读取；不显示 secret/path | direct |
+| 提问 | `POST /api/qa/ask` | `{question,material_ids,retrieval_mode,allow_retrieval_fallback,top_k}` + 幂等 key；返回 `{status,thread_id,answer_text,citations[],retrieval{}}` | 空材料范围阻止；`retrieval_empty`/`retrieval_not_ready`/Provider 错误安全文案；幂等回放 | direct |
+| 线程列表 | `GET /api/qa/threads` | 返回 `{items:[{id,title,updated_at,message_count,status}]}` | 历史加载/空态/failed | direct |
+| 线程详情 | `GET /api/qa/threads/{id}` | 返回 `{messages:[{role,content,citations[]}]}` | 内联展开；失败安全文案 | direct |
+| 引用详情 | `GET /api/qa/citations/{id}` | 返回 `{status:valid\|source_unavailable\|source_deleted,start_offset,end_offset,excerpt,span_ids}` | valid 高亮正文；失效安全提示 | direct |
+| 任务列表 | `GET /api/tasks` | `status/task_kind` 过滤；返回 `{items,total}` | tasks.html 列表 | direct |
+| 任务详情 | `GET /api/tasks/{id}` | 返回 `{task_id,operation_type,status,error_code,retry_count,progress_percent,...}` | 详情轮询 | direct |
+| 任务取消/重试 | `POST /api/tasks/{id}/cancel` / `.../retry` | 返回任务 | confirm 后触发，重读 | direct |
+
+### 5.5 Browser evidence
+
+`/app` 直接证据（scoped-browser-pass）：
+
+- `browser_p1_1_material_qa_migration.spec.js` `5 passed`：索引 + 正文展示；问答引用深链 + `#citation-location` 高亮；引用不可用安全文案（不泄露 traceback/path）；**单文件导入成功计数 1/1**；**空文本索引状态如实显示“没有可用于问答的正文”**（本轮新增 2 项）。
+- `browser_frontend_page_contract.spec.js`：materials 空态与失败安全、material-detail 缺 ID 安全、qa 空历史与 Provider 状态、线程过期响应丢弃。
+- `browser_e2e.spec.js` / `browser_static_core.spec.js` / `browser_learning_pages.spec.js` / `browser_migration.spec.js`：导入 → 问答 → 学习全链与跨页导航。
+- `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
+- 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
+
+`legacy_only`（等价证据尚未迁移到 `/app`）：`browser_qa.spec.js`（10 test）、`browser_material_pagination/search/recycle_bin/export/management/multi_file_import/folder_import` 仍只访问 `/legacy`，不能证明正式页面等价能力；迁移归入 P2-FE-3。
+
+`not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
 ## 6. 场景 3：练习会话 → 结果 → 错题复盘
 
-状态：`design-skeleton / not_frozen`。既有 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 提供单场景事实，但本阶段仍需把 practice、result、review 和正式导航整合为第 2 节四件套。
+状态：`design-skeleton / not_frozen`。既有 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 已覆盖练习会话/结果/复盘单场景的绝大部分真实事实，本合同**不复制其内容**：场景 3 的流程、状态与 API 对照以该文档为事实源，本节只记录本合同范围内的整合骨架、参与页面和待补齐项。场景 3 的正式实施（P2-FE-2 冻结后、P2-FE-3）以本节 + 既有 practice-workflow-contract 共同为基线。
 
 ### 6.1 已确认骨架
 
@@ -313,8 +470,8 @@ practice.html 选择练习/建议
 ## 7. 实施顺序与门禁
 
 1. 场景 1 已作为模板完成实现与专项 browser evidence。
-2. 冻结场景 2 的四件套，再迁移材料与 QA 的 `/legacy` evidence，并按合同实施正式页缺口。
-3. 冻结场景 3 的四件套，再补 attempt、weak-points 和归档行为。
+2. 场景 2 四件套已冻结（本切片，2026-09-05）；`/legacy` 材料与 QA evidence 迁移、以及合同认定的正式页缺口（purge 决策、异步索引入口决策）进入 P2-FE-3 独立可用切片。
+3. 冻结场景 3 的四件套（以 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 为事实源），再补 attempt、weak-points 和归档行为。
 4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片。
 5. 每个切片运行 focused tests；涉及 API、存储或基础设施时运行完整 backend；所有用户页面变更运行完整 Chromium。
 6. 每次交付运行 contract audit、frontend inventory scan、source-size 和治理测试；更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。
