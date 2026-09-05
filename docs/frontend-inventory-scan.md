@@ -5,7 +5,7 @@
 - 静态页面：21
 - 共享资源：6
 - 浏览器 spec：53
-- 去重后前端调用的 API 端点：102
+- 去重后前端调用的 API 端点：103
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
 ## 1. 页面资源与内联脚本
@@ -21,7 +21,7 @@
 | materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 10.2 KiB | 0 | 6 | 14 |
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
-| plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 4.3 KiB | 0 | 2 | 5 |
+| plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.5 KiB | 0 | 3 | 6 |
 | plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 19.5 KiB | 0 | 21 | 12 |
 | practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 6 |
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 5 |
@@ -32,7 +32,7 @@
 | settings-provider.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 10.2 KiB | 0 | 5 | 6 |
 | settings.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.5 KiB | 0 | 4 | 5 |
 | tasks.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.8 KiB | 0 | 4 | 7 |
-| today.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.0 KiB | 0 | 6 | 10 |
+| today.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 6 | 10 |
 
 ## 2. 共享资源
 
@@ -122,6 +122,7 @@
 | `/api/study/plans/{id}/items/{id}/progress` | plan-detail.html, plans.html |
 | `/api/study/plans/{id}/items/{id}/sources` | plans.html |
 | `/api/study/plans/{id}/items/{id}/sources/{id}` | plans.html |
+| `/api/study/plans/{id}/progress` | plan-detail.html |
 | `/api/study/plans/{id}/rhythm` | plans.html, today.html |
 | `/api/study/plans/{id}/rhythm/allocations` | plans.html, today.html |
 | `/api/study/plans/{id}/rhythm/allocations/{id}` | plans.html |
@@ -167,7 +168,7 @@
 | materials.html | material-detail.html, today.html | 6 | `#folder-btn` 选择文件夹导入<br>`#apply-filters` 应用筛选<br>`#view-deleted` 查看回收站<br>`#export-originals` 导出原件 ZIP<br>`#export-texts` 导出文本 ZIP<br>`#export-all` 导出全部 ZIP | input: `#file-input`, `#folder-input`, `#search-input`, `#select-page`<br>select: `#status-filter` |
 | note-detail.html | notes.html, today.html | 1 | `#retry-note` 重试 | 无 |
 | notes.html | today.html | 5 | `#link-module` 关联到当前笔记<br>`#generate` 生成 AI 草稿<br>`#refresh` 刷新列表<br>`#refresh-notes` 刷新笔记 | form: `#create-form`<br>input: `#material-id`, `#module-title`, `#new-title`, `#topic`<br>textarea: `#new-content` |
-| plan-detail.html | plans.html, today.html | 1 | `#retry-plan` 重试 | 无 |
+| plan-detail.html | plans.html, today.html | 2 | `#retry-plan` 重试<br>`#refresh-progress` 刷新进度 | 无 |
 | plans.html | plan-detail.html, today.html | 6 | `#refresh-all` 刷新数据<br>`#source-refresh` 刷新来源<br>`#source-add` 添加来源链接 | form: `#goal-form`, `#module-form`, `#plan-form`<br>input: `#goal-title`, `#module-title`, `#plan-title`<br>select: `#plan-goal`, `#source-candidate`, `#source-owner` |
 | practice-result.html | practice.html, review.html, today.html | 1 | `#retry-result` 重试 | 无 |
 | practice-session.html | practice.html, today.html | 1 | `#retry-session` 重试 | 无 |
@@ -178,7 +179,7 @@
 | settings-provider.html | today.html | 6 | `#provider-copy` 复制到剪贴板（仅内存生成）<br>`#provider-test` 测试 Provider 连接<br>`#provider-save` 保存此配置<br>`#email-copy` 复制 Email 环境变量（仅内存生成）<br>`#email-test` 测试 Email 连接<br>`#email-save` 保存此配置 | form: `#email-form`, `#provider-form`<br>input: `#email-timeout`, `#feishu-webhook`, `#provider-id`, `#provider-key`, `#provider-model`, `#provider-timeout`, `#provider-url`, `#smtp-host`, `#smtp-password`, `#smtp-port`, `#smtp-recipient`, `#smtp-sender`, `#smtp-username`<br>select: `#email-channel`, `#provider-type`, `#smtp-secure` |
 | settings.html | capture.html, settings-provider.html, tasks.html, today.html | 8 | `#capability-recheck` 重新自检<br>`#capability-refresh` 刷新状态<br>`#ai-save` 保存并生效<br>`#ai-clear` 清除已保存配置<br>`#embedding-save` 保存并生效<br>`#embedding-clear` 清除已保存配置<br>`#local-save` 保存并生效<br>`#local-clear` 清除本机组件覆盖 | form: `#ai-form`, `#embedding-form`, `#local-form`<br>input: `#ai-key`, `#ai-model`, `#ai-provider`, `#ai-url`, `#asr-model`, `#asr-runtime`, `#embedding-key`, `#embedding-model`, `#embedding-provider`, `#embedding-url`, `#ocr-root`<br>select: `#ocr-enabled` |
 | tasks.html | today.html | 2 | `#apply-filters` 应用筛选<br>`#refresh-btn` 刷新 | select: `#status-filter` |
-| today.html | 无 | 1 | `#retry-today` 重新加载 | 无 |
+| today.html | plans.html | 1 | `#retry-today` 重新加载 | 无 |
 
 ## 5. 页面 → 覆盖 spec
 
@@ -193,7 +194,7 @@
 | materials.html | 14 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | note-detail.html | 4 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
 | notes.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js |
-| plan-detail.html | 5 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
+| plan-detail.html | 6 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_plans_today_progress.spec.js |
 | plans.html | 12 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_2_source_links.spec.js, browser_p1_4_plan_status_race.spec.js, browser_plans_today_progress.spec.js |
 | practice-result.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_practice_workflow.spec.js |
 | practice-session.html | 5 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_practice_workflow.spec.js |
@@ -239,8 +240,8 @@
 ## 8. 后端路由覆盖分类
 
 - 去重路由路径：137
-- `direct`（页面/共享模块出现字面调用）：98
-- `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：12
+- `direct`（页面/共享模块出现字面调用）：99
+- `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：11
 - `unreached`（未找到任何前端引用）：27
 
 `dynamic` 不是结论，只是静态扫描的不确定项；`unreached` 也不等于能力缺失，部分是 `/legacy` 专用、运维/探活端点或按安全边界有意不暂开。逐项定性属于第二阶段设计合同。
@@ -253,7 +254,7 @@
 | `study_capture_reports.py` | 0 | 4 | `GET /api/study/reports/{report_id}/delivery-attempts` — unreached<br>`GET /api/study/reports/{report_id}/preview` — unreached<br>`POST /api/study/capture-sessions/{capture_id}/archive` — unreached<br>`POST /api/study/reports/{report_id}/delivery` — unreached |
 | `study_learning.py` | 0 | 4 | `GET /api/study/decks/{deck_id}` — unreached<br>`GET /api/study/exercise-sets/{set_id}` — unreached<br>`GET /api/study/exercises/{exercise_id}/attempts` — unreached<br>`POST /api/study/exercises/{exercise_id}/attempts` — unreached |
 | `study_notes.py` | 5 | 4 | `POST /api/study/notes/{note_id}/archive` — dynamic<br>`POST /api/study/notes/{note_id}/blocks` — dynamic<br>`POST /api/study/notes/{note_id}/confirm` — dynamic<br>`POST /api/study/notes/{note_id}/reject` — dynamic<br>`PUT /api/study/notes/{note_id}/blocks` — dynamic<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` — unreached<br>`PATCH /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`POST /api/study/notes/{note_id}/blocks/{block_id}/sources` — unreached |
-| `study_plans.py` | 5 | 7 | `GET /api/study/plans/{plan_id}/progress` — dynamic<br>`POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic<br>`DELETE /api/study/plans/{plan_id}/dependencies/{dependency_id}` — unreached<br>`GET /api/study/goals/{goal_id}` — unreached<br>`GET /api/study/modules/{module_id}` — unreached<br>`PATCH /api/study/goals/{goal_id}` — unreached<br>`PATCH /api/study/modules/{module_id}` — unreached<br>`POST /api/study/goals/{goal_id}/archive` — unreached<br>`POST /api/study/modules/{module_id}/archive` — unreached |
+| `study_plans.py` | 4 | 7 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic<br>`DELETE /api/study/plans/{plan_id}/dependencies/{dependency_id}` — unreached<br>`GET /api/study/goals/{goal_id}` — unreached<br>`GET /api/study/modules/{module_id}` — unreached<br>`PATCH /api/study/goals/{goal_id}` — unreached<br>`PATCH /api/study/modules/{module_id}` — unreached<br>`POST /api/study/goals/{goal_id}/archive` — unreached<br>`POST /api/study/modules/{module_id}/archive` — unreached |
 | `study_practice.py` | 3 | 3 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`GET /api/study/cram-goals/{goal_id}` — unreached<br>`GET /api/study/weak-points` — unreached<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
 | `study_rhythm.py` | 0 | 1 | `GET /api/study/plans/{plan_id}/rhythm/export` — unreached |
 | `system.py` | 0 | 3 | `GET /api/health` — unreached<br>`GET /api/liveness` — unreached<br>`GET /api/metrics` — unreached |
