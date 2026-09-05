@@ -440,7 +440,7 @@ cancel/retry → confirm → POST → 重读详情
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；P2-FE-3-3 的 `browser_p2_fe3_qa_app.spec.js` 已迁移核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置），P2-FE-3-4 的 `browser_p2_fe3_qa_threads_errors_app.spec.js` 已迁移线程工作区多会话切换与 rate-limit/unavailable 错误映射到正式 `/app`。剩余 `legacy_only` 维度：opt-in 真实外部 provider 路径、P6-C 跨页连接完整等价证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
+`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；P2-FE-3-3 的 `browser_p2_fe3_qa_app.spec.js` 已迁移核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置），P2-FE-3-4 的 `browser_p2_fe3_qa_threads_errors_app.spec.js` 已迁移线程工作区多会话切换与 rate-limit/unavailable 错误映射，P2-FE-3-5 的 `browser_p2_fe3_qa_p6c_app.spec.js` 已迁移 P6-C 跨页连接（材料列表勾选→QA 预选→引用跳转→材料详情→导出→返回，删除后导出禁用）到正式 `/app`。剩余 `legacy_only` 维度：opt-in 真实外部 provider 路径、P6-C 其余细节等完整等价证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 

@@ -66,9 +66,10 @@
 <label class="batch-select-all"><input id="select-page" type="checkbox"> 选择当前页</label>
 <span id="selection-status" class="muted" role="status" aria-live="polite">已选择 0 份</span>
 <div class="action-group">
+<button class="btn btn-primary" id="goto-qa" type="button" disabled>前往问答</button>
 <button class="btn" id="export-originals" type="button" disabled>导出原件 ZIP</button>
 <button class="btn" id="export-texts" type="button" disabled>导出文本 ZIP</button>
-<button class="btn btn-primary" id="export-all" type="button" disabled>导出全部 ZIP</button>
+<button class="btn" id="export-all" type="button" disabled>导出全部 ZIP</button>
 </div>
 </div>
 <div id="export-status" class="notice mt-16" hidden role="status" aria-live="polite"></div>
@@ -101,7 +102,7 @@ const batchExport=document.querySelector('#batch-export');
 const selectPage=document.querySelector('#select-page');
 const selectionStatus=document.querySelector('#selection-status');
 const exportStatus=document.querySelector('#export-status');
-const exportButtons=[document.querySelector('#export-originals'),document.querySelector('#export-texts'),document.querySelector('#export-all')];
+const exportButtons=[document.querySelector('#goto-qa'),document.querySelector('#export-originals'),document.querySelector('#export-texts'),document.querySelector('#export-all')];
 
 let currentView='active';
 let currentStatus='';
@@ -136,6 +137,11 @@ updateSelection()
 });
 
 document.querySelector('#export-originals').onclick=()=>exportSelected(true,false);
+document.querySelector('#goto-qa').onclick=()=>{
+  if(selectedIds.size===0)return;
+  const ids=Array.from(selectedIds).join(',');
+  window.location.href=`/app/qa.html?material=${encodeURIComponent(ids)}`
+};
 document.querySelector('#export-texts').onclick=()=>exportSelected(false,true);
 document.querySelector('#export-all').onclick=()=>exportSelected(true,true);
 
