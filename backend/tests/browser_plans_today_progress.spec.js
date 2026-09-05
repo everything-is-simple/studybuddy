@@ -66,3 +66,32 @@ test('today excludes unallocated, inactive, and foreign-plan items',async({page,
   await expect(page.locator('#tasks')).not.toContainText('未分配项目');
   await expect(page.locator('#tasks')).not.toContainText('暂停项目');
 });
+
+test('today surfaces a retry control that recovers every section after a failed load',async({page,request})=>{
+  const goal=await post(request,'/api/study/goals',{title:'重试目标'});
+  const plan=await post(request,'/api/study/plans',{title:'重试计划',goal_id:goal.id});
+  const item=await post(request,`/api/study/plans/${plan.id}/items`,{title:'重试学习项'});
+  await post(request,`/api/study/plans/${plan.id}/confirm`,{});
+  await post(request,`/api/study/plans/${plan.id}/activate`,{});
+  const localDate=today();
+  await request.put(`${BASE}/api/study/plans/${plan.id}/rhythm`,{data:{cadence:'daily',timezone:'Asia/Shanghai',period_start:localDate,target_minutes:60}});
+  await post(request,`/api/study/plans/${plan.id}/rhythm/allocations`,{item_id:item.id,local_date:localDate,planned_minutes:25});
+
+  let failing=true;
+  await page.route('**/api/study/plans',route=>failing
+    ?route.fulfill({status:500,contentType:'application/json',body:'{"detail":"H:/studybuddy/secret_traceback"}'})
+    :route.continue());
+  await page.goto(`${BASE}/app/today.html`);
+  const retry=page.getByRole('button',{name:'重新加载'});
+  await expect(retry).toBeVisible();
+  for(const id of ['#summary-status','#weekly-status','#task-status'])await expect(page.locator(id)).toContainText('请求失败');
+  await expect(page.locator('body')).not.toContainText(/secret_traceback|Traceback|SELECT |H:\\|H:\//);
+
+  failing=false;
+  await retry.click();
+  await expect(page.locator('#tasks .task-item').filter({hasText:'重试学习项'})).toContainText(`计划 25 分钟 · ${localDate}`);
+  await expect(page.locator('#summary')).toContainText('重试计划');
+  await expect(page.locator('#weekly-trend .rhythm-card')).toHaveCount(7);
+  await expect(retry).toBeHidden();
+  for(const id of ['#summary-status','#weekly-status','#task-status'])await expect(page.locator(id)).toBeHidden();
+});
