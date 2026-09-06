@@ -5,7 +5,7 @@
 - 静态页面：21
 - 共享资源：6
 - 浏览器 spec：61
-- 去重后前端调用的 API 端点：104
+- 去重后前端调用的 API 端点：109
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
 ## 1. 页面资源与内联脚本
@@ -21,8 +21,8 @@
 | materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 12.7 KiB | 0 | 6 | 18 |
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
-| plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.5 KiB | 0 | 3 | 6 |
-| plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 19.5 KiB | 0 | 21 | 12 |
+| plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.3 KiB | 0 | 3 | 7 |
+| plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 23.9 KiB | 0 | 26 | 12 |
 | practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 7 |
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 6 |
 | practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 9 |
@@ -32,7 +32,7 @@
 | settings-provider.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 10.2 KiB | 0 | 5 | 6 |
 | settings.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.5 KiB | 0 | 4 | 5 |
 | tasks.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.8 KiB | 0 | 4 | 7 |
-| today.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 6 | 10 |
+| today.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 6 | 11 |
 
 ## 2. 共享资源
 
@@ -98,12 +98,16 @@
 | `/api/study/exercises/{id}/reject` | exercises.html |
 | `/api/study/exercises?<query>` | exercises.html |
 | `/api/study/goals` | plans.html |
+| `/api/study/goals/{id}` | plans.html |
+| `/api/study/goals/{id}/archive` | plans.html |
 | `/api/study/mistakes` | practice.html, review.html |
 | `/api/study/mistakes/{id}` | review.html |
 | `/api/study/mistakes/{id}/archive` | review.html |
 | `/api/study/mistakes/{id}/feedback` | review.html |
 | `/api/study/mistakes/{id}/redo` | review.html |
 | `/api/study/modules` | notes.html, plans.html |
+| `/api/study/modules/{id}` | plans.html |
+| `/api/study/modules/{id}/archive` | plans.html |
 | `/api/study/modules/{id}/sources` | plans.html |
 | `/api/study/modules/{id}/sources/{id}` | plans.html |
 | `/api/study/notes` | notes.html |
@@ -117,6 +121,7 @@
 | `/api/study/plans/{id}` | plan-detail.html, plans.html, today.html |
 | `/api/study/plans/{id}/archive` | plans.html |
 | `/api/study/plans/{id}/dependencies` | plans.html |
+| `/api/study/plans/{id}/dependencies/{id}` | plans.html |
 | `/api/study/plans/{id}/items` | plans.html |
 | `/api/study/plans/{id}/items/{id}` | plans.html |
 | `/api/study/plans/{id}/items/{id}/archive` | plans.html |
@@ -195,7 +200,7 @@
 | materials.html | 18 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_materials_app.spec.js, browser_p2_fe3_materials_management_app.spec.js, browser_p2_fe3_qa_p6c_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | note-detail.html | 4 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
 | notes.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js |
-| plan-detail.html | 6 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_plans_today_progress.spec.js |
+| plan-detail.html | 7 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_plans_today_progress.spec.js |
 | plans.html | 12 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_2_source_links.spec.js, browser_p1_4_plan_status_race.spec.js, browser_plans_today_progress.spec.js |
 | practice-result.html | 7 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe3_practice_result_app.spec.js, browser_practice_workflow.spec.js |
 | practice-session.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe3_practice_session_app.spec.js, browser_practice_workflow.spec.js |
@@ -206,7 +211,7 @@
 | settings-provider.html | 6 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | settings.html | 5 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | tasks.html | 7 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_3_task_list.spec.js, browser_p1_4_c4_5_measurement.spec.js |
-| today.html | 10 | browser_e2e.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_4_weekly_trend.spec.js, browser_plans_today_progress.spec.js, browser_static_core.spec.js, browser_static_pages.spec.js |
+| today.html | 11 | browser_e2e.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_4_weekly_trend.spec.js, browser_plans_today_progress.spec.js, browser_static_core.spec.js, browser_static_pages.spec.js |
 
 ## 6. 未被任何 spec 引用的页面
 
@@ -241,9 +246,9 @@
 ## 8. 后端路由覆盖分类
 
 - 去重路由路径：137
-- `direct`（页面/共享模块出现字面调用）：99
+- `direct`（页面/共享模块出现字面调用）：104
 - `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：11
-- `unreached`（未找到任何前端引用）：27
+- `unreached`（未找到任何前端引用）：22
 
 `dynamic` 不是结论，只是静态扫描的不确定项；`unreached` 也不等于能力缺失，部分是 `/legacy` 专用、运维/探活端点或按安全边界有意不暂开。逐项定性属于第二阶段设计合同。
 
@@ -255,7 +260,7 @@
 | `study_capture_reports.py` | 0 | 4 | `GET /api/study/reports/{report_id}/delivery-attempts` — unreached<br>`GET /api/study/reports/{report_id}/preview` — unreached<br>`POST /api/study/capture-sessions/{capture_id}/archive` — unreached<br>`POST /api/study/reports/{report_id}/delivery` — unreached |
 | `study_learning.py` | 0 | 4 | `GET /api/study/decks/{deck_id}` — unreached<br>`GET /api/study/exercise-sets/{set_id}` — unreached<br>`GET /api/study/exercises/{exercise_id}/attempts` — unreached<br>`POST /api/study/exercises/{exercise_id}/attempts` — unreached |
 | `study_notes.py` | 5 | 4 | `POST /api/study/notes/{note_id}/archive` — dynamic<br>`POST /api/study/notes/{note_id}/blocks` — dynamic<br>`POST /api/study/notes/{note_id}/confirm` — dynamic<br>`POST /api/study/notes/{note_id}/reject` — dynamic<br>`PUT /api/study/notes/{note_id}/blocks` — dynamic<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` — unreached<br>`PATCH /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`POST /api/study/notes/{note_id}/blocks/{block_id}/sources` — unreached |
-| `study_plans.py` | 4 | 7 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic<br>`DELETE /api/study/plans/{plan_id}/dependencies/{dependency_id}` — unreached<br>`GET /api/study/goals/{goal_id}` — unreached<br>`GET /api/study/modules/{module_id}` — unreached<br>`PATCH /api/study/goals/{goal_id}` — unreached<br>`PATCH /api/study/modules/{module_id}` — unreached<br>`POST /api/study/goals/{goal_id}/archive` — unreached<br>`POST /api/study/modules/{module_id}/archive` — unreached |
+| `study_plans.py` | 4 | 0 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic |
 | `study_practice.py` | 3 | 3 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`GET /api/study/cram-goals/{goal_id}` — unreached<br>`GET /api/study/weak-points` — unreached<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
 | `study_rhythm.py` | 0 | 1 | `GET /api/study/plans/{plan_id}/rhythm/export` — unreached |
 | `system.py` | 0 | 3 | `GET /api/health` — unreached<br>`GET /api/liveness` — unreached<br>`GET /api/metrics` — unreached |

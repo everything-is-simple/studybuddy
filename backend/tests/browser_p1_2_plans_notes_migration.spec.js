@@ -41,6 +41,65 @@ test('P1-2 plans page creates a goal, plan draft, item and rhythm settings',asyn
   await expect(page.getByRole('button',{name:'调整'})).toHaveCount(1);
 });
 
+
+test('P2-FE-4 plans page exposes goal/module management and dependency removal across Today and detail',async({page})=>{
+  const goal=await (await page.request.post(`${BASE}/api/study/goals`,{data:{title:'归档前目标'}})).json();
+  const module=await (await page.request.post(`${BASE}/api/study/modules`,{data:{title:'归档前模块'}})).json();
+  const plan=await (await page.request.post(`${BASE}/api/study/plans`,{data:{goal_id:goal.id,title:'跨页计划'}})).json();
+  const first=await (await page.request.post(`${BASE}/api/study/plans/${plan.id}/items`,{data:{title:'前置学习项',module_id:module.id}})).json();
+  const second=await (await page.request.post(`${BASE}/api/study/plans/${plan.id}/items`,{data:{title:'后置学习项',module_id:module.id}})).json();
+  const dependency=await (await page.request.post(`${BASE}/api/study/plans/${plan.id}/dependencies`,{data:{predecessor_item_id:first.id,successor_item_id:second.id}})).json();
+  const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  expect((await page.request.put(`${BASE}/api/study/plans/${plan.id}/rhythm`,{data:{cadence:'daily',timezone:'Asia/Shanghai',period_start:localDate,target_minutes:30}})).ok()).toBe(true);
+  expect((await page.request.post(`${BASE}/api/study/plans/${plan.id}/rhythm/allocations`,{data:{item_id:second.id,local_date:localDate,planned_minutes:30}})).ok()).toBe(true);
+
+  await page.goto(`${BASE}/app/plans.html?plan_id=${plan.id}`);
+  await expect(page.locator('#plan-detail')).toContainText('前置学习项 → 后置学习项');
+  await page.getByRole('button',{name:'查看目标'}).click();
+  await expect(page.locator('#goal-detail')).toContainText('归档前目标');
+  let renameAttempts=0;
+  await page.route('**/api/study/goals/*',route=>{if(route.request().method()==='PATCH'&&renameAttempts++===0)return route.fulfill({status:500,contentType:'application/json',body:JSON.stringify({detail:'private_backend_error'})});return route.continue()});
+  page.once('dialog',dialog=>dialog.accept('已重命名目标'));
+  await page.getByRole('button',{name:'重命名目标'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('计划操作失败，可重试');
+  await expect(page.locator('#goals')).toContainText('归档前目标');
+  page.once('dialog',dialog=>dialog.accept('已重命名目标'));
+  await page.getByRole('button',{name:'重命名目标'}).click();
+  await page.unroute('**/api/study/goals/*');
+  await expect(page.locator('#plan-status')).toHaveText('目标已重命名');
+  await expect(page.locator('#goals')).toContainText('已重命名目标');
+  await page.getByRole('button',{name:'查看模块'}).click();
+  await expect(page.locator('#module-detail')).toContainText('归档前模块');
+  page.once('dialog',dialog=>dialog.accept('已重命名模块'));
+  await page.getByRole('button',{name:'重命名模块'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('模块已重命名');
+  await expect(page.locator('#modules')).toContainText('已重命名模块');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'删除依赖'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('依赖已删除');
+  await expect(page.locator('#plan-detail')).not.toContainText('前置学习项 → 后置学习项');
+  expect((await (await page.request.get(`${BASE}/api/study/plans/${plan.id}`)).json()).dependencies.find(row=>row.id===dependency.id)).toBeFalsy();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'归档目标'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('目标已归档');
+  await expect(page.locator('#plan-goal option',{hasText:'已重命名目标'})).toHaveCount(0);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'归档模块'}).click();
+  await expect(page.locator('#plan-status')).toHaveText('模块已归档');
+  await expect(page.locator('#modules')).not.toContainText('已重命名模块');
+  await page.getByRole('button',{name:'确认草稿'}).click();
+  await expect(page.locator('#plan-status')).toContainText('确认草稿成功');
+  await page.getByRole('button',{name:'激活计划'}).click();
+  await expect(page.locator('#plan-status')).toContainText('激活计划成功');
+
+  await page.goto(`${BASE}/app/plan-detail.html?plan_id=${plan.id}`);
+  await expect(page.locator('#plan-detail')).toContainText('跨页计划');
+  await expect(page.locator('#plan-detail')).toContainText('暂无学习项依赖');
+  await page.goto(`${BASE}/app/today.html`);
+  await expect(page.locator('#summary')).toContainText('跨页计划');
+  await expect(page.locator('body')).not.toContainText(/traceback|private_backend|H:\\|SELECT/i);
+});
+
 test('P1-2 notes page creates, edits, confirms and archives a user note',async({page})=>{
   await createMaterial(page);
   await page.goto(`${BASE}/app/notes.html`);
