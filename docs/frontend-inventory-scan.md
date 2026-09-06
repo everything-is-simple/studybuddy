@@ -18,7 +18,7 @@
 | exercises.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.1 KiB | 0 | 8 | 8 |
 | index.html | 无 | 无 | 否 | 1 | 0.0 KiB | 0 | 0 | 1 |
 | material-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.2 KiB | 0 | 5 | 11 |
-| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.5 KiB | 0 | 6 | 18 |
+| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 12.7 KiB | 0 | 6 | 18 |
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
 | plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.5 KiB | 0 | 3 | 6 |

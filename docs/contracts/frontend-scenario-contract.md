@@ -259,7 +259,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 
 ## 5. 场景 2：材料导入 → 解析 → 索引 → 问答（带引用）
 
-状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、真实解析状态筛选、回收站、删除/恢复和批量 ZIP 导出，以及正式 `/app/qa.html` 的材料选择、索引前置、提问、引用跳转、失败重试、重复提交保护和窄屏状态已有范围化 browser evidence）；`legacy_only`（QA 线程工作区多会话切换、rate-limit/unavailable 映射等等价证据和部分历史材料管理证据仍保留在 `/legacy`）；`not_exposed`（异步入队、purge）。
+状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、真实解析状态筛选、重命名、回收站、删除/恢复和批量 ZIP 导出，以及正式 `/app/qa.html` 的材料选择、索引前置、提问、线程切换、引用跳转、失败重试、rate-limit/unavailable 映射、重复提交保护和窄屏状态已有范围化 browser evidence）；`not_verified`（opt-in 真实外部 Provider 及尚未逐项迁移的历史细节）；`not_exposed`（异步入队、purge）。
 
 参与页面（真实代码已核实）：
 
@@ -379,6 +379,7 @@ cancel/retry → confirm → POST → 重读详情
 | `materials.html #select-page` / `.material-select` | 当前页/逐项勾选 | 计数更新、导出按钮解锁 | exportBusy 时禁用 |
 | `materials.html #export-originals` / `#export-texts` / `#export-all` | 按选择导出 ZIP | 下载 `studybuddy-materials.zip` | `#export-status` 安全文案 + 可重试 |
 | `materials.html #items li a` | 进入材料详情 | `/app/material-detail.html?material=ID` | 链接始终指向详情 |
+| `materials.html #items li .btn 重命名` / `#mutation-status` | active 材料可输入新名称；空名称前端拦截；PATCH 期间同材料锁定 | 成功后重读列表并可刷新恢复 | 页内安全失败文案，保留原名称，可直接重试 |
 | `materials.html #items li .btn 删除/恢复` | 软删除/恢复单份材料 | 列表重读 | alert 安全文案，不伪造状态 |
 | `materials.html #pagination` | 上一页/下一页 | 按 offset 重读 | 无更多时禁用 |
 | `material-detail.html #content` | 材料信息（解析状态/解析器/文本长度/片段数/提示） | meta-grid 渲染 | `#state` 安全失败 |
@@ -407,6 +408,7 @@ cancel/retry → confirm → POST → 重读详情
 | 列表/搜索 | `GET /api/materials` | `status/q/limit/offset`；返回 `{items,total,has_more}` | 分页；`invalid_status`/`invalid_pagination` 安全文案；`qa.html #material-picker` 以 `limit=100&offset=0` 读取可选材料 | direct |
 | 回收站 | `GET /api/materials/deleted` | `limit/offset`；返回 `{items,total,has_more}` | 独立视图与分页 | direct |
 | 批量导出 | `POST /api/materials/export` | `{material_ids,include_original,include_text}`；返回 ZIP | zip 校验失败抛 `export_failed`；413/404 安全文案 | direct |
+| 重命名材料 | `PATCH /api/materials/{id}` | `{original_name}`；返回剔除 `stored_path` 的材料 payload | `invalid_filename` 前端/后端拒绝；`material_update_failed` 页内安全提示；同材料 mutation lock 阻止重复请求 | direct |
 | 删除材料 | `DELETE /api/materials/{id}` | 204 | 软删除；`material_not_found`/`material_delete_failed` 安全文案 | direct |
 | 恢复材料 | `POST /api/materials/{id}/restore` | 返回材料 payload | `material_not_deleted`/`material_restore_failed` 安全文案 | direct |
 | 永久删除 | `POST /api/materials/{id}/purge` | 返回 `{status:'purged'}` | 破坏性；正式 UI 不开放，`decision-needed` | unreached |
@@ -440,7 +442,7 @@ cancel/retry → confirm → POST → 重读详情
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；P2-FE-3-3 的 `browser_p2_fe3_qa_app.spec.js` 已迁移核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置），P2-FE-3-4 的 `browser_p2_fe3_qa_threads_errors_app.spec.js` 已迁移线程工作区多会话切换与 rate-limit/unavailable 错误映射，P2-FE-3-5 的 `browser_p2_fe3_qa_p6c_app.spec.js` 已迁移 P6-C 跨页连接（材料列表勾选→QA 预选→引用跳转→材料详情→导出→返回，删除后导出禁用）到正式 `/app`。剩余 `legacy_only` 维度：opt-in 真实外部 provider 路径、P6-C 其余细节等完整等价证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。正式材料页状态筛选已由 `browser_p2_fe3_materials_app.spec.js` 覆盖：真实导入 `success` 与 `empty` 材料后分别筛选并确认结果，旧 `available/indexing` 选项不再出现。
+历史 legacy evidence 仍保留但不再整体计作当前缺口：当前 61 个 spec 中有 22 个文件包含 `/legacy` 引用，其中混合了兼容入口测试、已由 `/app` 等价覆盖的旧回归、opt-in 真实 Provider 测试和真正未迁移动作，不能沿用初始盘点的“19 spec / 56 test”作为剩余量。`browser_qa.spec.js` 的核心问答、线程切换、rate-limit/unavailable 和 P6-C 跨页维度，已分别由三个 P2-FE-3 正式 spec 覆盖；未重跑的真实外部 Provider 维度保持 `not_verified`。材料旧测试继续验证 `/legacy` 兼容性；正式材料专项现覆盖导入/搜索/分页/真实状态筛选、**重命名成功与失败重试、重复提交保护、刷新恢复**、回收站、删除/恢复和三种 ZIP 导出。永久 purge 仍是 `intentional/not_exposed`，不因旧页面存在而迁移。下一批继续以操作级对照寻找“旧 UI 可操作而 `/app` 缺失”的真实差异。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
