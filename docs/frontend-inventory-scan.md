@@ -4,7 +4,7 @@
 
 - 静态页面：21
 - 共享资源：6
-- 浏览器 spec：59
+- 浏览器 spec：60
 - 去重后前端调用的 API 端点：104
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
@@ -23,7 +23,7 @@
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
 | plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.5 KiB | 0 | 3 | 6 |
 | plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 19.5 KiB | 0 | 21 | 12 |
-| practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 6 |
+| practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 7 |
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 6 |
 | practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 9 |
 | qa.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.6 KiB | 0 | 6 | 14 |
@@ -197,7 +197,7 @@
 | notes.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js |
 | plan-detail.html | 6 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_plans_today_progress.spec.js |
 | plans.html | 12 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_2_source_links.spec.js, browser_p1_4_plan_status_race.spec.js, browser_plans_today_progress.spec.js |
-| practice-result.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_practice_workflow.spec.js |
+| practice-result.html | 7 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe3_practice_result_app.spec.js, browser_practice_workflow.spec.js |
 | practice-session.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe3_practice_session_app.spec.js, browser_practice_workflow.spec.js |
 | practice.html | 9 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_practice_recommendations.spec.js |
 | qa.html | 14 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_app.spec.js, browser_p2_fe3_qa_threads_errors_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |

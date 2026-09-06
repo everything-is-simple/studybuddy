@@ -395,10 +395,10 @@ revision → chunks → retrieval → citations → Q&A
   场景 3“练习会话 → 结果 → 错题复盘”不在本轮实施，继续以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源，待后续完成总合同整合与按场景实施。
   尚未完成：P2-FE-3 剩余 `/legacy` 等价证据迁移与内联脚本模块化；场景 2 的异步索引正式入口和 purge 是否开放仍按合同保持边界。
 
-- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：场景 2 五批正式证据迁移已完成；场景 3 第一批已完成。**
-  本轮（P2-FE-3-6）完成：新增 `browser_p2_fe3_practice_session_app.spec.js`（4 test），覆盖练习会话核心路径（draft→start→active 状态迁移、session not found 安全错误、390px 无横向溢出、键盘焦点可见）。场景 3 第一批覆盖 `practice-session.html` 加载、状态显示、开始练习按钮、响应式布局和无障碍键盘操作。
-  本轮回归：focused browser `4 passed`；backend `622 passed, 3 skipped`（1 既有 flaky 单独重跑通过）；完整 Chromium `195 passed, 4 skipped`（2 既有 flaky 单独重跑 1 passed，`browser_phase9c.spec.js` 6.1h 超时为既有问题）。
-  场景 2 五批总计 15 test，状态为 `implemented / scoped-browser-pass`。场景 3 第一批 4 test 已完成，等待第二批（practice-result 与跨页）和第三批（review 错题复盘）。
+- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：场景 2 五批已完成；场景 3 第二批已完成。**
+  本轮（P2-FE-3-7）完成：新增 `browser_p2_fe3_practice_result_app.spec.js`（4 test），覆盖练习结果与跨页导航（result 读取、result→review 跨页、刷新恢复非敏感上下文、DOM/URL 不含答案 key）。场景 3 第二批覆盖 `practice-result.html` 结果显示、跨页导航、隐私保护和状态恢复。
+  本轮回归：focused browser `8 passed`（场景 3 两批共 8 test）；backend `623 passed, 3 skipped`；完整 Chromium `199 passed, 4 skipped`（205 tests，2 既有 flaky 单独重跑都通过）。
+  场景 2 五批总计 15 test，场景 3 前两批总计 8 test，状态均为 `implemented / scoped-browser-pass`。等待第三批（review 错题复盘）。
   尚未完成：
   1. **`/legacy` 证据迁移**：`browser_qa.spec.js` 与部分历史材料管理 spec 仍为 legacy-only 证据；正式 QA 线程工作区多会话切换、rate-limit/unavailable 映射、真实外部 provider 路径仍 `not_verified`。purge 继续保持 `not_exposed`，异步 `/ai-index/tasks` 队列 UI 保持 `not_exposed`。
   2. **内联脚本模块化**：当前页面业务逻辑仍以内联脚本为主，必须继续按完整场景拆分，不能孤立迁移。
