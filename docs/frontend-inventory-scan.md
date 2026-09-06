@@ -4,8 +4,8 @@
 
 - 静态页面：21
 - 共享资源：6
-- 浏览器 spec：64
-- 去重后前端调用的 API 端点：113
+- 浏览器 spec：65
+- 去重后前端调用的 API 端点：114
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
 ## 1. 页面资源与内联脚本
@@ -25,7 +25,7 @@
 | plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 24.7 KiB | 0 | 27 | 12 |
 | practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 7 |
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 6 |
-| practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 9 |
+| practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 10 |
 | qa.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.6 KiB | 0 | 6 | 14 |
 | reports.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 4.1 KiB | 0 | 4 | 6 |
 | review.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 8 | 8 |
@@ -39,7 +39,7 @@
 | 资源 | 体积 | API 数 | 直接 fetch |
 |---|---:|---:|---:|
 | `js/api.js` | 6.8 KiB | 0 | 1 |
-| `js/cram.js` | 7.9 KiB | 4 | 0 |
+| `js/cram.js` | 8.5 KiB | 5 | 0 |
 | `js/shell.js` | 1.7 KiB | 1 | 0 |
 | `js/state.js` | 1.9 KiB | 0 | 0 |
 | `css/app.css` | 17.8 KiB | 0 | 0 |
@@ -82,6 +82,7 @@
 | `/api/study/cards/{id}/reviews` | cards.html |
 | `/api/study/cards?<query>` | cards.html |
 | `/api/study/cram-goals` | js/cram.js |
+| `/api/study/cram-goals/{id}` | js/cram.js |
 | `/api/study/cram-goals/{id}/sessions` | js/cram.js |
 | `/api/study/cram-goals/{id}/sessions/{id}/result` | practice-result.html |
 | `/api/study/cram-goals/{id}/{id}` | js/cram.js |
@@ -208,7 +209,7 @@
 | plans.html | 12 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_2_source_links.spec.js, browser_p1_4_plan_status_race.spec.js, browser_plans_today_progress.spec.js |
 | practice-result.html | 7 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe3_practice_result_app.spec.js, browser_practice_workflow.spec.js |
 | practice-session.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe3_practice_session_app.spec.js, browser_practice_workflow.spec.js |
-| practice.html | 9 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_practice_recommendations.spec.js |
+| practice.html | 10 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe4_cram_goal_detail_app.spec.js, browser_practice_recommendations.spec.js |
 | qa.html | 14 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_app.spec.js, browser_p2_fe3_qa_threads_errors_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | reports.html | 6 | browser_a3_pages.spec.js, browser_b3_report_c5.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe4_report_preview_app.spec.js |
 | review.html | 8 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js, browser_p2_fe3_review_app.spec.js, browser_p2_fe4_weak_points_app.spec.js, browser_practice_workflow.spec.js |
@@ -250,9 +251,9 @@
 ## 8. 后端路由覆盖分类
 
 - 去重路由路径：137
-- `direct`（页面/共享模块出现字面调用）：108
+- `direct`（页面/共享模块出现字面调用）：109
 - `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：11
-- `unreached`（未找到任何前端引用）：18
+- `unreached`（未找到任何前端引用）：17
 
 `dynamic` 不是结论，只是静态扫描的不确定项；`unreached` 也不等于能力缺失，部分是 `/legacy` 专用、运维/探活端点或按安全边界有意不暂开。逐项定性属于第二阶段设计合同。
 
@@ -265,6 +266,6 @@
 | `study_learning.py` | 0 | 3 | `GET /api/study/decks/{deck_id}` — unreached<br>`GET /api/study/exercises/{exercise_id}/attempts` — unreached<br>`POST /api/study/exercises/{exercise_id}/attempts` — unreached |
 | `study_notes.py` | 5 | 4 | `POST /api/study/notes/{note_id}/archive` — dynamic<br>`POST /api/study/notes/{note_id}/blocks` — dynamic<br>`POST /api/study/notes/{note_id}/confirm` — dynamic<br>`POST /api/study/notes/{note_id}/reject` — dynamic<br>`PUT /api/study/notes/{note_id}/blocks` — dynamic<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` — unreached<br>`PATCH /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`POST /api/study/notes/{note_id}/blocks/{block_id}/sources` — unreached |
 | `study_plans.py` | 4 | 0 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic |
-| `study_practice.py` | 3 | 2 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`GET /api/study/cram-goals/{goal_id}` — unreached<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
+| `study_practice.py` | 3 | 1 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
 | `system.py` | 0 | 3 | `GET /api/health` — unreached<br>`GET /api/liveness` — unreached<br>`GET /api/metrics` — unreached |
 
