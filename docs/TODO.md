@@ -395,11 +395,11 @@ revision → chunks → retrieval → citations → Q&A
   场景 3“练习会话 → 结果 → 错题复盘”以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源；其正式 `/app` 三批 scoped evidence 已在 P2-FE-3 完成，未覆盖的 exercise-set、weak-points、cram 详情和真实外部 Provider 路径继续保持未验证或未开放。
   尚未完成：P2-FE-3 剩余 `/legacy` 等价证据迁移与内联脚本模块化；场景 2 的异步索引正式入口和 purge 是否开放仍按合同保持边界。
 
-- [ ] P2-FE-3 / P2-FE-4：按合同实施并迁移剩余 legacy 操作。**进行中：场景 2、场景 3 已完成当前 scoped 证据；P2-FE-4 已迁移材料重命名，以及场景 1 的目标/模块查看、重命名、归档与依赖删除。**
+- [ ] P2-FE-3 / P2-FE-4：按合同实施并迁移剩余 legacy 操作。**进行中：场景 2、场景 3 已完成当前 scoped 证据；P2-FE-4 已迁移材料重命名，以及场景 1 的目标/模块查看、重命名、归档、依赖删除与只读学习节奏 JSON 导出。**
   本轮（P2-FE-3-8）完成：新增 `browser_p2_fe3_review_app.spec.js`（5 test），覆盖真实错题列表与状态标签、详情/反馈、再次练习、归档、空状态/失败重试、隐私边界、窄屏和键盘焦点；`state.js` 补齐 `open/in_review/fixed/reopened` 中文标签。场景 3 三批共 13 test，状态为 `implemented / scoped-browser-pass`。
   本轮回归：正式材料专项 `8 passed`、重命名后端 focused `3 passed`；完整 Chromium 第二次串行执行 `208 passed, 4 skipped`（212 tests）。第一次完整长跑出现 3 个页面/服务生命周期波动失败，三项单独重跑均通过，随后第二次完整执行全绿。合同审计、inventory、源码尺寸检查和 `git diff --check` 均通过。最近后端完整快照为 `623 passed, 3 skipped`，本前端切片未重跑后端全量。
   场景 2 正式材料/QA 相关证据继续保持 `implemented / scoped-browser-pass`：材料专项现为 8 test（导入/分页/状态筛选/失败重试、重命名、回收站、导出、删除恢复），QA 专项 9 test（核心问答、线程与错误映射、P6-C 跨页）；场景 3 三批总计 13 test。此前三场景串行复核为 35 passed；本轮材料专项为 8 passed。状态均仅限 `implemented / scoped-browser-pass`。
-  P2-FE-4 当前完成项：材料重命名保持既有 `implement_then_migrate` 结果；本轮确认目标/模块查看、重命名、归档和计划依赖删除同属既有 API 的正式 UI 缺口，已迁移到 `/app/plans.html`。归档只移除新的选择入口而不伪造改写已有计划/学习项；`plan-detail.html` 展示真实依赖或空态。新增正式浏览器跨页证据覆盖查看、重命名、归档、删除依赖、刷新/API 持久性、计划详情和 Today active allocation 一致性；`browser_p1_2_plans_notes_migration.spec.js` 为 `4 passed`，Phase 9A API/domain focused backend 为 `12 passed`。无 API/schema/migration 变化；purge 继续保持 `intentional/not_exposed`。
+  P2-FE-4 当前完成项：材料重命名保持既有 `implement_then_migrate` 结果；本轮确认目标/模块查看、重命名、归档、计划依赖删除和只读 rhythm export 同属既有 API 的正式 UI 缺口，已迁移到 `/app/plans.html`。归档只移除新的选择入口而不伪造改写已有计划/学习项；`plan-detail.html` 展示真实依赖或空态。节奏导出保持本地 JSON 下载，不提供网络外发；失败显示安全文案并可重试，成功文件按 `studybuddy-rhythm.json` 校验。新增正式浏览器跨页证据覆盖查看、重命名、归档、删除依赖、刷新/API 持久性、节奏导出成功/失败重试/下载内容、计划详情和 Today active allocation 一致性；`browser_p1_2_plans_notes_migration.spec.js` 为 `5 passed`，Phase 9A API/domain focused backend 为 `12 passed`。无 API/schema/migration 变化；purge 继续保持 `intentional/not_exposed`。
   尚未完成：
   1. **剩余操作级差异分类与迁移**：当前有 22 个 spec 文件包含 `/legacy`，但它们混合兼容入口、已由 `/app` 覆盖的旧回归、opt-in real smoke 和真实缺口；不能沿用初始“19 spec / 56 test”作为当前剩余量。目标/模块管理与依赖删除已迁移；下一批从报告预览、rhythm export 等候选中按真实用户价值和 API/UI 差异选择。
   2. **真实能力边界**：真实外部 Provider UI 仍需匹配的用户授权配置；purge 与异步 `/ai-index/tasks` 队列 UI 保持 `not_exposed`。

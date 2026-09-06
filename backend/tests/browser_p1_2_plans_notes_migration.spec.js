@@ -100,6 +100,38 @@ test('P2-FE-4 plans page exposes goal/module management and dependency removal a
   await expect(page.locator('body')).not.toContainText(/traceback|private_backend|H:\\|SELECT/i);
 });
 
+test('P2-FE-4 formal plans exports local rhythm JSON and recovers from failure',async({page})=>{
+  const goal=await (await page.request.post(`${BASE}/api/study/goals`,{data:{title:'导出目标'}})).json();
+  const plan=await (await page.request.post(`${BASE}/api/study/plans`,{data:{goal_id:goal.id,title:'可导出节奏计划'}})).json();
+  const item=await (await page.request.post(`${BASE}/api/study/plans/${plan.id}/items`,{data:{title:'导出学习项'}})).json();
+  const date='2026-09-01';
+  expect((await page.request.put(`${BASE}/api/study/plans/${plan.id}/rhythm`,{data:{cadence:'daily',timezone:'Asia/Shanghai',period_start:date,target_minutes:60}})).ok()).toBe(true);
+  expect((await page.request.post(`${BASE}/api/study/plans/${plan.id}/rhythm/allocations`,{data:{item_id:item.id,local_date:date,planned_minutes:30}})).ok()).toBe(true);
+  await page.goto(`${BASE}/app/plans.html?plan_id=${plan.id}`);
+  const exportButton=page.locator('#rhythm-export');
+  await expect(exportButton).toBeVisible();
+  let exportAttempts=0;
+  await page.route(`**/api/study/plans/${plan.id}/rhythm/export?format=json`,route=>{
+    if(exportAttempts++===0)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'private_backend_error'})});
+    return route.continue();
+  });
+  await exportButton.click();
+  await expect(page.locator('#plan-status')).toHaveText('节奏导出失败，请重试');
+  await expect(exportButton).toBeEnabled();
+  const downloadPromise=page.waitForEvent('download');
+  await exportButton.click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toBe('studybuddy-rhythm.json');
+  const payload=JSON.parse(await download.createReadStream().then(async stream=>{let body='';for await(const chunk of stream)body+=chunk;return body}));
+  expect(payload.plan.id).toBe(plan.id);
+  expect(payload.allocations[0].planned_minutes).toBe(30);
+  await expect(page.locator('#plan-status')).toHaveText('节奏导出已开始');
+  await page.reload();
+  await expect(page.locator('#rhythm-export')).toBeEnabled();
+  await expect(page.locator('#plan-detail')).toContainText('导出学习项');
+  await expect(page.locator('body')).not.toContainText(/traceback|private_backend|H:\\|SELECT/i);
+});
+
 test('P1-2 notes page creates, edits, confirms and archives a user note',async({page})=>{
   await createMaterial(page);
   await page.goto(`${BASE}/app/notes.html`);

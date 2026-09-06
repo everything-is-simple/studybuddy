@@ -5,7 +5,7 @@
 - 静态页面：21
 - 共享资源：6
 - 浏览器 spec：61
-- 去重后前端调用的 API 端点：109
+- 去重后前端调用的 API 端点：110
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
 ## 1. 页面资源与内联脚本
@@ -22,7 +22,7 @@
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
 | plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.3 KiB | 0 | 3 | 7 |
-| plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 23.9 KiB | 0 | 26 | 12 |
+| plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 24.7 KiB | 0 | 27 | 12 |
 | practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 7 |
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 6 |
 | practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 9 |
@@ -132,6 +132,7 @@
 | `/api/study/plans/{id}/rhythm` | plans.html, today.html |
 | `/api/study/plans/{id}/rhythm/allocations` | plans.html, today.html |
 | `/api/study/plans/{id}/rhythm/allocations/{id}` | plans.html |
+| `/api/study/plans/{id}/rhythm/export?<query>` | plans.html |
 | `/api/study/plans/{id}/rhythm/summary` | today.html |
 | `/api/study/plans/{id}/rhythm/weekly-trend` | today.html |
 | `/api/study/plans/{id}/{id}` | plans.html |
@@ -246,9 +247,9 @@
 ## 8. 后端路由覆盖分类
 
 - 去重路由路径：137
-- `direct`（页面/共享模块出现字面调用）：104
+- `direct`（页面/共享模块出现字面调用）：105
 - `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：11
-- `unreached`（未找到任何前端引用）：22
+- `unreached`（未找到任何前端引用）：21
 
 `dynamic` 不是结论，只是静态扫描的不确定项；`unreached` 也不等于能力缺失，部分是 `/legacy` 专用、运维/探活端点或按安全边界有意不暂开。逐项定性属于第二阶段设计合同。
 
@@ -262,6 +263,5 @@
 | `study_notes.py` | 5 | 4 | `POST /api/study/notes/{note_id}/archive` — dynamic<br>`POST /api/study/notes/{note_id}/blocks` — dynamic<br>`POST /api/study/notes/{note_id}/confirm` — dynamic<br>`POST /api/study/notes/{note_id}/reject` — dynamic<br>`PUT /api/study/notes/{note_id}/blocks` — dynamic<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` — unreached<br>`PATCH /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`POST /api/study/notes/{note_id}/blocks/{block_id}/sources` — unreached |
 | `study_plans.py` | 4 | 0 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic |
 | `study_practice.py` | 3 | 3 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`GET /api/study/cram-goals/{goal_id}` — unreached<br>`GET /api/study/weak-points` — unreached<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
-| `study_rhythm.py` | 0 | 1 | `GET /api/study/plans/{plan_id}/rhythm/export` — unreached |
 | `system.py` | 0 | 3 | `GET /api/health` — unreached<br>`GET /api/liveness` — unreached<br>`GET /api/metrics` — unreached |
 
