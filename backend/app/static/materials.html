@@ -81,7 +81,7 @@
 </main>
 </div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
-<script src="/app/js/shell.js"></script><script src="/app/js/list.js"></script>
+<script src="/app/js/shell.js"></script><script src="/app/js/list.js"></script><script src="/app/js/forms.js"></script>
 <script>
 (function(){
 const pageRequest=sbApi.setPageScope('materials');
@@ -382,7 +382,7 @@ async function renameMaterial(id,name,button){
 if(mutationBusy.has(id))return;
 const requested=prompt('输入新的材料名称',name);
 if(requested===null)return;
-const nextName=requested.trim();
+const nextName=sbForm.value({value:requested});
 mutationStatus.hidden=false;
 if(!nextName){
 mutationStatus.className='notice warn';
