@@ -46,7 +46,7 @@
 </main>
 </div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
-<script src="/app/js/shell.js"></script>
+<script src="/app/js/shell.js"></script><script src="/app/js/list.js"></script>
 <script>
 (function(){
 const pageRequest=sbApi.setPageScope('exercises');
@@ -64,7 +64,7 @@ let setGeneration=0;
 let exerciseGeneration=0;
 let setDetailGeneration=0;
 
-function text(value){return typeof value==='string'?value:''}function button(label,handler){const node=document.createElement('button');node.className='btn';node.type='button';node.textContent=label;node.onclick=handler;return node}
+function button(label,handler){const node=document.createElement('button');node.className='btn';node.type='button';node.textContent=label;node.onclick=handler;return node}
 
 const typeLabels={
 multiple_choice:'选择题',
@@ -86,13 +86,12 @@ setStatus.textContent='暂无练习集';
 return
 }
 setStatus.hidden=true;
-items.forEach(set=>{
-const li=document.createElement('li');
-li.className='set-item';
+sbList.render(sets,items,set=>{
+const li=sbList.createItem('li',['set-item']);
 if(set.id===selectedSetId)li.classList.add('selected');
 const title=document.createElement('div');
 title.className='item-title';
-title.textContent=text(set.title)||'未命名练习集';
+title.textContent=sbList.text(set.title)||'未命名练习集';
 li.append(title);
 const meta=document.createElement('div');
 meta.className='muted';
@@ -105,7 +104,7 @@ badge.textContent=sbState.label(set.status||'draft');
 badge.classList.add('badge-spaced');
 li.append(badge);
 li.onclick=()=>selectSet(set.id,set.title);
-sets.append(li)
+return li
 })
 }catch(e){
 setStatus.className='notice warn';
@@ -115,7 +114,7 @@ setStatus.textContent=sbApi.safeError(e)
 
 async function selectSet(setId,title){
 selectedSetId=setId;
-setTitle.textContent=text(title)||'练习详情';
+setTitle.textContent=sbList.text(title)||'练习详情';
 setSummary.hidden=false;
 setSummary.textContent='正在加载练习集详情...';
 retrySetDetail.hidden=true;
@@ -141,15 +140,14 @@ return
 }
 exerciseStatus.hidden=true;
 exercises.hidden=false;
-items.forEach(exercise=>{
-const li=document.createElement('li');
-li.className='exercise-item';
+sbList.render(exercises,items,exercise=>{
+const li=sbList.createItem('li',['exercise-item']);
 const meta=document.createElement('div');
 meta.className='exercise-meta';
 const info=document.createElement('div');
 const prompt=document.createElement('div');
 prompt.className='item-title';
-prompt.textContent=text(exercise.prompt)||'题目';
+prompt.textContent=sbList.text(exercise.prompt)||'题目';
 info.append(prompt);
 const type=document.createElement('span');
 type.className='exercise-type';
@@ -169,7 +167,7 @@ source.textContent='来源: '+sbState.source(exercise.source_status);
 li.append(source)
 }
 li.onclick=()=>viewExercise(exercise.id);
-exercises.append(li)
+return li
 })
 }catch(e){
 exerciseStatus.className='notice warn';
@@ -177,7 +175,7 @@ exerciseStatus.textContent=sbApi.safeError(e)
 }
 }
 
-async function loadSetDetail(setId){const run=++setDetailGeneration;try{const data=await sbApi.json(`/api/study/exercise-sets/${encodeURIComponent(setId)}`,{signal:pageRequest.signal});if(run!==setDetailGeneration||setId!==selectedSetId)return;const count=Array.isArray(data.exercises)?data.exercises.length:0;setTitle.textContent=text(data.title)||'练习详情';setSummary.className='muted';setSummary.textContent=`共 ${count} 道题 · ${sbState.label(data.status||'active')}`;retrySetDetail.hidden=true}catch(error){if(run!==setDetailGeneration||setId!==selectedSetId)return;setSummary.className='notice warn';setSummary.textContent=sbApi.safeError(error);retrySetDetail.hidden=false}}async function editExercise(exercise){const form=document.createElement('form');form.className='stack';const prompt=document.createElement('input');prompt.value=text(exercise.prompt);prompt.setAttribute('aria-label','题目内容');const explanation=document.createElement('textarea');explanation.value=text(exercise.explanation);explanation.setAttribute('aria-label','题目解析');const save=document.createElement('button');save.className='btn';save.type='submit';save.textContent='保存题目';form.append(prompt,explanation,save);form.onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id),{method:'PATCH',body:JSON.stringify({prompt:prompt.value,options:exercise.options||[],explanation:explanation.value,citations:exercise.citations||[]}),signal:pageRequest.signal}),'题目已保存')};return form}
+async function loadSetDetail(setId){const run=++setDetailGeneration;try{const data=await sbApi.json(`/api/study/exercise-sets/${encodeURIComponent(setId)}`,{signal:pageRequest.signal});if(run!==setDetailGeneration||setId!==selectedSetId)return;const count=Array.isArray(data.exercises)?data.exercises.length:0;setTitle.textContent=sbList.text(data.title)||'练习详情';setSummary.className='muted';setSummary.textContent=`共 ${count} 道题 · ${sbState.label(data.status||'active')}`;retrySetDetail.hidden=true}catch(error){if(run!==setDetailGeneration||setId!==selectedSetId)return;setSummary.className='notice warn';setSummary.textContent=sbApi.safeError(error);retrySetDetail.hidden=false}}async function editExercise(exercise){const form=document.createElement('form');form.className='stack';const prompt=document.createElement('input');prompt.value=sbList.text(exercise.prompt);prompt.setAttribute('aria-label','题目内容');const explanation=document.createElement('textarea');explanation.value=sbList.text(exercise.explanation);explanation.setAttribute('aria-label','题目解析');const save=document.createElement('button');save.className='btn';save.type='submit';save.textContent='保存题目';form.append(prompt,explanation,save);form.onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id),{method:'PATCH',body:JSON.stringify({prompt:prompt.value,options:exercise.options||[],explanation:explanation.value,citations:exercise.citations||[]}),signal:pageRequest.signal}),'题目已保存')};return form}
 async function viewExercise(exerciseId){
 selectedExerciseId=exerciseId;
 exerciseDetail.replaceChildren();
@@ -191,7 +189,7 @@ const container=document.createElement('div');
 const prompt=document.createElement('div');
 prompt.innerHTML='<strong>题目：</strong>';
 const promptText=document.createElement('span');
-promptText.textContent=text(exercise.prompt);
+promptText.textContent=sbList.text(exercise.prompt);
 prompt.append(promptText);
 container.append(prompt);
 const type=document.createElement('div');
@@ -208,7 +206,7 @@ options.innerHTML='<strong>选项：</strong>';
 const ol=document.createElement('ol');
 exercise.options.forEach(opt=>{
 const li=document.createElement('li');
-li.textContent=text(opt);
+li.textContent=sbList.text(opt);
 ol.append(li)
 });
 options.append(ol);
