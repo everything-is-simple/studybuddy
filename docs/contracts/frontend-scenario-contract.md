@@ -112,7 +112,7 @@ loading(goals/modules/plans) → ready
 failed → `#plan-status` 安全文案 → `#refresh-all` → loading
 ```
 
-编辑 confirmed 计划会按后端语义回到 draft。只有 active plan 可接受进度事件。依赖当前可添加但不可在正式 UI 删除；这是已确认缺口。
+编辑 confirmed 计划会按后端语义回到 draft。只有 active plan 可接受进度事件。目标/模块均可查看、重命名和归档；归档仅阻止新的计划/模块选择，不会改写既有计划或学习项。draft/confirmed 计划会展示当前依赖，并可显式删除。
 
 #### `today.html`
 
@@ -158,8 +158,10 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 页面 / selector | 条件与行为 | 成功结果 | 失败与恢复 |
 |---|---|---|---|
 | `plans.html #goal-form` / `#goal-title` | 新建目标 | 目标进入 `#goals` | `#goal-status` 安全文案 |
+| 动态“查看目标 / 重命名目标 / 归档目标” | 仅 active 目标显示；查看显示真实标题、状态和关联计划数 | 重命名、归档后重读列表；归档目标移出 `#plan-goal` | 空名称前端拒绝；失败显示安全文案；归档不改写既有计划 |
+| 动态“查看模块 / 重命名模块 / 归档模块” | 仅 active 模块显示；查看显示真实标题、状态和关联学习项数 | 重命名、归档后重读列表；归档模块移出新建学习项/来源 owner 的选择 | 空名称前端拒绝；失败显示安全文案；归档不改写既有学习项 |
 | `plans.html #plan-form` / `#plan-title` / `#plan-goal` | 基于现有目标创建 draft plan | 计划进入 `#plans` 并可选中 | `#plan-status` 安全文案 |
-| `plans.html #plan-detail` | 选中计划后显示编辑、状态迁移、计划项、依赖、来源、节奏 | 所有 mutation 完成后重读当前计划 | mutation busy 时阻止重复提交；失败可重试 |
+| 动态“删除依赖” | draft/confirmed 计划展示真实 predecessor → successor；确认后才删除 | DELETE 后重读当前计划；计划详情显示依赖空态 | busy 阻止重复提交；失败保留原依赖并可重试 |
 | 动态“确认草稿 / 激活计划 / 暂停计划 / 恢复计划 / 完成计划” | 仅按当前 plan 状态出现 | 使用正式 transition endpoint | 冲突显示计划操作失败，不伪造状态 |
 | 动态 `#rhythm-timezone` / `#rhythm-period-start` / `#rhythm-target-minutes` | 保存节奏设置 | 后续 Today 按该 timezone 算日期 | 映射 invalid timezone/date/target 错误 |
 | 动态 `#rhythm-item` / `#rhythm-date` / `#rhythm-minutes` | 添加某日分配 | allocation 可调整或删除 | duplicate/limit/edit-not-allowed 明确提示 |
@@ -214,9 +216,9 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 
 ## 4. `unreached` 路由逐项定性
 
-当前扫描结果：165 条 route 声明、137 个唯一 path key；`direct=99`、`dynamic=11`、`unreached=27`。
+当前扫描结果：165 条 route 声明、137 个唯一 path key；`direct=104`、`dynamic=11`、`unreached=22`。
 
-27 与 31 不矛盾：`classify_routes()` 按 path key 分类，同一路径的 GET/PATCH 或 GET/POST 会合并为一个 key；展开 HTTP method 后共 31 行。下表每行对应一个唯一 path key，并在“方法”列保留所有方法。
+22 与 26 不矛盾：`classify_routes()` 按 path key 分类，同一路径的 GET/PATCH 或 GET/POST 会合并为一个 key；展开 HTTP method 后共 26 行。下表保留每个已定性的 path key（包括本轮已迁移条目），并在“方法”列保留所有方法。
 
 定性值：
 
@@ -242,11 +244,11 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 13 | DELETE+PATCH `/api/study/notes/{note_id}/blocks/{block_id}` | intentional | notes 正式页以 `PUT .../blocks` 整体提交有序 blocks；避免两套并行编辑语义。 |
 | 14 | POST `/api/study/notes/{note_id}/blocks/{block_id}/sources` | intentional | 同上，block 来源随整体 blocks 合同提交。 |
 | 15 | DELETE `/api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` | intentional | 同上，不单独暴露细粒度删除。 |
-| 16 | GET+PATCH `/api/study/goals/{goal_id}` | gap | Plans 可创建目标但不能查看/重命名现有目标。 |
-| 17 | POST `/api/study/goals/{goal_id}/archive` | gap | Plans 缺目标归档入口和依赖影响提示。 |
-| 18 | GET+PATCH `/api/study/modules/{module_id}` | gap | Plans 可创建模块但不能查看/重命名现有模块。 |
-| 19 | POST `/api/study/modules/{module_id}/archive` | gap | Plans 缺模块归档入口和来源影响提示。 |
-| 20 | DELETE `/api/study/plans/{plan_id}/dependencies/{dependency_id}` | gap | Plans 可添加依赖但不展示可删除的现有依赖。 |
+| 16 | GET+PATCH `/api/study/goals/{goal_id}` | migrated | Plans 已提供查看/重命名；正式跨页 evidence 覆盖。 |
+| 17 | POST `/api/study/goals/{goal_id}/archive` | migrated | Plans 提供确认归档，归档目标移出创建计划选择。 |
+| 18 | GET+PATCH `/api/study/modules/{module_id}` | migrated | Plans 已提供查看/重命名；归档不改写既有学习项。 |
+| 19 | POST `/api/study/modules/{module_id}/archive` | migrated | Plans 提供确认归档，归档模块移出新建学习项和来源 owner 选择。 |
+| 20 | DELETE `/api/study/plans/{plan_id}/dependencies/{dependency_id}` | migrated | Plans 展示真实依赖，确认后删除；plan-detail 明示真实依赖或空态。 |
 | 21 | GET `/api/study/cram-goals/{goal_id}` | deferred | 冲刺目标详情工作区后续项；当前状态 mutation 由 `cram.js` 动态调用。 |
 | 22 | GET `/api/study/weak-points` | gap | 场景 3 的错题复盘需要可见薄弱点汇总。 |
 | 23 | POST `/api/study/practice-sessions/{session_id}/archive` | deferred | 会话归档应与场景 3 的完成/结果/复盘状态机一起实施。 |
