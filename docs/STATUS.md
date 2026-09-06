@@ -1,6 +1,6 @@
 # StudyBuddy Status
 
-> 更新：2026-09-06（**P2-FE-B1 列表渲染模块提取完成**：创建 `js/list.js` 共享模块（4.3 KiB），迁移 materials.html 和 exercises.html 的列表渲染、空态、分页逻辑；materials 内联脚本减少 516 字节；完整回归 218 passed, 4 skipped。**前端模块化方向启动**，逐步提取重复逻辑到共享模块，降低维护成本。）
+> 更新：2026-09-06（**P2-FE-B2 表单验证模块提取完成**：创建 js/forms.js 共享模块（4.6 KiB），迁移 materials.html 和 plans.html 的表单验证逻辑；plans 内联脚本减少 29 字节；完整回归 218 passed, 4 skipped。**前端模块化持续推进**，表单验证逻辑已集中到共享模块。）
 >
 > **2026-09-01 执行方向修订**（保留）：证据梯子 → 可用优先。新增 P2-USE 主线；原 P1-6-3-1～P1-6-3-7 取消立项。
 >
