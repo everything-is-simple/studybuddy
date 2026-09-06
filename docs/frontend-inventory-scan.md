@@ -4,8 +4,8 @@
 
 - 静态页面：21
 - 共享资源：6
-- 浏览器 spec：62
-- 去重后前端调用的 API 端点：111
+- 浏览器 spec：64
+- 去重后前端调用的 API 端点：113
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
 ## 1. 页面资源与内联脚本
@@ -15,7 +15,7 @@
 | capture.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 13.6 KiB | 0 | 8 | 8 |
 | cards.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.6 KiB | 0 | 9 | 8 |
 | classroom.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.2 KiB | 0 | 6 | 6 |
-| exercises.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 11.1 KiB | 0 | 8 | 8 |
+| exercises.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 12.2 KiB | 0 | 9 | 9 |
 | index.html | 无 | 无 | 否 | 1 | 0.0 KiB | 0 | 0 | 1 |
 | material-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.2 KiB | 0 | 5 | 11 |
 | materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 12.7 KiB | 0 | 6 | 18 |
@@ -28,7 +28,7 @@
 | practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 9 |
 | qa.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.6 KiB | 0 | 6 | 14 |
 | reports.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 4.1 KiB | 0 | 4 | 6 |
-| review.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.8 KiB | 0 | 7 | 7 |
+| review.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 8 | 8 |
 | settings-provider.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 10.2 KiB | 0 | 5 | 6 |
 | settings.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.5 KiB | 0 | 4 | 5 |
 | tasks.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.8 KiB | 0 | 4 | 7 |
@@ -89,6 +89,7 @@
 | `/api/study/decks/{id}/cards` | cards.html |
 | `/api/study/decks/{id}/generate` | cards.html |
 | `/api/study/exercise-sets` | exercises.html |
+| `/api/study/exercise-sets/{id}` | exercises.html |
 | `/api/study/exercise-sets/{id}/exercises` | exercises.html |
 | `/api/study/exercise-sets/{id}/generate` | exercises.html |
 | `/api/study/exercises` | js/cram.js |
@@ -150,6 +151,7 @@
 | `/api/study/source-candidates` | plans.html |
 | `/api/study/sources/refresh` | plans.html |
 | `/api/study/sources?<query>` | plans.html |
+| `/api/study/weak-points` | review.html |
 | `/api/system/capabilities` | settings.html |
 | `/api/system/capabilities/self-check` | settings.html |
 | `/api/system/email-connection-test` | settings-provider.html |
@@ -170,7 +172,7 @@
 | capture.html | today.html | 5 | `#new-session-btn` 新建采集会话<br>`#refresh-btn` 刷新<br>`#cancel-dialog-btn` 取消<br>`#close-detail-btn` 关闭 | form: `#new-session-form`<br>input: `#file-input-${captureId}`, `#include-archived`, `#media-type`, `#original-name`<br>select: `#asset-kind` |
 | cards.html | today.html | 4 | `#refresh-decks` 刷新列表 | form: `#card-create-form`, `#card-generate-form`, `#deck-create-form`<br>input: `#card-material-ids`, `#card-topic`, `#new-card-front`, `#new-deck-title`<br>textarea: `#new-card-back` |
 | classroom.html | today.html | 2 | `#refresh-captures` 刷新列表<br>`#refresh-reports` 刷新 | 无 |
-| exercises.html | practice.html, today.html | 4 | `#refresh-sets` 刷新列表 | form: `#exercise-create-form`, `#exercise-generate-form`, `#set-create-form`<br>input: `#exercise-material-ids`, `#exercise-topic`, `#new-exercise-answer`, `#new-exercise-prompt`, `#new-set-title`<br>select: `#new-exercise-type` |
+| exercises.html | practice.html, today.html | 5 | `#refresh-sets` 刷新列表<br>`#retry-set-detail` 重试练习集详情 | form: `#exercise-create-form`, `#exercise-generate-form`, `#set-create-form`<br>input: `#exercise-material-ids`, `#exercise-topic`, `#new-exercise-answer`, `#new-exercise-prompt`, `#new-set-title`<br>select: `#new-exercise-type` |
 | index.html | today.html | 0 | 无 | 无 |
 | material-detail.html | materials.html, qa.html, today.html | 3 | `#index` 建立 AI 索引<br>`#export-original` 下载原文件<br>`#export-text` 导出解析文本 | 无 |
 | materials.html | material-detail.html, today.html | 8 | `#folder-btn` 选择文件夹导入<br>`#apply-filters` 应用筛选<br>`#view-deleted` 查看回收站<br>`#retry-materials` 重新加载材料<br>`#goto-qa` 前往问答<br>`#export-originals` 导出原件 ZIP<br>`#export-texts` 导出文本 ZIP<br>`#export-all` 导出全部 ZIP | input: `#file-input`, `#folder-input`, `#search-input`, `#select-page`<br>select: `#status-filter` |
@@ -183,7 +185,7 @@
 | practice.html | practice-session.html, today.html | 6 | `#refresh-cram` 刷新冲刺<br>`#create-cram-goal` 创建冲刺目标<br>`#create-recommended-session` 创建练习会话<br>`#refresh-recommendations` 刷新推荐<br>`#refresh-sessions` 刷新列表<br>`#refresh-mistakes` 刷新 | form: `#cram-goal-form`<br>input: `#cram-count`, `#cram-date`, `#cram-title`<br>select: `#recommendation-limit` |
 | qa.html | materials.html, today.html | 2 | `#index-btn` 索引当前材料<br>`#submit-btn` 提交问题 | form: `#qa-form`<br>input: `#materials`<br>select: `#retrieval-mode`<br>textarea: `#question` |
 | reports.html | classroom.html, today.html | 4 | `#retry-reports` 重试<br>`#preview-report` 刷新报告预览<br>`#export-json` 导出 JSON<br>`#export-markdown` 导出 Markdown | 无 |
-| review.html | practice.html, today.html | 1 | `#retry-review` 重试 | 无 |
+| review.html | practice.html, today.html | 2 | `#retry-review` 重试<br>`#retry-weak-points` 重试 | 无 |
 | settings-provider.html | today.html | 6 | `#provider-copy` 复制到剪贴板（仅内存生成）<br>`#provider-test` 测试 Provider 连接<br>`#provider-save` 保存此配置<br>`#email-copy` 复制 Email 环境变量（仅内存生成）<br>`#email-test` 测试 Email 连接<br>`#email-save` 保存此配置 | form: `#email-form`, `#provider-form`<br>input: `#email-timeout`, `#feishu-webhook`, `#provider-id`, `#provider-key`, `#provider-model`, `#provider-timeout`, `#provider-url`, `#smtp-host`, `#smtp-password`, `#smtp-port`, `#smtp-recipient`, `#smtp-sender`, `#smtp-username`<br>select: `#email-channel`, `#provider-type`, `#smtp-secure` |
 | settings.html | capture.html, settings-provider.html, tasks.html, today.html | 8 | `#capability-recheck` 重新自检<br>`#capability-refresh` 刷新状态<br>`#ai-save` 保存并生效<br>`#ai-clear` 清除已保存配置<br>`#embedding-save` 保存并生效<br>`#embedding-clear` 清除已保存配置<br>`#local-save` 保存并生效<br>`#local-clear` 清除本机组件覆盖 | form: `#ai-form`, `#embedding-form`, `#local-form`<br>input: `#ai-key`, `#ai-model`, `#ai-provider`, `#ai-url`, `#asr-model`, `#asr-runtime`, `#embedding-key`, `#embedding-model`, `#embedding-provider`, `#embedding-url`, `#ocr-root`<br>select: `#ocr-enabled` |
 | tasks.html | today.html | 2 | `#apply-filters` 应用筛选<br>`#refresh-btn` 刷新 | select: `#status-filter` |
@@ -196,7 +198,7 @@
 | capture.html | 8 | browser_a4.spec.js, browser_b2_ocr_c5.spec.js, browser_formal_asr.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
 | cards.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js |
 | classroom.html | 6 | browser_e2e.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js |
-| exercises.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js |
+| exercises.html | 9 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js, browser_p2_fe4_exercise_set_detail_app.spec.js |
 | index.html | 1 | browser_migration.spec.js |
 | material-detail.html | 11 | browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_p6c_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | materials.html | 18 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c3_batch_export.spec.js, browser_p1_4_c4_5_measurement.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_materials_app.spec.js, browser_p2_fe3_materials_management_app.spec.js, browser_p2_fe3_qa_p6c_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
@@ -209,7 +211,7 @@
 | practice.html | 9 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_practice_recommendations.spec.js |
 | qa.html | 14 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_app.spec.js, browser_p2_fe3_qa_threads_errors_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
 | reports.html | 6 | browser_a3_pages.spec.js, browser_b3_report_c5.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe4_report_preview_app.spec.js |
-| review.html | 7 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js, browser_p2_fe3_review_app.spec.js, browser_practice_workflow.spec.js |
+| review.html | 8 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js, browser_p2_fe3_review_app.spec.js, browser_p2_fe4_weak_points_app.spec.js, browser_practice_workflow.spec.js |
 | settings-provider.html | 6 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | settings.html | 5 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | tasks.html | 7 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_3_task_list.spec.js, browser_p1_4_c4_5_measurement.spec.js |
@@ -248,9 +250,9 @@
 ## 8. 后端路由覆盖分类
 
 - 去重路由路径：137
-- `direct`（页面/共享模块出现字面调用）：106
+- `direct`（页面/共享模块出现字面调用）：108
 - `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：11
-- `unreached`（未找到任何前端引用）：20
+- `unreached`（未找到任何前端引用）：18
 
 `dynamic` 不是结论，只是静态扫描的不确定项；`unreached` 也不等于能力缺失，部分是 `/legacy` 专用、运维/探活端点或按安全边界有意不暂开。逐项定性属于第二阶段设计合同。
 
@@ -260,9 +262,9 @@
 | `ai_retrieval_qa.py` | 0 | 3 | `POST /api/citation/validate` — unreached<br>`POST /api/context/assemble` — unreached<br>`POST /api/retrieval` — unreached |
 | `materials_detail.py` | 0 | 1 | `POST /api/materials/{material_id}/purge` — unreached |
 | `study_capture_reports.py` | 0 | 3 | `GET /api/study/reports/{report_id}/delivery-attempts` — unreached<br>`POST /api/study/capture-sessions/{capture_id}/archive` — unreached<br>`POST /api/study/reports/{report_id}/delivery` — unreached |
-| `study_learning.py` | 0 | 4 | `GET /api/study/decks/{deck_id}` — unreached<br>`GET /api/study/exercise-sets/{set_id}` — unreached<br>`GET /api/study/exercises/{exercise_id}/attempts` — unreached<br>`POST /api/study/exercises/{exercise_id}/attempts` — unreached |
+| `study_learning.py` | 0 | 3 | `GET /api/study/decks/{deck_id}` — unreached<br>`GET /api/study/exercises/{exercise_id}/attempts` — unreached<br>`POST /api/study/exercises/{exercise_id}/attempts` — unreached |
 | `study_notes.py` | 5 | 4 | `POST /api/study/notes/{note_id}/archive` — dynamic<br>`POST /api/study/notes/{note_id}/blocks` — dynamic<br>`POST /api/study/notes/{note_id}/confirm` — dynamic<br>`POST /api/study/notes/{note_id}/reject` — dynamic<br>`PUT /api/study/notes/{note_id}/blocks` — dynamic<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` — unreached<br>`PATCH /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`POST /api/study/notes/{note_id}/blocks/{block_id}/sources` — unreached |
 | `study_plans.py` | 4 | 0 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic |
-| `study_practice.py` | 3 | 3 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`GET /api/study/cram-goals/{goal_id}` — unreached<br>`GET /api/study/weak-points` — unreached<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
+| `study_practice.py` | 3 | 2 | `POST /api/study/cram-goals/{goal_id}/active` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/archived` — dynamic<br>`POST /api/study/cram-goals/{goal_id}/completed` — dynamic<br>`GET /api/study/cram-goals/{goal_id}` — unreached<br>`POST /api/study/practice-sessions/{session_id}/archive` — unreached |
 | `system.py` | 0 | 3 | `GET /api/health` — unreached<br>`GET /api/liveness` — unreached<br>`GET /api/metrics` — unreached |
 
