@@ -63,6 +63,7 @@
 </div>
 <div id="error" class="error" role="alert" hidden></div>
 <button class="btn mt-12" id="retry-materials" type="button" hidden>重新加载材料</button>
+<div id="mutation-status" class="notice mt-12" hidden role="status" aria-live="polite"></div>
 <div id="batch-export" class="batch-toolbar" hidden>
 <label class="batch-select-all"><input id="select-page" type="checkbox"> 选择当前页</label>
 <span id="selection-status" class="muted" role="status" aria-live="polite">已选择 0 份</span>
@@ -103,6 +104,7 @@ const batchExport=document.querySelector('#batch-export');
 const selectPage=document.querySelector('#select-page');
 const selectionStatus=document.querySelector('#selection-status');
 const exportStatus=document.querySelector('#export-status');
+const mutationStatus=document.querySelector('#mutation-status');
 const exportButtons=[document.querySelector('#goto-qa'),document.querySelector('#export-originals'),document.querySelector('#export-texts'),document.querySelector('#export-all')];
 
 let currentView='active';
@@ -322,8 +324,15 @@ li.append(badge);
 if(currentView==='active'&&!deleted){
 const actions=document.createElement('div');
 actions.className='item-actions';
+const rename=document.createElement('button');
+rename.className='btn';
+rename.type='button';
+rename.textContent='重命名';
+rename.onclick=()=>renameMaterial(id,name,rename);
+actions.append(rename);
 const del=document.createElement('button');
 del.className='btn';
+del.type='button';
 del.textContent='删除';
 del.onclick=()=>deleteMaterial(id,name,del);
 actions.append(del);
@@ -388,6 +397,35 @@ exportStatus.className='notice warn';
 exportStatus.textContent=sbApi.safeError(e)+' 可重试。'
 }finally{
 exportBusy=false;updateSelection()
+}
+}
+
+async function renameMaterial(id,name,button){
+if(mutationBusy.has(id))return;
+const requested=prompt('输入新的材料名称',name);
+if(requested===null)return;
+const nextName=requested.trim();
+mutationStatus.hidden=false;
+if(!nextName){
+mutationStatus.className='notice warn';
+mutationStatus.textContent='文件名不能为空，请重新输入。';
+return
+}
+mutationBusy.add(id);
+button.disabled=true;
+mutationStatus.className='notice';
+mutationStatus.textContent='正在重命名材料…';
+try{
+await sbApi.json(`/api/materials/${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify({original_name:nextName})});
+mutationStatus.className='notice status-success';
+mutationStatus.textContent='材料已重命名。';
+await load()
+}catch(e){
+mutationStatus.className='notice warn';
+mutationStatus.textContent=sbApi.safeError(e)+' 可重试。'
+}finally{
+mutationBusy.delete(id);
+button.disabled=false
 }
 }
 

@@ -32,6 +32,48 @@ async function downloadNames(page, selector) {
   return zipNames(await download.path());
 }
 
+test('formal app rename persists, safely retries and blocks duplicate submit', async ({page}) => {
+  reset(); let server = startServer(); let patchCount = 0; let release;
+  try {
+    await ready(); await page.goto(`${BASE}/app/materials.html`); await importFiles(page, ['sample.txt']);
+    const row = page.locator('#items li');
+    page.once('dialog', dialog => { expect(dialog.type()).toBe('prompt'); dialog.accept('renamed-sample.txt'); });
+    await row.getByRole('button', {name: '重命名'}).click();
+    await expect(page.locator('#mutation-status')).toContainText('材料已重命名');
+    await expect(row).toContainText('renamed-sample.txt');
+    await page.reload();
+    await expect(page.locator('#items li')).toContainText('renamed-sample.txt');
+
+    await page.route(`${BASE}/api/materials/*`, async route => {
+      if (route.request().method() !== 'PATCH') return route.continue();
+      patchCount++;
+      if (patchCount === 1) return route.fulfill({status: 500, contentType: 'application/json', body: JSON.stringify({detail: 'material_update_failed', path: 'H:/private', traceback: 'hidden'})});
+      await new Promise(resolve => { release = resolve; });
+      return route.continue();
+    });
+    page.once('dialog', dialog => dialog.accept('failed-name.txt'));
+    await page.getByRole('button', {name: '重命名'}).click();
+    await expect(page.locator('#mutation-status')).toContainText('材料更新失败，请重试');
+    await expect(page.locator('#mutation-status')).not.toContainText(/H:\/private|traceback|hidden/);
+    await expect(page.locator('#items li')).toContainText('renamed-sample.txt');
+
+    page.once('dialog', dialog => dialog.accept('final-name.txt'));
+    const rename = page.getByRole('button', {name: '重命名'});
+    await rename.click();
+    await expect(rename).toBeDisabled();
+    await rename.dispatchEvent('click');
+    expect(patchCount).toBe(2);
+    release(); release = null;
+    await expect(page.locator('#mutation-status')).toContainText('材料已重命名');
+    await expect(page.locator('#items li')).toContainText('final-name.txt');
+    await expect(page.locator('body')).not.toContainText(/H:\/private|traceback|hidden/);
+  } finally {
+    if (release) release();
+    await page.unroute(`${BASE}/api/materials/*`).catch(() => {});
+    stop(server);
+  }
+});
+
 test('formal app delete and restore lifecycle', async ({page}) => {
   reset(); let server = startServer();
   try {
