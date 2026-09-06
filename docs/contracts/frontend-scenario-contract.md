@@ -242,7 +242,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 9 | GET `/api/study/reports/{report_id}/preview` | migrated | `reports.html` 已提供“刷新报告预览”，读取脱敏预览并支持失败重试；delivery 仍不开放。 |
 | 10 | GET `/api/study/decks/{deck_id}` | deferred | 卡片组详情场景，不阻塞当前 cards 列表与学习流程。 |
 | 11 | GET `/api/study/exercise-sets/{set_id}` | migrated | `exercises.html` 选择练习集后读取真实详情，展示题目数/状态；失败可重试，刷新重新读取。 |
-| 12 | GET+POST `/api/study/exercises/{exercise_id}/attempts` | gap | 练习页已有题目，正式逐题 attempt 读写面缺失，归入场景 3。 |
+| 12 | GET+POST `/api/study/exercises/{exercise_id}/attempts` | intentional | 正式练习会话通过 `/api/study/practice-sessions/{session_id}/items/{item_id}/submit` 完成逐题提交、评分和结果复盘；不并行暴露另一套 exercise-level attempt 语义。 |
 | 13 | DELETE+PATCH `/api/study/notes/{note_id}/blocks/{block_id}` | intentional | notes 正式页以 `PUT .../blocks` 整体提交有序 blocks；避免两套并行编辑语义。 |
 | 14 | POST `/api/study/notes/{note_id}/blocks/{block_id}/sources` | intentional | 同上，block 来源随整体 blocks 合同提交。 |
 | 15 | DELETE `/api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` | intentional | 同上，不单独暴露细粒度删除。 |
@@ -251,7 +251,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 18 | GET+PATCH `/api/study/modules/{module_id}` | migrated | Plans 已提供查看/重命名；归档不改写既有学习项。 |
 | 19 | POST `/api/study/modules/{module_id}/archive` | migrated | Plans 提供确认归档，归档模块移出新建学习项和来源 owner 选择。 |
 | 20 | DELETE `/api/study/plans/{plan_id}/dependencies/{dependency_id}` | migrated | Plans 展示真实依赖，确认后删除；plan-detail 明示真实依赖或空态。 |
-| 21 | GET `/api/study/cram-goals/{goal_id}` | deferred | 冲刺目标详情工作区后续项；当前状态 mutation 由 `cram.js` 动态调用。 |
+| 21 | GET `/api/study/cram-goals/{goal_id}` | migrated | `practice.html` 选择冲刺目标后读取真实详情，展示目标状态/日期/题数；失败可重试，刷新重新读取。 |
 | 22 | GET `/api/study/weak-points` | migrated | `review.html` 已提供只读薄弱点汇总；展示出现次数、未解决/已修复计数和来源警告，失败可重试。 |
 | 23 | POST `/api/study/practice-sessions/{session_id}/archive` | deferred | 会话归档应与场景 3 的完成/结果/复盘状态机一起实施。 |
 | 24 | GET `/api/study/plans/{plan_id}/rhythm/export` | already_migrated | 正式 `plans.html #rhythm-export` 已接入既有只读 JSON 导出；本地下载、256 KiB/413 服务端边界和失败重试均有正式 browser evidence；不开放网络外发。 |
@@ -524,8 +524,8 @@ practice.html 选择练习/建议
 
 **暂不迁移**（标记 `legacy_only` 或 `not_exposed`）：
 - weak-points 汇总页面（已迁移到 `review.html`；正式 evidence 覆盖成功、失败重试、刷新恢复和隐私）
-- cram-goal 详情页面（已有后端，UI 暂不开放，标记 `not_exposed`）
-- exercise-set 详情页面（已迁移到 `exercises.html`；正式 evidence 覆盖详情读取、失败重试、刷新恢复和隐私）
+- cram-goal 详情页面（已迁移到 `practice.html`；正式 evidence 覆盖详情读取、失败重试、刷新恢复和隐私）
+- exercise attempts 独立接口（`GET/POST /api/study/exercises/{exercise_id}/attempts`）：正式练习会话已有逐题提交、评分、结果和复盘流程；为避免并行语义，独立接口保持 `intentional/not_exposed`。
 - opt-in 真实外部 Provider 的练习生成路径（标记 `not_verified`）
 
 ### 6.5 Browser evidence 文件命名约定
@@ -541,7 +541,7 @@ practice.html 选择练习/建议
 1. ✅ 场景 3 合同已冻结（2026-09-05）；
 2. ✅ 按 6.4 节三批完成正式 `/app` 迁移：练习会话、结果与错题复盘；
 3. ✅ 三批专项 browser evidence 共 13 test，通过场景声明范围内的状态、失败恢复、隐私、窄屏、键盘和跨页检查；
-4. 后续仍需对 cram 详情、exercise attempts 以及真实外部 Provider 路径单独定性，不能由这 17 test 推广为全局完成；
+4. cram 详情与 exercise attempts 已完成单独定性；真实外部 Provider 路径仍保持 `not_verified`，不能由这 19 test 推广为全局完成；
 5. 继续运行 contract audit、frontend inventory scan、source-size、diff check，并在后续场景切片中保持同一门禁；
 6. 每批更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。
 
@@ -549,7 +549,7 @@ practice.html 选择练习/建议
 
 1. 场景 1 已作为模板完成实现与专项 browser evidence。
 2. 场景 2 四件套已冻结（2026-09-05）；材料管理和 QA 核心 `/app` evidence 已迁移并持续补强；purge 决策、异步索引入口决策及其它未迁移维度继续保持明确边界。
-3. ✅ 场景 3 已按 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 完成正式页面三批 scoped evidence；exercise-set 详情和 weak-points 已补充正式 evidence，cram 详情与 exercise attempts 仍未开放或未验证。
+3. ✅ 场景 3 已按 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 完成正式页面三批 scoped evidence；exercise-set、cram-goal 详情和 weak-points 已补充正式 evidence；独立 exercise attempts 明确定性为 `intentional/not_exposed`。
 4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片；其中目标/模块管理、依赖删除、报告预览与 rhythm export 已完成正式 `/app` 迁移。
 5. 每个切片运行 focused tests；涉及 API、存储或基础设施时运行完整 backend；所有用户页面变更运行完整 Chromium。
 6. 每次交付运行 contract audit、frontend inventory scan、source-size 和治理测试；更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。

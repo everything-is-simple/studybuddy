@@ -392,18 +392,16 @@ revision → chunks → retrieval → citations → Q&A
 - [x] P2-FE-2：整体设计合同（第二阶段）。**场景 1、场景 2、场景 3 已全部冻结 2026-09-05。**
   单一合同 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md) 已定义统一格式，并完成场景 1“计划 → 今天 → 进度”和场景 2“材料导入 → 解析 → 索引 → 问答（带引用）”的流程图、页面状态机、真实 selector 元素行为表、API 契约对照与 browser evidence。场景 2 覆盖 `/app/materials.html`、`material-detail.html`、`qa.html`、`tasks.html`，并明确同步索引、异步入队、内部检索管道、引用失效和 `/legacy` evidence 的边界。
   本轮真实可用改动：修复 `/app/materials.html` 单文件成功导入错误显示为 `0/1`，并让 `material-detail.html` 建索引后重读真实索引状态，空文本不再误报为“AI 索引已建立”。新增 focused browser evidence 2 项；focused Chromium `26 passed`，完整 backend `623 passed, 3 skipped`，完整 Chromium 分批合计 `177 passed, 4 skipped`。27 个唯一 `unreached` path key（展开 HTTP method 为 31 行）已逐项定性；扫描当前仍为前端端点 103、`direct 99 / dynamic 11 / unreached 27`。
-  场景 3“练习会话 → 结果 → 错题复盘”以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源；其正式 `/app` 三批 scoped evidence 已在 P2-FE-3 完成，本轮已补 exercise-set 详情与 weak-points 汇总 evidence，cram 详情、exercise attempts 和真实外部 Provider 路径继续保持未验证或未开放。
-  尚未完成：P2-FE-3 剩余 `/legacy` 等价证据迁移与内联脚本模块化；场景 2 的异步索引正式入口和 purge 是否开放仍按合同保持边界。
+  场景 3“练习会话 → 结果 → 错题复盘”以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源；其正式 `/app` 三批 scoped evidence 已在 P2-FE-3 完成，本轮已补 exercise-set、cram-goal 详情与 weak-points 汇总 evidence；独立 exercise attempts 已定性为 `intentional/not_exposed`，真实外部 Provider 路径保持 `not_verified`。
+  当前无 P2-FE-4 用户操作迁移缺口；异步索引正式入口、purge、delivery 和内联脚本模块化按合同保持边界或列入后续独立工作。
 
-- [ ] P2-FE-3 / P2-FE-4：按合同实施并迁移剩余 legacy 操作。**进行中：场景 2、场景 3 已完成当前 scoped 证据；P2-FE-4 已迁移材料重命名，以及场景 1 的目标/模块查看、重命名、归档、依赖删除与只读学习节奏 JSON 导出。**
-  本轮（P2-FE-3-8）完成：新增 `browser_p2_fe3_review_app.spec.js`（5 test），覆盖真实错题列表与状态标签、详情/反馈、再次练习、归档、空状态/失败重试、隐私边界、窄屏和键盘焦点；`state.js` 补齐 `open/in_review/fixed/reopened` 中文标签。场景 3 三批共 13 test，状态为 `implemented / scoped-browser-pass`。
+- [x] P2-FE-3 / P2-FE-4：按合同实施并迁移剩余 legacy 操作。**完成：场景 2、场景 3 已完成当前 scoped 证据；P2-FE-4 已迁移用户价值明确且风险可控的正式操作，并完成剩余操作边界定性。**
+  本轮（P2-FE-4 收口）完成：cram-goal 详情接入 `practice.html`，读取真实详情并支持失败重试、刷新恢复和隐私验证；独立 exercise attempts 定性为 `intentional/not_exposed`，正式练习会话已提供逐题提交、评分、结果和复盘，不并行开放第二套语义。
   本轮回归：正式材料专项 `8 passed`、重命名后端 focused `3 passed`；完整 Chromium 第二次串行执行 `208 passed, 4 skipped`（212 tests）。第一次完整长跑出现 3 个页面/服务生命周期波动失败，三项单独重跑均通过，随后第二次完整执行全绿。合同审计、inventory、源码尺寸检查和 `git diff --check` 均通过。最近后端完整快照为 `623 passed, 3 skipped`，本前端切片未重跑后端全量。
   场景 2 正式材料/QA 相关证据继续保持 `implemented / scoped-browser-pass`：材料专项现为 8 test（导入/分页/状态筛选/失败重试、重命名、回收站、导出、删除恢复），QA 专项 9 test（核心问答、线程与错误映射、P6-C 跨页）；场景 3 三批总计 13 test。此前三场景串行复核为 35 passed；本轮材料专项为 8 passed。状态均仅限 `implemented / scoped-browser-pass`。
-  P2-FE-4 当前完成项：材料重命名保持既有 `implement_then_migrate` 结果；目标/模块查看、重命名、归档、计划依赖删除和只读 rhythm export 已迁移到 `/app/plans.html`；报告预览已接入 `/app/reports.html` 的“刷新报告预览”按钮；weak-points 已接入 `/app/review.html` 只读汇总；exercise-set 详情已接入 `/app/exercises.html` 详情 API。预览只渲染脱敏摘要；weak-points 和 exercise-set 详情均支持失败安全提示、重试和刷新恢复，busy 时禁止重复请求。新增 `browser_p2_fe4_report_preview_app.spec.js`（2 passed）、`browser_p2_fe4_weak_points_app.spec.js`（2 passed）和 `browser_p2_fe4_exercise_set_detail_app.spec.js`（2 passed）；本轮 P2-FE-4 新增 browser evidence 合计 `6 passed`；plans focused browser 仍为 `5 passed`，Phase 9A API/domain focused backend 为 `12 passed`。无 API/schema/migration 变化；purge、delivery 继续保持 `intentional/not_exposed`。
-  尚未完成：
-  1. **剩余操作级差异分类与迁移**：当前有 23 个 spec 文件包含 `/legacy`，但它们混合兼容入口、已由 `/app` 覆盖的旧回归、opt-in real smoke 和真实缺口；不能沿用初始“19 spec / 56 test”作为当前剩余量。目标/模块管理、依赖删除、rhythm export、报告预览、weak-points 和 exercise-set 详情已迁移；剩余候选为 cram 详情、exercise attempts 及其对应边界定性。
-  2. **真实能力边界**：真实外部 Provider UI 仍需匹配的用户授权配置；purge、异步 `/ai-index/tasks` 队列和 report delivery UI 保持 `not_exposed`。exercise attempts 与 cram-goal 详情仍需单独定性。
-  3. **内联脚本模块化**：仅在场景实现确实降低跨页维护风险时渐进拆分，不作为独立纯重构切片。
+  P2-FE-4 当前完成项已包含材料重命名、目标/模块管理、依赖删除、rhythm export、报告预览、weak-points、exercise-set 详情和 cram-goal 详情；独立 exercise attempts 已完成 `intentional/not_exposed` 定性。
+  本轮 P2-FE-4 新增 browser evidence 合计 `8 passed`；cram-goal 详情专项 `2 passed`。
+  既有安全边界保持不变：purge、异步 `/ai-index/tasks`、report delivery/delivery-attempts 不在正式 UI 开放；真实 Provider、OCR/ASR 保持 `not_verified`。内联脚本模块化作为后续独立工作，不作为 P2-FE-4 完成条件。
 
 ## P2：后续独立项目
 
