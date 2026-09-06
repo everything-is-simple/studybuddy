@@ -1,7 +1,7 @@
 # Frontend Scenario 前后端整体设计合同
 
-> 状态：`P2-FE-2 / scenario-1 + scenario-2 frozen / scenario-3 skeleton`
-> 更新：2026-09-05
+> 状态：`P2-FE-2 / scenarios 1-3 frozen; P2-FE-3 scoped implementation evidence in progress`
+> 更新：2026-09-06
 >
 > 技术路线：HTML + CSS + 原生 JavaScript + FastAPI JSON API。
 > 正式页面：`backend/app/static/` 下 20 个可操作页面和 1 个兼容跳转页。
@@ -259,7 +259,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 
 ## 5. 场景 2：材料导入 → 解析 → 索引 → 问答（带引用）
 
-状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、回收站、删除/恢复和批量 ZIP 导出，以及正式 `/app/qa.html` 的材料选择、索引前置、提问、引用跳转、失败重试、重复提交保护和窄屏状态已有范围化 browser evidence）；`legacy_only`（QA 线程工作区多会话切换、rate-limit/unavailable 映射等等价证据和部分历史材料管理证据仍保留在 `/legacy`）；`not_exposed`（异步入队、purge）。
+状态：`implemented / scoped-browser-pass`（导入、解析、同步索引、问答与引用定位；材料管理正式 `/app` 的导入、真实解析状态筛选、回收站、删除/恢复和批量 ZIP 导出，以及正式 `/app/qa.html` 的材料选择、索引前置、提问、引用跳转、失败重试、重复提交保护和窄屏状态已有范围化 browser evidence）；`legacy_only`（QA 线程工作区多会话切换、rate-limit/unavailable 映射等等价证据和部分历史材料管理证据仍保留在 `/legacy`）；`not_exposed`（异步入队、purge）。
 
 参与页面（真实代码已核实）：
 
@@ -374,7 +374,7 @@ cancel/retry → confirm → POST → 重读详情
 | `materials.html #file-input` | 多选，accept `.pdf,.txt,.md,.docx,.pptx` | 单文件走 `/api/materials`，多文件走 `/api/materials/batch` | 超限/格式拒绝逐项安全文案 |
 | `materials.html #folder-btn` / `#folder-input` | 文件夹批量导入（webkitdirectory） | 与批量导入一致 | 同批量 |
 | `materials.html #upload-status` | 上传与解析结果展示（aria-live） | 已导入 n/total（success 计 n） | 失败可重试；8s 后隐藏 |
-| `materials.html #status-filter` / `#search-input` / `#apply-filters` | 按状态/关键词重读列表 | 列表与分页更新 | `#error` 安全文案 |
+| `materials.html #status-filter` / `#search-input` / `#apply-filters` | 按真实解析状态（success/empty/rejected/failed）或关键词重读列表 | 列表与分页更新 | `#error` 安全文案 |
 | `materials.html #view-deleted` | active ↔ deleted 回收站视图 | 切换列表与标题 | `#error` 安全文案 |
 | `materials.html #select-page` / `.material-select` | 当前页/逐项勾选 | 计数更新、导出按钮解锁 | exportBusy 时禁用 |
 | `materials.html #export-originals` / `#export-texts` / `#export-all` | 按选择导出 ZIP | 下载 `studybuddy-materials.zip` | `#export-status` 安全文案 + 可重试 |
@@ -440,13 +440,13 @@ cancel/retry → confirm → POST → 重读详情
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；P2-FE-3-3 的 `browser_p2_fe3_qa_app.spec.js` 已迁移核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置），P2-FE-3-4 的 `browser_p2_fe3_qa_threads_errors_app.spec.js` 已迁移线程工作区多会话切换与 rate-limit/unavailable 错误映射，P2-FE-3-5 的 `browser_p2_fe3_qa_p6c_app.spec.js` 已迁移 P6-C 跨页连接（材料列表勾选→QA 预选→引用跳转→材料详情→导出→返回，删除后导出禁用）到正式 `/app`。剩余 `legacy_only` 维度：opt-in 真实外部 provider 路径、P6-C 其余细节等完整等价证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。
+`legacy_only`（等价证据尚未全部迁移到 `/app`）：`browser_qa.spec.js`（10 test）仍只访问 legacy QA 入口，保留不变；P2-FE-3-3 的 `browser_p2_fe3_qa_app.spec.js` 已迁移核心用户流程（材料选择、索引前置、问答、引用跳转、失败重试、重复提交、窄屏、Provider 未配置），P2-FE-3-4 的 `browser_p2_fe3_qa_threads_errors_app.spec.js` 已迁移线程工作区多会话切换与 rate-limit/unavailable 错误映射，P2-FE-3-5 的 `browser_p2_fe3_qa_p6c_app.spec.js` 已迁移 P6-C 跨页连接（材料列表勾选→QA 预选→引用跳转→材料详情→导出→返回，删除后导出禁用）到正式 `/app`。剩余 `legacy_only` 维度：opt-in 真实外部 provider 路径、P6-C 其余细节等完整等价证据（正式页面对应维度为 `not_verified`）。材料管理的原有 legacy spec 继续保留并验证兼容入口；`browser_p2_fe3_materials_management_app.spec.js` 已覆盖正式 `/app` 的回收站、删除/恢复、刷新状态、三种批量 ZIP 导出、导出失败恢复、响应式和删除重复提交；与 `browser_p2_fe3_materials_app.spec.js` 合并覆盖正式材料导入/搜索/分页。其余历史证据仍不能直接证明正式页面等价能力，后续继续归入 P2-FE-3。正式材料页状态筛选已由 `browser_p2_fe3_materials_app.spec.js` 覆盖：真实导入 `success` 与 `empty` 材料后分别筛选并确认结果，旧 `available/indexing` 选项不再出现。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
 ## 6. 场景 3：练习会话 → 结果 → 错题复盘
 
-状态：`contract-frozen`（2026-09-05）。既有 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 已覆盖练习会话/结果/复盘单场景的完整事实，本合同**不复制其内容**：场景 3 的流程、状态、API 对照、隐私边界、幂等语义和 browser evidence 矩阵以该文档为唯一事实源。本节只记录本合同范围内的整合骨架与正式 `/app` 页面迁移边界。
+状态：`implemented / scoped-browser-pass`（2026-09-06，限定于已迁移的正式 `/app` 页面和 browser evidence）。既有 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 已覆盖练习会话/结果/复盘单场景的完整事实，本合同**不复制其内容**：场景 3 的流程、状态、API 对照、隐私边界和幂等语义以该文档为事实源；本节补充正式 `/app` 迁移边界和当前证据状态。
 
 ### 6.1 核心流程（已确认，详见 frontend-practice-workflow-contract.md）
 
@@ -518,19 +518,18 @@ practice.html 选择练习/建议
 
 ### 6.6 实施顺序与门禁
 
-1. ✅ 场景 3 合同已冻结（本轮，2026-09-05）；
-2. 按 6.4 节三批顺序逐批实施，每批独立验证；
-3. 每批运行 focused backend/browser tests + 完整回归；
-4. 每批运行 contract audit、frontend inventory scan、source-size、diff check；
-5. 每批更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档；
-6. 每批独立 commit 并 push；
-7. 三批全部完成后，场景 3 状态从 `contract-frozen` 升级为 `implemented / scoped-browser-pass`。
+1. ✅ 场景 3 合同已冻结（2026-09-05）；
+2. ✅ 按 6.4 节三批完成正式 `/app` 迁移：练习会话、结果与错题复盘；
+3. ✅ 三批专项 browser evidence 共 13 test，通过场景声明范围内的状态、失败恢复、隐私、窄屏、键盘和跨页检查；
+4. 后续仍需对 exercise-set 详情、weak-points、cram 详情以及真实外部 Provider 路径单独定性，不能由这 13 test 推广为全局完成；
+5. 继续运行 contract audit、frontend inventory scan、source-size、diff check，并在后续场景切片中保持同一门禁；
+6. 每批更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。
 
 ## 7. 实施顺序与门禁
 
 1. 场景 1 已作为模板完成实现与专项 browser evidence。
-2. 场景 2 四件套已冻结（本切片，2026-09-05）；本轮已开始并完成材料管理核心 `/app` evidence 迁移与列表失败重试补强；QA legacy evidence、回收站/导出等剩余等价证据，以及合同认定的正式页缺口（purge 决策、异步索引入口决策）继续进入 P2-FE-3 后续独立可用切片。
-3. 冻结场景 3 的四件套（以 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 为事实源），再补 attempt、weak-points 和归档行为。
+2. 场景 2 四件套已冻结（2026-09-05）；材料管理和 QA 核心 `/app` evidence 已迁移并持续补强；purge 决策、异步索引入口决策及其它未迁移维度继续保持明确边界。
+3. ✅ 场景 3 已按 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 完成正式页面三批 scoped evidence；exercise-set 详情、weak-points 和 cram 详情仍是未完成或未暴露维度。
 4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片。
 5. 每个切片运行 focused tests；涉及 API、存储或基础设施时运行完整 backend；所有用户页面变更运行完整 Chromium。
 6. 每次交付运行 contract audit、frontend inventory scan、source-size 和治理测试；更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。

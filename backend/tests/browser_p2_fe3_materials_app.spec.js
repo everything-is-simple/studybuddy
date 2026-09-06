@@ -75,6 +75,34 @@ test('P2-FE-3 formal materials page imports a directory and paginates real recor
   }finally{stop(server)}
 });
 
+test('P2-FE-3 formal materials page filters by real extraction status',async({page})=>{
+  const server=startServer();
+  try{
+    await ready();
+    await page.goto(`${BASE}/app/materials.html`);
+    await page.setInputFiles('#file-input',[
+      path.join(FIXTURES,'sample.txt'),
+      path.join(FIXTURES,'empty.pptx'),
+    ]);
+    await expect(page.locator('#upload-status')).toContainText('已导入 1/2 个文件',{timeout:15000});
+    await expect(page.locator('#items li')).toHaveCount(2);
+
+    await page.locator('#status-filter').selectOption('success');
+    await page.locator('#apply-filters').click();
+    await expect(page.locator('#status-filter')).toHaveValue('success');
+    await expect(page.locator('#items li')).toHaveCount(1);
+    await expect(page.locator('#items li')).toContainText('sample.txt');
+
+    await page.locator('#status-filter').selectOption('empty');
+    await page.locator('#apply-filters').click();
+    await expect(page.locator('#status-filter')).toHaveValue('empty');
+    await expect(page.locator('#items li')).toHaveCount(1);
+    await expect(page.locator('#items li')).toContainText('empty.pptx');
+    await expect(page.locator('#status-filter option[value="available"]')).toHaveCount(0);
+    await expect(page.locator('#status-filter option[value="indexing"]')).toHaveCount(0);
+  }finally{stop(server)}
+});
+
 test('P2-FE-3 formal materials page exposes a retry after list failure',async({page})=>{
   const server=startServer();
   let fail=true;
