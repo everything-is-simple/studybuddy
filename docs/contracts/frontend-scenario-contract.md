@@ -165,6 +165,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 动态“确认草稿 / 激活计划 / 暂停计划 / 恢复计划 / 完成计划” | 仅按当前 plan 状态出现 | 使用正式 transition endpoint | 冲突显示计划操作失败，不伪造状态 |
 | 动态 `#rhythm-timezone` / `#rhythm-period-start` / `#rhythm-target-minutes` | 保存节奏设置 | 后续 Today 按该 timezone 算日期 | 映射 invalid timezone/date/target 错误 |
 | 动态 `#rhythm-item` / `#rhythm-date` / `#rhythm-minutes` | 添加某日分配 | allocation 可调整或删除 | duplicate/limit/edit-not-allowed 明确提示 |
+| 动态 `#rhythm-export` | 只读下载当前计划的 JSON 节奏快照；不向网络外发 | 下载 `studybuddy-rhythm.json`，包含计划、设置、分配和摘要 | 导出期间禁用；失败显示“节奏导出失败，请重试”，按钮恢复可重试；不渲染响应正文 |
 | `plans.html #refresh-all` | 手动重读 goals/modules/plans | 保持或恢复选中 plan | 可从读取失败恢复 |
 | `today.html #summary-status` / `#summary` | 显示 active plan 摘要或无计划/未激活空态 | 四个摘要卡稳定渲染 | `#retry-today` 重读 |
 | `today.html #weekly-status` / `#weekly-trend` | 显示计划时区下最近七天完成数 | 七个日期桶 | `#retry-today` 重读 |
@@ -195,6 +196,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | allocation 管理 | `GET/POST .../rhythm/allocations`; `PATCH/DELETE .../allocations/{allocation_id}` | `item_id/local_date/planned_minutes` | Today 仅匹配当日；duplicate/limit/date 错误明确显示 | direct |
 | 今日摘要 | `GET .../rhythm/summary` | `item_projection/source_warning_count` | 无 settings 仍返回合法空 buckets，不伪造失败 | direct |
 | 七天趋势 | `GET .../rhythm/weekly-trend` | `days[].local_date/completed_count` | 默认结束日按计划 timezone | direct |
+| 节奏 JSON 导出 | `GET /api/study/plans/{plan_id}/rhythm/export?format=json` | attachment JSON：`format_version/plan/settings/allocations/summary`；服务端限制 256 KiB | `sbApi.download` 读取 blob；仅本地下载；失败统一为安全文案并可重试 | direct |
 | 写进度 | `POST /api/study/plans/{plan_id}/items/{item_id}/progress` | `{event_type,metadata,event_id?}`；返回 `{event,summary}` | 支持 started/completed/skipped/reopened；只允许 active plan、非 archived item；event_id 幂等 | direct |
 | 读进度 | `GET /api/study/plans/{plan_id}/progress` | `{plan_id,events,summary}`；可选 `item_id` | 详情页读取全计划；summary 使用后端计数，events 倒序展示 | direct |
 
@@ -252,7 +254,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 21 | GET `/api/study/cram-goals/{goal_id}` | deferred | 冲刺目标详情工作区后续项；当前状态 mutation 由 `cram.js` 动态调用。 |
 | 22 | GET `/api/study/weak-points` | gap | 场景 3 的错题复盘需要可见薄弱点汇总。 |
 | 23 | POST `/api/study/practice-sessions/{session_id}/archive` | deferred | 会话归档应与场景 3 的完成/结果/复盘状态机一起实施。 |
-| 24 | GET `/api/study/plans/{plan_id}/rhythm/export` | deferred | 有用户价值但不阻塞日常链路；后续提供 JSON 导出，保留 256 KiB/413 边界与 `phase9b-rhythm-v1`。 |
+| 24 | GET `/api/study/plans/{plan_id}/rhythm/export` | already_migrated | 正式 `plans.html #rhythm-export` 已接入既有只读 JSON 导出；本地下载、256 KiB/413 服务端边界和失败重试均有正式 browser evidence；不开放网络外发。 |
 | 25 | GET `/api/health` | intentional | 运维探活；页面使用 readiness/system status，不直接暴露底层 health。 |
 | 26 | GET `/api/liveness` | intentional | 进程编排探活，不是用户工作流。 |
 | 27 | GET `/api/metrics` | intentional | 运维观测端点，不进入普通浏览器 UI。 |
@@ -534,7 +536,7 @@ practice.html 选择练习/建议
 1. 场景 1 已作为模板完成实现与专项 browser evidence。
 2. 场景 2 四件套已冻结（2026-09-05）；材料管理和 QA 核心 `/app` evidence 已迁移并持续补强；purge 决策、异步索引入口决策及其它未迁移维度继续保持明确边界。
 3. ✅ 场景 3 已按 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 完成正式页面三批 scoped evidence；exercise-set 详情、weak-points 和 cram 详情仍是未完成或未暴露维度。
-4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片。
+4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片；其中目标/模块管理、依赖删除与 rhythm export 已完成正式 `/app` 迁移，报告预览归类为已有正式能力。
 5. 每个切片运行 focused tests；涉及 API、存储或基础设施时运行完整 backend；所有用户页面变更运行完整 Chromium。
 6. 每次交付运行 contract audit、frontend inventory scan、source-size 和治理测试；更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。
 
