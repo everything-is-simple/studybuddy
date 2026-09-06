@@ -1,7 +1,7 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-09-05（执行方向修订：证据梯子 → 可用优先；P2-USE 五个切片已全部完成；P2-FE-2 场景 2 合同已冻结，P2-FE-3 已完成材料导入、回收站/导出、QA 核心链路、线程工作区与错误映射、P6-C 跨页连接五批正式证据迁移；活动主线继续为 **P2-FE（前后端场景对齐）**）
-> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；本次完整回归为 **623 passed, 3 skipped**，完整 Chromium 为 **192 passed, 4 skipped**（197 tests，`browser_p1_5_configuration_security.spec.js` 一次既有时序失败单独重跑 `9 passed`）。skip 均为 opt-in 真实 smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 更新：2026-09-05（执行方向修订：证据梯子 → 可用优先；P2-USE 五个切片已全部完成；P2-FE-2 场景 2 合同已冻结，P2-FE-3 已完成材料导入、回收站/导出、QA 核心链路、线程工作区与错误映射、P6-C 跨页连接五批正式证据迁移，以及场景 3 三批练习流程正式证据迁移；活动主线继续为 **P2-FE（前后端场景对齐）**）
+> 当前基线：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；当前后端回归为 **618 passed, 1 failed, 4 errors, 3 skipped**（失败/错误集中于既有 P14 revision-fingerprint migration 测试），完整 Chromium 为 **206 passed, 4 skipped**（210 tests）。skip 均为 opt-in 真实 smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，P1-6 系列仍为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
 
@@ -395,10 +395,10 @@ revision → chunks → retrieval → citations → Q&A
   场景 3“练习会话 → 结果 → 错题复盘”不在本轮实施，继续以 [`contracts/frontend-practice-workflow-contract.md`](contracts/frontend-practice-workflow-contract.md) 为主要事实源，待后续完成总合同整合与按场景实施。
   尚未完成：P2-FE-3 剩余 `/legacy` 等价证据迁移与内联脚本模块化；场景 2 的异步索引正式入口和 purge 是否开放仍按合同保持边界。
 
-- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：场景 2 五批已完成；场景 3 第二批已完成。**
-  本轮（P2-FE-3-7）完成：新增 `browser_p2_fe3_practice_result_app.spec.js`（4 test），覆盖练习结果与跨页导航（result 读取、result→review 跨页、刷新恢复非敏感上下文、DOM/URL 不含答案 key）。场景 3 第二批覆盖 `practice-result.html` 结果显示、跨页导航、隐私保护和状态恢复。
-  本轮回归：focused browser `8 passed`（场景 3 两批共 8 test）；backend `623 passed, 3 skipped`；完整 Chromium `199 passed, 4 skipped`（205 tests，2 既有 flaky 单独重跑都通过）。
-  场景 2 五批总计 15 test，场景 3 前两批总计 8 test，状态均为 `implemented / scoped-browser-pass`。等待第三批（review 错题复盘）。
+- [ ] P2-FE-3：按合同实施（第三阶段）。**进行中：场景 2 五批已完成；场景 3 三批已完成。**
+  本轮（P2-FE-3-8）完成：新增 `browser_p2_fe3_review_app.spec.js`（5 test），覆盖真实错题列表与状态标签、详情/反馈、再次练习、归档、空状态/失败重试、隐私边界、窄屏和键盘焦点；`state.js` 补齐 `open/in_review/fixed/reopened` 中文标签。场景 3 三批共 13 test，状态为 `implemented / scoped-browser-pass`。
+  本轮回归：focused browser `13 passed`（场景 3 三批共 13 test）；完整 Chromium `206 passed, 4 skipped`（210 tests）。Backend 回归为 `618 passed, 1 failed, 4 errors, 3 skipped`，失败/错误集中于既有 P14 revision-fingerprint migration 测试，非本批前端改动。
+  场景 2 五批总计 15 test，场景 3 三批总计 13 test，状态均为 `implemented / scoped-browser-pass`。内联脚本模块化仍按计划后置。
   尚未完成：
   1. **`/legacy` 证据迁移**：`browser_qa.spec.js` 与部分历史材料管理 spec 仍为 legacy-only 证据；正式 QA 线程工作区多会话切换、rate-limit/unavailable 映射、真实外部 provider 路径仍 `not_verified`。purge 继续保持 `not_exposed`，异步 `/ai-index/tasks` 队列 UI 保持 `not_exposed`。
   2. **内联脚本模块化**：当前页面业务逻辑仍以内联脚本为主，必须继续按完整场景拆分，不能孤立迁移。
