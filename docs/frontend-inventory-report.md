@@ -1,6 +1,6 @@
 # 前端事实盘点报告（第一阶段）
 
-> 更新：2026-09-05
+> 更新：2026-09-06（P2-FE-4 报告预览迁移后复算）
 > 范围：`backend/app/static/` 下 21 个 HTML 页面、6 个共享资源、53 个 `browser*.spec.js`、`backend/app/api/*.py` 的 165 条 `/api/*` 路由声明。
 > 数据来源：`backend/scripts/scan-frontend-inventory.py`（只读扫描）+ `backend/scripts/audit-frontend-contract.py` + `npx playwright test --list`。
 > 逐页/逐端点明细见自动产物 [`frontend-inventory-scan.md`](frontend-inventory-scan.md) 与 `frontend-inventory-scan.json`；本文只记结论与判断。
@@ -19,7 +19,7 @@
 - **`index.html` 是空的兼容跳转页**，不引用任何共享资源，只有一段跳转脚本，符合设计。
 - **内联脚本总量 167.8 KiB，分布在 20 个页面**，每页恰好 1 个 `<script>` 块。共享资源合计 36.5 KiB。最大的内联块是 `plans.html`（19.5 KiB）、`capture.html`（13.6 KiB）、`exercises.html`（11.1 KiB）。相较第一阶段的 162.3 KiB，增长来自场景 1 的进度历史和可操作空态；模块化仍是第三阶段对象。
 - **契约审计 0 发现项**：`audit-frontend-contract.py --strict` 退出码 0，覆盖 21 页面 / 168 后端路由，无 `missing_route`、`direct_fetch`、`legacy_field`、`json_without_content_type`、`missing_request_scope`、`write_without_retry_signal`、`undefined_css_token`。
-- **测试总量 177 个 browser test，分布在 53 个 spec**。其中 **19 个 spec（56 个 test）只访问旧 `/legacy` 入口**，不触碰任何 `/app` 页面。
+- **第一阶段基线为 177 个 browser test，分布在 53 个 spec**。本轮新增报告预览专项后，自动扫描当前为 **62 个 spec**；旧入口引用已按操作分类，不再用“只访问 legacy 的 spec 数”作为迁移完成度指标。
 - **21 个页面全部至少被 1 个 spec 引用**，覆盖数从 `index.html` 的 1 个到 `materials.html` 的 14 个。
 - 后端 137 条去重 `/api/*` 路由路径中，**99 条**被前端字面调用（`direct`），**11 条**因页面用变量拼接末段而无法静态判定（`dynamic`），**27 条**未找到任何前端引用（`unreached`）。场景 1 新增明确的进度历史读取后，前端去重调用端点由 102 增至 103。
 
@@ -105,11 +105,11 @@
 
 ## 5. 后端路由覆盖分类
 
-137 条去重路由路径：`direct` 99 / `dynamic` 11 / `unreached` 27。
+当前 137 条去重路由路径：`direct` 106 / `dynamic` 11 / `unreached` 20；第一阶段基线为 `99 / 11 / 27`。
 
 `dynamic` 是扫描器的不确定项而非缺口。例如 `plans.html` 写成 `'/api/study/plans/' + id + '/' + action`，静态扫描只能得到 `/api/study/plans/{id}/{id}`，于是 `confirm`/`activate`/`pause`/`complete` 四个状态迁移都落入 `dynamic`。同类情况还有 `notes.html` 的 `confirm`/`reject`/`archive`/`blocks` 与 `practice.html` 的 cram 目标状态迁移。
 
-27 条 `unreached` 需要在第二阶段逐项定性，初步分组：
+20 条当前 `unreached` 需要继续逐项定性；报告预览已迁移，其余分组如下：
 
 | 分组 | 条数 | 例子 | 初判 |
 |---|---:|---|---|
@@ -118,7 +118,7 @@
 | 笔记块级编辑 | 4 | `PATCH/POST/DELETE .../blocks/{block_id}` 及其 `sources` | 有意收敛到 `PUT .../blocks` 整体提交，不维护第二套编辑语义 |
 | 计划目标/模块管理 | 7 | `GET/PATCH /api/study/goals/{id}`、`/modules/{id}`、`/archive`、依赖删除 | 目标/模块查看、重命名、归档及依赖删除为正式页缺口 |
 | 学习资产读取 | 4 | `GET /api/study/decks/{id}`、`/exercise-sets/{id}`、`/exercises/{id}/attempts` 与 `POST .../attempts` | 详情读取推迟；exercise attempts 为场景 3 缺口 |
-| 报告交付与预览 | 4 | `/reports/{id}/preview`、`/delivery`、`/delivery-attempts`、`capture-sessions/{id}/archive` | `report_delivery` 默认关闭属安全边界 |
+| 报告交付与采集生命周期 | 3 | `/delivery`、`/delivery-attempts`、`capture-sessions/{id}/archive` | `report_delivery` 默认关闭属安全边界；报告预览已迁移 |
 | 其他 | 2 | `GET /api/study/weak-points`、`POST /api/materials/{id}/purge` | 需确认 |
 
 ## 6. 盘点期间修复的真实缺陷：`today.html` 缺失失败重试
@@ -142,15 +142,15 @@
 
 - [x] 21 个页面的资源引用、内联脚本体积、API 调用已逐页扫描并落盘为可复算数据
 - [x] 共享层统一性已核实（0 内联 style、0 直接 fetch、20/20 页面有请求 scope）
-- [x] 53 个 spec 的页面引用关系已建立，19 个 `/legacy` 专用 spec 已点名
-- [x] 后端 137 条路由路径已按 `direct`/`dynamic`/`unreached` 分类
+- [x] 当前 62 个 spec 的页面引用关系已由扫描器建立；旧 `/legacy` 引用按兼容回归、正式等价 evidence、真实 smoke 和未开放操作分类
+- [x] 后端 137 条路由路径已按 `direct`/`dynamic`/`unreached` 分类；当前复算为 `106 / 11 / 20`
 - [x] 与 `frontend-plan.md` 的定位差异已记录（目标设计 vs 实现快照）
 - [x] 盘点脚本可重复执行，结论不依赖人工记忆
 
 明确**不阻塞**第二阶段、推迟到第三阶段的两项：
 
 1. **内联脚本模块化**（当前 167.8 KiB / 20 页；第一阶段基线 162.3 KiB）—— 先出设计合同再改代码，否则会按当前形状而非目标形状拆分。
-2. **`/legacy` 证据迁移**（19 spec / 56 test）—— 需要先有场景合同定义"正式页面上等价的成功路径"，才能正确重写这些 test。
+2. **`/legacy` 操作级证据迁移**——历史 `/legacy` spec 继续保留兼容回归；需要按场景合同把仍有用户价值的操作补到正式 `/app`，已完成的操作不再重复搬运整份旧 spec。
 
 理由：共享层已统一，信息已足够支撑设计。不完美的盘点加完整的设计，胜过完美的盘点加没有设计。
 

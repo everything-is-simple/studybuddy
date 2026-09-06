@@ -4,8 +4,8 @@
 
 - 静态页面：21
 - 共享资源：6
-- 浏览器 spec：61
-- 去重后前端调用的 API 端点：110
+- 浏览器 spec：62
+- 去重后前端调用的 API 端点：111
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
 ## 1. 页面资源与内联脚本
@@ -27,7 +27,7 @@
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 6 |
 | practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 9 |
 | qa.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.6 KiB | 0 | 6 | 14 |
-| reports.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 3.5 KiB | 0 | 3 | 5 |
+| reports.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 4.1 KiB | 0 | 4 | 6 |
 | review.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.8 KiB | 0 | 7 | 7 |
 | settings-provider.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 10.2 KiB | 0 | 5 | 6 |
 | settings.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.5 KiB | 0 | 4 | 5 |
@@ -146,6 +146,7 @@
 | `/api/study/reports` | classroom.html, reports.html |
 | `/api/study/reports/{id}` | classroom.html, reports.html |
 | `/api/study/reports/{id}/export?<query>` | reports.html |
+| `/api/study/reports/{id}/preview` | reports.html |
 | `/api/study/source-candidates` | plans.html |
 | `/api/study/sources/refresh` | plans.html |
 | `/api/study/sources?<query>` | plans.html |
@@ -181,7 +182,7 @@
 | practice-session.html | practice.html, today.html | 1 | `#retry-session` 重试 | 无 |
 | practice.html | practice-session.html, today.html | 6 | `#refresh-cram` 刷新冲刺<br>`#create-cram-goal` 创建冲刺目标<br>`#create-recommended-session` 创建练习会话<br>`#refresh-recommendations` 刷新推荐<br>`#refresh-sessions` 刷新列表<br>`#refresh-mistakes` 刷新 | form: `#cram-goal-form`<br>input: `#cram-count`, `#cram-date`, `#cram-title`<br>select: `#recommendation-limit` |
 | qa.html | materials.html, today.html | 2 | `#index-btn` 索引当前材料<br>`#submit-btn` 提交问题 | form: `#qa-form`<br>input: `#materials`<br>select: `#retrieval-mode`<br>textarea: `#question` |
-| reports.html | classroom.html, today.html | 3 | `#retry-reports` 重试<br>`#export-json` 导出 JSON<br>`#export-markdown` 导出 Markdown | 无 |
+| reports.html | classroom.html, today.html | 4 | `#retry-reports` 重试<br>`#preview-report` 刷新报告预览<br>`#export-json` 导出 JSON<br>`#export-markdown` 导出 Markdown | 无 |
 | review.html | practice.html, today.html | 1 | `#retry-review` 重试 | 无 |
 | settings-provider.html | today.html | 6 | `#provider-copy` 复制到剪贴板（仅内存生成）<br>`#provider-test` 测试 Provider 连接<br>`#provider-save` 保存此配置<br>`#email-copy` 复制 Email 环境变量（仅内存生成）<br>`#email-test` 测试 Email 连接<br>`#email-save` 保存此配置 | form: `#email-form`, `#provider-form`<br>input: `#email-timeout`, `#feishu-webhook`, `#provider-id`, `#provider-key`, `#provider-model`, `#provider-timeout`, `#provider-url`, `#smtp-host`, `#smtp-password`, `#smtp-port`, `#smtp-recipient`, `#smtp-sender`, `#smtp-username`<br>select: `#email-channel`, `#provider-type`, `#smtp-secure` |
 | settings.html | capture.html, settings-provider.html, tasks.html, today.html | 8 | `#capability-recheck` 重新自检<br>`#capability-refresh` 刷新状态<br>`#ai-save` 保存并生效<br>`#ai-clear` 清除已保存配置<br>`#embedding-save` 保存并生效<br>`#embedding-clear` 清除已保存配置<br>`#local-save` 保存并生效<br>`#local-clear` 清除本机组件覆盖 | form: `#ai-form`, `#embedding-form`, `#local-form`<br>input: `#ai-key`, `#ai-model`, `#ai-provider`, `#ai-url`, `#asr-model`, `#asr-runtime`, `#embedding-key`, `#embedding-model`, `#embedding-provider`, `#embedding-url`, `#ocr-root`<br>select: `#ocr-enabled` |
@@ -207,7 +208,7 @@
 | practice-session.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe3_practice_session_app.spec.js, browser_practice_workflow.spec.js |
 | practice.html | 9 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_practice_recommendations.spec.js |
 | qa.html | 14 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_app.spec.js, browser_p2_fe3_qa_threads_errors_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
-| reports.html | 5 | browser_a3_pages.spec.js, browser_b3_report_c5.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js |
+| reports.html | 6 | browser_a3_pages.spec.js, browser_b3_report_c5.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe4_report_preview_app.spec.js |
 | review.html | 7 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js, browser_p2_fe3_review_app.spec.js, browser_practice_workflow.spec.js |
 | settings-provider.html | 6 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | settings.html | 5 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
@@ -247,9 +248,9 @@
 ## 8. 后端路由覆盖分类
 
 - 去重路由路径：137
-- `direct`（页面/共享模块出现字面调用）：105
+- `direct`（页面/共享模块出现字面调用）：106
 - `dynamic`（页面用变量拼最后一段，静态扫描无法判定具体动作）：11
-- `unreached`（未找到任何前端引用）：21
+- `unreached`（未找到任何前端引用）：20
 
 `dynamic` 不是结论，只是静态扫描的不确定项；`unreached` 也不等于能力缺失，部分是 `/legacy` 专用、运维/探活端点或按安全边界有意不暂开。逐项定性属于第二阶段设计合同。
 
@@ -258,7 +259,7 @@
 | `ai_indexing.py` | 0 | 1 | `POST /api/materials/{material_id}/ai-index/tasks` — unreached |
 | `ai_retrieval_qa.py` | 0 | 3 | `POST /api/citation/validate` — unreached<br>`POST /api/context/assemble` — unreached<br>`POST /api/retrieval` — unreached |
 | `materials_detail.py` | 0 | 1 | `POST /api/materials/{material_id}/purge` — unreached |
-| `study_capture_reports.py` | 0 | 4 | `GET /api/study/reports/{report_id}/delivery-attempts` — unreached<br>`GET /api/study/reports/{report_id}/preview` — unreached<br>`POST /api/study/capture-sessions/{capture_id}/archive` — unreached<br>`POST /api/study/reports/{report_id}/delivery` — unreached |
+| `study_capture_reports.py` | 0 | 3 | `GET /api/study/reports/{report_id}/delivery-attempts` — unreached<br>`POST /api/study/capture-sessions/{capture_id}/archive` — unreached<br>`POST /api/study/reports/{report_id}/delivery` — unreached |
 | `study_learning.py` | 0 | 4 | `GET /api/study/decks/{deck_id}` — unreached<br>`GET /api/study/exercise-sets/{set_id}` — unreached<br>`GET /api/study/exercises/{exercise_id}/attempts` — unreached<br>`POST /api/study/exercises/{exercise_id}/attempts` — unreached |
 | `study_notes.py` | 5 | 4 | `POST /api/study/notes/{note_id}/archive` — dynamic<br>`POST /api/study/notes/{note_id}/blocks` — dynamic<br>`POST /api/study/notes/{note_id}/confirm` — dynamic<br>`POST /api/study/notes/{note_id}/reject` — dynamic<br>`PUT /api/study/notes/{note_id}/blocks` — dynamic<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`DELETE /api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}` — unreached<br>`PATCH /api/study/notes/{note_id}/blocks/{block_id}` — unreached<br>`POST /api/study/notes/{note_id}/blocks/{block_id}/sources` — unreached |
 | `study_plans.py` | 4 | 0 | `POST /api/study/plans/{plan_id}/activate` — dynamic<br>`POST /api/study/plans/{plan_id}/complete` — dynamic<br>`POST /api/study/plans/{plan_id}/confirm` — dynamic<br>`POST /api/study/plans/{plan_id}/pause` — dynamic |

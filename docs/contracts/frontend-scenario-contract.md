@@ -1,6 +1,6 @@
 # Frontend Scenario 前后端整体设计合同
 
-> 状态：`P2-FE-2 / scenarios 1-3 frozen; P2-FE-3 scoped implementation evidence in progress`
+> 状态：`P2-FE-2 / scenarios 1-3 frozen; P2-FE-4 scoped legacy operation closeout in progress`
 > 更新：2026-09-06
 >
 > 技术路线：HTML + CSS + 原生 JavaScript + FastAPI JSON API。
@@ -239,7 +239,7 @@ initial → 三个区块并行 loading，共享一次 GET /api/study/plans
 | 6 | POST `/api/study/capture-sessions/{capture_id}/archive` | deferred | capture/classroom 生命周期工作区后续项。 |
 | 7 | POST `/api/study/reports/{report_id}/delivery` | intentional | 外发默认关闭且逐次授权；不能作为普通报告按钮默认开放。 |
 | 8 | GET `/api/study/reports/{report_id}/delivery-attempts` | deferred | 仅在显式 delivery 工作区中展示；当前外发关闭。 |
-| 9 | GET `/api/study/reports/{report_id}/preview` | gap | reports 已有详情/导出相邻能力，正式预览入口仍缺失。 |
+| 9 | GET `/api/study/reports/{report_id}/preview` | migrated | `reports.html` 已提供“刷新报告预览”，读取脱敏预览并支持失败重试；delivery 仍不开放。 |
 | 10 | GET `/api/study/decks/{deck_id}` | deferred | 卡片组详情场景，不阻塞当前 cards 列表与学习流程。 |
 | 11 | GET `/api/study/exercise-sets/{set_id}` | deferred | 练习集详情场景，归入场景 3。 |
 | 12 | GET+POST `/api/study/exercises/{exercise_id}/attempts` | gap | 练习页已有题目，正式逐题 attempt 读写面缺失，归入场景 3。 |
@@ -446,7 +446,21 @@ cancel/retry → confirm → POST → 重读详情
 - `browser_p1_4_c2_explainability.spec.js` / `browser_p1_4_c3_batch_export.spec.js`：接受/拒绝指导与批量导出。
 - 共享 baseline / visual matrix 覆盖 10 个 viewport、无横向溢出、状态在 5 秒内离开 loading、可见焦点与触控尺寸。
 
-历史 legacy evidence 仍保留但不再整体计作当前缺口：当前 61 个 spec 中有 22 个文件包含 `/legacy` 引用，其中混合了兼容入口测试、已由 `/app` 等价覆盖的旧回归、opt-in 真实 Provider 测试和真正未迁移动作，不能沿用初始盘点的“19 spec / 56 test”作为剩余量。`browser_qa.spec.js` 的核心问答、线程切换、rate-limit/unavailable 和 P6-C 跨页维度，已分别由三个 P2-FE-3 正式 spec 覆盖；未重跑的真实外部 Provider 维度保持 `not_verified`。材料旧测试继续验证 `/legacy` 兼容性；正式材料专项现覆盖导入/搜索/分页/真实状态筛选、**重命名成功与失败重试、重复提交保护、刷新恢复**、回收站、删除/恢复和三种 ZIP 导出。永久 purge 仍是 `intentional/not_exposed`，不因旧页面存在而迁移。下一批继续以操作级对照寻找“旧 UI 可操作而 `/app` 缺失”的真实差异。
+历史 legacy evidence 仍保留但不再整体计作当前缺口：当前扫描为 62 个 spec，其中 23 个文件包含 `/legacy` 引用，混合了兼容入口测试、已由 `/app` 等价覆盖的旧回归、opt-in 真实 Provider 测试和真正未迁移动作，不能沿用初始盘点的“19 spec / 56 test”作为剩余量。`browser_qa.spec.js` 的核心问答、线程切换、rate-limit/unavailable 和 P6-C 跨页维度，已分别由三个 P2-FE-3 正式 spec 覆盖；未重跑的真实外部 Provider 维度保持 `not_verified`。材料旧测试继续验证 `/legacy` 兼容性；正式材料专项现覆盖导入/搜索/分页/真实状态筛选、**重命名成功与失败重试、重复提交保护、刷新恢复**、回收站、删除/恢复和三种 ZIP 导出。永久 purge 仍是 `intentional/not_exposed`，不因旧页面存在而迁移。下一批继续以操作级对照寻找“旧 UI 可操作而 `/app` 缺失”的真实差异。报告预览本轮已完成迁移：旧入口的报告查看/预览语义对应正式 `reports.html` 的脱敏详情与 `#preview-report`，并由 `browser_p2_fe4_report_preview_app.spec.js` 覆盖成功、失败重试、busy/重复点击、刷新恢复和隐私。
+
+### 5.6 Legacy spec 操作级分类清单
+
+以下清单是当前 23 个含 `/legacy` 引用文件的审计索引；分类针对用户操作，不把“访问旧入口”本身误判为迁移缺口。
+
+| 分类 | spec / 操作范围 | 结论 |
+|---|---|---|
+| `already_migrated` | `browser_file_import.spec.js`、`browser_folder_import.spec.js`、`browser_multi_file_import.spec.js`：单文件、文件夹、批量导入；`browser_material_search.spec.js`、`browser_material_pagination.spec.js`：搜索、分页；`browser_material_management.spec.js`、`browser_material_recycle_bin.spec.js`、`browser_material_export.spec.js`：重命名、删除/恢复、回收站、ZIP 导出 | 正式 `materials.html` 已有等价入口和专项 evidence；旧 spec 保留兼容回归 |
+| `already_migrated` | `browser_qa.spec.js`、`browser_p6d.spec.js`、`browser_p6e.spec.js`：问答、线程、导航、失败恢复；`browser_phase7.spec.js`、`browser_phase8.spec.js`、`browser_phase9a.spec.js`、`browser_phase9b.spec.js`、`browser_phase9c.spec.js`、`browser_phase9d.spec.js`：已迁移场景的历史 domain/UI 回归 | 正式场景专项已覆盖当前声明范围；真实 Provider/组件和历史兼容路径仍按各自证据等级解释 |
+| `already_migrated` | `browser_e2e.spec.js`、`browser_frontend_failure_contract.spec.js`：端到端和安全失败回归；本轮新增 `browser_p2_fe4_report_preview_app.spec.js`：报告预览成功/失败重试/busy/刷新/隐私 | 正式页面已有等价能力；不重复搬运整份旧回归 |
+| `deferred/not_verified` | `browser_p6e_real_provider.spec.js`：真实 Provider UI smoke；`browser_p1_4_c4_4_weekly_trend.spec.js`：旧 Today/趋势兼容入口 | 真实外部 Provider 仍 not_verified；Today/趋势正式路径已有 scoped evidence，旧入口保留兼容 |
+| `intentional/not_exposed` | 旧材料 purge 操作（见 `browser_material_recycle_bin.spec.js` 和 `browser_frontend_failure_contract.spec.js`） | 永久删除是破坏性操作，需独立产品/备份/不可恢复决策；当前不在正式 UI 开放 |
+
+这份分类不把每个历史测试重写成 `/app` 测试；正式页面的可用性以场景专项 evidence 为准，剩余真正缺口继续从未开放路由和明确用户价值出发。
 
 `not_verified`：真实 Provider 大文本问答、真实 OCR/ASR 采集链、生产规模、多进程、真实断电与跨时区边界。
 
@@ -536,7 +550,7 @@ practice.html 选择练习/建议
 1. 场景 1 已作为模板完成实现与专项 browser evidence。
 2. 场景 2 四件套已冻结（2026-09-05）；材料管理和 QA 核心 `/app` evidence 已迁移并持续补强；purge 决策、异步索引入口决策及其它未迁移维度继续保持明确边界。
 3. ✅ 场景 3 已按 [`frontend-practice-workflow-contract.md`](frontend-practice-workflow-contract.md) 完成正式页面三批 scoped evidence；exercise-set 详情、weak-points 和 cram 详情仍是未完成或未暴露维度。
-4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片；其中目标/模块管理、依赖删除与 rhythm export 已完成正式 `/app` 迁移，报告预览归类为已有正式能力。
+4. 目标/模块管理、依赖删除、报告预览和 rhythm export 按上表归属进入独立可用切片；其中目标/模块管理、依赖删除、报告预览与 rhythm export 已完成正式 `/app` 迁移。
 5. 每个切片运行 focused tests；涉及 API、存储或基础设施时运行完整 backend；所有用户页面变更运行完整 Chromium。
 6. 每次交付运行 contract audit、frontend inventory scan、source-size 和治理测试；更新 `STATUS.md`、`TODO.md`，不新增重复 evidence 文档。
 
