@@ -1,3 +1,39 @@
+"""备份与恢复核心模块。
+
+本模块提供 StudyBuddy 数据根目录的完整备份和恢复功能，包括：
+- SQLite 数据库的完整性验证备份
+- 原始文件的哈希验证复制
+- 备份清单（manifest）的原子写入
+- 恢复前的完整性验证
+- 备份轮转（保留 N 个最新备份）
+- 升级前预检（确保数据和备份版本一致）
+
+备份格式:
+- 格式标识: "studybuddy-backup"
+- 格式版本: 1
+- 结构:
+  backup_root/
+    ├─ manifest.json (备份元数据和文件清单)
+    ├─ database.sqlite3 (SQLite 数据库快照)
+    └─ originals/ (原始文件，按 SHA256 组织)
+
+关键约束:
+- 备份目标必须是空目录或不存在
+- 备份目标不能在 data_root 内部
+- 所有文件操作都是原子性的（通过临时文件 + rename）
+- 恢复前必须验证备份完整性
+- 恢复目标必须是空目录或不存在
+
+错误处理:
+- 所有错误通过 BackupError 抛出，带结构化错误码
+- 操作失败时清理临时文件
+- 关键操作记录到可观测性系统
+
+相关模块:
+- migrations.runner - 数据库 schema 版本管理
+- observability - 事件和指标记录
+- restore_acceptance - 恢复验收测试
+"""
 from __future__ import annotations
 
 import hashlib
@@ -20,12 +56,37 @@ _DB_NAME = "database.sqlite3"
 
 
 class BackupError(ValueError):
+    """备份/恢复操作失败异常。
+    
+    所有备份和恢复操作的错误都通过此异常抛出，携带结构化错误码。
+    
+    Args:
+        code: 错误码（如 'backup_database_missing', 'restore_target_not_empty'）
+    
+    Attributes:
+        code: 错误码字符串，用于 API 响应和日志记录
+    """
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
 
 
 def _lstat(path: Path, code: str) -> stat.stat_result:
+    """安全地获取路径状态，拒绝符号链接。
+    
+    Args:
+        path: 要检查的路径
+        code: 失败时的错误码
+    
+    Returns:
+        路径的文件状态信息
+    
+    Raises:
+        BackupError: 路径不存在、无法访问或是符号链接时
+    
+    注意:
+        符号链接被显式拒绝以防止目录遍历攻击和意外的外部引用
+    """
     try:
         info = path.lstat()
     except FileNotFoundError:
@@ -38,11 +99,34 @@ def _lstat(path: Path, code: str) -> stat.stat_result:
 
 
 def _regular(path: Path, code: str) -> None:
+    """验证路径是普通文件（非目录、非符号链接）。
+    
+    Args:
+        path: 要检查的路径
+        code: 失败时的错误码
+    
+    Raises:
+        BackupError: 路径不是普通文件时
+    """
     if not stat.S_ISREG(_lstat(path, code).st_mode):
         raise BackupError(code)
 
 
 def _sha256(path: Path) -> str:
+    """计算文件的 SHA256 哈希值。
+    
+    Args:
+        path: 文件路径
+    
+    Returns:
+        小写十六进制 SHA256 哈希字符串（64 字符）
+    
+    Raises:
+        BackupError: 文件读取失败时（错误码 'backup_read_failed'）
+    
+    注意:
+        使用 1MB 块大小流式读取，避免大文件内存占用
+    """
     digest = hashlib.sha256()
     try:
         with path.open("rb") as handle:
@@ -54,6 +138,17 @@ def _sha256(path: Path) -> str:
 
 
 def _safe_children(root: Path) -> list[Path]:
+    """安全地列出目录下的直接子项。
+    
+    Args:
+        root: 目录路径
+    
+    Returns:
+        子项路径列表（不递归）
+    
+    Raises:
+        BackupError: 目录扫描失败时（错误码 'backup_scan_failed'）
+    """
     try:
         return list(root.iterdir())
     except OSError:
@@ -61,6 +156,18 @@ def _safe_children(root: Path) -> list[Path]:
 
 
 def _inside(child: Path, parent: Path) -> bool:
+    """检查子路径是否在父路径内部（防止目录遍历）。
+    
+    Args:
+        child: 子路径
+        parent: 父路径
+    
+    Returns:
+        True 如果 child 在 parent 内部，否则 False
+    
+    注意:
+        使用绝对路径规范化后比较，防止 '../' 等绕过
+    """
     try:
         return os.path.commonpath((os.path.abspath(child), os.path.abspath(parent))) == os.path.abspath(parent)
     except ValueError:
@@ -68,6 +175,18 @@ def _inside(child: Path, parent: Path) -> bool:
 
 
 def _sqlite_header(path: Path, code: str) -> None:
+    """验证文件是有效的 SQLite3 数据库（通过魔数头）。
+    
+    Args:
+        path: 数据库文件路径
+        code: 验证失败时的错误码
+    
+    Raises:
+        BackupError: 文件不是普通文件、无法读取或魔数头不匹配时
+    
+    注意:
+        只检查前 16 字节的魔数 'SQLite format 3\x00'，不执行完整性检查
+    """
     _regular(path, code)
     try:
         with path.open("rb") as handle:
@@ -80,6 +199,24 @@ def _sqlite_header(path: Path, code: str) -> None:
 
 
 def _checks(path: Path, *, require_current: bool) -> tuple[str, str, int]:
+    """执行 SQLite 数据库的完整性和外键检查。
+    
+    Args:
+        path: 数据库文件路径
+        require_current: 是否要求 schema 版本必须是当前最新版本
+    
+    Returns:
+        三元组 (完整性检查结果, 外键检查结果, schema 版本号)
+        - 完整性检查结果: 'ok' 或其他描述
+        - 外键检查结果: 'ok' 或 'failed'
+        - schema 版本号: 整数
+    
+    Raises:
+        BackupError: 数据库打开失败、检查失败或 schema 版本无效时
+    
+    注意:
+        以只读模式打开数据库（PRAGMA query_only = ON），不修改任何数据
+    """
     connection: sqlite3.Connection | None = None
     try:
         connection = sqlite3.connect(path)
