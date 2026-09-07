@@ -1,3 +1,29 @@
+"""恢复验收测试模块。
+
+本模块提供恢复后数据完整性验收测试，支持离线和在线两种模式。
+验收测试检查数据库完整性、外键约束、学习数据一致性、原始文件哈希等。
+
+主要功能：
+- 离线模式：验证数据库和文件系统完整性
+- 在线模式：验证 HTTP API 端点可达性和数据一致性
+- 学习数据投影检查（计划、进度、笔记、练习）
+- Phase 9c/9d/10 特定验收规则
+
+验收标准：
+- 数据库完整性检查（PRAGMA integrity_check）
+- 外键约束检查（PRAGMA foreign_key_check）
+- Schema 版本与迁移历史一致性
+- 原始文件哈希验证
+- 学习数据投影与事件流一致性
+
+错误码体系：
+- acceptance_database_*: 数据库层问题
+- acceptance_study_*: 学习数据不一致
+- acceptance_phase9c_*: 练习系统问题
+- acceptance_phase9d_*: 采集报告系统问题
+- acceptance_phase10_*: 任务系统问题
+- acceptance_http_*: HTTP API 问题
+"""
 from __future__ import annotations
 
 import hashlib
@@ -14,16 +40,33 @@ from .migrations.runner import MigrationError, assert_schema_version
 
 
 class AcceptanceError(ValueError):
+    """验收测试失败异常。
+    
+    Args:
+        code: 错误码（如 'acceptance_database_integrity_failed'）
+    """
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
 
 
 def _sha256_bytes(value: bytes) -> str:
+    """计算字节数据的 SHA256 哈希值（小写十六进制）。"""
     return hashlib.sha256(value).hexdigest()
 
 
 def _sha256_file(path: Path) -> str:
+    """计算文件的 SHA256 哈希值（分块读取，支持大文件）。
+    
+    Args:
+        path: 文件路径
+    
+    Returns:
+        小写十六进制哈希值
+    
+    Raises:
+        AcceptanceError: 文件读取失败时
+    """
     digest = hashlib.sha256()
     try:
         with path.open("rb") as handle:
@@ -35,6 +78,24 @@ def _sha256_file(path: Path) -> str:
 
 
 def _safe_original(root: Path, stored_path: str, expected_hash: str) -> Path:
+    """安全地验证原始文件路径和哈希值。
+    
+    检查项：
+    - 路径必须在 root 下，不允许符号链接
+    - 文件必须是普通文件（非目录、非链接）
+    - 文件哈希必须匹配预期值
+    
+    Args:
+        root: 原始文件根目录
+        stored_path: 存储路径（相对或绝对）
+        expected_hash: 预期 SHA256 哈希值
+    
+    Returns:
+        验证通过的文件路径
+    
+    Raises:
+        AcceptanceError: 路径不安全、文件缺失或哈希不匹配时
+    """
     target = Path(stored_path)
     try:
         root_info = root.lstat()
@@ -61,6 +122,28 @@ def _safe_original(root: Path, stored_path: str, expected_hash: str) -> Path:
 
 
 def _check_database(data_root: Path) -> tuple[sqlite3.Connection, dict[str, Any]]:
+    """检查数据库完整性和 Schema 版本。
+    
+    验证项：
+    - PRAGMA integrity_check = 'ok'
+    - PRAGMA foreign_key_check 无违规
+    - Schema 版本匹配当前代码（assert_schema_version）
+    - 迁移历史记录数
+    
+    Args:
+        data_root: 数据根目录（必须包含 studybuddy.sqlite3）
+    
+    Returns:
+        (数据库连接, 元数据字典)
+        连接已设置 row_factory = sqlite3.Row
+        元数据包含 schema_version 和 history_count
+    
+    Raises:
+        AcceptanceError: 数据库缺失、损坏或版本不匹配时
+    
+    注意:
+        调用者必须负责关闭返回的连接
+    """
     database = data_root / "studybuddy.sqlite3"
     connection: sqlite3.Connection | None = None
     if database.is_symlink() or not database.is_file():
@@ -90,6 +173,26 @@ def _check_database(data_root: Path) -> tuple[sqlite3.Connection, dict[str, Any]
 
 
 def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
+    """验证学习数据的完整性和一致性（Phase 9a/9b/9c）。
+    
+    检查项：
+    - 20 个学习相关表必须存在
+    - 计划项目状态与进度事件投影一致
+    - 计划汇总数据准确（item_count = completed + skipped + in_progress + pending）
+    - 笔记必须至少有一个 note_block
+    - 节奏分配必须有对应的 rhythm_settings
+    - valid 状态的源链接必须有 material_id
+    - 练习会话、尝试、评审的 project_id 一致性
+    
+    Args:
+        connection: SQLite 连接（已设置 row_factory）
+    
+    Returns:
+        包含状态、计数、分组统计的字典
+    
+    Raises:
+        AcceptanceError: 数据不一致或投影错误时
+    """
     required_tables = (
         "learning_goals", "knowledge_modules", "study_plans", "study_plan_items",
         "study_plan_dependencies", "study_progress_events", "module_source_links",
@@ -237,6 +340,25 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
 
 
 def _phase9d_checks(connection: sqlite3.Connection) -> dict[str, Any]:
+    """验证采集会话和报告交付的完整性（Phase 9d）。
+    
+    检查项：
+    - 5 个 Phase 9d 表必须存在（capture_sessions, transcript_*, report_*）
+    - transcript_drafts 的 project_id 与 capture_session 一致
+    - transcript_segments 的 project_id 与 draft 一致
+    - ai_operations.capture_session_id 指向存在且同项目的会话
+    - report_delivery_attempts 的 project_id 与 report_snapshot 一致
+    - source_status='valid' 的会话必须有有效的未删除 material
+    
+    Args:
+        connection: SQLite 连接
+    
+    Returns:
+        包含状态、计数、分组统计的字典
+    
+    Raises:
+        AcceptanceError: 数据范围错误或源链接无效时
+    """
     required_tables = (
         "capture_sessions", "transcript_drafts", "transcript_segments",
         "report_snapshots", "report_delivery_attempts",
@@ -313,6 +435,23 @@ def _phase9d_checks(connection: sqlite3.Connection) -> dict[str, Any]:
 
 
 def _phase10_task_checks(connection: sqlite3.Connection) -> dict[str, Any]:
+    """验证后台任务系统的完整性（Phase 10）。
+    
+    检查项：
+    - operation_tasks 和 operation_task_attempts 表存在
+    - task 的 project_id 与 operation 一致
+    - attempt 的 project_id 与 task 一致
+    - 每个 task 最多只有一个 status='running' 的 attempt
+    
+    Args:
+        connection: SQLite 连接
+    
+    Returns:
+        包含状态、计数、分组统计的字典
+    
+    Raises:
+        AcceptanceError: 数据范围错误或状态冲突时
+    """
     required_tables = ("operation_tasks", "operation_task_attempts")
     placeholders = ",".join("?" for _ in required_tables)
     present = {
@@ -362,6 +501,24 @@ def _phase10_task_checks(connection: sqlite3.Connection) -> dict[str, Any]:
 
 
 def _offline(data_root: Path) -> dict[str, Any]:
+    """离线模式验收测试（仅数据库和文件系统）。
+    
+    执行流程：
+    1. 检查数据库完整性和 Schema 版本
+    2. 运行学习数据、Phase 9d、Phase 10 的验收测试
+    3. 如果有激活材料，验证第一个材料的原始文件哈希
+    4. 验证提取文本的哈希
+    
+    Args:
+        data_root: 数据根目录
+    
+    Returns:
+        验收报告（status, mode, checks, error_code）
+    
+    注意:
+        - 不需要 HTTP 服务运行
+        - health 和部分检查标记为 'skipped'
+    """
     connection, metadata = _check_database(data_root)
     checks: dict[str, Any] = {
         "health": {"status": "skipped", "reason": "offline_mode"},
@@ -410,6 +567,18 @@ def _offline(data_root: Path) -> dict[str, Any]:
 
 
 def _http_json(base_url: str, path: str) -> tuple[int, Any]:
+    """发送 HTTP GET 请求并解析 JSON 响应。
+    
+    Args:
+        base_url: 基础 URL（如 'http://localhost:8000'）
+        path: 请求路径（如 '/api/health'）
+    
+    Returns:
+        (HTTP 状态码, 解析后的 JSON 对象)
+    
+    Raises:
+        AcceptanceError: 请求失败或 JSON 解析失败时
+    """
     try:
         with urllib.request.urlopen(base_url.rstrip("/") + path, timeout=5) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
@@ -418,6 +587,18 @@ def _http_json(base_url: str, path: str) -> tuple[int, Any]:
 
 
 def _http_bytes(base_url: str, path: str) -> tuple[int, dict[str, str], bytes]:
+    """发送 HTTP GET 请求并返回原始字节响应。
+    
+    Args:
+        base_url: 基础 URL
+        path: 请求路径
+    
+    Returns:
+        (HTTP 状态码, 响应头字典, 响应体字节)
+    
+    Raises:
+        AcceptanceError: 请求失败时
+    """
     try:
         with urllib.request.urlopen(base_url.rstrip("/") + path, timeout=5) as response:
             return response.status, {str(k).lower(): str(v) for k, v in response.headers.items()}, response.read()
@@ -426,6 +607,27 @@ def _http_bytes(base_url: str, path: str) -> tuple[int, dict[str, str], bytes]:
 
 
 def _online(data_root: Path, base_url: str) -> dict[str, Any]:
+    """在线模式验收测试（数据库 + HTTP API）。
+    
+    执行流程：
+    1. 运行离线模式的所有检查
+    2. 验证 /api/health 端点返回 status='ok'
+    3. 验证 /api/materials 和 /api/materials/deleted 端点
+    4. 如果有激活材料，验证：
+       - /api/materials/{id} 详情端点
+       - /api/materials/{id}/original 下载并校验哈希
+       - /api/materials/{id}/text 导出并校验内容
+    
+    Args:
+        data_root: 数据根目录
+        base_url: FastAPI 服务基础 URL
+    
+    Returns:
+        验收报告（mode='online'）
+    
+    Raises:
+        AcceptanceError: HTTP 请求失败或响应不符合预期时
+    """
     result = _offline(data_root)
     checks = result["checks"]
     status, health = _http_json(base_url, "/api/health")
@@ -459,6 +661,38 @@ def _online(data_root: Path, base_url: str) -> dict[str, Any]:
 
 
 def verify_restored_data(data_root: Path, base_url: str | None = None) -> dict[str, Any]:
+    """验证恢复后的数据完整性。
+    
+    根据 base_url 参数选择离线或在线模式：
+    - base_url=None: 离线模式，仅验证数据库和文件系统
+    - base_url='http://...': 在线模式，同时验证 HTTP API
+    
+    Args:
+        data_root: 数据根目录（必须是恢复后的完整 data_root）
+        base_url: 可选的 FastAPI 服务基础 URL
+    
+    Returns:
+        验收报告字典，包含：
+        - status: 'passed' 或 'failed'
+        - mode: 'offline' 或 'online'
+        - checks: 各项检查的详细结果
+        - error_code: 失败时的错误码（成功时为 None）
+    
+    示例:
+        # 离线模式
+        result = verify_restored_data(Path('/data/restored'))
+        
+        # 在线模式
+        result = verify_restored_data(
+            Path('/data/restored'),
+            base_url='http://localhost:8000'
+        )
+    
+    注意:
+        - 离线模式不需要 FastAPI 服务运行
+        - 在线模式需要服务已启动并可达
+        - 所有 AcceptanceError 都会被捕获并转换为 error_code
+    """
     try:
         return _online(Path(data_root), base_url) if base_url else _offline(Path(data_root))
     except AcceptanceError as error:
