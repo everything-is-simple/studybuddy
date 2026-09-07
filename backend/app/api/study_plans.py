@@ -1,15 +1,34 @@
+"""Study plans, goals, modules, and plan items routes.
+
+Provides REST endpoints for hierarchical study planning:
+- Learning goals (high-level objectives)
+- Knowledge modules (topic groupings)
+- Study plans (detailed learning schedules with items)
+- Plan items (individual topics/milestones within a plan)
+
+Supports draft/confirmed/active/paused/completed state transitions.
+All routes enforce project_id isolation.
+"""
 from __future__ import annotations
 
 
 def register_routes(app, context: dict[str, object]) -> None:
+    """Register study plans routes with shared context.
+    
+    Args:
+        app: FastAPI application instance
+        context: Shared context dict (connection helpers, error mappers)
+    """
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
     @app.get("/api/study/goals")
     def study_goals(include_archived: bool = False) -> list[dict[str, object]]:
+        """List all learning goals for the project."""
         with connect(app.state.config.database_path) as connection:
             return list_learning_goals(connection, project_id=app.state.config.project_id, include_archived=include_archived)
 
     @app.post("/api/study/goals", status_code=201)
     def create_study_goal(request: StudyGoalRequest) -> dict[str, object]:
+        """Create a new learning goal with title and description."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return create_learning_goal(connection, project_id=app.state.config.project_id, title=request.title, description=request.description)
@@ -20,6 +39,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/goals/{goal_id}")
     def get_study_goal(goal_id: str) -> dict[str, object]:
+        """Get details for a specific learning goal."""
         if not goal_id or len(goal_id) > 100:
             raise HTTPException(status_code=404, detail="learning_goal_not_found")
         with connect(app.state.config.database_path) as connection:
@@ -30,6 +50,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.patch("/api/study/goals/{goal_id}")
     def patch_study_goal(goal_id: str, request: StudyGoalRequest) -> dict[str, object]:
+        """Update a learning goal's title and/or description."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return update_learning_goal(connection, project_id=app.state.config.project_id, goal_id=goal_id, title=request.title, description=request.description)
@@ -40,6 +61,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/goals/{goal_id}/archive")
     def archive_study_goal(goal_id: str) -> dict[str, object]:
+        """Archive a learning goal."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return archive_learning_goal(connection, project_id=app.state.config.project_id, goal_id=goal_id)
@@ -50,11 +72,13 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/modules")
     def study_modules(include_archived: bool = False) -> list[dict[str, object]]:
+        """List all knowledge modules for the project."""
         with connect(app.state.config.database_path) as connection:
             return list_knowledge_modules(connection, project_id=app.state.config.project_id, include_archived=include_archived)
 
     @app.post("/api/study/modules", status_code=201)
     def create_study_module(request: StudyModuleRequest) -> dict[str, object]:
+        """Create a new knowledge module with title and description."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return create_knowledge_module(connection, project_id=app.state.config.project_id, title=request.title, description=request.description)
@@ -65,6 +89,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/modules/{module_id}")
     def get_study_module(module_id: str) -> dict[str, object]:
+        """Get details for a specific knowledge module."""
         if not module_id or len(module_id) > 100:
             raise HTTPException(status_code=404, detail="knowledge_module_not_found")
         with connect(app.state.config.database_path) as connection:
@@ -75,6 +100,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.patch("/api/study/modules/{module_id}")
     def patch_study_module(module_id: str, request: StudyModuleRequest) -> dict[str, object]:
+        """Update a knowledge module's title and/or description."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return update_knowledge_module(connection, project_id=app.state.config.project_id, module_id=module_id, title=request.title, description=request.description)
@@ -85,6 +111,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/modules/{module_id}/archive")
     def archive_study_module(module_id: str) -> dict[str, object]:
+        """Archive a knowledge module."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return archive_knowledge_module(connection, project_id=app.state.config.project_id, module_id=module_id)
@@ -95,11 +122,13 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/plans")
     def study_plans(include_archived: bool = False) -> list[dict[str, object]]:
+        """List all study plans for the project."""
         with connect(app.state.config.database_path) as connection:
             return list_study_plans(connection, project_id=app.state.config.project_id, include_archived=include_archived)
 
     @app.post("/api/study/plans", status_code=201)
     def create_study_plan_route(request: StudyPlanRequest) -> dict[str, object]:
+        """Create a new study plan linked to a learning goal."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return create_study_plan(connection, project_id=app.state.config.project_id, goal_id=request.goal_id, title=request.title, description=request.description)
@@ -110,6 +139,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/plans/{plan_id}")
     def get_study_plan_route(plan_id: str) -> dict[str, object]:
+        """Get details for a specific study plan."""
         if not plan_id or len(plan_id) > 100:
             raise HTTPException(status_code=404, detail="study_plan_not_found")
         with connect(app.state.config.database_path) as connection:
@@ -120,6 +150,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.patch("/api/study/plans/{plan_id}")
     def patch_study_plan_route(plan_id: str, request: StudyPlanPatchRequest) -> dict[str, object]:
+        """Update a study plan's title and/or description (draft state only)."""
         if request.title is None and request.description is None:
             raise HTTPException(status_code=400, detail="study_plan_invalid_payload")
         try:
@@ -131,6 +162,7 @@ def register_routes(app, context: dict[str, object]) -> None:
             raise HTTPException(status_code=500, detail="study_plan_update_failed") from None
 
     def _transition_plan_route(plan_id: str, target: str) -> dict[str, object]:
+        """Transition study plan to target state (confirmed/active/paused/completed/archived)."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return transition_study_plan(connection, project_id=app.state.config.project_id, plan_id=plan_id, target=target)
@@ -141,10 +173,12 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/plans/{plan_id}/confirm")
     def confirm_study_plan(plan_id: str) -> dict[str, object]:
+        """Confirm a draft study plan."""
         return _transition_plan_route(plan_id, "confirmed")
 
     @app.post("/api/study/plans/{plan_id}/activate")
     def activate_study_plan(plan_id: str) -> dict[str, object]:
+        """Activate a confirmed study plan."""
         return _transition_plan_route(plan_id, "active")
 
     @app.post("/api/study/plans/{plan_id}/pause")
