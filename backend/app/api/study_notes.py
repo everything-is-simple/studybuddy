@@ -1,10 +1,26 @@
+"""Study notes routes (block-based note-taking with source citations).
+
+Provides REST endpoints for creating, editing, and managing study notes.
+Notes are composed of typed blocks (text, quote, code, etc.) with optional
+source citations linking to material chunks. Supports draft/confirmed states
+and AI-assisted generation from materials.
+
+All routes enforce project_id isolation and validate state transitions.
+"""
 from __future__ import annotations
 
 
 def register_routes(app, context: dict[str, object]) -> None:
+    """Register study notes routes with shared context.
+    
+    Args:
+        app: FastAPI application instance
+        context: Shared context dict (connection helpers, error mappers)
+    """
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
     @app.get("/api/study/notes")
     def study_notes(include_archived: bool = False) -> list[dict[str, object]]:
+        """List all study notes for the project."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return list_notes(connection, project_id=app.state.config.project_id, include_archived=include_archived)
@@ -13,6 +29,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes", status_code=201)
     def create_study_note_route(request: NoteRequest) -> dict[str, object]:
+        """Create a new study note with title and content blocks."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return create_user_note(connection, project_id=app.state.config.project_id,
@@ -24,6 +41,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/notes/{note_id}")
     def get_study_note_route(note_id: str) -> dict[str, object]:
+        """Get details for a specific study note."""
         note_id = _bounded_id(note_id, "study_note_not_found")
         try:
             with connect(app.state.config.database_path) as connection:
@@ -36,6 +54,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.patch("/api/study/notes/{note_id}")
     def patch_study_note_route(note_id: str, request: NotePatchRequest) -> dict[str, object]:
+        """Update note title and/or blocks (draft state only)."""
         note_id = _bounded_id(note_id, "study_note_not_found")
         if request.title is None and request.blocks is None:
             raise HTTPException(status_code=400, detail="study_note_invalid_payload")
@@ -52,6 +71,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/{note_id}/blocks", status_code=201)
     def create_study_note_block_route(note_id: str, request: NoteBlockRequest) -> dict[str, object]:
+        """Add a new content block to a study note."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return create_note_block(connection, project_id=app.state.config.project_id, note_id=note_id,
@@ -64,6 +84,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.put("/api/study/notes/{note_id}/blocks", status_code=200)
     def replace_study_note_blocks_route(note_id: str, request: NoteBlocksRequest) -> dict[str, object]:
+        """Replace all blocks in a study note (atomic update)."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return update_note_blocks(connection, project_id=app.state.config.project_id, note_id=note_id,
@@ -76,6 +97,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.patch("/api/study/notes/{note_id}/blocks/{block_id}")
     def patch_study_note_block_route(note_id: str, block_id: str, request: NoteBlockRequest) -> dict[str, object]:
+        """Update a specific content block in a study note."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return update_note_block(connection, project_id=app.state.config.project_id, note_id=note_id,
@@ -89,6 +111,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.delete("/api/study/notes/{note_id}/blocks/{block_id}", status_code=204)
     def delete_study_note_block_route(note_id: str, block_id: str) -> Response:
+        """Delete a content block from a study note."""
         try:
             with connect(app.state.config.database_path) as connection:
                 delete_note_block(connection, project_id=app.state.config.project_id, note_id=note_id, block_id=block_id)
@@ -102,6 +125,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/{note_id}/confirm")
     def confirm_study_note_route(note_id: str) -> dict[str, object]:
+        """Confirm a draft note, transitioning it to confirmed state.
+        
+        Validates all source citations are valid before confirming.
+        """
         try:
             with connect(app.state.config.database_path) as connection:
                 return confirm_note(connection, project_id=app.state.config.project_id, note_id=note_id)
@@ -113,6 +140,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/{note_id}/reject")
     def reject_study_note_route(note_id: str) -> dict[str, object]:
+        """Reject a draft note, transitioning it to rejected state."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return transition_note(connection, project_id=app.state.config.project_id, note_id=note_id, target="rejected")
@@ -123,6 +151,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/{note_id}/archive")
     def archive_study_note_route(note_id: str) -> dict[str, object]:
+        """Archive a confirmed note."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return archive_note(connection, project_id=app.state.config.project_id, note_id=note_id)
@@ -133,6 +162,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/{note_id}/modules/{module_id}", status_code=201)
     def link_study_note_module_route(note_id: str, module_id: str) -> dict[str, object]:
+        """Link a study note to a plan module (for organization)."""
         try:
             with connect(app.state.config.database_path) as connection:
                 link_note_module(connection, project_id=app.state.config.project_id, note_id=note_id, module_id=module_id)
@@ -148,6 +178,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.delete("/api/study/notes/{note_id}/modules/{module_id}", status_code=204)
     def unlink_study_note_module_route(note_id: str, module_id: str) -> Response:
+        """Unlink a study note from a plan module."""
         try:
             with connect(app.state.config.database_path) as connection:
                 unlink_note_module(connection, project_id=app.state.config.project_id, note_id=note_id, module_id=module_id)
@@ -160,6 +191,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/{note_id}/blocks/{block_id}/sources", status_code=201)
     def create_study_note_source_route(note_id: str, block_id: str, request: NoteSourceLinkRequest) -> dict[str, object]:
+        """Add a source citation to a note block.
+        
+        Links the block to material chunks via citation_key and context_chunk_ids.
+        """
         try:
             with connect(app.state.config.database_path) as connection:
                 payload = request.model_dump()
@@ -174,6 +209,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.delete("/api/study/notes/{note_id}/blocks/{block_id}/sources/{link_id}", status_code=204)
     def delete_study_note_source_route(note_id: str, block_id: str, link_id: str) -> Response:
+        """Remove a source citation from a note block."""
         try:
             with connect(app.state.config.database_path) as connection:
                 delete_note_source_link(connection, project_id=app.state.config.project_id, note_id=note_id, link_id=link_id)
@@ -186,6 +222,11 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/notes/sources/refresh")
     def refresh_study_note_sources_route(request: NoteSourceRefreshRequest | None = None) -> dict[str, int]:
+        """Refresh source citation validity for notes.
+        
+        Updates citation status when linked material chunks change. Can filter by
+        note_id or material_id, or refresh all citations if no filter provided.
+        """
         try:
             with connect(app.state.config.database_path) as connection:
                 return {"updated": refresh_note_source_links(connection, project_id=app.state.config.project_id,
