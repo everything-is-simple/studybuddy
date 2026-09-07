@@ -1,4 +1,41 @@
-"""Explicit local PaddleOCR adapter for the B2 Formal scope."""
+"""PaddleOCR 和 RapidOCR 图像文字识别 Provider。
+
+本模块提供本地离线的 OCR（光学字符识别）能力，支持中文图像文字提取。
+实现了三个 Provider：
+
+1. **PaddleImageOcrProvider** - 主要 OCR 引擎
+   - 使用 PaddlePaddle 的 PP-OCRv5 模型
+   - 需要预先下载模型文件到本地
+   - 精度高，但初始化较慢
+
+2. **RapidImageOcrProvider** - 快速备用引擎
+   - 使用 RapidOCR（基于 ONNX 推理）
+   - 模型更小，初始化更快
+   - 精度略低于 PaddleOCR
+
+3. **OcrFallbackProvider** - 降级策略包装器
+   - 优先使用 PaddleOCR
+   - 失败时自动降级到 RapidOCR
+   - 记录降级原因用于诊断
+
+支持的图像格式：
+- image/png
+- image/jpeg
+- image/webp
+
+性能限制：
+- 单图最大 50 MiB
+- 分辨率最大 12,000,000 像素（约 4000×3000）
+- OCR 结果最大 524 KiB（防止超长文本 OOM）
+
+关联模块：
+- _core: CaptureProvider 协议定义
+- api.study_capture_reports: OCR API 调用方
+
+Note:
+    所有 Provider 都是本地离线运行，不发起网络请求。
+    模型文件需要手动下载到 model_root 目录。
+"""
 from __future__ import annotations
 
 import hashlib
@@ -20,7 +57,18 @@ SUPPORTED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 
 class RapidImageOcrProvider:
-    """Offline RapidOCR ONNX provider for the explicit fallback scope."""
+    """离线 RapidOCR ONNX Provider（备用方案）。
+
+    使用 RapidOCR（基于 ONNX Runtime）进行图像文字识别。
+    作为 PaddleOCR 的备用引擎，初始化更快但精度略低。
+
+    Attributes:
+        provider_id: "rapidocr"
+        model_id: "ch_PP-OCRv4_det_infer+ch_PP-OCRv4_rec_infer"
+        model_root: 模型文件根目录（可选）
+        timeout_seconds: 识别超时时间（秒）
+        max_output_bytes: 输出结果最大字节数
+    """
 
     provider_id = "rapidocr"
     model_id = "ch_PP-OCRv4_det_infer+ch_PP-OCRv4_rec_infer"
@@ -80,7 +128,26 @@ class RapidImageOcrProvider:
 
 
 class OcrFallbackProvider:
-    """Run PaddleOCR once, then RapidOCR once for explicitly allowed failures."""
+    """PaddleOCR + RapidOCR 降级策略包装器。
+
+    优先使用 PaddleOCR（精度高），失败时自动降级到 RapidOCR（速度快）。
+    仅在明确允许的错误场景下降级，其他错误直接上抛。
+
+    允许降级的错误：
+    - transcription_provider_not_configured: 主引擎未配置
+    - provider_unavailable: 主引擎不可用
+    - provider_timeout: 主引擎超时
+    - transcript_empty_or_invalid: 主引擎返回空结果
+    - transcription_failed: 主引擎识别失败
+
+    Attributes:
+        provider_id: "ocr-fallback"
+        model_id: "paddleocr+rapidocr"
+        primary: 主 OCR Provider（通常是 PaddleOCR）
+        fallback: 备用 OCR Provider（通常是 RapidOCR）
+        last_fallback_reason: 最近一次降级原因
+        last_primary_error: 最近一次主引擎错误码
+    """
 
     provider_id = "ocr-fallback"
     model_id = "paddleocr+rapidocr"
@@ -125,7 +192,31 @@ class OcrFallbackProvider:
 
 
 class PaddleImageOcrProvider:
-    """Offline, explicitly configured PaddleOCR provider; no model downloads."""
+    """PaddleOCR 本地离线 Provider（主引擎）。
+
+    使用 PaddlePaddle 的 PP-OCRv5 Server 模型进行高精度 OCR。
+    需要预先下载模型文件到本地目录，不自动下载模型。
+
+    模型要求：
+    - PP-OCRv5_server_det: 文本检测模型
+    - PP-OCRv5_server_rec: 文本识别模型
+    - 两者都需要放在 model_root 目录下
+
+    依赖版本：
+    - paddleocr==3.7.0
+    - paddlepaddle==3.3.1
+
+    Attributes:
+        provider_id: "paddleocr"
+        model_id: "PP-OCRv5_server_det+PP-OCRv5_server_rec"
+        model_root: 模型文件根目录
+        timeout_seconds: 识别超时时间（秒）
+        max_output_bytes: 输出结果最大字节数
+
+    Note:
+        首次调用时懒加载 PaddleOCR 引擎（_ocr 字段）。
+        初始化较慢（约 3-5 秒），但后续识别速度快。
+    """
 
     provider_id = PADDLE_PROVIDER_ID
     model_id = PADDLE_MODEL_ID

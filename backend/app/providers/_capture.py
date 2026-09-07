@@ -1,4 +1,22 @@
-"""Capture transcription providers."""
+"""语音/图像转录 Provider。
+
+本模块提供三种转录 Provider：
+1. DeterministicFakeCaptureProvider - 确定性假 Provider，用于测试
+2. LoopbackCaptureProvider - 本地回环 Provider，无网络 I/O
+3. WhisperCliCaptureProvider - Whisper.cpp CLI 适配器，本地语音识别
+
+支持的资产类型：
+- audio: 音频文件 (通过 Whisper)
+- image: 图像文件 (通过 OCR，见 _ocr.py)
+
+Provider 选择：
+- 测试环境: 使用 fake 或 loopback
+- 生产环境: 使用 whisper-cpp (需要显式配置可执行文件和模型路径)
+
+依赖项：
+- whisper.cpp: 本地 Whisper 运行时 (https://github.com/ggerganov/whisper.cpp)
+- 模型文件: ggml-*.bin 格式的量化模型
+"
 
 from __future__ import annotations
 
@@ -18,7 +36,22 @@ from ._core import (
 
 
 class DeterministicFakeCaptureProvider:
-    """Repeatable fake OCR/ASR output, not an accuracy claim."""
+    """确定性假转录 Provider。
+    
+    用途：
+        - 单元测试和集成测试
+        - 演示模式
+        - 不依赖外部模型的开发环境
+    
+    行为：
+        - 根据输入内容的 SHA256 哈希生成确定性输出
+        - 总是返回固定格式的两段文本
+        - 不执行真实的 OCR 或 ASR
+        - 第一段置信度 0.94，第二段 0.62
+    
+    注意：
+        这不是精度声明，仅用于可重复的测试场景。
+    """
 
     provider_id = "fake"
     model_id = "fake-capture-v1"
@@ -38,14 +71,49 @@ class DeterministicFakeCaptureProvider:
 
 
 class LoopbackCaptureProvider(DeterministicFakeCaptureProvider):
-    """Deterministic local loopback profile; it performs no network I/O."""
+    """本地回环转录 Provider。
+    
+    特性：
+        - 继承 DeterministicFakeCaptureProvider 的所有行为
+        - 明确标识为 loopback 而非 fake
+        - 零网络 I/O
+    
+    用途：
+        - 离线开发环境
+        - 网络隔离测试
+        - 快速原型验证
+    """
 
     provider_id = "loopback"
     model_id = "loopback-capture-v1"
 
 
 class WhisperCliCaptureProvider:
-    """Local, explicit-opt-in adapter for the verified Whisper CLI runtime."""
+    """Whisper.cpp CLI 适配器。
+    
+    要求：
+        - 显式配置的 whisper.cpp 可执行文件路径
+        - 显式配置的 ggml 模型文件路径
+        - 本地文件系统访问权限
+    
+    支持的模型：
+        - ggml-large-v3-turbo (默认)
+        - ggml-base, ggml-small, ggml-medium, ggml-large 等
+    
+    输出格式：
+        - 纯文本 (.txt): 完整转录文本
+        - SRT 字幕 (.srt): 带时间戳的分段文本
+    
+    限制：
+        - 仅支持音频 (asset_kind='audio')
+        - 仅支持 WAV 格式输入
+        - 超时后会抛出 provider_timeout
+    
+    安全：
+        - 不下载模型（需要预先配置）
+        - 不发送数据到网络
+        - 使用临时目录处理，完成后清理
+    """
 
     provider_id = "whisper-cpp"
 
@@ -95,6 +163,27 @@ class WhisperCliCaptureProvider:
 
 
 def _parse_srt(value: str) -> list[dict[str, object]]:
+    """解析 SRT 字幕格式。
+    
+    SRT 格式：
+        1
+        00:00:00,000 --> 00:00:02,500
+        First subtitle text
+        
+        2
+        00:00:02,500 --> 00:00:05,000
+        Second subtitle text
+    
+    Args:
+        value: SRT 格式的字幕文本
+    
+    Returns:
+        包含以下字段的字典列表：
+        - text: 字幕文本
+        - start: 开始时间戳
+        - end: 结束时间戳
+        - confidence: 固定为 0.95
+    """
     segments: list[dict[str, object]] = []
     for block in value.replace("\r\n", "\n").split("\n\n"):
         lines = [line.strip() for line in block.splitlines() if line.strip()]
