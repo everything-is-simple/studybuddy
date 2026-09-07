@@ -13,14 +13,12 @@
 
 ## 设计、使用与维护
 
-- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构和实施边界。
+- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构和实施边界（补充 ARCHITECTURE.md 的学习域设计）。
 - [`MIGRATIONS.md`](MIGRATIONS.md)：schema version、migration runner 与升级规则。
 - [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)：backup / verify / restore 行为边界。
 - [`LOCAL_V1_USER_GUIDE.md`](LOCAL_V1_USER_GUIDE.md)：本地 v1 首次配置、启动、验收和日常使用。
-- [`frontend-plan.md`](frontend-plan.md)：保留的前端实现契约与范围（**目标设计**，不是当前实现快照）。
-- [`frontend-inventory-report.md`](frontend-inventory-report.md)：前端**事实盘点**（21 页面、共享层、测试与后端路由覆盖的当前事实与结论）。
-- [`frontend-inventory-scan.md`](frontend-inventory-scan.md)：由 `backend/scripts/scan-frontend-inventory.py` 生成的逐页/逐端点可复算明细。
-- [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)：前后端用户场景整体设计合同；场景 1“计划 → 今天 → 进度”是完整模板，场景 2/3 尚待冻结。
+- [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)：前后端用户场景整体设计合同；场景 1"计划 → 今天 → 进度"是完整模板，场景 2/3 尚待冻结。
+- 前端历史盘点文档已归档至 [`archive/frontend/`](archive/frontend/)。
 
 ## 分类资料
 
@@ -28,12 +26,15 @@
 - [`evidence/`](evidence/)：正式验收与 scoped gate 证据，不把未验证范围写成 `real-pass`。
 - [`operations/`](operations/)：Provider、备份、恢复、升级和本地环境的操作手册。
 - [`archive/`](archive/)：保留的历史审计、阶段范围和重构记录；它们只提供历史背景，不是当前事实源。
+  - [`archive/P1_3/`](archive/P1_3/)：P1-3 阶段完成文档（手工测试、状态、总结）。
+  - [`archive/frontend/`](archive/frontend/)：前端盘点与审计历史文档（plan、inventory、contract audit、capability matrix）。
+  - [`archive/P14_P0_05_COMPLETED.md`](archive/P14_P0_05_COMPLETED.md)：P14 P0-05 阶段完成记录。
 
 ### 常用分类入口
 
 - [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 候选及 Formal 边界。
 - [`contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md`](contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md)：Provider（AI LLM/Embedding）和 Email（SMTP/Feishu）配置安全契约，secret 生命周期、runtime-only source、connection-test 触发机制和 backup/restore 边界。
-- [`contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`](contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md)：配置持久化五方案评估与“不引入持久化”决策，并定型 P1-5-1 配置 UI 为“组装 → 校验 → 导出”。
+- [`contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`](contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md)：配置持久化五方案评估与"不引入持久化"决策，并定型 P1-5-1 配置 UI 为"组装 → 校验 → 导出"。
 - [`../backend/app/static/settings-provider.html`](../backend/app/static/settings-provider.html)：Provider/Email 配置 UI，先测后存（P2-USE-3 起支持保存并立即生效）。
 - [`evidence/P1_5_0_CONTRACT_EVIDENCE.md`](evidence/P1_5_0_CONTRACT_EVIDENCE.md)：P1-5-0 契约冻结审计发现和治理测试覆盖。
 - [`evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`](evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md)：P1-5-2 connection-test 实现证据，包含 adapter、API、测试覆盖和未验证边界。
@@ -52,7 +53,9 @@
 
 ## 文档维护规则
 
-- 根目录只保留 `README.md`、`AGENTS.md` 与项目元数据；活跃事实源位于 `docs/` 根目录。
+- **根目录只保留 `README.md`、`AGENTS.md` 与项目元数据**；活跃事实源位于 `docs/` 根目录。临时工作文档和 Phase prompt 不应存在于根目录。
 - `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责当前状态、唯一执行清单、阶段顺序与已批准路线；当前状态冲突时以 `STATUS.md` 为准，执行项冲突时以 `TODO.md` 为准。历史证据只保留原始快照，不能覆盖当前状态。完整规则见 `CODE_TEST_GOVERNANCE.md`。
 - 非核心资料必须按用途放入 `contracts/`、`evidence/`、`operations/` 或 `archive/`，不要恢复已移除的规划 prompt 目录或复制第二份状态摘要。
+- **已完成 Phase 的总结性文档归档到 `archive/` 对应子目录**；前端历史盘点文档归档到 `archive/frontend/`。
 - 新增或移动 Markdown 后，运行治理测试中的链接检查；历史归档中的已移除资料应改为文字 provenance，而不是保留失效链接。
+- **自动生成的文档**（如 `frontend-inventory-scan.json`）已加入 `.gitignore`，人工可读报告（如前端 inventory-report）归档保留。
