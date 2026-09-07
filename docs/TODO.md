@@ -1,6 +1,6 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-09-06（**P2-FE-B2 表单验证模块提取完成**：创建 js/forms.js 共享模块（4.6 KiB），迁移 materials.html 和 plans.html 的表单验证逻辑；materials 内联脚本减少 29 字节；完整回归 218 passed, 4 skipped。**前端模块化持续推进**，表单验证逻辑已集中到共享模块。）
+> 更新：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
 > 基线记录：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v14；最近已验证后端快照为 `623 passed, 3 skipped`（本前端切片未重跑后端全量）。当前 Chromium 完整串行回归为 `208 passed, 4 skipped`（61 files / 212 tests）；本轮材料专项 `8 passed`、重命名后端 focused `3 passed`。4 个 browser skip 均为 opt-in 真实 Provider/ASR smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`](STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，P1-6 系列仍为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
@@ -402,6 +402,8 @@ revision → chunks → retrieval → citations → Q&A
   P2-FE-4 当前完成项已包含材料重命名、目标/模块管理、依赖删除、rhythm export、报告预览、weak-points、exercise-set 详情和 cram-goal 详情；独立 exercise attempts 已完成 `intentional/not_exposed` 定性。
   本轮 P2-FE-4 新增 browser evidence 合计 `8 passed`；cram-goal 详情专项 `2 passed`。
   既有安全边界保持不变：purge、异步 `/ai-index/tasks`、report delivery/delivery-attempts 不在正式 UI 开放；真实 Provider、OCR/ASR 保持 `not_verified`。内联脚本模块化作为后续独立工作，不作为 P2-FE-4 完成条件。
+
+- [x] P2-FE-B3：状态模板模块。已创建 `backend/app/static/js/templates.js`（3.8 KiB），提供 `window.sbTemplates` 的 `setState`、loading/empty/failed/retry 状态 API，并迁移 `today.html`、`reports.html`、`practice-result.html`、`practice-session.html`、`review.html`、`plan-detail.html` 六个正式页面；保持既有 selector、基础 CSS class、错误文案和 retry 行为。Focused browser `2 passed`，关联回归 `14 passed`；完整 Chromium 首次串行 `219 passed, 4 skipped, 1` 个既有 Phase 9C 时序超时，单独重跑该 spec `3 passed`。source-size、inventory、contract audit 和 `git diff --check` 均通过。未迁移页面保留页面专属状态逻辑，避免改变现有行为；无 API/schema/migration 变化。
 
 ## P2：后续独立项目
 
