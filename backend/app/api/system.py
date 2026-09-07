@@ -5,23 +5,29 @@ def register_routes(app, context: dict[str, object]) -> None:
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
     @app.get("/api/liveness")
     def liveness() -> dict[str, str]:
+        """Minimal health probe for uptime monitoring."""
         return {"status": "ok"}
 
     @app.get("/api/metrics")
     def metrics() -> dict[str, object]:
+        """System metrics snapshot (timing, counts, storage)."""
         return metrics_snapshot()
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
+        """Public health endpoint (503 when not ready/degraded).
+        
+        Never exposes database paths, SQL, source content, diagnostic
+        exceptions, provider details, or task identifiers.
+        """
         status, _reason = readiness_snapshot()
         if status != "ready":
-            # Public health never exposes a database path, SQL, source content,
-            # diagnostic exception, provider detail, or task identifiers.
             raise HTTPException(status_code=503, detail="service_degraded" if status == "degraded" else "service_not_ready")
         return {"status": "ok"}
 
     @app.get("/api/readiness")
     def readiness() -> dict[str, str]:
+        """Detailed readiness check (503 when not ready)."""
         status, reason = readiness_snapshot()
         if status == "ready":
             return {"status": "ready"}
@@ -39,7 +45,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/system/capabilities/self-check")
     def system_capability_self_check() -> dict[str, object]:
-        """Re-probe local components on explicit request, then re-resolve config."""
+        """Re-probe local components explicitly, then refresh config.
+        
+        Detects OCR/ASR availability without restart when enabled.
+        """
         base = getattr(app.state, "base_config", app.state.config)
         try:
             app.state.detection = detect_all(
@@ -62,9 +71,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.put("/api/system/settings")
     def write_local_settings(request: LocalSettingsRequest) -> dict[str, object]:
-        """Persist local settings under `data_root`, then apply without a restart.
-
-        Explicit empty strings clear the corresponding stored value.
+        """Persist local settings under data_root (no restart required).
+        
+        Empty strings clear the corresponding stored value. Returns updated
+        settings and capability snapshot.
         """
         supplied = request.model_dump(exclude_unset=True)
         if not supplied:
@@ -85,7 +95,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/system/settings/clear")
     def clear_local_settings(request: LocalSettingsClearRequest) -> dict[str, object]:
-        """Remove selected stored settings keys, or every stored key."""
+        """Remove stored settings keys (or all keys if none specified)."""
         try:
             stored = clear_settings(app.state.config.data_root, request.keys)
         except SettingsError as error:
@@ -97,6 +107,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/ai/capabilities")
     def ai_capabilities() -> dict[str, object]:
+        """Capability snapshot for LLM, embedding, ASR, and OCR providers.
+        
+        Returns separate subsystem snapshots without exposing secrets.
+        """
         config = refresh_config()
         if config.ai_provider_id == "fake":
             llm = provider_registry(config.ai_provider_id, config.ai_model_id).capabilities()
@@ -151,22 +165,17 @@ def register_routes(app, context: dict[str, object]) -> None:
                     "provider_id": "paddleocr", "model_id": config.ocr_model_id,
                     "supports": {"ocr": True},
                 }
-        # Preserve legacy top-level LLM fields while adding independent, safe
-        # capability snapshots for optional subsystems.
+        # Legacy top-level LLM fields preserved for backwards compatibility
         if embedding_provider_id is None:
             return {**llm, "capture": capture, "ocr": ocr}
         return {**llm, "llm": llm, "embedding": embedding, "capture": capture, "ocr": ocr}
 
     @app.post("/api/system/provider-connection-test")
     def provider_connection_test(request: ProviderConnectionTestRequest) -> dict[str, str]:
-        """Test Provider (LLM/Embedding) connection with synthetic payload.
-
-        Contract: P1-5-0 frozen, P1-5-2 implementation.
-        - Explicitly triggered (never automatic)
-        - Fixed synthetic payload
-        - Does not change configuration state
-        - Bounded response (1 KB max)
-        - Stable error code mapping
+        """Test LLM/Embedding provider connection (synthetic payload only).
+        
+        Contract P1-5-0: explicit trigger, fixed payload, no state change,
+        bounded response (≤1 KB), stable error codes.
         """
         try:
             if request.provider_type == "llm":
@@ -195,14 +204,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/system/email-connection-test")
     def email_connection_test(request: EmailConnectionTestRequest) -> dict[str, str]:
-        """Test Email (SMTP/Feishu) connection with synthetic payload.
-
-        Contract: P1-5-0 frozen, P1-5-2 implementation.
-        - Explicitly triggered (never automatic)
-        - Fixed synthetic payload
-        - Does not change configuration state
-        - Bounded response (1 KB max)
-        - Stable error code mapping
+        """Test SMTP/Feishu email connection (synthetic payload only).
+        
+        Contract P1-5-0: explicit trigger, fixed payload, no state change,
+        bounded response (≤1 KB), stable error codes.
         """
         try:
             if request.channel == "smtp":
