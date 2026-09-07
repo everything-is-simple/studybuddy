@@ -1,10 +1,29 @@
+"""Study capture (OCR/ASR transcription) and report routes.
+
+Provides REST endpoints for capture sessions (image OCR, audio transcription),
+transcript draft review/confirmation, and study reports (period summaries with
+optional email/Feishu delivery).
+
+All routes enforce project_id isolation and validate state transitions.
+"""
 from __future__ import annotations
 
 
 def register_routes(app, context: dict[str, object]) -> None:
+    """Register study capture and report routes with shared context.
+    
+    Args:
+        app: FastAPI application instance
+        context: Shared context dict (connection helpers, error mappers)
+    """
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
     @app.post("/api/study/capture-sessions", status_code=201)
     def create_capture_session_endpoint(request: CaptureSessionRequest) -> dict[str, object]:
+        """Create a new capture session for OCR/ASR processing.
+        
+        Initializes a session with asset_kind (image/audio), original_name, and media_type.
+        The session starts in pending state awaiting asset upload.
+        """
         try:
             with connect(app.state.config.database_path) as connection:
                 return create_capture_session(
@@ -21,6 +40,10 @@ def register_routes(app, context: dict[str, object]) -> None:
     @app.get("/api/study/capture-sessions")
     def capture_sessions(include_archived: bool = False, limit: int = 100,
                          offset: int = 0) -> dict[str, object]:
+        """List capture sessions with pagination.
+        
+        Returns paginated capture sessions sorted by creation time descending.
+        """
         if limit < 1 or limit > 100 or offset < 0:
             raise HTTPException(status_code=400, detail="invalid_pagination")
         try:
@@ -37,6 +60,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/capture-sessions/{capture_id}")
     def capture_session(capture_id: str) -> dict[str, object]:
+        """Get details for a specific capture session."""
         if not capture_id or len(capture_id) > 120:
             raise HTTPException(status_code=404, detail="capture_not_found")
         try:
@@ -56,6 +80,11 @@ def register_routes(app, context: dict[str, object]) -> None:
         capture_id: str,
         file: Annotated[UploadFile, File(...)],
     ) -> dict[str, object]:
+        """Upload asset file (image/audio) for a capture session.
+        
+        Streams file to temporary location, validates size ≤ max_upload_bytes,
+        then moves to hash-derived originals storage. Returns asset metadata.
+        """
         config = app.state.config
         temporary_path: Path | None = None
         try:
@@ -107,6 +136,12 @@ def register_routes(app, context: dict[str, object]) -> None:
         capture_id: str,
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> dict[str, object]:
+        """Transcribe uploaded asset via OCR (image) or ASR (audio).
+        
+        Routes to PaddleOCR for images or configured ASR provider for audio.
+        Creates transcript draft in pending state awaiting user review.
+        Idempotent via Idempotency-Key header.
+        """
         if idempotency_key is not None and (len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key)):
             raise HTTPException(status_code=400, detail="invalid_idempotency_key")
         config = app.state.config
@@ -154,12 +189,14 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/capture-sessions/{capture_id}/transcript")
     def capture_transcript(capture_id: str) -> dict[str, object]:
+        """获取采集会话的转录草稿"""
         result = capture_session(capture_id)
         drafts = result.get("transcript_drafts")
         return {"capture_session_id": capture_id, "transcript_drafts": drafts}
 
     @app.post("/api/study/capture-sessions/{capture_id}/transcript/edit")
     def edit_capture_transcript(capture_id: str, request: TranscriptEditRequest) -> dict[str, object]:
+        """编辑转录草稿文本"""
         try:
             with connect(app.state.config.database_path) as connection:
                 return edit_transcript_draft(
@@ -174,6 +211,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/capture-sessions/{capture_id}/confirm")
     def confirm_capture_transcript(capture_id: str, request: TranscriptActionRequest) -> dict[str, object]:
+        """确认转录草稿"""
         try:
             with connect(app.state.config.database_path) as connection:
                 return confirm_transcript_draft(
@@ -188,6 +226,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/capture-sessions/{capture_id}/reject")
     def reject_capture_transcript(capture_id: str, request: TranscriptActionRequest) -> dict[str, object]:
+        """拒绝转录草稿"""
         try:
             with connect(app.state.config.database_path) as connection:
                 return reject_transcript_draft(
@@ -202,9 +241,11 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/capture-sessions/{capture_id}/archive")
     def archive_capture(capture_id: str) -> dict[str, object]:
-        # The 9D domain contract currently has no archive transaction. Do not
-        # add a route-level SQL mutation; expose a stable boundary until the
-        # lifecycle gate supplies that domain operation.
+        """归档采集会话（当前未实现）
+        
+        9D 领域合约目前没有归档事务。在生命周期门提供该领域操作之前，
+        不要添加路由级 SQL 变更；暴露稳定边界。
+        """
         if not capture_id or len(capture_id) > 120:
             raise HTTPException(status_code=404, detail="capture_not_found")
         raise HTTPException(status_code=409, detail="capture_invalid_state")
@@ -214,6 +255,11 @@ def register_routes(app, context: dict[str, object]) -> None:
         request: ReportRequest,
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> dict[str, object]:
+        """Create a new study report snapshot.
+        
+        Generates aggregated statistics (cards/exercises reviewed, practice sessions,
+        mistakes, weak points) for the specified period.
+        """
         if idempotency_key is not None and (len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key)):
             raise HTTPException(status_code=400, detail="invalid_idempotency_key")
         try:
@@ -232,6 +278,11 @@ def register_routes(app, context: dict[str, object]) -> None:
     @app.get("/api/study/reports")
     def study_reports(include_archived: bool = False, limit: int = 100,
                       offset: int = 0) -> dict[str, object]:
+        """List study reports with pagination.
+        
+        Returns paginated report snapshots sorted by creation time descending.
+        Redaction violations (malformed stored data) return 400.
+        """
         if limit < 1 or limit > 100 or offset < 0:
             raise HTTPException(status_code=400, detail="invalid_pagination")
         try:
@@ -250,6 +301,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/reports/{report_id}")
     def study_report(report_id: str) -> dict[str, object]:
+        """Get details for a specific study report."""
         if not report_id or len(report_id) > 120:
             raise HTTPException(status_code=404, detail="report_not_found")
         try:
@@ -267,10 +319,15 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/reports/{report_id}/preview")
     def preview_study_report(report_id: str) -> dict[str, object]:
+        """Preview a study report (alias for get report details)."""
         return study_report(report_id)
 
     @app.get("/api/study/reports/{report_id}/export")
     def export_study_report(report_id: str, format: str = "json") -> Response:
+        """Export study report as JSON or Markdown attachment.
+        
+        Returns file download with appropriate Content-Disposition header.
+        """
         if format not in {"json", "markdown"}:
             raise HTTPException(status_code=400, detail="report_redaction_violation")
         try:
@@ -296,6 +353,11 @@ def register_routes(app, context: dict[str, object]) -> None:
         request: DeliveryRequest,
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> dict[str, object]:
+        """Deliver study report via SMTP or Feishu webhook.
+        
+        Requires explicit authorization_granted=true. Idempotent via Idempotency-Key header.
+        Tracks delivery attempts for audit.
+        """
         if idempotency_key is not None and (len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key)):
             raise HTTPException(status_code=400, detail="invalid_idempotency_key")
         try:
@@ -315,6 +377,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/study/reports/{report_id}/delivery-attempts")
     def report_delivery_attempts(report_id: str) -> dict[str, object]:
+        """List all delivery attempts for a specific report.
+        
+        Returns audit trail of delivery attempts with status, timestamp, and error details.
+        """
         try:
             with connect(app.state.config.database_path) as connection:
                 items = list_report_delivery_attempts(
