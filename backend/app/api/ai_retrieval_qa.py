@@ -1,10 +1,35 @@
+"""AI retrieval and Q&A routes.
+
+Provides REST endpoints for:
+- Chunk retrieval (lexical/vector/hybrid search)
+- Context assembly (token-budgeted context windows)
+- Citation validation (verify citation keys point to valid sources)
+- Q&A threads (conversational Q&A with retrieval-augmented generation)
+
+Supports multiple retrieval modes and embedding providers.
+All routes enforce project_id isolation.
+"""
 from __future__ import annotations
 
 
 def register_routes(app, context: dict[str, object]) -> None:
+    """Register AI retrieval and Q&A routes with shared context.
+    
+    Args:
+        app: FastAPI application instance
+        context: Shared context dict (connection helpers, error mappers)
+    """
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
     @app.post("/api/retrieval")
     def retrieve(request: RetrievalRequest) -> dict[str, object]:
+        """Retrieve relevant chunks via lexical, vector, or hybrid search.
+        
+        - lexical: BM25-style keyword search
+        - vector: Semantic embedding similarity
+        - hybrid: Combined lexical + vector with reciprocal rank fusion
+        
+        Returns ranked chunks with scores and metadata.
+        """
         if request.material_ids is not None and (not request.material_ids or len(request.material_ids) > 200):
             raise HTTPException(status_code=400, detail="retrieval_invalid_materials")
         try:
@@ -59,6 +84,11 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/context/assemble")
     def assemble_context_endpoint(request: ContextRequest) -> dict[str, object]:
+        """Assemble token-budgeted context window from retrieved chunks.
+        
+        Selects and orders chunks to fit within max_tokens budget,
+        preserving citation keys and source metadata.
+        """
         if request.hit_ids is None or len(request.hit_ids) > 200:
             if request.hit_ids is not None and len(request.hit_ids) > 200:
                 raise HTTPException(status_code=400, detail="context_invalid_hits")
@@ -76,6 +106,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/citation/validate")
     def validate_citation(request: CitationValidateRequest) -> dict[str, object]:
+        """Validate a citation key points to an existing, accessible source.
+        
+        Returns validation status and source metadata if valid.
+        """
         if not request.key or len(request.key) > 80:
             raise HTTPException(status_code=400, detail="citation_invalid_key")
         try:
@@ -86,6 +120,10 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.get("/api/qa/threads")
     def qa_threads(limit: int = 50) -> dict[str, object]:
+        """List recent Q&A conversation threads.
+        
+        Returns threads sorted by last activity, with message counts.
+        """
         if limit <= 0 or limit > 100:
             raise HTTPException(status_code=400, detail="qa_invalid_limit")
         try:
