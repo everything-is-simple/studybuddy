@@ -1,3 +1,53 @@
+"""应用工厂模块 - FastAPI 应用创建和配置。
+
+本模块负责创建和配置完整的 FastAPI 应用实例，包括：
+- 配置加载和分层合并（环境 > 设置 > 检测）
+- 生命周期管理（启动预检、实例锁、任务运行器）
+- HTTP 中间件（请求 ID、可观测性跟踪）
+- API 路由注册（所有端点通过 api.registration 模块加载）
+- 静态文件服务（前端 SPA）
+
+主要组件：
+- create_app(config, index_html): 主入口，创建 FastAPI 实例
+- update_route_dependency(name, value): 为 API 模块注入依赖
+- readiness_snapshot(): 就绪状态检查（ready/degraded/not_ready）
+- refresh_config(): 重新加载配置（UI 更新后无需重启）
+
+生命周期：
+1. 启动预检：data_root 存在性、数据库 schema 版本、实例锁
+2. 数据库迁移（如需）
+3. 后台任务运行器启动（嵌入和 AI 生成任务）
+4. 就绪状态设置为 ready
+5. 关闭：任务运行器停止、实例锁释放
+
+可观测性：
+- 每个 HTTP 请求分配 request_id 和 operation_id
+- 计量指标：http_requests(按 method/route/status)
+- 直方图：HTTP 请求时长
+- 事件日志：http_request, startup_complete, shutdown_begin 等
+
+就绪状态：
+- ready: 服务正常，数据库完整，无审计警告
+- degraded: 服务运行但有警告（审计问题、迁移挂起等）
+- not_ready: 服务未就绪（启动中或预检失败）
+
+配置刷新：
+- refresh_config() 重新加载 settings.json
+- 无需重启服务，下次请求生效
+- 仅刷新存储设置和检测结果，不重读环境变量
+
+路由注册：
+- 所有 API 路由通过 api.registration.register_all_routes() 加载
+- 包含 15 个 API 模块：材料、AI、学习、系统等
+- 静态文件挂载到 /app（前端 SPA）
+
+关联模块：
+- config: 配置加载
+- capabilities: 能力解析
+- lifespan: 生命周期管理
+- api.registration: 路由注册中心
+- observability: 可观测性基础设施
+"""
 from __future__ import annotations
 
 import io
@@ -111,7 +161,17 @@ _ROUTE_DEPENDENCY_MODULES = list(ROUTE_MODULES)
 
 
 def update_route_dependency(name: str, value: object) -> None:
-    """Keep legacy app.main monkeypatch injection effective after A2 splitting."""
+    """保持传统 app.main monkeypatch 注入在 A2 拆分后的有效性。
+    
+    用于在 API 模块和服务中更新全局依赖项（如测试中注入 mock）。
+    
+    Args:
+        name: 变量名（如 'provider_registry'）
+        value: 新值（如 mock 对象）
+    
+    注意:
+        这是为了保持与历史代码兼容，新代码应通过 FastAPI 依赖注入
+    """
     globals()[name] = value
     for module in _ROUTE_DEPENDENCY_MODULES:
         if name in module.__dict__:
@@ -124,6 +184,56 @@ def update_route_dependency(name: str, value: object) -> None:
 
 
 def create_app(config: AppConfig | None = None, *, index_html: str) -> FastAPI:
+    """创建和配置 FastAPI 应用实例。
+    
+    执行流程：
+    1. 初始化 FastAPI 实例，注册生命周期管理器
+    2. 加载配置：环境变量 > 存储设置 > 自动检测
+    3. 检测本地组件（OCR/ASR，如启用）
+    4. 注册 HTTP 中间件（可观测性跟踪）
+    5. 注册所有 API 路由
+    6. 挂载静态文件服务（前端 SPA）
+    
+    Args:
+        config: 可选的配置实例（默认从环境加载）
+        index_html: 前端 index.html 内容（用于 / 路由）
+    
+    Returns:
+        完全配置的 FastAPI 应用实例
+    
+    应用状态（app.state）：
+        base_config: 环境配置（不可变）
+        detection: 本地组件检测结果（只读）
+        config: 合并后的有效配置（可通过 refresh_config 刷新）
+        ready: 就绪状态（bool）
+        startup_state: 启动阶段（'not_started'/'running'/'completed'）
+        audit_reasons: 审计警告列表（空表示无问题）
+    
+    HTTP 中间件：
+        - 为每个请求生成 request_id 和 operation_id
+        - 记录请求指标和耗时
+        - 在响应头中返回 X-Request-ID
+    
+    就绪状态：
+        - 通过 readiness_snapshot() 检查
+        - ready: 服务正常
+        - degraded: 服务运行但有警告
+        - not_ready: 服务未就绪
+    
+    配置刷新：
+        - refresh_config() 重新加载 settings.json
+        - 无需重启，UI 配置变更立即生效
+    
+    示例：
+        >>> app = create_app(index_html="<html>...</html>")
+        >>> # 使用 uvicorn 启动：
+        >>> # uvicorn app.main:app --host 0.0.0.0 --port 8787
+    
+    注意：
+        - 检测只运行一次（每进程），结果缓存在 app.state.detection
+        - 检测失败不阻止启动，detection 设为 None
+        - 生命周期管理在 lifespan_module 中实现
+    """
     @asynccontextmanager
     async def application_lifespan(application):
         async with lifespan_module.lifespan(application):
