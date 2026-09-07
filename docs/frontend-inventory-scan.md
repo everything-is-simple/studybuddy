@@ -3,8 +3,8 @@
 > 由 `backend/scripts/scan-frontend-inventory.py` 生成。只读扫描，反映当前代码事实。
 
 - 静态页面：21
-- 共享资源：6
-- 浏览器 spec：65
+- 共享资源：9
+- 浏览器 spec：66
 - 去重后前端调用的 API 端点：114
 - 后端 `/api/*` 路由声明：165（去重路径 137）
 
@@ -15,24 +15,24 @@
 | capture.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 13.6 KiB | 0 | 8 | 8 |
 | cards.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.6 KiB | 0 | 9 | 8 |
 | classroom.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.2 KiB | 0 | 6 | 6 |
-| exercises.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 12.2 KiB | 0 | 9 | 9 |
+| exercises.html | tokens.css, app.css | api.js, state.js, shell.js, list.js | 否 | 1 | 12.1 KiB | 0 | 9 | 9 |
 | index.html | 无 | 无 | 否 | 1 | 0.0 KiB | 0 | 0 | 1 |
 | material-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.2 KiB | 0 | 5 | 11 |
-| materials.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 12.7 KiB | 0 | 6 | 18 |
+| materials.html | tokens.css, app.css | api.js, state.js, shell.js, list.js, forms.js | 否 | 1 | 12.2 KiB | 0 | 6 | 18 |
 | note-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 2.6 KiB | 0 | 1 | 4 |
 | notes.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.4 KiB | 0 | 8 | 8 |
 | plan-detail.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.3 KiB | 0 | 3 | 7 |
-| plans.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 24.7 KiB | 0 | 27 | 12 |
-| practice-result.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 1.9 KiB | 0 | 2 | 7 |
+| plans.html | tokens.css, app.css | api.js, state.js, shell.js, forms.js | 否 | 1 | 24.7 KiB | 0 | 27 | 12 |
+| practice-result.html | tokens.css, app.css | api.js, state.js, shell.js, templates.js | 否 | 1 | 1.8 KiB | 0 | 2 | 8 |
 | practice-session.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.1 KiB | 0 | 4 | 6 |
 | practice.html | tokens.css, app.css | api.js, state.js, cram.js, shell.js | 否 | 1 | 10.6 KiB | 0 | 6 | 10 |
 | qa.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 7.6 KiB | 0 | 6 | 14 |
-| reports.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 4.1 KiB | 0 | 4 | 6 |
+| reports.html | tokens.css, app.css | api.js, state.js, shell.js, templates.js | 否 | 1 | 4.0 KiB | 0 | 4 | 7 |
 | review.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 8 | 8 |
 | settings-provider.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 10.2 KiB | 0 | 5 | 6 |
 | settings.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 9.5 KiB | 0 | 4 | 5 |
 | tasks.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 6.8 KiB | 0 | 4 | 7 |
-| today.html | tokens.css, app.css | api.js, state.js, shell.js | 否 | 1 | 8.2 KiB | 0 | 6 | 11 |
+| today.html | tokens.css, app.css | api.js, state.js, shell.js, templates.js | 否 | 1 | 7.9 KiB | 0 | 6 | 12 |
 
 ## 2. 共享资源
 
@@ -40,8 +40,11 @@
 |---|---:|---:|---:|
 | `js/api.js` | 6.8 KiB | 0 | 1 |
 | `js/cram.js` | 8.5 KiB | 5 | 0 |
+| `js/forms.js` | 4.6 KiB | 0 | 0 |
+| `js/list.js` | 4.3 KiB | 0 | 0 |
 | `js/shell.js` | 1.7 KiB | 1 | 0 |
 | `js/state.js` | 1.9 KiB | 0 | 0 |
+| `js/templates.js` | 3.7 KiB | 0 | 0 |
 | `css/app.css` | 17.8 KiB | 0 | 0 |
 | `css/tokens.css` | 0.9 KiB | 0 | 0 |
 
@@ -207,16 +210,16 @@
 | notes.html | 8 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js |
 | plan-detail.html | 7 | browser_a3_pages.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_plans_today_progress.spec.js |
 | plans.html | 12 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_2_source_links.spec.js, browser_p1_4_plan_status_race.spec.js, browser_plans_today_progress.spec.js |
-| practice-result.html | 7 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe3_practice_result_app.spec.js, browser_practice_workflow.spec.js |
+| practice-result.html | 8 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe3_practice_result_app.spec.js, browser_p2_fe_b3_templates.spec.js, browser_practice_workflow.spec.js |
 | practice-session.html | 6 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe3_practice_session_app.spec.js, browser_practice_workflow.spec.js |
 | practice.html | 10 | browser_e2e.spec.js, browser_frontend_matrix.spec.js, browser_frontend_state_matrix.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_4_c4_cram.spec.js, browser_p2_fe4_cram_goal_detail_app.spec.js, browser_practice_recommendations.spec.js |
 | qa.html | 14 | browser_e2e.spec.js, browser_frontend_page_contract.spec.js, browser_frontend_shared_layer.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_1_material_qa_migration.spec.js, browser_p1_4_real_input_restart.spec.js, browser_p2_fe3_qa_app.spec.js, browser_p2_fe3_qa_threads_errors_app.spec.js, browser_static_core.spec.js, browser_static_operations.spec.js, browser_static_pages.spec.js |
-| reports.html | 6 | browser_a3_pages.spec.js, browser_b3_report_c5.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe4_report_preview_app.spec.js |
+| reports.html | 7 | browser_a3_pages.spec.js, browser_b3_report_c5.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p2_fe4_report_preview_app.spec.js, browser_p2_fe_b3_templates.spec.js |
 | review.html | 8 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_3_cards_exercises_review_migration.spec.js, browser_p2_fe3_review_app.spec.js, browser_p2_fe4_weak_points_app.spec.js, browser_practice_workflow.spec.js |
 | settings-provider.html | 6 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | settings.html | 5 | browser_a3_pages.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_5_configuration_security.spec.js |
 | tasks.html | 7 | browser_a4.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_system_matrix.spec.js, browser_frontend_visual_matrix.spec.js, browser_migration.spec.js, browser_p1_4_c4_3_task_list.spec.js, browser_p1_4_c4_5_measurement.spec.js |
-| today.html | 11 | browser_e2e.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_4_weekly_trend.spec.js, browser_plans_today_progress.spec.js, browser_static_core.spec.js, browser_static_pages.spec.js |
+| today.html | 12 | browser_e2e.spec.js, browser_frontend_static_baseline.spec.js, browser_frontend_visual_matrix.spec.js, browser_learning_pages.spec.js, browser_migration.spec.js, browser_p1_2_plans_notes_migration.spec.js, browser_p1_4_c2_explainability.spec.js, browser_p1_4_c4_4_weekly_trend.spec.js, browser_p2_fe_b3_templates.spec.js, browser_plans_today_progress.spec.js, browser_static_core.spec.js, browser_static_pages.spec.js |
 
 ## 6. 未被任何 spec 引用的页面
 

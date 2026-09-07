@@ -44,7 +44,7 @@
 </main>
 </div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
-<script src="/app/js/shell.js"></script>
+<script src="/app/js/shell.js"></script><script src="/app/js/templates.js"></script>
 <script>
 (async function(){
 const pageRequest=sbApi.setPageScope('today');
@@ -60,11 +60,9 @@ let activePlanRequest=null;
 
 function text(value){return typeof value==='string'?value:''}
 
-// Keep each notice's layout classes when swapping loading/empty/failed state.
-function notice(element,extra){element.hidden=false;element.className=(element.dataset.baseClass||'notice')+(extra?' '+extra:'')}
-function pending(element,message){notice(element,'status-loading');element.textContent=message}
-function settled(element,message){notice(element,'');element.textContent=message}
-function fail(element,error){notice(element,'warn');element.textContent=sbApi.safeError(error);retry.hidden=false}
+function pending(element,message){sbTemplates.setState(element,'loading',{message})}
+function settled(element,message){sbTemplates.setState(element,'empty',{message})}
+function fail(element,error){sbTemplates.setState(element,'failed',{error});retry.hidden=false}
 // Empty states offer the next step instead of a dead end; links live outside the
 // notice so swapping notice classes never drops them.
 function showExits(links){exits.replaceChildren();links.forEach(entry=>{const link=document.createElement('a');link.className='btn';link.href=entry.href;link.textContent=entry.label;exits.append(link)});exits.hidden=!links.length}

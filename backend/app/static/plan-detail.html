@@ -37,6 +37,7 @@
 <script src="/app/js/api.js"></script>
 <script src="/app/js/state.js"></script>
 <script src="/app/js/shell.js"></script>
+<script src="/app/js/templates.js"></script>
 <script>
 (function(){
 const params=new URLSearchParams(location.search);const planId=params.get('plan_id')||params.get('id');const selectedItemId=params.get('item_id');const localDate=params.get('local_date')||'';const returnTo=params.get('return_to')==='today'?'/app/today.html':'/app/plans.html';
@@ -44,10 +45,10 @@ const pageRequest=sbApi.setPageScope('plan-detail');const status=document.queryS
 // Progress events use their own labels: shared sbState has no started/reopened entry.
 const EVENT_LABELS={started:'开始学习',completed:'记录完成',skipped:'跳过',reopened:'重新开始'};
 function text(value){return typeof value==='string'?value:''}
-function showStatus(message,kind){status.hidden=false;status.className='notice'+(kind?' '+kind:'');status.textContent=message}
+function showStatus(message,kind){sbTemplates.showStatus(status,message,kind||'')}
 function appendSource(parent,state){if(!state||state==='valid')return;const source=document.createElement('div');source.className='source-link '+state;source.textContent='来源：'+sbState.source(state);parent.append(source)}
-function progressMessage(message,kind=''){progressStatus.hidden=false;progressStatus.className='notice'+(kind?' '+kind:'');progressStatus.textContent=message}
-function historyMessage(message,kind=''){historyStatus.hidden=false;historyStatus.className='notice mt-12'+(kind?' '+kind:'');historyStatus.textContent=message}
+function progressMessage(message,kind=''){sbTemplates.showStatus(progressStatus,message,kind||'')}
+function historyMessage(message,kind=''){sbTemplates.showStatus(historyStatus,message,kind||'')}
 function summaryCard(value,label){const card=document.createElement('div');card.className='rhythm-card';const number=document.createElement('div');number.className='rhythm-value';number.textContent=String(value);const caption=document.createElement('div');caption.className='rhythm-label';caption.textContent=label;card.append(number,caption);return card}
 function when(value){const date=new Date(text(value));return Number.isNaN(date.getTime())?'':date.toLocaleString('zh-CN',{hour12:false})}
 function renderProgress(progress,plan){const summary=progress&&progress.summary||{};const titles=new Map((plan&&Array.isArray(plan.items)?plan.items:[]).map(item=>[item.id,text(item.title)||'未命名项']));progressSummary.replaceChildren();progressSummary.append(summaryCard(summary.completed_count||0,'已完成'),summaryCard(summary.in_progress_count||0,'进行中'),summaryCard(summary.pending_count||0,'待处理'),summaryCard(summary.skipped_count||0,'已跳过'),summaryCard(Math.round((summary.completion_ratio||0)*100)+'%','完成率'));progressSummary.hidden=false;const events=Array.isArray(progress&&progress.events)?progress.events.slice().reverse():[];progressEvents.replaceChildren();if(!events.length){historyMessage('暂无进度记录，记录学习后会显示在这里');return}events.forEach(event=>{const row=document.createElement('li');row.className='plan-item-entry';const title=document.createElement('div');title.className='item-title';title.textContent=(EVENT_LABELS[event.event_type]||sbState.label(event.event_type))+' · '+(titles.get(event.item_id)||'未知学习项');const meta=document.createElement('div');meta.className='item-meta muted';const day=event.metadata&&text(event.metadata.local_date);meta.textContent=[when(event.created_at),day?'计划日期 '+day:''].filter(Boolean).join(' · ');row.append(title,meta);progressEvents.append(row)});historyStatus.hidden=true}
