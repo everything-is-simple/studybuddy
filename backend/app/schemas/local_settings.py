@@ -1,13 +1,13 @@
-"""Request schemas for local settings persistence.
+"""本地设置持久化的请求模式。
 
-Values are stored under `<data_root>/config/settings.json`, outside SQLite and
-outside backup sets. Secret fields are accepted for local single-user operation
-and are never echoed back by any read projection.
+设置值存储在 `<data_root>/config/settings.json` 中，独立于 SQLite 数据库
+和备份集之外。敏感字段仅用于本地单用户操作，不会在任何读取投影中回显。
 
-Delivery *credentials* are storable so the configuration page can test and then
-save in one pass. The delivery *switches* are deliberately absent: mode,
-enablement and per-use authorization stay runtime-only, default-off security
-controls, so storing an SMTP password never turns outbound delivery on.
+交付凭据可存储，以便配置页面可以先测试再保存。交付开关故意缺失：
+模式、启用状态和每次使用授权保持为运行时控制、默认关闭的安全控制，
+因此存储 SMTP 密码永远不会自动开启出站交付。
+
+Contract: P1-8 frozen.
 """
 
 from __future__ import annotations
@@ -23,9 +23,21 @@ Clearable = Literal[""]
 
 
 class LocalSettingsRequest(BaseModel):
-    """Partial settings update. Omitted fields are left unchanged.
-
-    An explicit empty string clears the stored value for that field.
+    """部分设置更新请求。
+    
+    省略的字段保持不变。显式空字符串会清除该字段的存储值。
+    
+    字段说明：
+        ai_provider_id: AI Provider ID（如 "openai"）
+        ai_model_id: AI 模型 ID（如 "gpt-4o-mini"）
+        ai_base_url: AI Provider 基础 URL
+        ai_api_key: AI Provider API 密钥（敏感字段）
+        ocr_provider_id: OCR Provider ID（如 "paddleocr"）
+        ocr_enabled: OCR 是否启用
+        asr_provider_id: ASR Provider ID
+        asr_enabled: ASR 是否启用
+        report_delivery_smtp_*: SMTP 邮件发送配置
+        report_delivery_feishu_webhook: 飞书 Webhook URL
     """
 
     ai_provider_id: str | None = None
@@ -55,6 +67,10 @@ class LocalSettingsRequest(BaseModel):
 
 
 class LocalSettingsClearRequest(BaseModel):
-    """Explicit removal of stored settings keys, or of every key."""
+    """显式移除存储的设置键。
+    
+    Args:
+        keys: 要移除的键列表。如果为 None，则移除所有键。
+    """
 
     keys: list[str] | None = None
