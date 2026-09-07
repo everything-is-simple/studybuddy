@@ -1,4 +1,29 @@
-"""Provider registries and factory function."""
+"""Provider 注册表和工厂函数。
+
+本模块提供 Provider 注册中心，负责：
+1. 根据配置参数创建具体的 Provider 实例（LLM、Embedding、Capture）
+2. 验证配置完整性和有效性
+3. 返回 Provider 能力描述（capabilities）
+4. 统一处理配置错误和降级策略
+
+核心类：
+- EmbeddingProviderRegistry: Embedding Provider 注册表
+- ProviderRegistry: LLM/Capture Provider 注册表
+- provider_registry: 工厂函数（便捷创建 ProviderRegistry）
+
+配置来源：
+- 环境变量（STUDYBUDDY_PROVIDER_ID, STUDYBUDDY_MODEL_ID 等）
+- 运行时传入的参数（base_url, api_key, timeout 等）
+
+支持的 Provider 类型：
+- LLM: FakeLLMProvider, OpenAICompatibleLLMProvider
+- Embedding: FakeEmbeddingProvider, OpenAICompatibleEmbeddingProvider
+- Capture: DeterministicFakeCaptureProvider, WhisperCliCaptureProvider, PaddleImageOcrProvider
+
+Note:
+    配置不完整时抛出 ProviderError("provider_not_configured")
+    配置参数有误时抛出 ProviderError("provider_invalid_config")
+"""
 
 from __future__ import annotations
 
@@ -26,6 +51,13 @@ from ._openai_llm import OpenAICompatibleLLMProvider
 
 
 class EmbeddingProviderRegistry:
+    """Embedding Provider 注册表。
+
+    管理 Embedding Provider 的创建和配置验证。支持：
+    - OpenAI-compatible Embedding API (需要 provider_id, model_id, base_url, api_key)
+    - Fake Embedding Provider (provider_id="fake")
+    """
+
     def __init__(self, provider_id: str | None, model_id: str | None = None, *, model_revision: str = "1",
                  base_url: str | None = None, api_key: str | None = None,
                  timeout_seconds: float = 30.0, max_batch_size: int = MAX_EMBEDDING_BATCH,
@@ -84,6 +116,14 @@ class EmbeddingProviderRegistry:
 
 
 class ProviderRegistry:
+    """LLM 和 Capture Provider 注册表。
+
+    统一管理 LLM Provider（问答生成）和 Capture Provider（OCR/ASR 转录）的创建。
+    支持：
+    - LLM: FakeLLMProvider, OpenAICompatibleLLMProvider
+    - Capture: DeterministicFakeCaptureProvider, WhisperCliCaptureProvider, PaddleOCR, RapidOCR
+    """
+
     def __init__(self, provider_id: str | None, model_id: str | None = None, *, base_url: str | None = None,
                  api_key: str | None = None, timeout_seconds: float = 30.0, max_retries: int = 0) -> None:
         self.provider_id = provider_id
@@ -229,4 +269,14 @@ class ProviderRegistry:
 
 
 def provider_registry(provider_id: str | None, model_id: str | None = None, **kwargs: object) -> ProviderRegistry:
+    """工厂函数，创建 ProviderRegistry 实例。
+
+    Args:
+        provider_id: Provider 标识
+        model_id: 模型标识
+        **kwargs: 其他配置参数（base_url, api_key, timeout_seconds 等）
+
+    Returns:
+        ProviderRegistry: 新建的注册表实例
+    """
     return ProviderRegistry(provider_id, model_id, **kwargs)
