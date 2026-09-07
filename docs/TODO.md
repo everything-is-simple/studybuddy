@@ -405,6 +405,8 @@ revision → chunks → retrieval → citations → Q&A
 
 - [x] P2-FE-B3：状态模板模块。已创建 `backend/app/static/js/templates.js`（3.8 KiB），提供 `window.sbTemplates` 的 `setState`、loading/empty/failed/retry 状态 API，并迁移 `today.html`、`reports.html`、`practice-result.html`、`practice-session.html`、`review.html`、`plan-detail.html` 六个正式页面；保持既有 selector、基础 CSS class、错误文案和 retry 行为。Focused browser `2 passed`，关联回归 `14 passed`；完整 Chromium 首次串行 `219 passed, 4 skipped, 1` 个既有 Phase 9C 时序超时，单独重跑该 spec `3 passed`。source-size、inventory、contract audit 和 `git diff --check` 均通过。未迁移页面保留页面专属状态逻辑，避免改变现有行为；无 API/schema/migration 变化。
 
+- [x] P2-FE-B4：后续模块化评估。已检查 cards、notes、practice、qa、settings、settings-provider、classroom、capture、tasks、materials、exercises、plans 的状态逻辑。结论：只安全复用 `sbTemplates` 的通用单容器状态外壳；业务错误映射、能力探测、多区域 loading、详情加载、busy/retry 归属、列表渲染及 delivery/provider 边界必须保留在页面。继续拆分没有可量化复杂度收益，P2-FE-B 系列正式收口；无 API/schema/migration 变化。
+
 ## P2：后续独立项目
 
 - [ ] 多用户、认证、授权、project isolation UI。
