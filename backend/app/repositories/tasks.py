@@ -1,4 +1,8 @@
-"""Domain repository exports."""
+"""异步任务数据访问层。
+
+本模块导出异步任务的创建、查询和状态更新函数。
+实际实现位于 _legacy 模块，待重构后迁移。
+"""
 
 from . import _legacy
 

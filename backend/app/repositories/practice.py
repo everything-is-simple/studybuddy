@@ -1,4 +1,8 @@
-"""Domain repository exports."""
+"""练习会话与错题跟踪数据访问层。
+
+本模块导出练习会话、错题案例、薄弱点统计和冲刺目标的
+数据库操作函数。实际实现位于 _legacy 模块，待重构后迁移。
+"""
 
 from . import _legacy
 

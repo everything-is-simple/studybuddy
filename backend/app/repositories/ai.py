@@ -1,4 +1,8 @@
-"""Domain repository exports."""
+"""AI 检索与索引数据访问层。
+
+本模块导出 AI 检索、分块索引和嵌入管理相关的数据访问函数。
+实际实现位于 _legacy 模块，待重构后迁移至独立的 repository 实现。
+"""
 
 from . import _legacy
 
