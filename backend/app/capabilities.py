@@ -1,16 +1,36 @@
-"""Effective capability resolution: environment, stored settings, detection.
+"""有效能力解析：环境变量、存储设置、自动检测。
 
-Precedence, highest first:
-1. explicit environment variables (operator/launcher intent),
-2. settings persisted through the UI under `<data_root>/config/settings.json`,
-3. local component auto-detection.
+能力来源优先级（从高到低）：
+1. 显式环境变量（操作员/启动器意图）
+2. UI 持久化设置（<data_root>/config/settings.json）
+3. 本地组件自动检测
 
-This is what closes the "out-of-box lockdown" defect: an installed and
-structurally valid local component becomes usable without hand-copied
-environment variables, while an explicit setting always wins.
+这解决了“开箱锁定”缺陷：已安装且结构有效的本地组件无需
+手动复制环境变量即可使用，同时显式设置总是优先。
 
-Outbound delivery is intentionally excluded. It stays runtime-only, default-off
-and per-use authorized.
+出站交付故意排除在外，保持为运行时、默认关闭、每次使用需授权。
+
+七项核心能力：
+- import_parse: 文件解析（TXT/PDF/DOCX/PPTX）
+- ocr: 图像文字识别（PaddleOCR/RapidOCR）
+- asr: 语音转录（Whisper.cpp）
+- index: 向量索引（依赖 Embedding Provider）
+- qa: AI 问答（依赖 LLM Provider）
+- generation: AI 生成（依赖 LLM Provider）
+- report: 学习报告（本地生成）
+
+状态值：
+- available: 可用
+- degraded: 降级可用（如仅词法索引，无向量）
+- disabled: 已禁用（本地组件存在但被关闭）
+- not_configured: 未配置（缺少 API 密钥或路径）
+- not_installed: 未安装（缺少本地组件）
+
+关键设计：
+- OCR 启用开关与组件安装状态分离
+- 检测失败不隐藏为 'disabled'，而是显示 'not_installed' + 原因
+- 降级模式（degraded）明确标记，不隐藏功能缺失
+- 演示模式使用 fake provider，全部能力可用
 """
 from __future__ import annotations
 
@@ -45,7 +65,32 @@ def _stored_path(settings: dict[str, object], key: str) -> Path | None:
 
 def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None,
                    detection: DetectionResult | None = None) -> AppConfig:
-    """Layer stored settings and detection onto an environment-derived config."""
+    """将存储设置和自动检测层叠到环境配置上。
+    
+    按优先级合并配置来源：
+    1. 环境变量（最高优先级）
+    2. UI 持久化设置（settings.json）
+    3. 自动检测结果（最低优先级）
+    
+    处理逻辑：
+    - OCR/ASR: 环境 > 设置 > 检测
+    - AI Provider: 环境 > 设置（demo_mode 强制使用 fake）
+    - 开箱启用：检测到有效本地组件时，自动启用 OCR
+    
+    Args:
+        base: 从环境变量构造的基础配置
+        settings: 可选的存储设置（为 None 时从 data_root 加载）
+        detection: 可选的检测结果（为 None 且 auto_detect_enabled 时执行检测）
+    
+    Returns:
+        合并后的 AppConfig 实例，包含所有优先级来源的配置
+    
+    示例:
+        >>> base = config_from_environment()
+        >>> effective = resolve_config(base)
+        >>> # 如果本地安装了 PaddleOCR，且环境变量未设置，
+        >>> # 则 effective.ocr_provider_id 为 'paddleocr'
+    """
     stored = settings if settings is not None else load_settings(base.data_root)
 
     ocr_provider = base.ocr_provider_id
@@ -304,7 +349,41 @@ def _index_state(config: AppConfig, embedding: dict[str, object]) -> dict[str, o
 
 
 def capability_snapshot(config: AppConfig, detection: DetectionResult | None = None) -> dict[str, object]:
-    """Seven capability lights for the dashboard. No paths, no secrets."""
+    """七项能力灯为仪表盘显示。不包含路径、不包含密钥。
+    
+    返回结构：
+    {
+        "capabilities": {
+            "import_parse": {"status": "available", "provider_id": "local", ...},
+            "ocr": {"status": "disabled"|"available"|"not_configured", ...},
+            "asr": {"status": "available"|"not_configured", ...},
+            "index": {"status": "available"|"degraded", ...},
+            "qa": {"status": "available"|"not_configured", ...},
+            "generation": {"status": "available"|"not_configured", ...},
+            "report": {"status": "available", "delivery_configured": bool, ...}
+        },
+        "auto_detect_enabled": bool,
+        "delivery_mode": "off"|"smtp"|"feishu",
+        "ocr_fallback_installed": bool,  # RapidOCR 备用
+        "ready_count": int,  # 可用能力数
+        "degraded_count": int,  # 降级能力数
+        "total_count": 7
+    }
+    
+    Args:
+        config: 合并后的配置（应使用 resolve_config 返回的结果）
+        detection: 可选的检测结果（为 None 且 auto_detect_enabled 时重新探测）
+    
+    Returns:
+        能力快照字典，用于 API 响应或仪表盘显示
+    
+    注意：
+        - import_parse 总是 available（本地文件解析无需外部依赖）
+        - index 可降级到词法 FTS（无 Embedding Provider 时）
+        - report 本地生成总是可用，但交付需额外配置
+        - OCR disabled 仅在组件存在但被关闭时出现
+        - demo_mode 下所有能力为 available（使用 fake provider）
+    """
     if detection is not None and config.auto_detect_enabled:
         detection = _probe_configured_paths(detection, config.ocr_model_root,
                                             config.asr_runtime_path, config.asr_model_path,
