@@ -1,4 +1,8 @@
-"""Domain repository exports."""
+"""转录采集仓储层导出。
+
+从 _legacy 模块导出 OCR/ASR 转录操作的常量和函数。
+实际实现位于 repositories/_legacy.py 中。
+"""
 
 from . import _legacy
 

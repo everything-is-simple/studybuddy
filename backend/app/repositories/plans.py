@@ -1,4 +1,8 @@
-"""Domain repository exports."""
+"""学习计划与目标数据访问层。
+
+本模块导出学习目标、知识模块、学习计划和节奏分配的
+数据库操作函数。实际实现位于 _legacy 模块，待重构后迁移。
+"""
 
 from . import _legacy
 

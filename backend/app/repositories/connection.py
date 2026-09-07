@@ -1,4 +1,25 @@
-"""Domain repository exports."""
+"""连接管理和工具函数代理。
+
+本模块从 repositories._legacy 导出数据库连接、时间处理、文件操作等
+基础设施函数。真正的实现在 _legacy 模块中，等待后续重构拆分。
+
+主要导出：
+- connect: 创建 SQLite 数据库连接
+- utc_now: 获取 UTC 时间戳
+- sha256_file: 计算文件哈希
+- store_original: 存储原始文件到存储系统
+- chunk_text: 文本分块算法
+- embedding 相关: 向量编码/解码、相似度计算
+- migration 相关: 数据库迁移工具
+
+关联模块：
+- repositories._legacy: 实际实现（待重构）
+- 所有 API 和 Repository 模块都依赖此模块的导出
+
+Note:
+    此模块是临时代理层，待 _legacy 重构完成后将被拆分为
+    独立的工具模块。不建议在此文件中添加新功能。
+"""
 
 from . import _legacy
 

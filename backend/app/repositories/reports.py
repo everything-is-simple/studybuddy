@@ -1,4 +1,8 @@
-"""Domain repository exports."""
+"""学习报告数据访问层。
+
+本模块导出学习报告生成、导出和发送的数据库操作函数。
+实际实现位于 _legacy 模块，待重构后迁移。
+"""
 
 from . import _legacy
 
