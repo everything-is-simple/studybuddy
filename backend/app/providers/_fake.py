@@ -1,4 +1,30 @@
-"""Fake LLM provider for testing and demo purposes."""
+"""测试用假 LLM Provider。
+
+本模块提供一个不依赖真实 AI 服务的 LLM Provider 实现，用于：
+- 单元测试和集成测试
+- 演示环境（无需配置 API 密钥）
+- 离线开发和调试
+
+**行为特征**：
+1. 不发起任何网络请求
+2. 根据输入问题和上下文生成确定性的假答案
+3. 严格验证请求参数（与真实 Provider 保持一致）
+4. 模拟 token 计数（按字符数 / 4 估算）
+5. 支持完整的生成类型：Q&A、卡片、练习、笔记
+
+**生成策略**：
+- Q&A: 返回格式化的假答案，包含引用标记
+- 卡片/练习: 生成指定数量的学习项，循环使用上下文片段
+- 笔记: 生成带标题和块结构的 JSON 格式笔记
+
+关联模块：
+- providers._core: Provider 协议和类型定义
+- providers._registry: Provider 注册和调度
+
+Note:
+    此 Provider 的 provider_id 为 'fake'，model_id 为 'fake-model'。
+    生成的答案包含确定性指纹，便于测试验证。
+"""
 
 from __future__ import annotations
 
@@ -21,6 +47,26 @@ class FakeLLMProvider:
     model_id = FAKE_MODEL_ID
 
     def generate_answer(self, request: ProviderRequest) -> ProviderResult:
+        """生成假的 LLM 答案（确定性、无网络请求）。
+        
+        根据请求类型生成不同格式的假答案：
+        - Q&A: 格式化文本答案 + 引用标记
+        - 卡片: JSON 数组，每项包含 front/back/explanation
+        - 练习: JSON 数组，每项包含 prompt/options/answer_key
+        - 笔记: JSON 对象，包含 title 和 blocks 数组
+        
+        Args:
+            request: Provider 请求对象，包含问题、上下文、生成参数
+        
+        Returns:
+            包含假答案文本、引用键、token 计数的结果对象
+        
+        Raises:
+            ProviderError: 当请求参数无效或超出限制时
+        
+        Note:
+            答案中包含 SHA256 指纹（前 12 字符），便于测试验证确定性。
+        """
         question = request.question.strip()
         if not question or len(question) > MAX_PROVIDER_PROMPT_CHARS:
             raise ProviderError("provider_invalid_request")
