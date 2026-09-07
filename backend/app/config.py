@@ -1,3 +1,66 @@
+"""配置管理模块。
+
+本模块从环境变量加载 StudyBuddy 的全局配置，并提供不可变的
+配置对象。所有配置项都有默认值和验证规则。
+
+配置来源：
+- 环境变量（STUDYBUDDY_* 前缀）
+- 代码内置默认值
+
+主要组件：
+- AppConfig: 不可变的配置数据类，包含所有配置项
+- config_from_environment(): 从环境变量构造 AppConfig 实例
+- 验证函数: _env_int, _env_float, _env_bool, _valid_base_url 等
+
+配置分类：
+1. 核心配置：
+   - data_root: 数据根目录
+   - project_id: 项目 ID
+   - max_upload_bytes: 文件上传限制
+
+2. AI 配置：
+   - ai_provider_id, ai_model_id: LLM 提供商和模型
+   - ai_base_url, ai_api_key: API 访问凭据
+   - ai_timeout_seconds, ai_max_output_tokens: 资源限制
+
+3. Embedding 配置：
+   - embedding_provider_id, embedding_model_id: 嵌入模型
+   - embedding_max_batch_size, embedding_max_dimensions: 批处理限制
+
+4. ASR/OCR 配置：
+   - asr_provider_id, asr_model_id, asr_runtime_path: 音频转录
+   - ocr_provider_id, ocr_model_id, ocr_model_root: 图像识别
+   - ocr_enabled: OCR 启用开关
+
+5. 报告交付配置：
+   - report_delivery_mode: 'off'/'smtp'/'feishu'
+   - report_delivery_smtp_*: SMTP 邮件配置
+   - report_delivery_feishu_*: 飞书机器人配置
+   - 注意：默认关闭，需显式授权
+
+6. 运行时配置：
+   - host, port: HTTP 服务器配置
+   - task_max_concurrency: 任务并发数
+   - log_level: 日志级别
+   - demo_mode: 演示模式（使用 fake provider）
+
+安全性：
+- 所有敏感字段（API 密钥、密码）使用 repr=False
+- HTTP base_url 限制：HTTPS 或本地 HTTP
+- 邮件交付默认关闭，需显式授权
+- SMTP 主机白名单：smtp.qq.com, smtp.163.com
+- 飞书 Webhook URL 严格验证
+
+示例：
+    import os
+    os.environ['STUDYBUDDY_DATA_ROOT'] = '/data/studybuddy'
+    os.environ['STUDYBUDDY_AI_PROVIDER'] = 'openai'
+    os.environ['STUDYBUDDY_AI_MODEL'] = 'gpt-4o-mini'
+    
+    config = config_from_environment()
+    print(config.data_root)  # Path('/data/studybuddy')
+    print(config.ai_provider_id)  # 'openai'
+"""
 from __future__ import annotations
 
 import os
@@ -48,6 +111,29 @@ DEFAULT_AUTO_DETECT = True
 
 @dataclass(frozen=True)
 class AppConfig:
+    """应用全局配置数据类（不可变）。
+    
+    所有配置项均为只读，创建后不可修改。敏感字段（API 密钥、密码）
+    使用 repr=False 隐藏，不会出现在日志和字符串表示中。
+    
+    核心字段：
+        data_root: 数据根目录（必需）
+        project_id: 项目 ID（默认 'default'）
+        ai_provider_id, ai_model_id: LLM 配置
+        embedding_provider_id, embedding_model_id: 嵌入模型配置
+        ocr_provider_id, ocr_model_id: OCR 配置
+        asr_provider_id, asr_model_id: ASR 配置
+        host, port: HTTP 服务器配置
+    
+    属性：
+        originals_root: 原始文件存储目录（data_root / 'originals'）
+        database_path: SQLite 数据库路径（data_root / 'studybuddy.sqlite3'）
+    
+    注意：
+        - 直接构造 AppConfig(...) 不会探测主机能力
+        - 使用 config_from_environment() 从环境变量加载
+        - auto_detect_enabled=True 时会在 capabilities.py 中探测本地 OCR/ASR
+    """
     data_root: Path
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
     project_id: str = "default"
@@ -118,10 +204,12 @@ class AppConfig:
 
     @property
     def originals_root(self) -> Path:
+        """原始文件存储目录（data_root / 'originals'）。"""
         return self.data_root / "originals"
 
     @property
     def database_path(self) -> Path:
+        """主 SQLite 数据库文件路径（data_root / 'studybuddy.sqlite3'）。"""
         return self.data_root / "studybuddy.sqlite3"
 
 
@@ -261,6 +349,41 @@ def _env_delivery_targets() -> tuple[str, ...]:
 
 
 def config_from_environment() -> AppConfig:
+    """从环境变量构造应用配置。
+    
+    读取所有 STUDYBUDDY_* 前缀的环境变量，验证并构造 AppConfig 实例。
+    未设置的环境变量使用代码内置的默认值。
+    
+    关键环境变量：
+        STUDYBUDDY_DATA_ROOT: 数据根目录（默认 ~/.studybuddy/data）
+        STUDYBUDDY_PROJECT_ID: 项目 ID（默认 'default'）
+        STUDYBUDDY_AI_PROVIDER: AI 提供商（如 'openai'）
+        STUDYBUDDY_AI_MODEL: AI 模型 ID（如 'gpt-4o-mini'）
+        STUDYBUDDY_AI_API_KEY: AI API 密钥
+        STUDYBUDDY_HOST: HTTP 服务器主机（默认 '127.0.0.1'）
+        STUDYBUDDY_PORT: HTTP 服务器端口（默认 8787）
+        STUDYBUDDY_DEMO_MODE: 演示模式（0/1）
+        STUDYBUDDY_AUTO_DETECT: 自动检测本地能力（默认 1）
+    
+    Returns:
+        完整的 AppConfig 实例，所有字段已验证
+    
+    Raises:
+        ValueError: 环境变量格式错误或超出允许范围时，
+                    错误代码为 'invalid_<小写变量名>'
+    
+    示例：
+        >>> import os
+        >>> os.environ['STUDYBUDDY_DATA_ROOT'] = '/data/study'
+        >>> config = config_from_environment()
+        >>> print(config.data_root)
+        PosixPath('/data/study')
+    
+    注意：
+        - 此函数启用 auto_detect_enabled=True（除非显式设置为 0）
+        - demo_mode=True 时强制使用 fake provider，忽略其他 AI 配置
+        - 报告交付功能默认关闭，需显式启用并授权
+    """
     configured_root = os.environ.get("STUDYBUDDY_DATA_ROOT")
     if not configured_root:
         configured_root = str(Path.home() / ".studybuddy" / "data")
