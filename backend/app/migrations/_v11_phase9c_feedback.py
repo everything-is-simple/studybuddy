@@ -1,12 +1,44 @@
-"""Migration v11: phase9c feedback."""
+"""迁移 v11: Phase 9C 练习反馈 Schema。
 
+创建练习实践与错题本的持久化事实表（仅结构）：
+
+冲刺目标：
+- cram_goals: 冲刺目标（四态，关联计划可选）
+
+练习会话：
+- practice_sessions: 练习会话（八态，音频/图像来源）
+- practice_session_items: 会话项目（含引用快照和答案密钥）
+- exercise_attempt_reviews: 尝试评审（决策 + 反馈）
+
+错题本：
+- mistake_cases: 错题案例（指纹去重）
+- mistake_occurrences: 错题发生记录
+- mistake_feedback_events: 错题反馈事件
+
+设计要点：
+- 冲刺目标约束: 标题 1-200 字，日期 YYYY-MM-DD（10 字），
+  练习数 1-200
+- 会话项目含完整源信息快照（revision/extraction/chunk/span）
+- 错题案例通过 exercise_revision_fingerprint 去重
+- 计划关联 ON DELETE SET NULL（删除计划不删错题）
+
+事务说明：
+语句列表逐条执行，保持在 migrate() 的 BEGIN IMMEDIATE 内。
+"""
 from __future__ import annotations
 
 import sqlite3
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Apply v11 migration."""
+    """应用 v11 迁移：创建练习反馈体系表。
+    
+    创建 7 个表（冲刺目标、练习会话、错题本）。
+    语句列表逐条执行以保持事务原子性。
+    
+    Args:
+        connection: SQLite 连接
+    """
     """Add the 9C facts and snapshots; domain behavior remains in 9C-3+."""
     # Keep each statement inside migrate()'s BEGIN IMMEDIATE. executescript()
     # would commit before running the DDL and defeat migration rollback.

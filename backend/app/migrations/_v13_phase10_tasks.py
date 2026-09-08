@@ -1,12 +1,41 @@
-"""Migration v13: phase10 tasks."""
+"""迁移 v13: Phase 10 后台任务 Schema。
 
+创建任务运行器的任务信封和尝试审计表（不改变旧操作表）：
+
+- operation_tasks: 任务信封（七态状态机，关联 ai_operations）
+- operation_task_attempts: 尝试审计（租约/心跳/进度）
+
+设计要点：
+- 任务与操作一一对应: UNIQUE(operation_id)
+- 复合外键: (project_id, operation_id) → ai_operations(project_id, id)
+  要求 ai_operations 有 (project_id, id) 唯一索引（本迁移创建）
+- 父任务引用: ON DELETE RESTRICT（防级联丢失子任务）
+- 状态机: queued → running → succeeded/failed/cancelled/stale
+  cancel_requested 为运行中的取消请求状态
+- 阶段代码: queued/reading_source/indexing/provider_call/
+  persisting/finalizing/recovery_required
+- 租约字段: lease_started_at/lease_expires_at/heartbeat_at
+- 运行中唯一: 每任务最多一个 running 尝试（部分唯一索引）
+
+索引策略：
+- 调度查询: (status, created_at)
+- 项目列表: (project_id, status, updated_at)
+- 租约回收: (status, lease_expires_at)
+"""
 from __future__ import annotations
 
 import sqlite3
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Apply v13 migration."""
+    """应用 v13 迁移：创建任务信封和尝试审计表。
+    
+    创建 2 个表 + 5 个索引 + 1 个前置唯一索引。
+    语句列表逐条执行以保持事务原子性。
+    
+    Args:
+        connection: SQLite 连接
+    """
     """Add runner task envelopes and attempt audit without changing legacy operations."""
     statements = [
         "CREATE UNIQUE INDEX ai_operations_project_id_idx ON ai_operations(project_id, id)",
