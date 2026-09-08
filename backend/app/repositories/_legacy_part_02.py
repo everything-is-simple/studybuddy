@@ -1,3 +1,33 @@
+"""卡片确认与练习集管理（Legacy 分片 02）。
+
+本分片覆盖卡片生命周期写操作和练习集基础：
+
+卡片生命周期：
+- confirm_card: 草稿 → ready（确认 AI 生成内容）
+- transition_card: 状态机转换（含冲突检测）
+- review_card: 记录复习结果（again/hard/good/easy）
+
+练习集基础：
+- create_exercise_set / get_exercise_set / list_exercise_sets
+- list_exercise_attempts: 尝试历史
+
+生成操作（AI 生成卡片的操作记录）：
+- create_generation_operation: 创建操作（幂等指纹）
+- fail_generation_operation: 标记失败
+- _generation_fingerprint / _generation_public: 指纹与公共投影
+
+公共投影与验证：
+- _card_public: 卡片公共投影（不含敏感字段）
+- _exercise_payload / _exercise_citations: 练习载荷与引用构造
+- _validate_exercise_source_revision: 源修订有效性验证
+
+引用刷新（级联联动）：
+- _refresh_exercise_citations: 练习引用刷新
+- _refresh_exercise_citations_for_material: 材料变更触发的批量刷新
+- _refresh_phase9c_session_sources_for_material: 9C 会话源刷新
+
+用户编辑保护：AI 生成内容确认后永不静默覆盖 user_edited=1 的记录。
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

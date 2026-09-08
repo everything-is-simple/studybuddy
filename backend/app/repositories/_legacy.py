@@ -1,7 +1,29 @@
-"""Compatibility bridge for the split repository implementation.
+"""分拆仓库实现的兼容桥接（待重构的旧实现）。
 
-Business definitions are stored in bounded implementation parts. The bridge
-only assembles their explicit public/private bindings for legacy callers.
+业务定义存放在有界的实现分片中（_legacy_part_00 到 _legacy_part_17）。
+本桥接模块只负责装配它们的显式公共/私有绑定，供旧调用方使用。
+
+装配机制（本模块的核心职责）：
+1. 导入全18个分片并注册到 _PARTS 列表
+2. 交叉注入：对每对分片，把彼此的模块级符号通过
+   setdefault 注入对方命名空间（已有符号不覆盖）
+   - 实现分片永远不 import 本桥接模块
+3. 通过 getattr(part_00, ...) 显式导出公共 API
+   （策略常量 + 数据操作函数），由 repositories/*.py 代理引用
+
+设计约束：
+- 各分片只依赖 _legacy_runtime（标准库 + 项目依赖的统一入口）
+- 分片间函数调用依赖交叉注入，新增跨分片调用无需显式 import
+- 本文件是临时结构，重构后由领域模块替代
+
+领域分片概览：
+- part_00: 检索策略常量 + FTS 搜索索引
+- part_01-02: 材料导入/卡片管理/生成操作
+- part_03-05: 练习/会话/错题本（Phase 9C）
+- part_06-08: 采集/转录/报告（Phase 9D）
+- part_09-13: 学习计划/源链接/节奏/笔记（Phase 9A/9B）
+- part_14-15: 材料修订/后台任务
+- part_16-17: 检索执行/QA 幂等
 """
 import sys
 from . import _legacy_part_00 as _part_00

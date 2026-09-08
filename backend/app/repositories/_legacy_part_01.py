@@ -1,3 +1,32 @@
+"""材料导入与卡片管理（Legacy 分片 01）。
+
+本分片覆盖材料入库链路和卡片组的读操作：
+
+材料导入：
+- save_material_with_extraction: 主入库函数（哈希锁 + 原子存储 +
+  修订创建 + 分块 + 搜索索引同步）
+- restore_material: 恢复软删除的材料
+- material_state: 材料状态查询
+
+列表查询：
+- list_materials / list_materials_page: 活跃材料（分页）
+- list_deleted_materials / list_deleted_materials_page: 回收站（分页）
+
+搜索：
+- _snippet: 命中片段提取
+- _search_rows / _search_count: FTS 行查询
+
+卡片组读路径：
+- create_deck / get_deck / list_decks: 卡片组
+- list_cards / get_card / list_card_citations: 卡片及引用
+
+辅助：
+- _validate_text / _validate_card_payload: 输入验证
+- _citation_rows / _refresh_card_citations*: 引用状态刷新
+（源材料变更后把 valid 标记为 stale 等）
+
+卡片写操作（confirm/transition/review）在 part_02。
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 def save_material_with_extraction(connection: sqlite3.Connection, project_id: str,

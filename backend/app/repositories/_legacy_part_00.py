@@ -1,3 +1,32 @@
+"""检索策略常量与 FTS 搜索索引维护（Legacy 分片 00）。
+
+本分片定义全部检索/QA 策略常量，并维护两级 FTS 索引的同步。
+
+策略常量（经 _legacy.py 桥接导出）：
+- VALID_STATUSES: 导入状态集合（success/empty/rejected/failed）
+- RETRIEVAL_POLICY_VERSION: 词法检索策略 'lexical_fts_v1'
+- VECTOR_POLICY_VERSION: 向量检索 'vector_cosine_v1'
+- HYBRID_POLICY_VERSION: 混合检索 'hybrid_rrf_v1'（RRF_K=60）
+- FALLBACK_LEXICAL_POLICY_VERSION: 向量失败回退策略
+- CONTEXT_ASSEMBLER_POLICY_VERSION: 上下文装配器版本
+- MAX_CONTEXT_TOKENS: 上下文令牌上限（2000）
+- CITATION_KEY_PREFIX: 引用键前缀 'ctx-'
+- MAX_RETRIEVAL_QUERY_LENGTH: 查询长度上限（1000）
+- MAX_RETRIEVAL_TOP_K: 检索候选上限（50）
+- QA_PROMPT_VERSION / QA_OPERATION_LEASE_SECONDS: QA 提示版本/租约
+
+函数分组：
+- 材料级搜索: _ensure_search_index, _insert_search_row, _replace_search_row
+- 分块级搜索: _ensure_chunk_search_index, _sync_chunk_search_for_revision
+- 检索辅助: _search_tokens, _retrieval_tokens, _retrieval_preview,
+  _create_retrieval_run
+
+索引契约：
+- material_search: 材料级 FTS（material_id UNINDEXED + 名称 + 提取文本）
+- chunks_search: 分块级 FTS（id UNINDEXED + 文本 + 标准化文本）
+- 两者均使用 unicode61 分词器
+- 索引行必须与当前修订（is_current=1）保持同步
+"""
 from ._legacy_runtime import *
 VALID_STATUSES = {"success", "empty", "rejected", "failed"}
 
