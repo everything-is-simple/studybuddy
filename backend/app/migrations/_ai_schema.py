@@ -1,5 +1,50 @@
-"""AI schema creation helper."""
+"""AI Schema 创建辅助工具。
 
+本模块创建 AI 能力链的核心表结构（v02 ai_phase0 的主体）：
+- material_revisions: 材料修订版本（不可变历史）
+- chunks: 文本分块（含生命周期状态）
+- chunk_spans: 分块与源范围关联
+- chunks_search: FTS5 分块搜索虚拟表
+- embeddings: 向量嵌入存储
+- retrieval_runs: 检索运行记录
+- retrieval_hits: 检索命中记录
+- qa_citations: QA 引用记录
+- ai_operations: AI 操作记录（幂等基础）
+- qa_threads/qa_messages/qa_answers: 问答线程
+
+核心设计：
+- 修订链: material_revisions 保留每次解析的新版本，is_current 标记当前版
+- 分块状态机: pending → ready → stale/deleted（CHECK 约束）
+- 唯一性约束:
+  - chunks: UNIQUE(revision_id, chunk_index)
+  - embeddings: UNIQUE(chunk_id, provider_id, model_id, model_revision, content_hash)
+  - qa_citations: UNIQUE(answer_id, citation_key)
+- 嵌入标识: provider/model/revision/content_hash 完整标识，支持失效检测
+
+检索流水线：
+- retrieval_runs 记录每次检索（策略版本、嵌入模型）
+- retrieval_hits 记录命中（词法分、向量分、重排分）
+- selected 标记被选中用于上下文的分块
+
+QA 数据流：
+- qa_threads → qa_messages → qa_answers
+- qa_citations 关联回材料分块（支持引用验证）
+- ai_operations 记录操作（状态机、指纹、令牌用量）
+
+表关系（简化）：
+    materials → material_revisions → chunks → embeddings
+                    ↓                ↓
+              extractions      chunk_spans → text_spans
+    
+    qa_threads → qa_messages → qa_answers → qa_citations
+                                     ↑
+    ai_operations (记录所有 AI 操作)
+
+注意：
+- 使用 CREATE TABLE IF NOT EXISTS 保证幂等性
+- 外键全部 ON DELETE CASCADE
+- ai_operations.status 有 CHECK 约束（六种状态）
+"""
 from __future__ import annotations
 
 import sqlite3
@@ -8,6 +53,26 @@ from ._helpers import _columns
 
 
 def _create_ai_schema(connection: sqlite3.Connection) -> None:
+    """创建 AI 能力链核心 Schema（修订/分块/嵌入/检索/QA）。
+    
+    创建表（按依赖顺序）：
+    1. material_revisions: 材料修订历史
+    2. chunks + chunks_search: 分块和搜索索引
+    3. chunk_spans: 分块-范围关联
+    4. embeddings: 向量存储
+    5. retrieval_runs + retrieval_hits: 检索记录
+    6. qa_citations: 引用记录
+    7. ai_operations: AI 操作（幂等基础）
+    8. qa_threads + qa_messages + qa_answers: 问答线程
+    
+    Args:
+        connection: SQLite 连接（事务由调用者管理）
+    
+    注意:
+        - 幂等性：重复执行不会重复创建
+        - 所有外键级联删除
+        - CHECK 约束保证状态值合法
+    """
     connection.executescript("""
         CREATE TABLE IF NOT EXISTS material_revisions (
             id TEXT PRIMARY KEY,

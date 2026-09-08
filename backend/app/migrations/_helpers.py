@@ -1,5 +1,34 @@
-"""Shared migration helper utilities."""
+"""共享迁移辅助工具。
 
+本模块提供迁移系统使用的底层工具函数：
+- 时间戳生成（UTC ISO 格式）
+- 数据库对象枚举（表和虚拟表）
+- 表列信息查询
+- 迁移历史表创建
+- 基线完整性验证
+
+基线验证（_baseline_complete）：
+- 验证数据库是否具有当前 Schema 版本应有的所有表和关键列
+- 用于判断旧数据库是否可以作为基线采用（adopt）
+- 按版本递增检查（v9, v10, v11, v12, v13 各自添加的表）
+- 检查核心列集合（materials, extractions, qa_threads 等）
+
+核心表分组：
+- required_core: 基础表（projects, materials, extractions, text_spans）
+- required_ai: AI 相关表（版本递增添加）
+- 搜索索引: material_search, chunks_search（虚拟表）
+
+版本递增规则：
+- v9+: 学习计划表（learning_goals, study_plans 等）
+- v10+: 笔记和节奏表（notes, rhythm_settings 等）
+- v11+: 练习反馈表（practice_sessions, mistake_cases 等）
+- v12+: 采集报告表（capture_sessions, report_snapshots 等）
+- v13+: 后台任务表（operation_tasks, operation_task_attempts）
+
+注意：
+- 这些函数以下划线开头，仅供迁移模块内部使用
+- 新迁移应使用 _columns() 检查列存在性，避免重复 ALTER
+"""
 from __future__ import annotations
 
 import sqlite3
@@ -7,16 +36,31 @@ from datetime import datetime, timezone
 
 
 def _now() -> str:
+    """生成 UTC ISO 格式时间戳（用于迁移历史记录）。"""
     return datetime.now(timezone.utc).isoformat()
 
 
 def _objects(connection: sqlite3.Connection) -> set[str]:
+    """枚举数据库中的所有表和虚拟表。
+    
+    Returns:
+        表名集合（包含 sqlite_sequence 等内部表）
+    """
     return {str(row[0]) for row in connection.execute(
         "SELECT name FROM sqlite_master WHERE type IN ('table', 'virtual table')"
     )}
 
 
 def _columns(connection: sqlite3.Connection, table: str) -> set[str]:
+    """查询表的列名集合。
+    
+    Args:
+        connection: SQLite 连接
+        table: 表名
+    
+    Returns:
+        列名集合（表不存在时返回空集合）
+    """
     try:
         return {str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})")}
     except sqlite3.Error:
@@ -24,6 +68,13 @@ def _columns(connection: sqlite3.Connection, table: str) -> set[str]:
 
 
 def _create_history(connection: sqlite3.Connection) -> None:
+    """创建迁移历史表（幂等）。
+    
+    表结构：
+    - version: 版本号（主键）
+    - name: 迁移名称
+    - applied_at: 应用时间（UTC ISO）
+    """
     connection.execute(
         "CREATE TABLE IF NOT EXISTS schema_migrations "
         "(version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)"
@@ -31,6 +82,24 @@ def _create_history(connection: sqlite3.Connection) -> None:
 
 
 def _baseline_complete(connection: sqlite3.Connection, current_schema_version: int) -> bool:
+    """验证数据库基线是否完整（是否可作为旧数据库采用）。
+    
+    检查项：
+    - 当前版本应有的所有表都存在
+    - 关键表的核心列齐全
+    - 搜索索引虚拟表存在
+    
+    Args:
+        connection: SQLite 连接
+        current_schema_version: 目标 Schema 版本
+    
+    Returns:
+        True 表示基线完整，可以作为已迁移到该版本的数据库
+    
+    注意:
+        - 按版本递增检查各阶段添加的表
+        - 用于 migrate() 中的旧数据库采用逻辑
+    """
     objects = _objects(connection)
     required_core = {"projects", "materials", "extractions", "text_spans"}
     required_ai = {

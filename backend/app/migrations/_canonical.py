@@ -1,5 +1,32 @@
-"""Canonical material schema creation."""
+"""规范化材料 Schema 创建。
 
+本模块创建基础材料管理的核心表结构：
+- projects: 项目表
+- materials: 材料表（原始文件元数据）
+- extractions: 提取记录表（解析结果）
+- text_spans: 文本范围表（语义单元）
+- material_search: FTS5 全文搜索虚拟表
+
+表关系：
+projects 1:N materials 1:N extractions 1:N text_spans
+（ON DELETE CASCADE 级联删除）
+
+列兼容性处理：
+- 旧数据库可能缺少 updated_at, deleted_at, error_code 列
+- 使用 ALTER TABLE 增量添加，避免破坏现有数据
+- updated_at 缺失时用 created_at 回填
+
+搜索索引：
+- material_search: FTS5 虚拟表
+- 索引字段: original_name（材料名）、text（提取文本）
+- material_id 不索引（UNINDEXED，仅作为关联键）
+- 使用 unicode61 分词器
+
+注意：
+- 本模块仅处理基础表（v1 之前的核心结构）
+- AI 相关表在 v02+ 迁移中创建
+- 使用 CREATE TABLE IF NOT EXISTS 保证幂等性
+"""
 from __future__ import annotations
 
 import sqlite3
@@ -8,6 +35,20 @@ from ._helpers import _columns
 
 
 def _create_canonical_schema(connection: sqlite3.Connection) -> None:
+    """创建规范化材料 Schema（基础表 + FTS 索引）。
+    
+    执行流程：
+    1. 创建核心表（projects, materials, extractions, text_spans）
+    2. 检查并补充缺失列（updated_at, deleted_at, error_code）
+    3. 创建 FTS5 全文搜索虚拟表
+    
+    Args:
+        connection: SQLite 连接（事务由调用者管理）
+    
+    注意:
+        - 幂等性：重复执行不会重复创建
+        - 列补齐时回填 updated_at 避免空值
+    """
     connection.executescript(
         """
         CREATE TABLE IF NOT EXISTS projects (
