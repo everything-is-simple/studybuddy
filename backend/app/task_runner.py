@@ -1,3 +1,70 @@
+"""后台任务运行器 - 单进程任务调度和执行。
+
+本模块提供单进程、单线程的后台任务调度器，用于执行长时间、可取消、
+可重试的异步任务（如 Embedding 索引、AI 生成等）。
+
+核心特性：
+- 单工作线程：一次只执行一个任务
+- 租约机制：任务执行前获取租约，失败后释放
+- 心跳维持：处理器可定期延长租约
+- 协作取消：处理器检查 cancel_requested 状态
+- 失效回收：租约超时的任务自动回收
+- 错误重试：支持按错误码白名单重试
+
+任务生命周期：
+1. queued: 创建后等待调度
+2. running: 获取租约后开始执行
+3. succeeded/failed/cancelled: 处理器完成
+4. stale: 租约超时或进程退出
+
+主要组件：
+- TaskRunner: 任务调度器，管理生命周期和调度
+- TaskContext: 任务上下文，提供取消、进度、心跳 API
+- TaskHandler: 任务处理器函数类型
+- TaskResult: 处理器返回结果
+- TaskCancelled/TaskFailed/TaskRunnerError: 异常类型
+
+处理器契约：
+- 接受 TaskContext 参数
+- 返回 TaskResult | None
+- 定期调用 context.raise_if_cancel_requested()
+- 定期调用 context.heartbeat() 延长租约
+- 可通过 context.progress() 报告进度
+- 抓住 TaskCancelled 或抛出 TaskFailed(错误码)
+
+错误处理：
+- TaskCancelled: 协作取消，任务标记为 cancelled
+- TaskFailed(错误码): 业务错误，任务标记为 failed
+- TaskRunnerError: 租约丢失，任务标记为 stale
+- 其他异常: 任务标记为 failed，错误码为 'task_handler_failed'
+
+并发控制：
+- max_concurrency 固定为 1（单工作线程）
+- 每个数据库一个调度锁（_dispatcher_lock）
+- 同进程不允许启动多个调度器
+
+示例：
+    def my_handler(ctx: TaskContext) -> TaskResult | None:
+        ctx.progress(0, 'starting')
+        # ... 执行工作 ...
+        ctx.raise_if_cancel_requested()
+        ctx.heartbeat()
+        ctx.progress(100, 'completed')
+        return TaskResult(output_artifact_id='artifact_123')
+    
+    runner = TaskRunner(db_path, lease_seconds=30, max_concurrency=1)
+    runner.register('embedding_index', my_handler,
+                   retryable_error_codes=frozenset(['provider_timeout']))
+    runner.start()
+    # ... 应用运行 ...
+    runner.shutdown(timeout_seconds=5.0)
+
+注意：
+- TaskRunner 从不自动启动，必须显式调用 start()
+- shutdown() 不等待不配合的处理器，将其标记为 stale
+- 失效任务可通过 retry() 重试（需配置 retryable_error_codes）
+- 所有操作通过 SQLite 事务保证原子性
+"""
 from __future__ import annotations
 
 import logging
@@ -28,8 +95,14 @@ _runner_locks: dict[str, threading.Lock] = {}
 
 @dataclass(frozen=True)
 class TaskResult:
-    """A handler may return only an opaque, persisted artifact identifier."""
-
+    """任务处理器返回结果。
+    
+    处理器只返回不透明的、已持久化的制品 ID。
+    具体制品内容通过数据库或文件系统查询。
+    
+    Attributes:
+        output_artifact_id: 输出制品 ID（如 embedding 索引版本 ID）
+    """
     output_artifact_id: str | None = None
 
 
@@ -49,18 +122,32 @@ class TaskHandlerPolicy:
 
 
 class TaskRunnerError(ValueError):
+    """任务运行器错误（配置错误、租约丢失等）。
+    
+    Args:
+        code: 错误码（如 'task_lease_lost'）
+    """
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
 
 
 class TaskCancelled(Exception):
-    """A handler raises this only after a cooperative cancellation safe point."""
+    """任务取消异常 - 处理器在协作取消安全点后抛出。
+    
+    处理器应定期调用 context.raise_if_cancel_requested() 检查取消。
+    """
 
 
 class TaskFailed(Exception):
-    """A handler raises a stable, non-sensitive business error code."""
-
+    """任务失败异常 - 处理器抛出稳定的、非敏感业务错误码。
+    
+    Args:
+        code: 业务错误码（如 'embedding_provider_unavailable'）
+    
+    注意:
+        错误码不应包含敏感信息（密钥、路径、用户数据等）
+    """
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
@@ -68,6 +155,23 @@ class TaskFailed(Exception):
 
 @dataclass(frozen=True)
 class TaskContext:
+    """任务执行上下文 - 提供取消、进度、心跳 API。
+    
+    处理器通过这个上下文与调度器通信，报告进度和检查取消。
+    
+    Attributes:
+        task_id: 任务 ID
+        attempt_id: 尝试 ID（同一任务可有多次尝试）
+        project_id: 项目 ID
+        operation_id: 操作 ID（关联到 ai_operations）
+        task_kind: 任务类型（如 'embedding_index'）
+    
+    方法：
+        cancel_requested(): 检查是否有取消请求
+        raise_if_cancel_requested(): 如有取消请求则抛出 TaskCancelled
+        progress(percent, stage_code): 报告进度
+        heartbeat(): 延长租约（长任务应定期调用）
+    """
     task_id: str
     attempt_id: str
     project_id: str
@@ -81,13 +185,34 @@ class TaskContext:
             return str(get_operation_task(connection, task_id=self.task_id)["status"])
 
     def cancel_requested(self) -> bool:
+        """检查是否有取消请求。
+        
+        Returns:
+            True 表示有取消请求
+        """
         return self._task_status() == "cancel_requested"
 
     def raise_if_cancel_requested(self) -> None:
+        """如有取消请求则抛出 TaskCancelled 异常。
+        
+        处理器应在关键操作间定期调用此方法。
+        
+        Raises:
+            TaskCancelled: 当任务被请求取消时
+        """
         if self.cancel_requested():
             raise TaskCancelled()
 
     def progress(self, progress_percent: int | None, stage_code: str) -> None:
+        """报告任务进度。
+        
+        Args:
+            progress_percent: 进度百分比（0-100，或 None 表示不确定）
+            stage_code: 阶段代码（如 'downloading', 'processing'）
+        
+        Raises:
+            TaskRunnerError: 租约已丢失时
+        """
         with connect_database(self._database_path) as connection:
             if not update_operation_task_progress(
                 connection, task_id=self.task_id, attempt_id=self.attempt_id,
@@ -96,6 +221,13 @@ class TaskContext:
                 raise TaskRunnerError("task_lease_lost")
 
     def heartbeat(self) -> None:
+        """延长任务租约（心跳保活）。
+        
+        长时间运行的处理器应定期调用此方法，防止租约超时。
+        
+        Raises:
+            TaskRunnerError: 租约已丢失时
+        """
         with connect_database(self._database_path) as connection:
             if not heartbeat_operation_task(
                 connection, task_id=self.task_id, attempt_id=self.attempt_id,
@@ -105,8 +237,29 @@ class TaskContext:
 
 
 class TaskRunner:
-    """Explicit, single-process task dispatcher; it is never started by app startup."""
-
+    """显式、单进程任务调度器 - 从不自动启动。
+    
+    单工作线程调度器，轮询数据库获取 queued 任务并执行。
+    支持协作取消、租约维持、失效回收、错误重试。
+    
+    生命周期：
+        1. 构造器：配置参数
+        2. register(): 注册任务类型和处理器
+        3. start(): 启动调度循环
+        4. 运行中：cancel()/retry() 管理任务
+        5. shutdown(): 停止调度器
+    
+    Args:
+        database_path: SQLite 数据库路径
+        lease_seconds: 租约时长（默认 30 秒）
+        poll_interval_seconds: 轮询间隔（默认 0.1 秒）
+        max_concurrency: 并发数（固定为 1）
+    
+    注意:
+        - 必须显式调用 start()，不会自动启动
+        - 同进程不允许多个调度器实例
+        - shutdown() 不等待不配合的处理器
+    """
     def __init__(self, database_path: Path, *, lease_seconds: int = 30,
                  poll_interval_seconds: float = 0.1, max_concurrency: int = 1):
         if lease_seconds < 1 or poll_interval_seconds <= 0 or max_concurrency != 1:
@@ -123,6 +276,16 @@ class TaskRunner:
 
     def register(self, task_kind: str, handler: TaskHandler, *,
                  retryable_error_codes: frozenset[str] = frozenset()) -> None:
+        """注册任务类型和处理器。
+        
+        Args:
+            task_kind: 任务类型（如 'embedding_index'）
+            handler: 处理器函数，签名为 (TaskContext) -> TaskResult | None
+            retryable_error_codes: 可重试错误码集合
+        
+        Raises:
+            TaskRunnerError: 参数无效或重复注册时
+        """
         if (not task_kind or not callable(handler) or
                 any(not code or len(code) > 100 for code in retryable_error_codes)):
             raise TaskRunnerError("task_handler_invalid")
@@ -131,10 +294,31 @@ class TaskRunner:
         self._handlers[task_kind] = TaskHandlerPolicy(handler, retryable_error_codes)
 
     def cancel(self, task_id: str) -> str:
+        """请求取消任务（协作取消）。
+        
+        将任务状态设为 'cancel_requested'，处理器应检查并响应。
+        
+        Args:
+            task_id: 任务 ID
+        
+        Returns:
+            新状态（'cancel_requested'）
+        """
         with connect_database(self._database_path) as connection:
             return request_operation_task_cancel(connection, task_id=task_id)
 
     def retry(self, task_id: str) -> dict[str, object]:
+        """重试失败的任务（仅允许白名单错误码）。
+        
+        Args:
+            task_id: 任务 ID
+        
+        Returns:
+            更新后的任务状态
+        
+        Raises:
+            TaskRunnerError: 任务不存在、未注册或错误码不可重试时
+        """
         with connect_database(self._database_path) as connection:
             task = get_operation_task(connection, task_id=task_id)
             policy = self._handlers.get(str(task["task_kind"]))
@@ -149,6 +333,13 @@ class TaskRunner:
                 raise TaskRunnerError(str(error)) from None
 
     def start(self) -> None:
+        """启动后台调度线程。
+        
+        创建守护线程，循环轮询和执行任务。
+        
+        Raises:
+            TaskRunnerError: 调度器已启动时
+        """
         with self._lock:
             if self._thread is not None and self._thread.is_alive():
                 raise TaskRunnerError("task_runner_already_started")
@@ -157,6 +348,17 @@ class TaskRunner:
             self._thread.start()
 
     def shutdown(self, timeout_seconds: float = 5.0) -> None:
+        """停止后台调度线程。
+        
+        等待当前任务完成，超时后强制退出。
+        不配合的处理器被标记为 stale。
+        
+        Args:
+            timeout_seconds: 等待超时（默认 5 秒）
+        
+        注意:
+            不等待不配合的处理器，其尝试被标记为 stale
+        """
         self._stop.set()
         thread = self._thread
         if thread is not None:
@@ -172,6 +374,11 @@ class TaskRunner:
                 self._thread = None
 
     def run_once(self) -> bool:
+        """执行一次调度循环（获取并执行一个任务）。
+        
+        Returns:
+            True 表示执行了任务，False 表示无任务或获取锁失败
+        """
         if self._stop.is_set() or not self._dispatch_lock.acquire(blocking=False):
             return False
         try:
