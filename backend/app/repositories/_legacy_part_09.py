@@ -1,3 +1,42 @@
+"""学习目标、知识模块与学习计划 CRUD（Legacy 分片 09）。
+
+本分片是 Phase 9A 学习计划体系的核心写路径：
+
+学习目标：
+- create_learning_goal / list_learning_goals / get_learning_goal
+- update_learning_goal / archive_learning_goal
+
+知识模块：
+- create_knowledge_module / list_knowledge_modules / get_knowledge_module
+- update_knowledge_module / archive_knowledge_module
+
+学习计划：
+- create_study_plan / list_study_plans / get_study_plan
+- update_study_plan / transition_study_plan: 六态状态机转换
+
+进度：
+- study_progress_summary: 进度汇总投影（从事件流计算）
+
+行构造与验证（被 part_10/part_11 复用）：
+- _study_goal_row / _study_module_row: 目标/模块行构造
+- _study_plan_row / _study_plan_items / _study_dependencies:
+  计划行、项目列表、依赖查询
+- _study_plan_public: 计划公共投影
+- _study_plan_for_edit / _study_item_row / _study_item_edit_plan:
+  编辑路径辅助
+- _study_optional_reference: 可选外键引用验证
+
+时间与节奏基础：
+- _study_text / _study_description: 文本验证
+- _study_project_exists: 项目存在性检查
+- _rhythm_date / _rhythm_timezone / _rhythm_settings_row:
+  日期/时区验证（节奏功能在 part_11）
+- _rhythm_plan_for_write: 写路径的计划查询
+
+设计要点：
+- 计划转换有前置状态检查（如 completed 前所有 item 需完成）
+- 进度汇总是事件投影（事件溯源，不存冗余计数）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

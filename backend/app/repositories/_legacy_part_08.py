@@ -1,3 +1,29 @@
+"""报告投影与交付尝试（Legacy 分片 08）。
+
+本分片覆盖 Phase 9D 报告快照的生成和交付记录：
+
+报告快照：
+- create_report_snapshot: 创建快照（确定性聚合 + 指纹）
+- get_report_snapshot / list_report_snapshots: 查询
+- export_report_snapshot: 导出（Markdown 下载）
+- build_report_projection: 核心投影构建（周期数据聚合）
+- _phase9d_report_public: 快照公共投影
+
+交付记录：
+- record_report_delivery_attempt: 记录交付尝试（含策略门控结果）
+- find_report_delivery_replay: 重放检测（幂等键 + 内容指纹）
+- list_report_delivery_attempts: 尝试历史
+- _phase9d_target_label / _phase9d_delivery_public: 投影辅助
+
+设计要点：
+- 报告是确定性投影：相同输入（数据 + 周期 + 时区）产生相同
+  aggregation_fingerprint，支持审计与重放
+- 交付尝试记录策略决策（blocked/failed/sent/dry_run），
+  只存内容指纹，绝不存报告正文
+- 重放命中时返回上次结果（不重发、不重复记录）
+
+报告投影依赖 part_07 的周期工具（_phase9d_report_period 等）。
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
