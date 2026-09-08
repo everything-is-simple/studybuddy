@@ -16,7 +16,7 @@ Provider 选择：
 依赖项：
 - whisper.cpp: 本地 Whisper 运行时 (https://github.com/ggerganov/whisper.cpp)
 - 模型文件: ggml-*.bin 格式的量化模型
-"
+"""
 
 from __future__ import annotations
 
