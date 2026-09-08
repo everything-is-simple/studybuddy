@@ -1,3 +1,30 @@
+"""后台任务视图与嵌入索引操作（Legacy 分片 15）。
+
+本分片覆盖 operation_tasks 的公共视图和嵌入索引的执行路径：
+
+任务公共视图：
+- list_operation_tasks_public: 任务列表（含投影过滤）
+- get_operation_task_public: 单任务详情
+（任务由 task_runner 执行；视图层不暴露内部状态字段）
+
+嵌入索引操作：
+- create_embedding_index_operation: 创建索引操作（幂等）
+- finish_embedding_index_operation: 完成（写回向量行 + 状态）
+- index_embeddings_for_material: 单材料索引（分块 → Provider → 存储）
+- verify_embeddings: 向量验证（维度/新鲜度检查）
+- rebuild_embeddings_for_material: 重建（清除旧行后重索引）
+
+检索候选（词法）：
+- _lexical_candidates: 词法候选行（FTS 查询 + 权重）
+- _hydrate_provider_dimensions: Provider 维度对齐
+（不足时用零向量填充到目标维度）
+
+设计要点：
+- 嵌入操作幂等：同材料同策略版本复用未完成操作
+- Provider 失败映射为操作失败（错误码稳定，不泄露原始异常）
+- 重建是先清后建（同一事务），避免索引不一致窗口
+- 向量存储使用 EMBEDDING_ENCODING 编码（见 embedding.py）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

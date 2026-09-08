@@ -1,3 +1,33 @@
+"""检索执行：混合/向量/分块（Legacy 分片 16）。
+
+本分片实现三种检索策略的实际执行，是 RAG 链路的核心：
+
+检索执行：
+- run_hybrid_retrieval: 混合检索（词法 + 向量，RRF 融合，可回退词法）
+- run_vector_retrieval: 纯向量检索
+- run_chunk_retrieval: 分块检索（单一材料内）
+
+候选生成：
+- _vector_candidates: 向量候选（嵌入新鮮度校验 + 余弦相似度排序）
+- _persist_ranked_retrieval: 持久化检索运行和命中行
+
+索引状态与回收：
+- get_material_index_status: 材料索引状态概览
+- reclaim_stale_qa_operations: 回收租约过期的 QA 操作
+
+检索契约：
+- top_k 范围 [1, MAX_RETRIEVAL_TOP_K=50]，非法值拒绝
+- 向量候选仅取 status='ready' 且未删除材料且当前修订且当前分块
+- 相似度并列时按 round(score,12) + chunk_id 稳定排序
+- 每次检索创建 retrieval_run 记录（策略版本 + 命中明细）
+- 向量检索失败时回退词法（fallback_lexical_v1 策略版本）
+- 命中行带 citation_label（chunk-N 格式，供 QA 引用）
+
+设计要点：
+- 检索运行持久化支持 QA 引用溯源和策略审计
+- 嵌入新鮮度用 embedding_staleness 逐行校验（向量过期即跳过）
+- 空候选返回 'empty' 状态而非错误（上层据此选择降级提示）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
