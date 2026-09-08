@@ -1,3 +1,47 @@
+"""嵌入向量管理 - 向量编解码、验证和假提供商。
+
+本模块提供向量嵌入的核心功能：
+- 向量编解码（f32le 格式）
+- 嵌入标识验证（模型、版本、维度一致性）
+- 失效检测（内容哈希、源版本、模型变更）
+- 假提供商（确定性演示，基于 SHA256 哈希桶）
+- 余弦相似度计算
+
+向量编码：
+- 格式：f32le_v1（小端 32 位浮点数）
+- 最大维度：4096
+- 最大载荷：16 KB（4096 * 4 字节）
+
+嵌入标识（EmbeddingIdentity）：
+- chunk_id: 分块 ID
+- source_revision: 源修订版本 ID
+- content_hash: SHA256 内容哈希
+- provider_id, model_id, model_revision: 模型标识
+- dimensions: 向量维度
+- vector_encoding: 编码格式
+
+失效检测：
+- embedding_staleness() 检查嵌入是否可用于检索
+- 检查项：内容哈希、源版本、模型、维度、编码
+- 返回稳定的原因码（如 'embedding_content_hash_stale'）
+
+FakeEmbeddingProvider：
+- 确定性演示嵌入，基于 SHA256 哈希桶
+- 相同输入总是生成相同向量
+- 不需网络、不需外部模型
+- 32 维，单位化后的向量
+
+限制：
+- 批处理大小：最多 32 条文本
+- 单条文本：最多 12,000 字符
+- 向量维度：1-4096
+
+错误码：
+- embedding_invalid_*: 输入验证失败
+- embedding_*_stale: 嵌入失效
+- embedding_*_mismatch: 维度或编码不匹配
+- embedding_payload_*: 载荷错误
+"""
 from __future__ import annotations
 
 import hashlib
@@ -21,6 +65,11 @@ _HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class EmbeddingError(ValueError):
+    """嵌入向量错误。
+    
+    Args:
+        code: 错误码（如 'embedding_invalid_vector'）
+    """
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
@@ -28,6 +77,21 @@ class EmbeddingError(ValueError):
 
 @dataclass(frozen=True)
 class EmbeddingIdentity:
+    """嵌入向量标识 - 用于失效检测和版本一致性验证。
+    
+    包含分块、源、模型和编码的完整标识信息。
+    用于验证已存储的嵌入是否仍然有效。
+    
+    Attributes:
+        chunk_id: 分块 ID
+        source_revision: 源文档修订版本 ID
+        content_hash: 分块内容 SHA256 哈希
+        provider_id: 提供商 ID
+        model_id: 模型 ID
+        model_revision: 模型版本
+        dimensions: 向量维度
+        vector_encoding: 编码格式（默认 'f32le_v1'）
+    """
     chunk_id: str
     source_revision: str
     content_hash: str
@@ -38,6 +102,14 @@ class EmbeddingIdentity:
     vector_encoding: str = EMBEDDING_ENCODING
 
     def validate(self) -> "EmbeddingIdentity":
+        """验证所有字段格式和取值范围。
+        
+        Returns:
+            self（链式调用）
+        
+        Raises:
+            EmbeddingError: 字段无效或编码不支持时
+        """
         for value in (self.chunk_id, self.source_revision, self.provider_id, self.model_id,
                       self.model_revision, self.vector_encoding):
             if not isinstance(value, str) or not _ID_RE.fullmatch(value):
@@ -63,12 +135,31 @@ class EmbeddingProvider(Protocol):
 
 
 def normalize_embedding_text(text: str) -> str:
+    """标准化嵌入文本（合并空白）。
+    
+    Args:
+        text: 输入文本
+    
+    Returns:
+        标准化后的文本（单个空格分隔）
+    
+    Raises:
+        EmbeddingError: 输入不是字符串时
+    """
     if not isinstance(text, str):
         raise EmbeddingError("embedding_invalid_request")
     return " ".join(text.split())
 
 
 def embedding_content_hash(text: str) -> str:
+    """计算标准化文本的 SHA256 哈希值。
+    
+    Args:
+        text: 输入文本
+    
+    Returns:
+        小写十六进制 SHA256 哈希
+    """
     return hashlib.sha256(normalize_embedding_text(text).encode("utf-8")).hexdigest()
 
 
@@ -102,6 +193,18 @@ def _validate_vectors(vectors: object, count: int, dimensions: int) -> list[list
 
 
 def encode_vector(values: list[float] | tuple[float, ...], *, encoding: str = EMBEDDING_ENCODING) -> bytes:
+    """将向量编码为二进制载荷（f32le 格式）。
+    
+    Args:
+        values: 向量值列表
+        encoding: 编码格式（仅支持 'f32le_v1'）
+    
+    Returns:
+        二进制载荷
+    
+    Raises:
+        EmbeddingError: 编码不支持或向量无效时
+    """
     if encoding != EMBEDDING_ENCODING:
         raise EmbeddingError("embedding_encoding_unsupported")
     if not isinstance(values, (list, tuple)) or not values:
@@ -118,6 +221,19 @@ def encode_vector(values: list[float] | tuple[float, ...], *, encoding: str = EM
 
 
 def decode_vector(payload: bytes, dimensions: int, *, encoding: str = EMBEDDING_ENCODING) -> list[float]:
+    """将二进制载荷解码为向量。
+    
+    Args:
+        payload: 二进制载荷
+        dimensions: 预期维度
+        encoding: 编码格式
+    
+    Returns:
+        向量值列表
+    
+    Raises:
+        EmbeddingError: 编码不支持、载荷无效或维度不匹配时
+    """
     if encoding != EMBEDDING_ENCODING:
         raise EmbeddingError("embedding_encoding_unsupported")
     dimensions = validate_dimensions(dimensions)
@@ -137,7 +253,23 @@ def decode_vector(payload: bytes, dimensions: int, *, encoding: str = EMBEDDING_
 
 def embedding_staleness(row: Mapping[str, object], *, expected_identity: EmbeddingIdentity,
                         payload_valid: bool | None = None, source_state: str = "ready") -> str | None:
-    """Return a stable reason when an embedding must not be used for retrieval."""
+    """检查嵌入是否失效，返回稳定的原因码。
+    
+    检查项：
+    - 源状态（missing/deleted/not_current）
+    - 嵌入状态（非 ready）
+    - 内容哈希、源版本、模型、维度、编码一致性
+    - 载荷有效性
+    
+    Args:
+        row: 数据库行（包含 status, content_hash, provider_id 等字段）
+        expected_identity: 预期的嵌入标识
+        payload_valid: 载荷有效性（None 表示未验证）
+        source_state: 源状态（ready/missing/deleted/not_current）
+    
+    Returns:
+        失效原因码，或 None 表示仍然有效
+    """
     expected_identity.validate()
     if source_state == "missing":
         return "embedding_chunk_missing"
@@ -173,6 +305,24 @@ def embedding_staleness(row: Mapping[str, object], *, expected_identity: Embeddi
 
 @dataclass(frozen=True)
 class FakeEmbeddingProvider:
+    """假嵌入提供商 - 确定性演示，基于 SHA256 哈希桶。
+    
+    生成确定性的单位化向量，相同输入总是生成相同向量。
+    不需网络、不需外部模型，用于 demo 模式和测试。
+    
+    特性：
+    - 32 维向量
+    - 基于 SHA256 + 模型标识 + 文本的哈希桶
+    - L2 单位化
+    - 支持批处理（最多 32 条）
+    
+    Attributes:
+        provider_id: 'fake'
+        model_id: 'fake-embedding-v1'
+        model_revision: '1'
+        dimensions: 32
+        encoding: 'f32le_v1'
+    """
     provider_id: str = FAKE_EMBEDDING_PROVIDER_ID
     model_id: str = FAKE_EMBEDDING_MODEL_ID
     model_revision: str = FAKE_EMBEDDING_MODEL_REVISION
@@ -182,6 +332,7 @@ class FakeEmbeddingProvider:
     max_text_chars: int = MAX_EMBEDDING_TEXT_CHARS
 
     def capabilities(self) -> dict[str, object]:
+        """返回能力信息（用于 API 响应）。"""
         return {
             "status": "demo", "configured": True, "runtime_kind": "deterministic_demo",
             "verification_status": "not_applicable", "network_required": False,
@@ -194,6 +345,17 @@ class FakeEmbeddingProvider:
         }
 
     def embed(self, texts: list[str]) -> list[list[float]]:
+        """生成嵌入向量（确定性）。
+        
+        Args:
+            texts: 文本列表（最多 32 条）
+        
+        Returns:
+            单位化向量列表
+        
+        Raises:
+            EmbeddingError: 输入无效或超过限制时
+        """
         if not isinstance(texts, list) or not texts:
             raise EmbeddingError("embedding_invalid_request")
         if isinstance(self.max_batch_size, bool) or not isinstance(self.max_batch_size, int) or len(texts) > self.max_batch_size:
@@ -221,6 +383,18 @@ class FakeEmbeddingProvider:
 
 
 def cosine_similarity(left: list[float], right: list[float]) -> float:
+    """计算两个向量的余弦相似度。
+    
+    Args:
+        left: 左向量
+        right: 右向量
+    
+    Returns:
+        余弦相似度（-1.0 到 1.0）
+    
+    Raises:
+        EmbeddingError: 向量维度不匹配或包含无效值时
+    """
     if len(left) != len(right) or not left or not all(math.isfinite(x) for x in left + right):
         raise EmbeddingError("embedding_invalid_vector")
     denominator = math.sqrt(sum(x*x for x in left) * sum(x*x for x in right))
