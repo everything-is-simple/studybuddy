@@ -141,6 +141,21 @@
 5. 提交：`docs: reorganize documentation structure`
 
 #### Phase 3: 测试审查（高风险，需要仔细）
+
+**✅ 已完成（2026-09-07）**
+
+**审查范围**：
+- 后端：103 个测试文件，16,780 行，623 passed / 3 skipped
+- 前端：66 个测试文件，6,718 行，220 passed / 4 skipped
+
+**审查结果**：
+- ✅ 无重复测试（后端测试函数名、前端测试标题均无重复）
+- ✅ 所有 skip 均为明确的 opt-in 真实 smoke（环境变量控制）：
+  - 后端 3 个：`test_formal_asr.py`（real ASR）、`test_real_provider_smoke.py`（real provider）
+  - 前端 5 个：`browser_formal_asr.spec.js`、`browser_p6e_real_provider.spec.js`（DeepSeek/Agnes）、`browser_qa.spec.js`（real provider UI）
+- ✅ 无过时测试描述，无临时/实验字样
+- ✅ 测试基线稳定，无需修改代码
+
 1. **扫描重复测试**：
    - 运行 `pytest --collect-only` 查看所有测试
    - 识别测试名称/场景重复
