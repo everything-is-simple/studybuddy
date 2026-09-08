@@ -1,3 +1,26 @@
+"""启动恢复 - 一次性保守的启动对账。
+
+本模块在应用启动时执行一次性对账，清理残留状态、标记中断任务。
+只诊断、不修复数据库：不迁移、不修改数据库行。
+
+对账项：
+1. 清理残留临时文件（data_root 下的 .incoming-* 文件）
+2. 对账原始文件（删除孤立的、哈希不匹配的原始文件）
+3. 恢复中断的任务尝试（标记为 stale）
+4. 检测缺失的引用原始文件（仅记录，不删除）
+
+安全设计：
+- 不删除数据库行
+- 不修改 stored_path
+- 不处理符号链接（跳过）
+- 所有操作记录结构化事件（不含路径、文件名、异常文本）
+
+原始文件对账规则：
+- 路径格式：{root}/{hash[:2]}/{hash[2:]}/original
+- 哈希不匹配：保留（可能是用户手动替换）
+- 未引用且哈希匹配：删除（孤立文件）
+- 目录清理：删除后尝试 rmdir（忽略失败）
+"""
 from __future__ import annotations
 
 import logging
@@ -117,7 +140,21 @@ def _reconcile_operation_tasks(config: AppConfig) -> None:
 
 
 def reconcile(config: AppConfig) -> None:
-    """Run the one-shot, conservative startup reconciliation pass."""
+    """运行一次性、保守的启动对账。
+    
+    执行流程：
+    1. 清理残留临时文件
+    2. 对账原始文件（删除孤立文件）
+    3. 恢复中断的任务尝试
+    4. 检测缺失的引用原始文件（仅记录）
+    
+    Args:
+        config: 应用配置
+    
+    注意:
+        - 缺失的引用原始文件仅记录事件，不删除数据库行
+        - 所有异常都转为事件，不中断对账流程
+    """
     increment("recovery", "started")
     _cleanup_stale_incoming(config.data_root)
     _reconcile_originals(config)

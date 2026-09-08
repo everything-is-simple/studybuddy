@@ -1,3 +1,28 @@
+"""数据库审计 - 一次性诊断检查（只读）。
+
+本模块对数据库执行一次性健康检查，发现问题时发出结构化事件。
+只诊断、不修复：绝不迁移、修复或重建索引。
+
+检查项（按严重性顺序）：
+1. 完整性检查（PRAGMA integrity_check）
+2. 外键检查（PRAGMA foreign_key_check）
+3. 必需对象存在（5 个核心表/索引）
+4. 关系完整性（五项双向引用检查）
+
+关系检查：
+- materials ↔ extractions 双向
+- text_spans → extractions
+- material_search ↔ materials 双向（含搜索行缺失）
+
+事件策略：
+- 每个问题发出结构化事件（WARNING 级别）
+- 事件不包含数据库路径、ID、SQL、异常文本
+- 原因按预定义顺序排序（保证输出稳定）
+
+返回结构：
+- status: 'ok' 或 'degraded'
+- reasons: 排序后的原因码列表
+"""
 from __future__ import annotations
 
 import logging
@@ -50,7 +75,27 @@ def _relation_checks(connection: sqlite3.Connection) -> set[str]:
 
 
 def run_audit(database_path: Path) -> dict[str, object]:
-    """Run one-shot diagnostic checks; never migrate, repair, or rebuild indexes."""
+    """运行一次性诊断检查；绝不迁移、修复或重建索引。
+    
+    执行流程：
+    1. 连接数据库（query_only 开启，只读保障）
+    2. 执行完整性检查
+    3. 执行外键检查
+    4. 验证必需对象存在
+    5. 执行关系完整性检查
+    
+    Args:
+        database_path: 数据库文件路径
+    
+    Returns:
+        审计字典：
+        - status: 'ok' 或 'degraded'
+        - reasons: 排序后的原因码列表（空表示无问题）
+    
+    注意:
+        - 连接失败时立即返回降级结果
+        - 所有异常都转为事件 + 原因码，不中断
+    """
     reasons: set[str] = set()
     try:
         connection = sqlite3.connect(database_path)
