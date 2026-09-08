@@ -5,6 +5,7 @@ from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
+ARCHIVE = ROOT / ".archive"
 
 
 def tracked_files(*parts: str) -> list[Path]:
@@ -15,11 +16,15 @@ def read(name: str) -> str:
     return (DOCS / name).read_text(encoding="utf-8")
 
 
+def read_archive(name: str) -> str:
+    return (ARCHIVE / name).read_text(encoding="utf-8")
+
+
 def test_authoritative_status_documents_agree_on_p6e_boundary():
-    roadmap = read("PHASE_ROADMAP.md")
-    status = read("STATUS.md")
-    todo = read("TODO.md")
-    evidence = read("evidence/P6E_ACCEPTANCE_EVIDENCE.md")
+    roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
+    status = read("[需求+所有角色看]STATUS.md")
+    todo = read("[需求看]TODO.md")
+    evidence = read_archive("evidence/P6E_ACCEPTANCE_EVIDENCE.md")
 
     assert "P6-E fake Provider" in roadmap
     assert "P6-E core workflow acceptance" in status
@@ -32,10 +37,10 @@ def test_authoritative_status_documents_agree_on_p6e_boundary():
 
 
 def test_governance_preserves_real_provider_and_runtime_boundaries():
-    architecture = read("ARCHITECTURE.md")
-    decisions = read("DECISIONS.md")
-    progress = read("STATUS.md")
-    provider_setup = read("operations/AI_PROVIDER_SETUP.md")
+    architecture = read("[架构师看]ARCHITECTURE.md")
+    decisions = read("[架构+需求看]DECISIONS.md")
+    progress = read("[需求+所有角色看]STATUS.md")
+    provider_setup = read_archive("operations/AI_PROVIDER_SETUP.md")
 
     for document in (architecture, decisions, progress, provider_setup):
         assert "not_verified" in document
@@ -48,14 +53,14 @@ def test_governance_preserves_real_provider_and_runtime_boundaries():
 
 
 def test_media_capability_selection_preserves_formal_boundaries():
-    decision = read("contracts/MEDIA_CAPABILITY_DECISION.md")
-    roadmap = read("ROADMAP_CAPABILITIES.md")
-    todo = read("TODO.md")
-    status = read("STATUS.md")
-    architecture = read("ARCHITECTURE.md")
-    frontend = read("archive/frontend/frontend-plan.md")
-    phase_roadmap = read("PHASE_ROADMAP.md")
-    progress = read("STATUS.md")
+    decision = read_archive("contracts/MEDIA_CAPABILITY_DECISION.md")
+    roadmap = read("[需求+架构看]ROADMAP_CAPABILITIES.md")
+    todo = read("[需求看]TODO.md")
+    status = read("[需求+所有角色看]STATUS.md")
+    architecture = read("[架构师看]ARCHITECTURE.md")
+    frontend = read_archive("frontend/frontend-plan.md")
+    phase_roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
+    progress = read("[需求+所有角色看]STATUS.md")
 
     for document in (decision, roadmap, todo, status, architecture, frontend, phase_roadmap, progress):
         assert "PaddleOCR" in document
@@ -73,11 +78,11 @@ def test_media_capability_selection_preserves_formal_boundaries():
 
 
 def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
-    roadmap = read("PHASE_ROADMAP.md")
-    status = read("STATUS.md")
-    todo = read("TODO.md")
-    progress = read("STATUS.md")
-    evidence = read("evidence/PHASE8_ACCEPTANCE_EVIDENCE.md")
+    roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
+    status = read("[需求+所有角色看]STATUS.md")
+    todo = read("[需求看]TODO.md")
+    progress = read("[需求+所有角色看]STATUS.md")
+    evidence = read_archive("evidence/PHASE8_ACCEPTANCE_EVIDENCE.md")
 
     for document in (roadmap, status, todo, progress):
         assert "PHASE8_ACCEPTANCE_EVIDENCE.md" in document
@@ -89,15 +94,15 @@ def test_phase8_closeout_is_consistent_and_temporary_prompts_are_removed():
 
 
 def test_phase9a_contract_migration_and_status_are_consistent():
-    roadmap = read("PHASE_ROADMAP.md")
-    status = read("STATUS.md")
-    todo = read("TODO.md")
-    progress = read("STATUS.md")
-    architecture = read("ai-learning-architecture.md")
-    decisions = read("DECISIONS.md")
-    migration_doc = read("MIGRATIONS.md")
-    contract = read("contracts/PHASE9A_DOMAIN_CONTRACT.md")
-    acceptance = read("evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md")
+    roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
+    status = read("[需求+所有角色看]STATUS.md")
+    todo = read("[需求看]TODO.md")
+    progress = read("[需求+所有角色看]STATUS.md")
+    architecture = read("[架构师看]AI_LEARNING_ARCHITECTURE.md")
+    decisions = read("[架构+需求看]DECISIONS.md")
+    migration_doc = read("[架构师+运维看]MIGRATIONS.md")
+    contract = read_archive("contracts/PHASE9A_DOMAIN_CONTRACT.md")
+    acceptance = read_archive("evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md")
     runner = (ROOT / "backend" / "app" / "migrations" / "runner.py").read_text(encoding="utf-8")
 
     for document in (roadmap, status, todo, progress, architecture):
@@ -151,15 +156,15 @@ def test_phase9a_contract_migration_and_status_are_consistent():
 
 
 def test_phase9b_closeout_and_current_regression_are_consistent():
-    roadmap = read("PHASE_ROADMAP.md")
-    status = read("STATUS.md")
-    todo = read("TODO.md")
-    progress = read("STATUS.md")
-    architecture = read("ARCHITECTURE.md")
-    contract = read("contracts/PHASE9B_DOMAIN_CONTRACT.md")
-    evidence = read("evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md")
-    decisions = read("DECISIONS.md")
-    governance = read("CODE_TEST_GOVERNANCE.md")
+    roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
+    status = read("[需求+所有角色看]STATUS.md")
+    todo = read("[需求看]TODO.md")
+    progress = read("[需求+所有角色看]STATUS.md")
+    architecture = read("[架构师看]ARCHITECTURE.md")
+    contract = read_archive("contracts/PHASE9B_DOMAIN_CONTRACT.md")
+    evidence = read_archive("evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md")
+    decisions = read("[架构+需求看]DECISIONS.md")
+    governance = read("[架构师+测试看]CODE_TEST_GOVERNANCE.md")
 
     for document in (roadmap, status, todo, progress, architecture, contract, decisions):
         assert "PHASE9B_ACCEPTANCE_EVIDENCE.md" in document
@@ -180,7 +185,7 @@ def test_phase9b_closeout_and_current_regression_are_consistent():
 
 
 def test_roadmap_orders_deferred_learning_after_phase6():
-    roadmap = read("PHASE_ROADMAP.md")
+    roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
     assert roadmap.index("Phase 6：AI MVP 产品化与整体验收") < roadmap.index("### Phase 7：Embedding 与 Hybrid Retrieval")
     assert "Phase 7：embedding / hybrid retrieval（按需，下一产品阶段）" in roadmap
     assert "Phase 8：卡片与练习" in roadmap
@@ -198,7 +203,7 @@ def test_roadmap_orders_deferred_learning_after_phase6():
 
 def test_repository_has_one_executable_test_contract():
     config = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    governance = read("CODE_TEST_GOVERNANCE.md")
+    governance = read("[架构师+测试看]CODE_TEST_GOVERNANCE.md")
     assert 'testpaths = ["backend/tests"]' in config
     assert "test-backend.ps1" in governance
     assert "test-browser.ps1" in governance
@@ -290,14 +295,14 @@ def test_markdown_relative_links_resolve_after_document_moves():
 
 
 def test_core_design_tracks_current_phase_and_moved_document_links():
-    architecture = read("ARCHITECTURE.md")
-    ai_architecture = read("ai-learning-architecture.md")
+    architecture = read("[架构师看]ARCHITECTURE.md")
+    ai_architecture = read("[架构师看]AI_LEARNING_ARCHITECTURE.md")
     backup = read("BACKUP_RESTORE.md")
-    migrations = read("MIGRATIONS.md")
-    roadmap = read("PHASE_ROADMAP.md")
-    progress = read("STATUS.md")
-    status = read("STATUS.md")
-    phase9d = read("evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md")
+    migrations = read("[架构师+运维看]MIGRATIONS.md")
+    roadmap = read_archive("historical-roadmaps/PHASE_ROADMAP.md")
+    progress = read("[需求+所有角色看]STATUS.md")
+    status = read("[需求+所有角色看]STATUS.md")
+    phase9d = read_archive("evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md")
     restore_acceptance = (ROOT / "backend" / "app" / "restore_acceptance.py").read_text(encoding="utf-8")
 
     for document in (architecture, ai_architecture, progress):

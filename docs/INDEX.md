@@ -1,63 +1,189 @@
-# StudyBuddy 文档索引
+# StudyBuddy 文档索引（按角色分类）
 
-## 核心入口
+> **文档命名规则**：每个文档的文件名都标注了"××角色看"，让团队成员快速找到自己需要的文档。
 
-- [`../README.md`](../README.md)：项目定位、运行入口与当前能力摘要。
-- [`../AGENTS.md`](../AGENTS.md)：贡献和 coding-agent 约束。
-- [`ARCHITECTURE.md`](ARCHITECTURE.md)：正式系统架构、支持边界与核心不变量。
-- [`CODE_TEST_GOVERNANCE.md`](CODE_TEST_GOVERNANCE.md)：代码边界、测试层级、证据等级和提交门禁。
-- [`STATUS.md`](STATUS.md)：实现状态与证据索引的权威来源。
-- [`TODO.md`](TODO.md)：唯一可勾选的执行清单。
-- [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力路线图。
+---
 
-## 设计、使用与维护
+## 📋 所有角色必读
 
-- [`ai-learning-architecture.md`](ai-learning-architecture.md)：AI/学习功能架构和实施边界（补充 ARCHITECTURE.md 的学习域设计）。
-- [`MIGRATIONS.md`](MIGRATIONS.md)：schema version、migration runner 与升级规则。
-- [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md)：backup / verify / restore 行为边界。
-- [`LOCAL_V1_USER_GUIDE.md`](LOCAL_V1_USER_GUIDE.md)：本地 v1 首次配置、启动、验收和日常使用。
-- [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)：前后端用户场景整体设计合同；场景 1"计划 → 今天 → 进度"是完整模板，场景 2/3 尚待冻结。
-- 前端历史盘点文档已归档至 [`archive/frontend/`](archive/frontend/)。
+| 文档 | 说明 | 维护者 |
+|------|------|--------|
+| [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | **实现状态与证据索引的权威来源**，所有角色每周必读 | 需求分析师 |
+| [`../README.md`](../README.md) | 项目定位、运行入口与当前能力摘要 | 需求分析师 |
+| [`../AGENTS.md`](../AGENTS.md) | 贡献和 coding-agent 约束 | 架构师 |
 
-## 分类资料
+---
 
-- [`contracts/`](contracts/)：持久领域、API、Provider、媒体和前端工作流契约；实现应以对应契约为准。
-- [`evidence/`](evidence/)：正式验收与 scoped gate 证据，不把未验证范围写成 `real-pass`。
-- [`operations/`](operations/)：Provider、备份、恢复、升级和本地环境的操作手册。
-- [`archive/`](archive/)：保留的历史审计、阶段范围和重构记录；它们只提供历史背景，不是当前事实源。
-  - [`archive/P1_3/`](archive/P1_3/)：P1-3 阶段完成文档（手工测试、状态、总结）。
-  - [`archive/frontend/`](archive/frontend/)：前端盘点与审计历史文档（plan、inventory、contract audit、capability matrix）。
-  - [`archive/code-documentation-project/`](archive/code-documentation-project/)：代码注释工程历史文档（Phase A-F 计划、进度、完成总结）。
-  - [`archive/progress-snapshots/`](archive/progress-snapshots/)：项目进度快照（2025-01 会话总结）。
-  - [`archive/historical-roadmaps/`](archive/historical-roadmaps/)：历史阶段路线图。
-  - [`archive/P14_P0_05_COMPLETED.md`](archive/P14_P0_05_COMPLETED.md)：P14 P0-05 阶段完成记录。
+## 👤 按角色分类
 
-### 常用分类入口
+### 1️⃣ 需求分析师（Demand Analyst）
 
-- [`contracts/MEDIA_CAPABILITY_DECISION.md`](contracts/MEDIA_CAPABILITY_DECISION.md)：ASR、OCR、TTS 与 PPTX 候选及 Formal 边界。
-- [`contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md`](contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md)：Provider（AI LLM/Embedding）和 Email（SMTP/Feishu）配置安全契约，secret 生命周期、runtime-only source、connection-test 触发机制和 backup/restore 边界。
-- [`contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`](contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md)：配置持久化五方案评估与"不引入持久化"决策，并定型 P1-5-1 配置 UI 为"组装 → 校验 → 导出"。
-- [`../backend/app/static/settings-provider.html`](../backend/app/static/settings-provider.html)：Provider/Email 配置 UI，先测后存（P2-USE-3 起支持保存并立即生效）。
-- [`evidence/P1_5_0_CONTRACT_EVIDENCE.md`](evidence/P1_5_0_CONTRACT_EVIDENCE.md)：P1-5-0 契约冻结审计发现和治理测试覆盖。
-- [`evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`](evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md)：P1-5-2 connection-test 实现证据，包含 adapter、API、测试覆盖和未验证边界。
-- [`evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md`](evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md)：P1-5-4 浏览器配置安全证据，覆盖 secret 生命周期、DOM/URL/storage 和 mock connection-test。
-- [`evidence/P1_5_5_SECRET_LEAK_SCAN_EVIDENCE.md`](evidence/P1_5_5_SECRET_LEAK_SCAN_EVIDENCE.md)：P1-5-5 synthetic secret 扫描证据、范围与未验证边界。
-- [`contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`](contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md)：P1-6-0 B1-B4 扩大验证范围、门禁与后续切片契约。
-- [`evidence/P1_6_0_AUDIT_EVIDENCE.md`](evidence/P1_6_0_AUDIT_EVIDENCE.md)：P1-6-0 B1-B4 缺口审计、立项顺序与未验证边界。
-- [`evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md`](evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md)：P1-6-1 B1 ASR 输入拒绝、timeout/受控中断与清理证据。
-- [`evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md`](evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md)：P1-6-2 B2 OCR 图片输入、边界拒绝与 timeout 清理证据。
-- [`evidence/P1_6_3_0_COMPONENT_AUDIT_EVIDENCE.md`](evidence/P1_6_3_0_COMPONENT_AUDIT_EVIDENCE.md)：P1-6-3-0 真实 PaddleOCR/RapidOCR 组件、C2 门禁与 Formal 边界审计证据。
-- [`evidence/P1_6_3_1_OCR_INTEGRATION_EVIDENCE.md`](evidence/P1_6_3_1_OCR_INTEGRATION_EVIDENCE.md)：RapidOCR 真实格式 smoke 重跑结果与严格 C2 `integration-not-passed` 判定。
-- [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)：Phase 9D 限定范围 closeout。
-- [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)：local-v1 release candidate drill。
-- [`operations/AI_PROVIDER_SETUP.md`](operations/AI_PROVIDER_SETUP.md)：真实 Provider 的显式 opt-in 配置边界。
-- [`archive/A2_X_SERIES_SUMMARY.md`](archive/A2_X_SERIES_SUMMARY.md)：A2.X 模块化拆分历史总结。
+**职责**：定义用户场景、验收标准、优先级、可用性边界
 
-## 文档维护规则
+| 文档 | 说明 | 是否可写 |
+|------|------|---------|
+| [`[需求看]TODO.md`]([需求看]TODO.md) | **唯一可勾选的执行清单** | ✅ 可写 |
+| [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | 实现状态与测试基线（所有角色共同维护） | ✅ 可写测试基线 |
+| [`[需求+架构看]ROADMAP_CAPABILITIES.md`]([需求+架构看]ROADMAP_CAPABILITIES.md) | 已批准的后续能力路线图 | ✅ 可写优先级 |
+| [`[需求+测试看]P1_7_REAL_USE_CHECKLIST.md`]([需求+测试看]P1_7_REAL_USE_CHECKLIST.md) | P1-7 真实使用观察清单 | ✅ 可写 |
+| [`[架构+需求看]DECISIONS.md`]([架构+需求看]DECISIONS.md) | 重大决策记录 | ✅ 参与决策 |
 
-- **根目录只保留 `README.md`、`AGENTS.md` 与项目元数据**；活跃事实源位于 `docs/` 根目录。临时工作文档和 Phase prompt 不应存在于根目录。
-- `STATUS.md`、`TODO.md`、`PHASE_ROADMAP.md` 与 `ROADMAP_CAPABILITIES.md` 分别负责当前状态、唯一执行清单、阶段顺序与已批准路线；当前状态冲突时以 `STATUS.md` 为准，执行项冲突时以 `TODO.md` 为准。历史证据只保留原始快照，不能覆盖当前状态。完整规则见 `CODE_TEST_GOVERNANCE.md`。
-- 非核心资料必须按用途放入 `contracts/`、`evidence/`、`operations/` 或 `archive/`，不要恢复已移除的规划 prompt 目录或复制第二份状态摘要。
-- **已完成 Phase 的总结性文档归档到 `archive/` 对应子目录**；前端历史盘点文档归档到 `archive/frontend/`。
-- 新增或移动 Markdown 后，运行治理测试中的链接检查；历史归档中的已移除资料应改为文字 provenance，而不是保留失效链接。
-- **自动生成的文档**（如 `frontend-inventory-scan.json`）已加入 `.gitignore`，人工可读报告（如前端 inventory-report）归档保留。
+**禁止修改**：`backend/app/` 代码、test 文件、schema 定义
+
+---
+
+### 2️⃣ 系统架构师（Architect）
+
+**职责**：定义模块边界、数据模型、持久化契约、错误码、生命周期
+
+| 文档 | 说明 | 是否可写 |
+|------|------|---------|
+| [`[架构师看]ARCHITECTURE.md`]([架构师看]ARCHITECTURE.md) | **正式系统架构、支持边界与核心不变量** | ✅ 可写 |
+| [`[架构师看]AI_LEARNING_ARCHITECTURE.md`]([架构师看]AI_LEARNING_ARCHITECTURE.md) | AI/学习功能架构和实施边界 | ✅ 可写 |
+| [`[架构师+测试看]CODE_TEST_GOVERNANCE.md`]([架构师+测试看]CODE_TEST_GOVERNANCE.md) | 代码边界、测试层级、证据等级和提交门禁 | ✅ 可写 |
+| [`[架构师+运维看]MIGRATIONS.md`]([架构师+运维看]MIGRATIONS.md) | schema version、migration runner 与升级规则 | ✅ 可写 |
+| [`[架构+需求看]DECISIONS.md`]([架构+需求看]DECISIONS.md) | 重大决策记录 | ✅ 可写 |
+
+**选读**：`.archive/contracts/` 下的契约文档（参考实现边界）
+
+**禁止修改**：`[需求看]TODO.md` 的优先级、test 文件
+
+---
+
+### 3️⃣ UI/UX 设计师（UI/UX Designer）
+
+**职责**：定义页面结构、交互流程、状态标签、失败/重试体验、隐私边界
+
+| 文档 | 说明 | 是否可写 |
+|------|------|---------|
+| [`[UI设计+用户看]LOCAL_V1_USER_GUIDE.md`]([UI设计+用户看]LOCAL_V1_USER_GUIDE.md) | **本地 v1 用户指南** | ✅ 可写 |
+| [`frontend-contract-fixtures.json`](frontend-contract-fixtures.json) | 前端契约测试 fixtures | ✅ 可写 |
+| [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | 查看当前功能状态（只读） | ❌ 只读 |
+
+**选读**：`.archive/frontend/` 下的前端盘点和契约审计
+
+**禁止修改**：`backend/app/` 代码、API 定义、schema
+
+---
+
+### 4️⃣ 后端开发者（Backend Developer）
+
+**职责**：实现 API、repository、provider adapter、持久化逻辑
+
+| 文档 | 说明 | 是否可写 |
+|------|------|---------|
+| [`[架构师看]ARCHITECTURE.md`]([架构师看]ARCHITECTURE.md) | 系统架构（只读，理解边界） | ❌ 只读 |
+| [`[架构师+测试看]CODE_TEST_GOVERNANCE.md`]([架构师+测试看]CODE_TEST_GOVERNANCE.md) | 测试层级和门禁（只读） | ❌ 只读 |
+| [`[需求看]TODO.md`]([需求看]TODO.md) | 执行清单（只执行不改） | ❌ 只读 |
+
+**必读**：`.archive/contracts/` 下的契约文档（实现依据）
+
+**选读**：`.archive/evidence/` 下的证据文档（理解验收边界）
+
+**禁止修改**：`[需求看]TODO.md` 的优先级、UI 代码、test 文件
+
+---
+
+### 5️⃣ 测试工程师（QA Engineer）
+
+**职责**：编写/运行 backend、browser、governance 测试，验证契约
+
+| 文档 | 说明 | 是否可写 |
+|------|------|---------|
+| [`[架构师+测试看]CODE_TEST_GOVERNANCE.md`]([架构师+测试看]CODE_TEST_GOVERNANCE.md) | **测试层级、证据等级和门禁** | ✅ 可写测试策略 |
+| [`[需求+测试看]P1_7_REAL_USE_CHECKLIST.md`]([需求+测试看]P1_7_REAL_USE_CHECKLIST.md) | 真实使用观察清单 | ✅ 可写验收结果 |
+| [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | 更新测试基线 | ✅ 可写测试基线 |
+
+**必读**：所有 `backend/tests/test_*.py` 和 `backend/tests/browser_*.js`
+
+**选读**：`.archive/evidence/` 下的证据文档（理解验收标准）
+
+**禁止修改**：产品代码、`[需求看]TODO.md` 的优先级
+
+---
+
+### 6️⃣ 运维/部署工程师（DevOps/Operator）
+
+**职责**：备份/恢复、升级、Provider 配置、环境映射、操作手册
+
+| 文档 | 说明 | 是否可写 |
+|------|------|---------|
+| [`[运维看]BACKUP_RESTORE.md`]([运维看]BACKUP_RESTORE.md) | **backup / verify / restore 行为边界** | ✅ 可写 |
+| [`[架构师+运维看]MIGRATIONS.md`]([架构师+运维看]MIGRATIONS.md) | schema 升级规则（只读升级流程） | ❌ 只读 |
+| [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | 查看当前功能状态和 limits | ❌ 只读 |
+
+**必读**：`.archive/operations/` 下的操作手册（`AI_PROVIDER_SETUP.md`、`BACKUP_OPERATIONS.md`、`OPERATOR_UPGRADE.md` 等）
+
+**禁止修改**：schema、API、UI、test 文件
+
+---
+
+## 🔧 维护者专用
+
+| 文档 | 说明 | 维护者 |
+|------|------|--------|
+| [`[维护者看]CLEAN_SYSTEM_PROMPT.md`]([维护者看]CLEAN_SYSTEM_PROMPT.md) | 系统清洁工作指南 | 架构师 + 需求分析师 |
+| [`[维护者看]CODE_DOCUMENTATION_PROJECT.md`]([维护者看]CODE_DOCUMENTATION_PROJECT.md) | 代码注释补齐工程总结 | 架构师 |
+| [`roles/SIX_ROLES_SYNERGY_LESSONS.md`](roles/SIX_ROLES_SYNERGY_LESSONS.md) | **六角色协同开发系统的经验教训之谈** | 需求分析师 + 架构师 |
+
+---
+
+## 📦 归档文档（历史参考）
+
+所有已完成 Phase 的总结性文档、契约文档、证据文档、操作手册均已归档到：
+
+- **`.archive/contracts/`** - 契约文档（24 个）
+- **`.archive/evidence/`** - 证据文档（40+ 个）
+- **`.archive/operations/`** - 操作手册（5 个）
+- **`.archive/code-documentation-project/`** - 代码注释工程历史文档
+- **`.archive/progress-snapshots/`** - 项目进度快照
+- **`.archive/historical-roadmaps/`** - 历史阶段路线图
+- **`.archive/frontend/`** - 前端盘点与审计历史文档
+
+**归档说明**：归档文档仅供追溯参考，不作为当前事实源。完整归档索引见 [`.archive/README.md`](../.archive/README.md)。
+
+---
+
+## 📏 文档维护规则
+
+### 1. 文档鲜活规则
+- **STATUS.md** 每周日更新测试基线
+- **TODO.md** 每次完成切片后更新
+- **INDEX.md** 新增/移动 Markdown 后运行链接检查
+- **已完成 Phase 总结** 7 天内归档到 `.archive/`
+
+### 2. 变更触发链
+```
+需求改 → 需求分析师更新 TODO/STATUS → 架构师评审 → UI 设计师评审
+→ 开发者实现 → 测试工程师跑 governance + regression
+→ 运维工程师更新 operations/ 手册
+```
+
+### 3. 谁改谁测
+- 需求改 → 需求分析师跑 TODO/STATUS 一致性检查
+- 架构改 → 架构师跑 CODE_TEST_GOVERNANCE 门禁
+- UI 改 → UI 设计师跑 `browser_frontend_page_contract.spec.js`
+- 后端改 → 开发者跑 focused backend test + governance
+- 测试改 → 测试工程师跑全量 regression
+- 运维改 → 运维跑 operations/ 手册验证
+
+---
+
+## 🔍 快速查找
+
+**我是新加入的成员，应该先看什么？**
+
+| 角色 | 第一篇必读 | 第二篇必读 | 第三篇必读 |
+|------|-----------|-----------|-----------|
+| 需求分析师 | [`README.md`](../README.md) | [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | [`[需求看]TODO.md`]([需求看]TODO.md) |
+| 架构师 | [`[架构师看]ARCHITECTURE.md`]([架构师看]ARCHITECTURE.md) | [`[架构师+测试看]CODE_TEST_GOVERNANCE.md`]([架构师+测试看]CODE_TEST_GOVERNANCE.md) | [`[架构+需求看]DECISIONS.md`]([架构+需求看]DECISIONS.md) |
+| UI/UX 设计师 | [`[UI设计+用户看]LOCAL_V1_USER_GUIDE.md`]([UI设计+用户看]LOCAL_V1_USER_GUIDE.md) | [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | `frontend-contract-fixtures.json` |
+| 后端开发者 | [`[架构师看]ARCHITECTURE.md`]([架构师看]ARCHITECTURE.md) | [`[需求看]TODO.md`]([需求看]TODO.md) | `.archive/contracts/` |
+| 测试工程师 | [`[架构师+测试看]CODE_TEST_GOVERNANCE.md`]([架构师+测试看]CODE_TEST_GOVERNANCE.md) | `backend/tests/` | [`[需求+测试看]P1_7_REAL_USE_CHECKLIST.md`]([需求+测试看]P1_7_REAL_USE_CHECKLIST.md) |
+| 运维工程师 | [`[运维看]BACKUP_RESTORE.md`]([运维看]BACKUP_RESTORE.md) | `.archive/operations/` | [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) |
+
+---
+
+**维护者**：架构师 + 需求分析师  
+**更新频率**：每次新增/移动文档后立即更新  
+**版本**：v2（2026-09-07，按角色重新分类）

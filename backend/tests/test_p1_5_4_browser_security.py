@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PAGE = ROOT / "backend/app/static/settings-provider.html"
-EVIDENCE = ROOT / "docs/evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md"
+EVIDENCE = ROOT / ".archive/evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md"
 
 
 def test_p1_5_4_page_has_no_browser_persistence_or_config_save() -> None:
