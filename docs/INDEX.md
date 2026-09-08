@@ -8,7 +8,6 @@
 - [`CODE_TEST_GOVERNANCE.md`](CODE_TEST_GOVERNANCE.md)：代码边界、测试层级、证据等级和提交门禁。
 - [`STATUS.md`](STATUS.md)：实现状态与证据索引的权威来源。
 - [`TODO.md`](TODO.md)：唯一可勾选的执行清单。
-- [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md)：已完成 Phase 与长期阶段、依赖和完成标准。
 - [`ROADMAP_CAPABILITIES.md`](ROADMAP_CAPABILITIES.md)：已批准的后续能力路线图。
 
 ## 设计、使用与维护
@@ -28,6 +27,9 @@
 - [`archive/`](archive/)：保留的历史审计、阶段范围和重构记录；它们只提供历史背景，不是当前事实源。
   - [`archive/P1_3/`](archive/P1_3/)：P1-3 阶段完成文档（手工测试、状态、总结）。
   - [`archive/frontend/`](archive/frontend/)：前端盘点与审计历史文档（plan、inventory、contract audit、capability matrix）。
+  - [`archive/code-documentation-project/`](archive/code-documentation-project/)：代码注释工程历史文档（Phase A-F 计划、进度、完成总结）。
+  - [`archive/progress-snapshots/`](archive/progress-snapshots/)：项目进度快照（2025-01 会话总结）。
+  - [`archive/historical-roadmaps/`](archive/historical-roadmaps/)：历史阶段路线图。
   - [`archive/P14_P0_05_COMPLETED.md`](archive/P14_P0_05_COMPLETED.md)：P14 P0-05 阶段完成记录。
 
 ### 常用分类入口
