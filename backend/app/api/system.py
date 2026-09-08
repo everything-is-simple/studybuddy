@@ -1,3 +1,29 @@
+"""系统与就绪状态 API - 健康检查/能力状态/配置/连接测试。
+
+覆盖三类端点：
+
+健康与指标：
+- GET /api/liveness: 存活探针（进程活着即 200）
+- GET /api/readiness: 就绪探针（启动门控通过后 200）
+- GET /api/health: 综合健康（含审计降级信息）
+- GET /api/metrics: 指标快照（计时/计数/存储）
+
+能力状态：
+- GET /api/system/capabilities: 能力矩阵（enabled/not_installed 等）
+- POST /api/system/capabilities/self-check: 触发自检
+- GET /api/ai/capabilities: AI 能力状态
+
+配置（UI 持久化，密钥以存在标志投影）：
+- GET/PUT /api/system/settings: 本地设置读写
+- POST /api/system/settings/clear: 清除设置
+
+连接测试（显式触发，合成载荷）：
+- POST /api/system/provider-connection-test: LLM/Embedding 连通性
+- POST /api/system/email-connection-test: SMTP/飞书连通性
+
+本层只做请求验证和错误码转换；能力解析在 capabilities.py，
+设置持久化在 local_settings.py，连接测试在 connection_test.py。
+"""
 from __future__ import annotations
 
 

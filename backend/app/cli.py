@@ -1,3 +1,30 @@
+"""操作员 CLI - python -m app 的命令实现。
+
+通过 argparse 提供十一个子命令，全部无 UI 依赖，
+可从 cron/计划任务调用：
+
+备份恢复：
+- backup: 创建备份（manifest + 完整性哈希）
+- verify-backup: 验证备份文件
+- restore: 恢复到空目标（不覆盖活跃 data_root）
+- verify-restored-data: 恢复验收（Schema 版本 + 数据完整性）
+- rotate-backups: 轮转旧备份
+- upgrade-preflight: 升级前预检（备份 + 版本检查）
+
+数据库与任务：
+- schema-version: 查看/校验当前 Schema 版本
+- run-tasks: 执行后台任务队列（幂等，可重复调用）
+
+诊断与服务：
+- diagnostics: 生成诊断包（脱敏，不含路径/密钥/材料文本）
+- serve: 启动 HTTP 服务（uvicorn）
+- version: 显示版本
+
+设计约定：
+- 所有命令输出 JSON（--json 时）或人类可读文本
+- 错误以非零退出码返回，不打印堆栈
+- restore 命令内置验收门控（验收失败不生效）
+"""
 from __future__ import annotations
 
 import argparse

@@ -64,68 +64,65 @@ def register_routes(app, context: dict[str, object]) -> None:
     def materials(status: str | None = None, q: str | None = None, limit: str | None = None, offset: str | None = None) -> list[dict[str, object]] | dict[str, object]:
         """查询材料列表（支持搜索、过滤和分页）。
         
-        返回当前项目的材料列表。支持按状态过滤、按文件名搜索和分页。
-        如果提供了分页参数，返回结构包含元数据；否则返回完整列表。
+        返回当前项目的材料列表。status 使用 VALID_STATUSES 集合校验
+        （success/empty/rejected/failed 是导入状态）。
+        如果提供了分页参数，返回带元数据的结构；否则返回完整列表。
         
         Args:
-            status: 可选的状态过滤（"active"|"deleted"，默认 "active"）
-            q: 可选的搜索关键词（匹配文件名，SQL LIKE 模糊搜索）
-            limit: 可选的分页限制（1-100，默认 20）
-            offset: 可选的分页偏移量（>=0，默认 0）
+            status: 可选状态过滤（必须是 VALID_STATUSES 之一）
+            q: 可选搜索关键词（匹配文件名，SQL LIKE 模糊搜索）
+            limit: 可选分页限制（1-100，默认 20）
+            offset: 可选分页偏移量（>=0，默认 0）
             
         Returns:
-            如果未启用分页，返回材料列表：
-            [
-                {
-                    "id": str,
-                    "original_name": str,
-                    "media_type": str,
-                    "file_size_bytes": int,
-                    "created_at": str (ISO 8601),
-                    "deleted_at": str | None
-                },
-                ...
-            ]
-            
-            如果启用分页，返回带元数据的字典：
-            {
-                "materials": [...同上结构],
-                "total": int,
-                "limit": int,
-                "offset": int,
-                "has_more": bool
-            }
+            未启用分页时返回材料列表；启用分页时返回
+            {items, total, limit, offset, has_more}
             
         Raises:
-            HTTPException(400): invalid_status - status 参数不是 "active" 或 "deleted"
-            HTTPException(400): invalid_pagination - 分页参数格式错误或超出范围
+            HTTPException(400): invalid_status - status 不是合法导入状态
+            HTTPException(400): invalid_pagination - 分页参数格式错误或越界
             HTTPException(500): materials_list_failed - 数据库查询失败
         """
-        page_limit, page_offset, paged = pagination_values(limit, offset)
-        query_status = "active" if status is None else status
-        if query_status not in {"active", "deleted"}:
+        if status is not None and status not in VALID_STATUSES:
             raise HTTPException(status_code=400, detail="invalid_status")
-        query = q if q else None
+        page_limit, page_offset, paged = pagination_values(limit, offset)
         try:
             with connect(app.state.config.database_path) as connection:
                 if paged:
-                    from ..repository import list_materials_paged
-                    result = list_materials_paged(connection, project_id=app.state.config.project_id,
-                                                status=query_status, query=query, limit=page_limit, offset=page_offset)
-                    return result
-                else:
-                    from ..repository import list_materials
-                    items = list_materials(connection, project_id=app.state.config.project_id,
-                                         status=query_status, query=query)
-                    return items
-        except ValueError as error:
-            code = str(error)
-            raise HTTPException(status_code=400, detail=code) from None
+                    items, total = list_materials_page(connection, status, q, page_limit, page_offset)
+                    return {"items": [dict(row) for row in items], "total": total, "limit": page_limit, "offset": page_offset, "has_more": page_offset + len(items) < total}
+                return [dict(row) for row in list_materials(connection, status, q)]
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="materials_list_failed") from None
 
-    @app.delete("/api/materials/{material_id}")
-    def delete_material(material_id: str) -> dict[str, object]:
+    @app.get("/api/materials/deleted")
+    def deleted_materials(limit: str | None = None, offset: str | None = None) -> list[dict[str, object]] | dict[str, object]:
+        """查询回收站（已软删除的材料列表）。
+        
+        Args:
+            limit: 可选分页限制（1-100，默认 20）
+            offset: 可选分页偏移量（>=0，默认 0）
+            
+        Returns:
+            未启用分页时返回已删除材料列表；启用分页时返回
+            {items, total, limit, offset, has_more}
+            
+        Raises:
+            HTTPException(400): invalid_pagination - 分页参数格式错误或越界
+            HTTPException(500): materials_list_failed - 数据库查询失败
+        """
+        page_limit, page_offset, paged = pagination_values(limit, offset)
+        try:
+            with connect(app.state.config.database_path) as connection:
+                if paged:
+                    items, total = list_deleted_materials_page(connection, page_limit, page_offset)
+                    return {"items": [dict(row) for row in items], "total": total, "limit": page_limit, "offset": page_offset, "has_more": page_offset + len(items) < total}
+                return [dict(row) for row in list_deleted_materials(connection)]
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="materials_list_failed") from None
+
+    @app.delete("/api/materials/{material_id}", status_code=204)
+    def delete_existing_material(material_id: str) -> Response:
         """软删除指定材料。
         
         将材料标记为已删除（设置 deleted_at 时间戳），但不立即删除文件系统文件。
@@ -135,20 +132,15 @@ def register_routes(app, context: dict[str, object]) -> None:
             material_id: 材料唯一标识符
             
         Returns:
-            包含删除结果的字典：
-            {
-                "id": str,
-                "deleted_at": str (ISO 8601),
-                "original_name": str
-            }
+            Response(status_code=204): 删除成功
             
         Raises:
-            HTTPException(404): material_not_found - 材料不存在
-            HTTPException(404): material_already_deleted - 材料已被删除
+            HTTPException(404): material_not_found - 材料不存在或已被删除
             HTTPException(500): material_delete_failed - 数据库更新失败
             
         Side Effects:
             - 更新 materials 表的 deleted_at 字段
+            - 级联刷新：卡片引用/学习源链接/9C 会话源/采集源状态
             - 相关联的索引、嵌入、问答等数据仍保留
             - 文件系统中的文件未删除（需要后续清理任务）
             
@@ -157,19 +149,15 @@ def register_routes(app, context: dict[str, object]) -> None:
         """
         try:
             with connect(app.state.config.database_path) as connection:
-                from ..repository import delete_material as delete_material_repo
-                result = delete_material_repo(connection, material_id=material_id,
-                                            project_id=app.state.config.project_id)
-        except ValueError as error:
-            code = str(error)
-            status_code = 404 if code in {"material_not_found", "material_already_deleted"} else 400
-            raise HTTPException(status_code=status_code, detail=code) from None
+                deleted = soft_delete_material(connection, material_id)
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="material_delete_failed") from None
-        return result
+        if not deleted:
+            raise HTTPException(status_code=404, detail="material_not_found")
+        return Response(status_code=204)
 
     @app.post("/api/materials/{material_id}/restore")
-    def restore_material(material_id: str) -> dict[str, object]:
+    def restore_existing_material(material_id: str) -> dict[str, object]:
         """恢复已删除的材料。
         
         清除材料的 deleted_at 标记，使其重新成为可用的活跃材料。
@@ -178,13 +166,7 @@ def register_routes(app, context: dict[str, object]) -> None:
             material_id: 材料唯一标识符
             
         Returns:
-            包含恢复结果的字典：
-            {
-                "id": str,
-                "deleted_at": None,
-                "original_name": str,
-                "restored_at": str (ISO 8601)
-            }
+            恢复后的材料字典（不含 stored_path）
             
         Raises:
             HTTPException(404): material_not_found - 材料不存在
@@ -197,16 +179,17 @@ def register_routes(app, context: dict[str, object]) -> None:
         """
         try:
             with connect(app.state.config.database_path) as connection:
-                from ..repository import restore_material as restore_material_repo
-                result = restore_material_repo(connection, material_id=material_id,
-                                             project_id=app.state.config.project_id)
-        except ValueError as error:
-            code = str(error)
-            status_code = 404 if code in {"material_not_found", "material_not_deleted"} else 400
-            raise HTTPException(status_code=status_code, detail=code) from None
-        except sqlite3.Error:
-            raise HTTPException(status_code=500, detail="material_restore_failed") from None
-        return result
+                state = material_state(connection, material_id)
+                row = restore_material(connection, material_id)
+        except sqlite3.Error as exc:
+            raise HTTPException(status_code=500, detail="material_restore_failed") from exc
+        if row is None:
+            if state == "missing":
+                raise HTTPException(status_code=404, detail="material_not_found")
+            raise HTTPException(status_code=404, detail="material_not_deleted")
+        payload = dict(row)
+        payload.pop("stored_path", None)
+        return payload
 
     @app.post("/api/materials/export")
     def export_materials(request: ExportMaterialsRequest):
@@ -265,31 +248,27 @@ def register_routes(app, context: dict[str, object]) -> None:
             ).fetchall()
         if len(rows) != len(request.material_ids):
             raise HTTPException(status_code=404, detail="material_not_found")
+        by_id = {row["id"]: row for row in rows}
+        ordered = [by_id[material_id] for material_id in request.material_ids]
+        buffer = io.BytesIO()
+        used: set[str] = set()
+        logical_size = 0
         try:
-            import io
-            import zipfile
-            from pathlib import Path
-            buffer = io.BytesIO()
-            logical_size = 0
-            seen_original = {}
-            seen_text = {}
-            def unique_entry(prefix: str, name: str) -> str:
-                seen = seen_original if prefix == "originals" else seen_text
-                if name not in seen:
-                    seen[name] = 0
-                    return f"{prefix}/{name}"
-                seen[name] += 1
-                stem = Path(name).stem
-                suffix = Path(name).suffix
-                return f"{prefix}/{stem}({seen[name]}){suffix}"
-            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-                for row in rows:
-                    name = row["original_name"]
+            with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                for row in ordered:
+                    name = Path(row["original_name"]).name
+                    stem, suffix = Path(name).stem, Path(name).suffix
+                    def unique_entry(prefix: str, filename: str) -> str:
+                        candidate = f"{prefix}/{filename}"
+                        index = 2
+                        while candidate in used:
+                            candidate = f"{prefix}/{stem} ({index}){suffix}"
+                            index += 1
+                        used.add(candidate)
+                        return candidate
                     if request.include_original:
-                        stored_path = Path(app.state.config.data_root) / row["stored_path"]
-                        if not stored_path.is_file():
-                            raise HTTPException(status_code=404, detail="source_deleted")
-                        data = stored_path.read_bytes()
+                        target = _checked_original_path(app.state.config, row["stored_path"], row["source_sha256"])
+                        data = target.read_bytes()
                         logical_size += len(data)
                         if logical_size > 256 * 1024 * 1024:
                             raise HTTPException(status_code=413, detail="export_too_large")

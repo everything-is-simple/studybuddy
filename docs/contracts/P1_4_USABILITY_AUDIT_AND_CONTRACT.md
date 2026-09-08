@@ -150,7 +150,7 @@
 | `/api/metrics`、`/api/liveness`、`/api/health` | 运维/后台专用 | 否 | 壳只读 readiness；不是用户流程缺陷。 |
 | `/api/study/practice-sessions/{id}/archive` | 未在正式页面调用 | 否 | 兼容保留；practice 页面尚未提供会话归档控件。候选 P2。 |
 
-对照矩阵：[`docs/frontend-static-capability-matrix.md`](../frontend-static-capability-matrix.md)。其 `legacy_only`/`not_exposed` 分类仅作线索，本审计以源码和后续实跑为准。
+对照矩阵：[`docs/frontend-static-capability-matrix.md`](../archive/frontend/frontend-static-capability-matrix.md)。其 `legacy_only`/`not_exposed` 分类仅作线索，本审计以源码和后续实跑为准。
 
 ## 4. A3：持久化与重启复现
 
