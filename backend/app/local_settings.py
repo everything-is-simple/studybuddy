@@ -1,19 +1,33 @@
-"""Persisted local settings stored outside SQLite and outside backups.
+"""本地持久化设置 - 存储在 SQLite 和备份之外。
 
-Third defect addressed: enabling an installed local capability required
-hand-copied environment variables, and the configuration page could test but not
-save. Settings written here survive a restart and are re-read per request, so no
-restart is needed.
+解决第三个缺陷：启用已安装的本地能力需要手动复制环境变量，
+且配置页只能测试不能保存。此处写入的设置重启后仍存在，
+且每次请求重新读取，无需重启。
 
-Boundaries:
-- File lives at `<data_root>/config/settings.json`, never inside SQLite, never
-  inside `originals/`, and never inside a backup set (backup copies only the
-  database and `originals/`).
-- Secret values are accepted and stored for local single-user operation, but are
-  never returned by any read projection and never logged.
-- Writes are atomic (temporary file plus replace) and bounded in size.
-- A malformed or unreadable file degrades to "no stored settings" instead of
-  breaking startup.
+边界：
+- 文件位于 <data_root>/config/settings.json，绝不在 SQLite 内、
+  绝不在 originals/ 内、绝不在备份集内（备份只复制数据库和 originals/）
+- 密钥值可接受并存储（本地单用户），但任何读取投影都不返回、
+  也不记录日志
+- 写入是原子的（临时文件 + replace）且有大小上限
+- 损坏或不可读的文件降级为"无存储设置"而非破坏启动
+
+键分类：
+- 文本键（_TEXT_KEYS）: provider/model/base_url 等
+- 密钥键（_SECRET_KEYS）: api_key, smtp_password（永不返回）
+- 布尔键（_BOOL_KEYS）: ocr_enabled, asr_enabled 等
+- 整数键（_INT_KEYS）: smtp_port
+
+验证规则：
+- provider/model ID: 仅允许字母数字和 ._- 字符
+- base_url: http/https，http 仅限本地回环，无凭据/查询/片段
+- SMTP targets: label=email 逗号分隔，标签唯一
+- 密钥: 无空白字符
+- 所有值: 最长 1000 字符，无空字符
+
+公共投影（public_settings）：
+- 密钥变为存在标志（xxx_set: true）
+- 路径/根目录变为 set 标志（不泄露文件系统位置）
 """
 from __future__ import annotations
 
@@ -49,7 +63,11 @@ _PROVIDER_ID_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01
 
 
 class SettingsError(Exception):
-    """Stable, safe settings failure. Carries a code, never a path or payload."""
+    """稳定、安全的设置错误。携带错误码，绝不携带路径或载荷。
+    
+    Args:
+        code: 错误码（如 'settings_invalid_value'）
+    """
 
     def __init__(self, code: str) -> None:
         super().__init__(code)
@@ -57,6 +75,7 @@ class SettingsError(Exception):
 
 
 def settings_path(data_root: Path | str) -> Path:
+    """返回设置文件路径（<data_root>/config/settings.json）。"""
     return Path(data_root) / SETTINGS_DIRECTORY / SETTINGS_FILENAME
 
 
@@ -146,7 +165,17 @@ def _validated_int(value: object) -> int | None:
 
 
 def normalize_settings(payload: dict[str, object]) -> dict[str, object]:
-    """Validate a settings payload, dropping empty values. Raises on bad input."""
+    """验证设置载荷，丢弃空值。输入非法时抛出异常。
+    
+    Args:
+        payload: 待验证的设置字典
+    
+    Returns:
+        规范化后的设置（空值已丢弃）
+    
+    Raises:
+        SettingsError: 载荷非字典、含未知键或值无效时
+    """
     if not isinstance(payload, dict):
         raise SettingsError("settings_invalid_payload")
     unknown = set(payload) - ALLOWED_KEYS
@@ -168,7 +197,14 @@ def normalize_settings(payload: dict[str, object]) -> dict[str, object]:
 
 
 def load_settings(data_root: Path | str) -> dict[str, object]:
-    """Read stored settings. Returns an empty mapping when absent or unusable."""
+    """读取已存储的设置。文件缺失或不可用时返回空映射。
+    
+    Args:
+        data_root: 数据根目录
+    
+    Returns:
+        已接受键的映射（无效键被跳过）
+    """
     path = settings_path(data_root)
     try:
         if not path.is_file() or path.stat().st_size > MAX_SETTINGS_BYTES:
@@ -207,7 +243,19 @@ def load_settings(data_root: Path | str) -> dict[str, object]:
 
 def save_settings(data_root: Path | str, payload: dict[str, object], *,
                   merge: bool = True) -> dict[str, object]:
-    """Atomically persist settings and return the stored mapping."""
+    """原子地持久化设置并返回已存储的映射。
+    
+    Args:
+        data_root: 数据根目录
+        payload: 待保存的设置
+        merge: True 时与现有设置合并，False 时覆盖
+    
+    Returns:
+        已存储的设置映射
+    
+    Raises:
+        SettingsError: 载荷超限或写入失败时
+    """
     normalized = normalize_settings(payload)
     stored = {**load_settings(data_root), **normalized} if merge else normalized
     document = {"format": _FORMAT, "format_version": _FORMAT_VERSION, "settings": stored}
@@ -230,7 +278,18 @@ def save_settings(data_root: Path | str, payload: dict[str, object], *,
 
 
 def clear_settings(data_root: Path | str, keys: list[str] | None = None) -> dict[str, object]:
-    """Remove specific keys, or every stored key when `keys` is omitted."""
+    """移除指定键，或 keys 省略时移除所有已存储键。
+    
+    Args:
+        data_root: 数据根目录
+        keys: 待移除的键列表（None 表示全部清除）
+    
+    Returns:
+        清除后的剩余设置
+    
+    Raises:
+        SettingsError: 含未知键或写入失败时
+    """
     if keys is None:
         path = settings_path(data_root)
         try:
@@ -247,7 +306,19 @@ def clear_settings(data_root: Path | str, keys: list[str] | None = None) -> dict
 
 
 def public_settings(stored: dict[str, object]) -> dict[str, object]:
-    """Projection safe for API/UI: secrets become presence flags only."""
+    """返回对 API/UI 安全的投影：密钥只变为存在标志。
+    
+    处理规则：
+    - 密钥键: 跳过值，输出 xxx_set 标志
+    - 路径/根目录键: 输出 xxx_set 标志（不泄露文件系统位置）
+    - 其他键: 原样返回
+    
+    Args:
+        stored: 已存储的设置
+    
+    Returns:
+        安全的公共投影
+    """
     result: dict[str, object] = {}
     for key, value in stored.items():
         if key in _SECRET_KEYS:
