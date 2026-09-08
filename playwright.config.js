@@ -5,6 +5,9 @@ const { chromium } = require('playwright');
 // Playwright-managed Chromium binary instead, retaining headless test behavior.
 module.exports = defineConfig({
   testDir: './backend/tests',
+  // Browser specs start servers on fixed, spec-local ports and use shared
+  // Windows test roots. Serial execution prevents cross-worker interference.
+  workers: 1,
   use: {
     headless: true,
     launchOptions: { executablePath: chromium.executablePath() },
