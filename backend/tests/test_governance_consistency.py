@@ -259,15 +259,6 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
 
 
 def test_markdown_relative_links_resolve_after_document_moves():
-    """验证 Markdown 文档中的相对链接在文档移动后仍然有效。
-    
-    注意：由于大规模文档重组（添加角色前缀、移动到 .archive），
-    许多文档内部链接需要更新。此测试暂时标记为跳过，
-    等待系统性的文档链接更新完成。
-    """
-    import pytest
-    pytest.skip("Pending: 文档重组后需要系统性更新所有内部链接")
-    
     markdown_files = [ROOT / "README.md", ROOT / "AGENTS.md", *DOCS.rglob("*.md")]
     link_pattern = re.compile(r"\[[^]]*\]\(([^)]+)\)")
     broken: list[str] = []

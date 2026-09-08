@@ -11,7 +11,7 @@
 ## 2026-08-28: Phase 8.6 fake-provider closeout boundary
 
 - Phase 8 is completed only for its deterministic fake-provider, local single-process SQLite, Chromium and explicit backup/restore scope. `backend/tests/test_phase8_closeout.py` proves preservation of Cards/Exercises artifacts, citations, reviews, attempts and generation operations across backup → verify → restore into a new empty root.
-- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](evidence/PHASE8_ACCEPTANCE_EVIDENCE.md).
+- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE8_ACCEPTANCE_EVIDENCE.md).
 - This decision does not establish real Provider generation, human short-answer review, system-level accessibility, extreme-content behavior, worker support, multi-process support, or global product `real-pass`.
 
 ## 2026-08-28: Phase 8.5 Cards / Exercises workspace boundary
@@ -44,7 +44,7 @@
 
 ## 2026-08-27: P6-E evidence and governance boundary
 
-- P6-A through P6-D remain implemented; P6-E fake Provider core workflow acceptance is complete and recorded in [`P6E_ACCEPTANCE_EVIDENCE.md`](evidence/P6E_ACCEPTANCE_EVIDENCE.md).
+- P6-A through P6-D remain implemented; P6-E fake Provider core workflow acceptance is complete and recorded in [`P6E_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/P6E_ACCEPTANCE_EVIDENCE.md).
 - The accepted fake workflow is import → ready → explicit indexing → retrieval → thread → Q&A → citation → body/source location → material/Q&A return → export → refresh/history. Empty retrieval, unconfigured Provider, timeout/retry, duplicate click, stale thread response, deleted source/export safety and related failure contracts are part of the acceptance boundary.
 - DeepSeek `deepseek-chat` and Agnes `agnes-ai-hub` / `agnes-2.5-flash` real Provider evidence remains scoped to exact provider/model/gateway configurations. A real Provider UI path is `not_verified` unless its explicit target, model, gateway and secret-backed runtime gate actually ran; fake/mock results never become real-pass.
 - No P6-E API, business table or migration is required. Existing generation/context checks are the cancellation boundary: synchronous Provider requests are not cancelled, stale responses are ignored.
@@ -58,7 +58,7 @@
 - 当前项目 Phase 4 的 AI 最小闭环已完成：material revision/chunk → SQLite FTS5 retrieval → citation → deterministic fake provider → Q&A/history/multi-material/citation navigation。下一产品优先级是 Phase 5 真实 Provider 接入。
 - I1 migration/schema versioning 是 AI Phase 4 的硬前置，现已满足；Cards / Exercises 仍必须等待可信 revision/chunk/retrieval/citation/Q&A 链路。
 - S1–S7、卡片、练习、学习计划、OCR、ASR、后台队列、多用户、云同步和多进程支持继续分阶段推进，不在同一阶段并行承诺。
-- 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](PHASE_ROADMAP.md) 为准；进度总报告以 [`STATUS.md`](STATUS.md) 为汇总入口；具体执行勾选项以 [`TODO.md`](TODO.md) 为准。
+- 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](../.archive/historical-roadmaps/PHASE_ROADMAP.md) 为准；进度总报告以 [`STATUS.md`]([需求+所有角色看]STATUS.md) 为汇总入口；具体执行勾选项以 [`TODO.md`]([需求看]TODO.md) 为准。
 
 ## 2026-08-25: minimal observability boundary
 
@@ -131,7 +131,7 @@
 
 ## 2026-08-25: local environment governance map
 
-- 记录 StudyBuddy 全部本地目录职责、远端、Git 状态和相互关系于 [`LOCAL_ENVIRONMENT_MAP.md`](operations/LOCAL_ENVIRONMENT_MAP.md)。
+- 记录 StudyBuddy 全部本地目录职责、远端、Git 状态和相互关系于 [`LOCAL_ENVIRONMENT_MAP.md`](../.archive/operations/LOCAL_ENVIRONMENT_MAP.md)。
 - 核心四级目录：`studybuddy`（正式系统）、`studybuddy-composer`（组件实验工厂）、`studybuddy-integration`（集成装配工厂）、`studybuddy-test`（测试与 artifact）。
 - 参考与历史版本：`kaobuddy-remote-audit`、`pi-studybuddy`、`AIStudyBuddy`、`ai-studybuddy`、`ai-studybuddy-composer`、`pi-references`，只用于提取契约，不得直接复制源码。
 - `pi-references` 含 API key/token/account，绝不进入仓库、日志、数据库或前端；只用于 Provider 契约研究。
