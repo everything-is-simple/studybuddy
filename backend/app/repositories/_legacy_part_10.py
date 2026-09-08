@@ -1,3 +1,37 @@
+"""计划项目、依赖 DAG 与源链接刷新（Legacy 分片 10）。
+
+本分片覆盖 Phase 9A 计划项目的细粒度操作：
+
+计划项目：
+- create_study_plan_item / update_study_plan_item / archive_study_plan_item
+（位置唯一性 UNIQUE(plan_id, position) 在此维护）
+
+依赖管理（DAG）：
+- add_study_plan_dependency: 添加依赖（含环检测）
+- remove_study_plan_dependency: 移除依赖
+- _study_dependency_cycle: 环检测（沿后继遍历，防自环和循环）
+
+进度事件：
+- append_study_progress_event: 追加事件（started/completed/skipped/reopened）
+- list_study_progress_events: 事件历史
+
+源链接管理：
+- create_module_source_link / create_plan_item_source_link: 创建
+- delete_module_source_link / delete_plan_item_source_link: 删除
+- list 相关查询在 part_11
+
+级联刷新（源材料变更时的全链路联动）：
+- refresh_study_source_links: 总入口
+- _refresh_study_source_links_for_material: 学习计划域刷新
+- _refresh_note_source_links_for_material: 笔记域刷新
+（笔记域实现细节在 part_12）
+- _study_source_status / _study_source_payload: 状态计算与载荷
+
+设计要点：
+- 依赖环检测在写路径同步执行（拒绝形成环的插入）
+- 源刷新把 valid 链接标记为 stale/source_deleted 等（不删除）
+- 级联刷新覆盖两个域（计划 + 笔记），保证一致性
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
