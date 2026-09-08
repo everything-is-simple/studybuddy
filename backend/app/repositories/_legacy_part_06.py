@@ -1,3 +1,27 @@
+"""采集资产与转录操作（Legacy 分片 06）。
+
+本分片覆盖 Phase 9D 采集会话的资产上传和转录发起：
+
+资产管理：
+- upload_capture_asset: 上传音频/图像资产（原子存储 + 状态推进）
+- get_capture_session / list_capture_sessions: 查询
+
+转录操作：
+- create_transcription_operation: 创建转录操作（幂等指纹）
+- transcribe_capture_session: 发起转录（仅 draft/uploaded 状态）
+- get_transcription_operation / list_transcription_operations: 查询
+- complete_transcription_operation 在 part_07（回调完成）
+
+内部辅助：
+- _phase9d_transcription_fingerprint: 转录幂等指纹
+- _phase9d_original_bytes: 原始文件读取（安全校验）
+- _phase9d_segment_values: 分段值构造（写入 transcript_segments）
+
+设计要点：
+- 资产存储复用 content-addressed 存储（与材料导入同一机制）
+- 转录是后台任务（operation_tasks），本分片只负责创建/查询
+- 幂等键 = 哈希(资产签名 + 模型标识)，重复请求返回已有操作
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

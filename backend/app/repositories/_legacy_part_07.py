@@ -1,3 +1,28 @@
+"""转录完成与报告周期工具（Legacy 分片 07）。
+
+本分片覆盖转录生命周期收尾和报告的时间周期基础设施：
+
+转录生命周期收尾：
+- complete_transcription_operation: 后台任务回调（保存草稿 + 分段）
+- edit_transcript_draft: 用户编辑草稿（标记 edited_by_user）
+- confirm_transcript_draft: 确认草稿（创建材料修订，进入材料体系）
+- reject_transcript_draft: 拒绝草稿
+- fail_transcription_operation: 标记转录失败
+- _phase9d_confirmed_revision_public: 确认后修订的公共投影
+
+报告周期工具（被 part_08 复用）：
+- _phase9d_report_period: 解析报告周期（周/月 + 时区）
+- _phase9d_in_period: 时间点是否在周期内
+- _phase9d_rows_in_period: 周期内数据行过滤
+- _phase9d_validate_safe_payload: 安全载荷验证
+- _phase9d_safe_markdown: Markdown 白名单渲染
+
+设计要点：
+- 确认转录会创建新的材料修订（转录文本进入材料链路）
+- 草稿编辑后 quality_status 标记为 user_edited
+- 报告 Markdown 渲染是白名单式的（只输出预定义字段，
+  绝不拼接用户提供文本）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
