@@ -8,7 +8,7 @@ COMPOSER = Path("H:/studybuddy-composer")
 
 
 def test_b3_report_c0_scope_is_frozen_without_promotion():
-    evidence = (ROOT / "docs/evidence/B3_REPORT_C0_AUDIT_AND_SCOPE.md").read_text(encoding="utf-8")
+    evidence = (ROOT / ".archive/evidence/B3_REPORT_C0_AUDIT_AND_SCOPE.md").read_text(encoding="utf-8")
     plan = (COMPOSER / "components/report-core/C0-DECISION-AND-C1-PLAN.md").read_text(encoding="utf-8")
     catalog = json.loads((COMPOSER / "manifests/b0-catalog.json").read_text(encoding="utf-8"))
     report = next(item for item in catalog["candidates"] if item["id"] == "report-core")
@@ -24,9 +24,9 @@ def test_b3_report_c0_scope_is_frozen_without_promotion():
 
 
 def test_b3_report_c0_documents_keep_c1_and_delivery_pending():
-    status = (ROOT / "docs/STATUS.md").read_text(encoding="utf-8")
-    todo = (ROOT / "docs/TODO.md").read_text(encoding="utf-8")
-    roadmap = (ROOT / "docs/ROADMAP_CAPABILITIES.md").read_text(encoding="utf-8")
+    status = (ROOT / "docs/[需求+所有角色看]STATUS.md").read_text(encoding="utf-8")
+    todo = (ROOT / "docs/[需求看]TODO.md").read_text(encoding="utf-8")
+    roadmap = (ROOT / "docs/[需求+架构看]ROADMAP_CAPABILITIES.md").read_text(encoding="utf-8")
     assert "B3 C0-C6 scoped closeout is complete only for local deterministic project-scoped JSON/Markdown reports" in status
     assert "B3 不授权 B4" in todo
     assert "C0-C3 状态" in roadmap or "C0 `audit-frozen`" in roadmap

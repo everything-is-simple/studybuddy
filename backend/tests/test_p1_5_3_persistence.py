@@ -28,7 +28,7 @@ from app.config import AppConfig  # noqa: E402
 
 APP_ROOT = ROOT / "backend" / "app"
 MIGRATIONS_ROOT = APP_ROOT / "migrations"
-EVALUATION_DOC = ROOT / ".archive" / "evidence" / "P1_5_3_PERSISTENCE_EVALUATION.md"
+EVALUATION_DOC = ROOT / ".archive" / "contracts" / "P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md"
 
 # 契约 §1.2 排除 SQLite 作为配置载体。这些名字代表"系统配置表"，
 # 领域表（如 rhythm_settings）不在此列，因为它属于学习节奏领域而非系统配置。
