@@ -1,3 +1,34 @@
+"""QA 幂等、引用键与上下文装配（Legacy 分片 17）。
+
+本分片实现 QA 链路的幂等、引用验证和上下文构建：
+
+QA 幂等：
+- create_qa_request: 创建 QA 请求（幂等键 + 指纹）
+- get_idempotent_qa_response: 幂等重放（命中则返回已有回答）
+- qa_request_fingerprint: 请求指纹（问题 + 检索模式 + 材料 + 策略版本）
+- fail_qa_operation: 标记失败
+- persist_qa_answer: 保存回答（写入 qa_answers + 消息流）
+
+幂等冲突检测（fail-fast）：
+- qa_idempotency_key_mismatch: 同键不同指纹
+- qa_operation_in_progress: 同键操作进行中
+- qa_idempotency_mode_mismatch: 同键不同检索模式
+
+引用键（QA 回答中 ctx-N ↔ 分块的映射）：
+- _citation_key / _parse_citation_key / validate_citation_key
+- get_qa_citation_detail 在 part_14
+
+上下文装配：
+- assemble_context: 把检索命中装配为 LLM 上下文
+  （令牌预算 MAX_CONTEXT_TOKENS=2000 内装入尽可能多的命中，
+  引用键 ctx-N 与 retrieval_hits.citation_label 对齐）
+
+设计要点：
+- 幂等键全局唯一（project_id + idempotency_key）
+- 回答保存后生成消息流记录（thread 历史）
+- 引用键格式 'ctx-N'（CITATION_KEY_PREFIX），N 从 1 开始
+- 上下文按检索排名顺序装入，超出预算的命中被截断（记录截断数）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
