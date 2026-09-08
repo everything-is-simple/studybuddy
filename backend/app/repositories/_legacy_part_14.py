@@ -1,3 +1,37 @@
+"""材料修订、软删除与 QA 线程（Legacy 分片 14）。
+
+本分片是材料修订链路的核心，以及 QA 线程查询：
+
+修订指纹（与 migrations/_v14 契约一致）：
+- _sha256_text: 文本哈希
+- _revision_fingerprint: 修订指纹 = SHA256(material_id, source_sha256,
+  extraction_sha256, parser_id, parser_version) 用四字符字面量 '\\x1f'
+  连接（注意是 4 字符文本而非 0x1F 控制字符）
+- create_or_get_revision: 幂等创建修订（同指纹复用，
+  指纹冲突检测，is_current 唯一性维护）
+- _revision_payload: 修订输入载荷查询
+- _index_material_revision_in_transaction / index_material_revision:
+  分块 + 搜索索引同步（事务内）
+
+材料生命周期：
+- soft_delete_material: 软删除（级联刷新所有下游引用：
+  卡片引用/学习源链接/9C 会话源/采集源状态）
+- purge_material: 硬删除（含原始文件/分块/索引行）
+- rename_material 在 part_13
+
+QA 线程：
+- list_qa_threads / get_qa_thread_history: 线程与历史
+- get_qa_citation_detail: 引用详情
+
+嵌入操作（创建入口，执行在 part_15）：
+- create_task_backed_embedding_operation: 创建任务化嵌入操作
+- reclaim_stale_embedding_operations: 回收租约过期的操作
+
+设计要点：
+- is_current 全局唯一（同材料仅一个当前修订）
+- 软删除是级联标记（stale/source_deleted），不破坏历史
+- 硬删除顺序：原始文件 → 表行 → 索引行
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

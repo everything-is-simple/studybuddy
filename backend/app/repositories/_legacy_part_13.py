@@ -1,3 +1,27 @@
+"""笔记生成操作与材料分块（Legacy 分片 13）。
+
+本分片覆盖笔记 AI 生成和材料修订的分块读取：
+
+笔记生成操作：
+- create_note_generation_operation: 创建操作（幂等指纹）
+- fail_note_generation_operation: 标记失败
+- persist_generated_note_draft: 保存生成草稿（块形式）
+- generate_note_draft: 发起生成（后台任务入口）
+- _note_generation_fingerprint / _note_generation_public: 指纹与投影
+- _generated_note_payload: 草稿载荷构造
+
+材料状态与分块：
+- material_state: 材料状态查询（修订/分块/嵌入概览）
+- get_material: 材料详情
+- get_spans: 分块跨度查询
+- rename_material: 重命名（不改变内容哈希）
+
+设计要点：
+- 生成操作幂等：相同（材料 + 提示版本）指纹返回已有操作
+- 草稿保存后笔记状态为 draft，等待用户确认（part_12 confirm）
+- 重命名只改显示名，内容寻址存储键不变
+- get_spans 返回 SourceSpan 列表（分块策略版本随行存储）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
