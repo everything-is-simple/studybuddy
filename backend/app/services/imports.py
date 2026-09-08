@@ -1,3 +1,21 @@
+"""导入服务 - 文件上传到材料入库的服务编排。
+
+本模块串联上传验证、哈希锁、原始存储和解析链路，
+供 API 层（materials_collection）调用：
+
+- _valid_filename: 文件名净化（拒绝路径穿越/保留名）
+- 上传处理: 大小限制、MIME 推断、临时文件落地
+- 哈希互斥: acquire_hash_lock 防止同内容并发导入
+- 原始存储: store_original（内容寻址，符号链接拒绝）
+- 解析: parse_file 按扩展名分发到文件解析适配器
+
+错误处理：
+- 业务错误转换为稳定 HTTP 错误码（http_errors）
+- 不向上层泄露内部路径或解析器异常堆栈
+
+主入口是 async 函数（FastAPI UploadFile 流式读取），
+实际入库（save_material_with_extraction）由 repository 层完成。
+"""
 from __future__ import annotations
 
 import mimetypes

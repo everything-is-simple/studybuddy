@@ -160,7 +160,7 @@
 
 场景优先级：
 
-1. **计划 → 今天 → 进度**（已实现并作为完整模板）。已覆盖无计划、计划未激活、当天无 allocation、allocation 过期不进入 Today、来源失效、加载失败重试、进度历史和刷新后状态恢复；合同见 [`contracts/frontend-scenario-contract.md`](contracts/frontend-scenario-contract.md)。
+1. **计划 → 今天 → 进度**（已实现并作为完整模板）。已覆盖无计划、计划未激活、当天无 allocation、allocation 过期不进入 Today、来源失效、加载失败重试、进度历史和刷新后状态恢复；合同见 [`contracts/frontend-scenario-contract.md`](../../contracts/frontend-scenario-contract.md)。
 2. **材料导入 → 解析 → 索引 → 问答（带引用）**（核心链路，且 `/legacy` 证据集中在此）。
 3. **练习会话 → 结果 → 错题复盘**（已有 `browser_practice_workflow.spec.js` 与 workflow 合同文档可依据）。
 

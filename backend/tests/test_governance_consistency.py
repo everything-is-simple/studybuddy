@@ -53,7 +53,7 @@ def test_media_capability_selection_preserves_formal_boundaries():
     todo = read("TODO.md")
     status = read("STATUS.md")
     architecture = read("ARCHITECTURE.md")
-    frontend = read("frontend-plan.md")
+    frontend = read("archive/frontend/frontend-plan.md")
     phase_roadmap = read("PHASE_ROADMAP.md")
     progress = read("STATUS.md")
 
@@ -227,26 +227,43 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
     allowed_core_docs = {
         "ARCHITECTURE.md",
         "BACKUP_RESTORE.md",
+        "CLEAN_SYSTEM_PROMPT.md",
+        "CODE_DOCUMENTATION_PROJECT.md",
         "CODE_TEST_GOVERNANCE.md",
         "DECISIONS.md",
         "INDEX.md",
         "LOCAL_V1_USER_GUIDE.md",
         "MIGRATIONS.md",
         "PHASE_ROADMAP.md",
+        "P1_7_REAL_USE_CHECKLIST.md",
         "ROADMAP_CAPABILITIES.md",
         "STATUS.md",
         "TODO.md",
         "ai-learning-architecture.md",
-        "frontend-contract-audit-report.md",
-        "frontend-inventory-report.md",
-        "frontend-inventory-scan.md",
-        "frontend-plan.md",
-        "frontend-static-capability-matrix.md",
-        "frontend-static-failure-retry-matrix.md",
-        "P1-3-MANUAL-TEST.md",
-        "P1-3-STATUS.md",
-        "P1-3-SUMMARY.md",
-        "P14_P0_05_COMPLETED.md",
+        "final_progress_2025-01-17.md",
+        "overall_progress_2025-01-18.md",
+        "phase_a_batch5_prompt.md",
+        "phase_a_completion_summary.md",
+        "phase_b_completion_summary.md",
+        "phase_b_plan.md",
+        "phase_b_status_update.md",
+        "phase_c_completion_summary.md",
+        "phase_c_plan.md",
+        "phase_c_progress.md",
+        "phase_c_progress_update.md",
+        "phase_d_completion_summary.md",
+        "phase_d_plan.md",
+        "phase_d_progress.md",
+        "phase_e_batch_e1_completion.md",
+        "phase_e_batch_e2_completion.md",
+        "phase_e_completion.md",
+        "phase_e_plan.md",
+        "phase_f_completion.md",
+        "phase_f_plan.md",
+        "project_progress_summary.md",
+        "session_summary_2025-01-17.md",
+        "session_summary_2025-01-17_final.md",
+        "session_summary_2025-01-17_ultimate.md",
     }
     assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
     for directory in ("contracts", "evidence", "operations", "archive"):

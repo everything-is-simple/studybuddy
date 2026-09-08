@@ -203,7 +203,7 @@ class LLMProvider(Protocol):
 ## 参考资源
 
 - [GitHub 仓库](https://github.com/everything-is-simple/studybuddy)
-- [立项文档](docs/CODE_DOCUMENTATION_PROJECT.md)
+- [立项文档](CODE_DOCUMENTATION_PROJECT.md)
 - [PEP 257 - Docstring Conventions](https://www.python.org/dev/peps/pep-0257/)
 
 ---

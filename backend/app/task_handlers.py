@@ -1,3 +1,26 @@
+"""后台任务处理器 - 任务类型到执行逻辑的注册表。
+
+Phase 10-4 决策：仅本地嵌入索引是任务化的后台操作；
+生成、转录、报告聚合和交付保持同步执行。
+
+任务类型：
+- EMBEDDING_TASK_KIND ('embedding_index'): 材料分块向量化
+
+嵌入任务执行链：
+1. 验证运行时 Provider 配置（不发起网络调用）
+2. 读取操作记录并校验 Provider 未变更（指纹比对）
+3. index_embeddings_for_material 执行索引
+4. checkpoint 回调: 取消检查 + 心跳（租约续期）
+5. 返回修订 ID 作为结果句柄（非源内容）
+
+可重试错误码（EMBEDDING_RETRYABLE_ERRORS）：
+- 超时/连接失败/服务不可用/限流 → 自动重试
+- source_stale/source_deleted/task_lease_lost → 不重试
+
+公共 API：
+- embedding_provider_identity: 任务受理前的 Provider 验证
+- build_task_runner: 构建任务运行器（不启动，供 lifespan/CLI 使用）
+"""
 from __future__ import annotations
 
 import hashlib

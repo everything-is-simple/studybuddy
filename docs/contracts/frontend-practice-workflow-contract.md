@@ -12,7 +12,7 @@
 
 - [`ROADMAP_CAPABILITIES.md`](../ROADMAP_CAPABILITIES.md) 的“后续前端能力切片 / Practice workflow”；
 - [`TODO.md`](../TODO.md) 的 Practice workflow 页面切片待办；
-- [`frontend-plan.md`](../frontend-plan.md) 的前端 API、状态、隐私和 browser evidence 规则；
+- [`frontend-plan.md`](../archive/frontend/frontend-plan.md) 的前端 API、状态、隐私和 browser evidence 规则；
 - 当前前端契约审计报告的页面职责与安全审计规则；
 - 现有后端路由 `backend/app/api/study_practice.py`；
 - 当前只读页面：`practice-session.html`、`practice-result.html`、`review.html`。

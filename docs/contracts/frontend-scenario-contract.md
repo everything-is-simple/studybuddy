@@ -11,8 +11,8 @@
 
 本合同以当前代码和可重复扫描结果为事实源：
 
-- [`../frontend-inventory-report.md`](../frontend-inventory-report.md)：21 页面、6 个共享资源、测试触达和路由分类的人工结论；
-- [`../frontend-inventory-scan.md`](../frontend-inventory-scan.md)：扫描器生成的逐页、逐端点明细；
+- [`../frontend-inventory-report.md`](../archive/frontend/frontend-inventory-report.md)：21 页面、6 个共享资源、测试触达和路由分类的人工结论；
+- [`../frontend-inventory-scan.md`](../archive/frontend/frontend-inventory-scan.md)：扫描器生成的逐页、逐端点明细；
 - `backend/scripts/scan-frontend-inventory.py`：只读扫描实现；
 - `backend/app/static/js/api.js`：请求、取消、幂等 key 和安全错误显示的共享合同；
 - `backend/app/static/js/state.js`：领域状态与来源状态的共享标签；

@@ -1,3 +1,22 @@
+"""学习卡片组 API - 卡片组 CRUD 与卡片复习。
+
+路由前缀 /api/study/decks，覆盖卡片组（deck）和卡片（card）：
+
+卡片组：
+- GET  /api/study/decks: 列出全部卡片组
+- POST /api/study/decks: 创建卡片组
+- GET  /api/study/decks/{id}: 卡片组详情
+
+卡片：
+- GET  /api/study/decks/{id}/cards: 卡片列表
+- POST /api/study/decks/{id}/cards: 创建卡片
+- PATCH /api/study/cards/{id}: 更新卡片
+- POST /api/study/cards/{id}/confirm: 确认草稿卡片
+- POST /api/study/cards/{id}/review: 复习打卡
+
+业务规则由 repository 层实施（状态机/引用刷新/用户编辑保护），
+本层只做请求验证和错误码转换。
+"""
 from __future__ import annotations
 
 

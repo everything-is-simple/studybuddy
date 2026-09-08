@@ -23,6 +23,8 @@
 
 from __future__ import annotations
 
+import json
+
 
 def register_routes(app, context: dict[str, object]) -> None:
     """注册材料详情和文件操作相关路由。
@@ -87,11 +89,8 @@ def register_routes(app, context: dict[str, object]) -> None:
                 "SELECT text FROM extractions WHERE material_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
                 (material_id,),
             ).fetchone()
-            if extraction is None:
-                raise HTTPException(status_code=404, detail="extraction_not_found")
-            text = str(extraction["text"]).encode("utf-8")
-            return Response(content=text, media_type="text/plain; charset=utf-8",
-                          headers={"Content-Disposition": f'attachment; filename="{_download_name(row["original_name"])}.extracted.txt"'})
+            headers = {"Content-Disposition": f'attachment; filename="{_download_name(row["original_name"], ".extracted.txt")}"'}
+            return Response(content=row["text"], media_type="text/plain", headers=headers)
 
     @app.get("/api/materials/{material_id}")
     def material_detail(material_id: str) -> dict[str, object]:
@@ -101,25 +100,8 @@ def register_routes(app, context: dict[str, object]) -> None:
             material_id: 材料 ID
             
         Returns:
-            材料详情字典：
-            {
-                "id": str,
-                "project_id": str,
-                "original_name": str,
-                "media_type": str,
-                "file_size_bytes": int,
-                "source_sha256": str,
-                "stored_path": str,
-                "created_at": str (ISO 8601),
-                "deleted_at": str | None,
-                "extraction": {
-                    "id": str,
-                    "text_length": int,
-                    "parser_id": str,
-                    "parser_version": str,
-                    "created_at": str
-                } | None
-            }
+            材料详情字典（get_material 行 + warnings 解析 + spans 列表；
+            不含 stored_path）
             
         Raises:
             HTTPException(404): material_not_found - 材料不存在
@@ -129,29 +111,26 @@ def register_routes(app, context: dict[str, object]) -> None:
             row = get_material(connection, material_id)
             if row is None:
                 raise HTTPException(status_code=404, detail="material_not_found")
-            extraction = connection.execute(
-                "SELECT id, LENGTH(text) as text_length, parser_id, parser_version, created_at "
-                "FROM extractions WHERE material_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
-                (material_id,),
-            ).fetchone()
-            return {
-                **dict(row),
-                "extraction": dict(extraction) if extraction else None
-            }
+            payload = dict(row)
+            payload.pop("stored_path", None)
+            payload["warnings"] = json.loads(payload.pop("warnings_json") or "[]")
+            payload["spans"] = [dict(span) for span in get_spans(connection, row["extraction_id"])]
+            return payload
 
-    @app.delete("/api/materials/{material_id}/purge")
-    def purge_material(material_id: str):
+    @app.post("/api/materials/{material_id}/purge")
+    def purge_existing_material(material_id: str) -> dict[str, object]:
         """物理删除材料及其关联的文件。
         
         此操作会：
-        1. 删除数据库中的材料记录及其所有关联数据
+        1. 通过 repository 层级联删除数据库中的材料记录及所有关联数据
+           （分块/嵌入/搜索索引/QA 引用标记 source_unavailable）
         2. 如果没有其他材料引用相同的文件（通过 SHA256 判断），则删除物理文件
         
         Args:
             material_id: 材料 ID
             
         Returns:
-            Response: 204 No Content
+            {"status": "purged", "material_id": str}
             
         Raises:
             HTTPException(404): material_not_found - 材料不存在
@@ -165,17 +144,7 @@ def register_routes(app, context: dict[str, object]) -> None:
         config = app.state.config
         try:
             with connect(config.database_path) as connection:
-                row = connection.execute(
-                    "SELECT source_sha256, stored_path FROM materials WHERE id = ?", (material_id,)
-                ).fetchone()
-                if row is None:
-                    raise HTTPException(status_code=404, detail="material_not_found")
-                source_sha256 = row["source_sha256"]
-                stored_path = row["stored_path"]
-                connection.execute("DELETE FROM materials WHERE id = ?", (material_id,))
-                connection.commit()
-        except HTTPException:
-            raise
+                source_sha256, stored_path, _ = purge_material(connection, material_id)
         except sqlite3.Error as exc:
             raise HTTPException(status_code=500, detail="material_purge_failed") from exc
         if source_sha256 is None or stored_path is None:
@@ -197,7 +166,41 @@ def register_routes(app, context: dict[str, object]) -> None:
                     pass
         finally:
             release_hash_lock(source_sha256, lock)
-        return Response(status_code=204)
+        return {"status": "purged", "material_id": material_id}
+
+    @app.patch("/api/materials/{material_id}")
+    def rename_existing_material(material_id: str, request: RenameMaterialRequest) -> dict[str, object]:
+        """重命名材料（仅改显示名，不改变内容身份）。
+        
+        Args:
+            material_id: 材料 ID
+            request: 重命名请求（original_name 为新文件名）
+            
+        Returns:
+            更新后的材料字典（不含 stored_path）
+            
+        Raises:
+            HTTPException(400): invalid_filename - 文件名非法
+            HTTPException(404): material_not_found - 材料不存在
+            HTTPException(500): material_update_failed - 数据库更新失败
+            
+        Side Effects:
+            - 更新 materials 表的 original_name 和 updated_at
+            - 内容哈希和存储键不变
+        """
+        original_name = _rename_name(request.original_name)
+        if original_name is None:
+            raise HTTPException(status_code=400, detail="invalid_filename")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                row = rename_material(connection, material_id, original_name)
+        except sqlite3.Error as exc:
+            raise HTTPException(status_code=500, detail="material_update_failed") from exc
+        if row is None:
+            raise HTTPException(status_code=404, detail="material_not_found")
+        payload = dict(row)
+        payload.pop("stored_path", None)
+        return payload
 
     @app.post("/api/materials", status_code=201)
     async def upload_material(file: Annotated[UploadFile, File(...)]) -> dict[str, object]:
