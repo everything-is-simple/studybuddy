@@ -1,15 +1,34 @@
-"""Provider and delivery connection-test adapters.
+"""Provider 和交付连接测试适配器。
 
-This module implements explicit connection tests for Provider (AI LLM/Embedding)
-and Email (SMTP/Feishu) configurations. Tests use fixed synthetic payloads,
-bounded responses, and stable error code mapping.
+本模块实现 Provider（AI LLM/Embedding）和交付（SMTP/飞书）
+配置的显式连接测试。测试使用固定合成载荷、有界响应和
+稳定错误码映射。
 
-Contract: P1-5-0 frozen, P1-5-2 implementation.
-- Tests are explicitly triggered (never automatic)
-- Tests do not change configuration state
-- Tests use fixed synthetic payloads
-- Responses are bounded (timeout, max bytes, no redirects)
-- Errors map to stable codes
+契约：P1-5-0 冻结，P1-5-2 实现。
+- 测试是显式触发的（绝不自动）
+- 测试不改变配置状态
+- 测试使用固定合成载荷
+- 响应有界（超时、最大字节数、不跟随重定向）
+- 错误映射为稳定错误码
+
+四类测试：
+1. provider_llm_connection_test: LLM 连通性（chat/completions）
+2. provider_embedding_connection_test: Embedding 连通性（embeddings）
+3. smtp_connection_test: SMTP 邮件发送
+4. feishu_connection_test: 飞书 Webhook 推送
+
+响应限制：
+- LLM/飞书: 1 KB（合成载荷的响应很小）
+- Embedding: 256 KB（向量响应可达 19 KB）
+
+错误码体系：
+- provider_*: Provider 连接/认证/协议错误
+- delivery_*: 交付配置/连接/认证/协议错误
+
+安全设计：
+- 合成载荷不含任何学习材料
+- 响应大小受限（防内存耗尽）
+- 错误码稳定，不泄露原始异常
 """
 
 from __future__ import annotations
@@ -50,7 +69,11 @@ FEISHU_TEST_PAYLOAD = {
 
 
 class ConnectionTestError(Exception):
-    """Connection test error with stable error code."""
+    """连接测试错误（稳定错误码）。
+    
+    Args:
+        code: 稳定错误码（如 'provider_auth_failed'）
+    """
 
     def __init__(self, code: str) -> None:
         super().__init__(code)
@@ -64,21 +87,31 @@ def provider_llm_connection_test(
     model_id: str,
     timeout_seconds: float = 30.0,
 ) -> dict[str, object]:
-    """Test LLM Provider connection with synthetic payload.
-
+    """用合成载荷测试 LLM Provider 连接。
+    
+    向 /chat/completions 端点发送固定的合成消息
+    （"Hello"，max_tokens=10），验证响应结构。
+    
+    Args:
+        base_url: OpenAI 兼容 API 基础 URL
+        api_key: API 密钥
+        model_id: 模型 ID
+        timeout_seconds: 超时秒数
+    
     Returns:
-        {"status": "ok"} on success
-        Raises ConnectionTestError with stable error code on failure
-
-    Error codes:
-        - provider_connection_failed: network error
-        - provider_timeout: request timeout
-        - provider_auth_failed: HTTP 401
-        - provider_forbidden: HTTP 403
-        - provider_rate_limited: HTTP 429
-        - provider_unavailable: HTTP 5xx
-        - provider_protocol_error: other HTTP error or malformed response
-        - provider_response_too_large: response exceeds limit
+        {"status": "ok"}
+    
+    Raises:
+        ConnectionTestError: 稳定错误码，包括：
+            - provider_invalid_config: 配置缺失
+            - provider_connection_failed: 网络错误
+            - provider_timeout: 请求超时
+            - provider_auth_failed: HTTP 401
+            - provider_forbidden: HTTP 403
+            - provider_rate_limited: HTTP 429
+            - provider_unavailable: HTTP 5xx
+            - provider_protocol_error: 其他 HTTP 错误或响应格式非法
+            - provider_response_too_large: 响应超限
     """
     if not base_url or not api_key or not model_id:
         raise ConnectionTestError("provider_invalid_config")
@@ -154,13 +187,22 @@ def provider_embedding_connection_test(
     model_id: str,
     timeout_seconds: float = 30.0,
 ) -> dict[str, object]:
-    """Test Embedding Provider connection with synthetic payload.
-
+    """用合成载荷测试 Embedding Provider 连接。
+    
+    向 /embeddings 端点发送单条合成文本，验证响应结构。
+    响应上限 256 KB（向量响应远大于 LLM）。
+    
+    Args:
+        base_url: OpenAI 兼容 API 基础 URL
+        api_key: API 密钥
+        model_id: 模型 ID
+        timeout_seconds: 超时秒数
+    
     Returns:
-        {"status": "ok"} on success
-        Raises ConnectionTestError with stable error code on failure
-
-    Error codes: same as test_provider_llm_connection
+        {"status": "ok"}
+    
+    Raises:
+        ConnectionTestError: 错误码同 provider_llm_connection_test
     """
     if not base_url or not api_key or not model_id:
         raise ConnectionTestError("provider_invalid_config")
@@ -237,18 +279,27 @@ def smtp_connection_test(
     recipient: str,
     timeout_seconds: float = 10.0,
 ) -> dict[str, object]:
-    """Test SMTP connection with synthetic email.
-
+    """用合成邮件测试 SMTP 连接。
+    
+    发送固定主题/正文的测试邮件（不含任何学习材料），
+    可选认证（提供凭据时登录）。
+    
+    Args:
+        host: SMTP 主机
+        port: 端口
+        secure: 是否使用 SSL
+        username: 可选用户名（提供时认证）
+        password: 可选密码
+        sender: 发件人
+        recipient: 收件人
+        timeout_seconds: 超时秒数
+    
     Returns:
-        {"status": "ok"} on success
-        Raises ConnectionTestError with stable error code on failure
-
-    Error codes:
-        - delivery_configuration_invalid: missing required config
-        - delivery_connection_failed: network error
-        - delivery_timeout: request timeout
-        - delivery_auth_failed: authentication error
-        - delivery_failed: SMTP protocol error
+        {"status": "ok"}
+    
+    Raises:
+        ConnectionTestError: 配置缺失、连接失败、超时、
+                            认证失败或协议错误时
     """
     if not host or not port or not sender or not recipient:
         raise ConnectionTestError("delivery_configuration_invalid")
@@ -289,18 +340,21 @@ def feishu_connection_test(
     webhook_url: str,
     timeout_seconds: float = 10.0,
 ) -> dict[str, object]:
-    """Test Feishu webhook connection with synthetic message.
-
+    """用合成消息测试飞书 Webhook 连接。
+    
+    向 Webhook 发送固定文本消息，验证 {"code": 0} 成功响应。
+    URL 必须是 https://open.feishu.cn/ 开头。
+    
+    Args:
+        webhook_url: 飞书机器人 Webhook URL
+        timeout_seconds: 超时秒数
+    
     Returns:
-        {"status": "ok"} on success
-        Raises ConnectionTestError with stable error code on failure
-
-    Error codes:
-        - delivery_configuration_invalid: invalid webhook URL
-        - delivery_connection_failed: network error
-        - delivery_timeout: request timeout
-        - delivery_failed: HTTP error or malformed response
-        - delivery_response_too_large: response exceeds limit
+        {"status": "ok"}
+    
+    Raises:
+        ConnectionTestError: URL 无效、连接失败、超时、
+                            协议错误或响应超限时
     """
     if not webhook_url or not webhook_url.startswith("https://open.feishu.cn/"):
         raise ConnectionTestError("delivery_configuration_invalid")
