@@ -1,3 +1,31 @@
+"""笔记管理与块编辑（Legacy 分片 12）。
+
+本分片覆盖 Phase 9B 笔记的读路径、块编辑和生命周期：
+
+笔记查询：
+- list_notes / get_note / update_note
+- update_note_content / update_note_blocks: 块级更新（替换全部块）
+- confirm_note / transition_note / archive_note: 生命周期
+
+块编辑：
+- create_note_block / update_note_block / delete_note_block
+- _note_editable_block: 可编辑验证（草稿状态 + 类型约束）
+
+模块链接：
+- link_note_module / unlink_note_module: 笔记 ↔ 知识模块
+
+源链接：
+- create_note_source_link / delete_note_source_link
+- _note_source_values: 源链接行构造
+- _refresh_note_source_links / refresh_note_source_links:
+  材料变更时的刷新（与 part_10 的计划域刷新配对）
+
+设计要点：
+- 块有位置唯一性（UNIQUE(note_id, position)）
+- 块更新是全量替换（删除旧行 + 插入新行，事务内）
+- 块编辑仅限草稿状态；确认后只读
+- update_note 区分内容与溯源（user_edited 标记保护）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

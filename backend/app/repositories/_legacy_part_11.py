@@ -1,3 +1,35 @@
+"""源候选、学习节奏与笔记创建（Legacy 分片 11）。
+
+本分片覆盖 Phase 9A 源候选查询、Phase 9B 学习节奏和笔记创建：
+
+源候选与链接查询：
+- list_study_source_candidates: 可引用的源候选（材料/修订/分块）
+- get_study_source_links: 已建立的源链接
+
+学习节奏：
+- get_rhythm_settings / save_rhythm_settings: 设置（每计划唯一）
+- create_rhythm_allocation / update_rhythm_allocation / delete_rhythm_allocation
+- list_rhythm_allocations: 分配列表
+- _rhythm_validate_allocation_limits / _rhythm_validate_settings_allocation_limits:
+  时长上限验证（单日 1440 分钟内）
+- _rhythm_period_index / _rhythm_period_dates: 周期日期计算
+- _rhythm_allocation_row: 分配行构造
+
+趋势与汇总：
+- study_weekly_trend: 周趋势（实际 vs 计划分钟数）
+- rhythm_summary: 节奏汇总投影
+
+笔记创建（写路径入口）：
+- create_note: 通用创建（AI 草稿，带溯源约束）
+- create_user_note: 用户直接创建
+- _note_row / _note_blocks / _note_public / _note_block_values: 行与投影
+- _note_validate_blocks: 块验证（长度/顺序/类型）
+
+设计要点：
+- 节奏设置每计划唯一（UNIQUE(plan_id)）
+- 分配按 (item_id, local_date) 唯一，同日同项目不重复
+- 笔记溯源约束：user_created 必须无生成操作，ai_generated 必须有
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
