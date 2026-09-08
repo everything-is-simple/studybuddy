@@ -1,12 +1,53 @@
-"""Migration v9: phase9a learning plan."""
+"""迁移 v9: Phase 9A 学习计划 Schema。
 
+创建学习目标与计划持久化契约（仅结构，领域行为在 9A-3+ 实现）：
+
+目标与模块：
+- learning_goals: 学习目标（active/archived）
+- knowledge_modules: 知识模块（active/archived）
+
+计划体系：
+- study_plans: 学习计划（六态状态机，关联目标）
+- study_plan_items: 计划项目（五态，关联模块/卡片组/练习集）
+- study_plan_dependencies: 项目依赖（DAG，禁止自依赖）
+- study_progress_events: 进度事件（事件溯源）
+
+源链接：
+- module_source_links: 模块-源材料链接
+- plan_item_source_links: 计划项目-源材料链接
+
+设计要点：
+- goal → plan: ON DELETE RESTRICT（防级联丢失）
+- item 顺序: UNIQUE(plan_id, position) 保证位置唯一
+- 依赖约束: 禁止自依赖，三元组唯一
+- 事件类型: started/completed/skipped/reopened
+- 源链接状态: valid/source_deleted/source_unavailable/stale
+- user_edited 标记用户修改（AI 生成不覆盖）
+
+索引策略：
+- 列表: (project_id, status, updated_at)
+- 计划内排序: (plan_id, position, id)
+- 事件时间线: (item_id/plan_id, created_at, id)
+
+事务说明：
+executescript() 会隐式提交待处理事务，因此本迁移逐条执行
+SQL 语句，保持在 migrate() 的 BEGIN IMMEDIATE 内，
+失败时可整体回滚。
+"""
 from __future__ import annotations
 
 import sqlite3
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Apply v9 migration."""
+    """应用 v9 迁移：创建学习计划体系表。
+    
+    创建 8 个表 + 11 个索引。逐条执行语句以保持在
+    migrate() 的事务内，失败时可整体回滚。
+    
+    Args:
+        connection: SQLite 连接
+    """
     """Add only the 9A persistence contract; domain behavior remains in 9A-3+."""
     script = """
         CREATE TABLE learning_goals (
@@ -137,6 +178,7 @@ def migrate(connection: sqlite3.Connection) -> None:
     # sqlite3.Connection.executescript() commits any pending transaction before
     # executing its script. Execute statements individually so v9 stays inside
     # migrate()'s BEGIN IMMEDIATE and can roll back as one unit.
+    # 注意: executescript 会隐式提交事务，因此逐条执行以保持原子回滚能力。
     for statement in script.split(";\n"):
         if statement.strip():
             connection.execute(statement)

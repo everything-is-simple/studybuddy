@@ -1,12 +1,48 @@
-"""Migration v10: phase9b material learning."""
+"""迁移 v10: Phase 9B 材料学习 Schema。
 
+创建笔记与学习节奏持久化契约（仅结构，领域行为在 9B-3+ 实现）：
+
+笔记体系：
+- notes: 笔记（四态，来源溯源 + 完整性约束）
+- note_blocks: 笔记块（text/heading/bullet，顺序唯一）
+- note_module_links: 笔记-模块关联（多对多）
+- note_block_source_links: 笔记块-源材料链接（强关联）
+
+学习节奏：
+- rhythm_settings: 节奏设置（每计划唯一，daily/weekly）
+- rhythm_allocations: 节奏分配（每项目每日唯一）
+
+设计要点：
+- 笔记溯源约束: user_created 必须无生成操作，ai_generated 必须有
+- 内容长度约束: 标题 1-400，块内容 1-12000
+- 源链接字段全部 NOT NULL + 非空串检查（强关联语义）
+- 引用状态: valid/source_deleted/source_unavailable/stale
+- 节奏目标: 0-10080 分钟（一周总分钟数上限）
+- 分配时长: 1-1440 分钟（单日上限）
+
+索引策略：
+- 列表: (project_id, status, updated_at)
+- 块排序: (note_id, position, id)
+- 源追踪: (material_id, revision_id, status)
+- 日期查询: (plan_id, local_date) / (item_id, local_date)
+
+事务说明：
+逐条执行 SQL 语句，保持在 migrate() 的 BEGIN IMMEDIATE 内。
+"""
 from __future__ import annotations
 
 import sqlite3
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Apply v10 migration."""
+    """应用 v10 迁移：创建笔记与节奏体系表。
+    
+    创建 6 个表 + 8 个索引。逐条执行语句以保持在
+    migrate() 的事务内。
+    
+    Args:
+        connection: SQLite 连接
+    """
     """Add the 9B persistence contract; domain behavior remains in 9B-3+."""
     script = """
         CREATE TABLE notes (

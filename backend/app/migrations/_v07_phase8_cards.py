@@ -1,12 +1,46 @@
-"""Migration v7: phase8 cards."""
+"""迁移 v7: Phase 8 卡片与练习 Schema。
 
+创建学习生成层的核心表：
+
+卡片组（Flashcards）：
+- study_decks: 卡片组（active/archived）
+- study_cards: 卡片（草稿状态机，AI 生成或用户创建）
+- card_citations: 卡片引用（关联源材料分块）
+- card_reviews: 卡片复习记录（again/hard/good/easy）
+
+练习组（Exercises）：
+- exercise_sets: 练习集（active/archived）
+- exercises: 练习题（选择/判断/简答，草稿状态机）
+- exercise_citations: 练习引用（结构同卡片引用）
+- exercise_attempts: 练习尝试（评分状态机）
+
+设计要点：
+- AI 生成内容初始为 draft，确认后为 ready（不静默覆盖用户编辑）
+- edited_by_user 标记用户修改（AI 生成永不覆盖）
+- 引用状态机: valid → source_deleted/source_unavailable/stale/invalid
+- 源删除时引用字段 ON DELETE SET NULL（保留记录，标记失效）
+- 评分状态: deterministic/pending_review/needs_review/reviewed
+
+索引策略：
+- 列表查询: (project_id, status, updated_at)
+- 源追踪: (material_id, revision_id, status)
+- 时间线: (card_id, reviewed_at) / (exercise_id, submitted_at)
+"""
 from __future__ import annotations
 
 import sqlite3
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Apply v7 migration."""
+    """应用 v7 迁移：创建卡片和练习表。
+    
+    创建 8 个表 + 10 个索引，覆盖卡片组和练习组两个子域。
+    状态值由 CHECK 约束保证，引用关联使用 ON DELETE SET NULL
+    保留历史记录。
+    
+    Args:
+        connection: SQLite 连接
+    """
     connection.executescript("""
         CREATE TABLE study_decks (
             id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
