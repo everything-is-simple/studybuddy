@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 """Reproducible, synthetic Phase 10-8 boundary evidence.
 
 This runner deliberately measures the supported local v1 envelope only. It writes
 no repository artifacts: all data is created below a temporary directory and the
 stdout report contains timings, counts and sizes, never source text or paths.
 """
+
+from __future__ import annotations
 
 import ctypes
 import gc

@@ -1,3 +1,5 @@
+"""Run synthetic Phase 7 retrieval, indexing, and backup benchmarks."""
+
 from __future__ import annotations
 
 import json
