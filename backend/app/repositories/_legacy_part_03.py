@@ -1,3 +1,25 @@
+"""练习管理与 Phase 9C 基础工具（Legacy 分片 03）。
+
+本分片覆盖练习写路径和练习会话的公共基础设施：
+
+练习管理：
+- persist_generated_draft: 保存 AI 生成草稿
+- create_exercise / update_exercise: 创建与更新
+- confirm_exercise / transition_exercise: 确认与状态转换
+- list_exercises / get_exercise: 查询
+- submit_exercise_attempt: 提交尝试（确定性评分或待评审）
+
+Phase 9C 公共基础设施（被 part_04/part_05 复用）：
+- _phase9c_text / _phase9c_timezone / _phase9c_local_date: 时间处理
+- _phase9c_iso_now / _phase9c_parse_now: ISO 时间生成与解析
+- _phase9c_source_snapshot: 源信息快照（revision/extraction/chunk/span）
+- _phase9c_project_exercise: 项目范围内的练习查询
+- _phase9c_session_public / _phase9c_expire_if_needed: 会话投影与过期
+
+设计要点：
+- 提交尝试时冻结源信息快照（后续源变更不影响已提交记录）
+- 会话过期检查在读路径执行（惰性过期）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

@@ -1,3 +1,34 @@
+"""错题本与弱点分析（Legacy 分片 05）。
+
+本分片覆盖 Phase 9C 错题本和 Phase 9D 采集会话创建：
+
+错题本管理：
+- mark_mistake_from_attempt: 从尝试标记错题（幂等）
+- review_exercise_attempt: 评审待定尝试
+- add_mistake_feedback: 追加错题反馈事件
+- archive_mistake_case / redo_mistake_case: 归档与重做
+- get_mistake_case / list_mistake_cases: 查询
+
+弱点分析：
+- list_weak_points: 弱点聚合（按练习类型/错误模式分组）
+- recommend_practice_exercises: 推荐练习（基于弱点匹配）
+
+错题实例化内部：
+- _phase9c_materialize_mistake: 创建案例 + 发生记录
+- _phase9c_attempt_source: 尝试的源信息提取
+
+Phase 9D 采集会话（创建入口）：
+- create_capture_session: 创建采集会话（draft 状态）
+- _phase9d_text / _phase9d_idempotency_key: 验证与幂等键
+- _phase9d_asset_signature_valid: 资产签名验证
+- _phase9d_capture_source_status: 源状态计算
+- _phase9d_transcript_public / _phase9d_operation_public /
+  _phase9d_capture_public: 三类公共投影
+
+设计要点：
+- 错题案例按练习指纹去重（同一练习多错误合并为发生记录）
+- 弱点排序基于最近发生频率和反馈权重
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *

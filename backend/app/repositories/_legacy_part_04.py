@@ -1,3 +1,28 @@
+"""冲刺目标与练习会话（Legacy 分片 04）。
+
+本分片覆盖 Phase 9C 的冲刺复习与会话执行：
+
+冲刺目标：
+- create_cram_goal / get_cram_goal / list_cram_goals
+- transition_cram_goal: 状态机（draft → active → completed/archived）
+- create_cram_session / get_cram_result: 冲刺会话与结果
+
+练习会话：
+- create_practice_session / get_practice_session / list_practice_sessions
+- start_practice_session: 会话开始（开始计时）
+- submit_practice_session_item: 提交会话项目（复用 part_03 的尝试机制）
+- finish_practice_session: 结束会话（生成结果）
+- archive_practice_session / get_practice_result: 归档与结果
+
+错题实例化：
+- _phase9c_mistake_case: 从失败尝试实例化错题案例
+（错题本管理在 part_05）
+
+设计要点：
+- 冲刺目标可关联计划/计划项目（可选外键）
+- 会话项目提交创建 exercise_attempt 记录（与独立练习共表）
+- 结果是投影而非独立存储（从会话项目实时计算）
+"""
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
