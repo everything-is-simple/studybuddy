@@ -5,8 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "backend" / "scripts" / "audit-frontend-contract.py"
 FIXTURES = ROOT / "docs" / "frontend-contract-fixtures.json"
-CAPABILITY_MATRIX = ROOT / "docs" / "archive" / "frontend" / "frontend-static-capability-matrix.md"
-FAILURE_MATRIX = ROOT / "docs" / "archive" / "frontend" / "frontend-static-failure-retry-matrix.md"
+CAPABILITY_MATRIX = ROOT / ".archive" / "frontend" / "frontend-static-capability-matrix.md"
+FAILURE_MATRIX = ROOT / ".archive" / "frontend" / "frontend-static-failure-retry-matrix.md"
 
 
 def load_auditor():

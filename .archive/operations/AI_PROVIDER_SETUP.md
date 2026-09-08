@@ -16,7 +16,7 @@ PowerShell example:
 $env:STUDYBUDDY_AI_PROVIDER = "<provider-id>"
 $env:STUDYBUDDY_AI_MODEL = "<provider-issued-model-id>"
 $env:STUDYBUDDY_AI_BASE_URL = "https://<provider-base-url>"
-$env:STUDYBUDDY_AI_API_KEY = "[REDACTED]"
+$env:STUDYBUDDY_AI_API_KEY = "<local-secret>"
 $env:STUDYBUDDY_AI_TIMEOUT_SECONDS = "30"
 $env:STUDYBUDDY_AI_MAX_RETRIES = "0"
 ```

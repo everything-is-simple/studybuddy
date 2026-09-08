@@ -6,11 +6,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
+ARCHIVE = ROOT / ".archive"
 APP = ROOT / "backend" / "app"
 
 
-CONTRACT = DOCS / "contracts" / "P1_6_VERIFICATION_SCOPE_CONTRACT.md"
-EVIDENCE = DOCS / "evidence" / "P1_6_0_AUDIT_EVIDENCE.md"
+CONTRACT = ARCHIVE / "contracts" / "P1_6_VERIFICATION_SCOPE_CONTRACT.md"
+EVIDENCE = ARCHIVE / "evidence" / "P1_6_0_AUDIT_EVIDENCE.md"
 
 
 def read(path: Path) -> str:
@@ -99,9 +100,9 @@ def test_p1_6_real_execution_requires_explicit_gates() -> None:
 
 
 def test_p1_6_current_status_is_not_completed() -> None:
-    status = read(DOCS / "STATUS.md")
-    todo = read(DOCS / "TODO.md")
-    roadmap = read(DOCS / "ROADMAP_CAPABILITIES.md")
+    status = read(DOCS / "[需求+所有角色看]STATUS.md")
+    todo = read(DOCS / "[需求看]TODO.md")
+    roadmap = read(DOCS / "[需求+架构看]ROADMAP_CAPABILITIES.md")
     assert "P1-6：扩大" in todo
     assert "- [ ] P1-6" in todo
     assert "P1-6" in status

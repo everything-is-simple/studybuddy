@@ -188,7 +188,7 @@ def test_provider_connection_test_does_not_expose_secrets(client) -> None:
 ```json
 {
   "channel": "feishu",
-  "feishu_webhook": "[REDACTED_WEBHOOK_URL]",
+  "feishu_webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/token",
   "timeout_seconds": 10.0  // optional, default: 10.0
 }
 ```

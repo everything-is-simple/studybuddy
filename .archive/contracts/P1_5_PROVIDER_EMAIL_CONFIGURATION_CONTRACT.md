@@ -290,7 +290,7 @@ POST /api/system/provider-connection-test
 - Email 必须符合基本格式（`@` 分隔、域名存在）
 
 **Feishu Webhook 格式**（见 `backend/app/config.py:_env_delivery_feishu_webhook`）：
-- 必须以 `[REDACTED_WEBHOOK_URL] 开头
+- 必须以 `https://open.feishu.cn/open-apis/bot/v2/hook/` 开头
 - 不允许 `username`、`password`、`query`、`fragment`（路径形式 token 除外）
 
 **配置验证**：
