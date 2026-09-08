@@ -4,7 +4,7 @@
 >
 > 支持范围：Windows、本机浏览器、单进程、单实例、SQLite、本地磁盘、一个 `data_root`。
 >
-> 正式上线证据：[`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 正式上线证据：[`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](../.archive/evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 
 ## 先说结论：它现在能为学生做什么
 
@@ -222,7 +222,7 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\start-stud
 C:\miniconda\py310\python.exe -m backend.app diagnostics --data-root 'D:\StudyBuddy\data'
 ```
 
-如果 health/readiness 不是 200、diagnostics 显示 degraded，或 backup/verify 失败：**先停止服务、保留 data root 和已验证 backup，不要手改数据库，不要尝试覆盖恢复。** 参考 [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) 和 [`MIGRATIONS.md`](MIGRATIONS.md)。
+如果 health/readiness 不是 200、diagnostics 显示 degraded，或 backup/verify 失败：**先停止服务、保留 data root 和已验证 backup，不要手改数据库，不要尝试覆盖恢复。** 参考 [`BACKUP_RESTORE.md`]([运维看]BACKUP_RESTORE.md) 和 [`MIGRATIONS.md`]([架构师+运维看]MIGRATIONS.md)。
 
 ## 6. 当前不该期待它做什么
 
