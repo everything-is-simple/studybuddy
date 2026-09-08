@@ -1,12 +1,43 @@
-"""Migration v12: phase9d extended."""
+"""迁移 v12: Phase 9D 采集/转录/报告 Schema。
 
+创建采集与报告交付的持久化事实表（仅结构）：
+
+采集会话：
+- capture_sessions: 采集会话（八态，音频/图像）
+
+转录体系：
+- transcript_drafts: 转录草稿（关联 AI 操作）
+- transcript_segments: 转录分段（置信度和质量）
+
+报告体系：
+- report_snapshots: 报告快照（确定性聚合，含指纹）
+- report_delivery_attempts: 报告交付尝试（幂等指纹）
+
+设计要点：
+- 采集会话八态: draft → uploaded → transcribing → review_required
+  → confirmed/rejected/failed → archived
+- source_status 可空（未关联材料时）
+- 报告快照: aggregation_fingerprint 保证可重现
+- 交付尝试: idempotency_key_fingerprint 防重复发送
+- ai_operations 添加 capture_session_id 列
+
+事务说明：
+语句列表逐条执行，保持在 migrate() 的 BEGIN IMMEDIATE 内。
+"""
 from __future__ import annotations
 
 import sqlite3
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Apply v12 migration."""
+    """应用 v12 迁移：创建采集/转录/报告体系表。
+    
+    创建 5 个表 + ai_operations 新列。语句列表逐条
+    执行以保持事务原子性。
+    
+    Args:
+        connection: SQLite 连接
+    """
     """Add the 9D capture/transcript/report facts; domain behavior remains in 9D-3+."""
     # Keep every statement inside migrate()'s BEGIN IMMEDIATE. executescript()
     # would commit before the DDL and defeat migration rollback.
