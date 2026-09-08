@@ -1,5 +1,43 @@
-"""Migration execution engine and registry."""
+"""迁移执行引擎和注册中心。
 
+本模块是 SQLite Schema 迁移的核心引擎，负责：
+- 维护迁移注册表（版本号 → 迁移函数）
+- 按顺序执行迁移（严格连续，不允许跳版本）
+- 维护 schema_migrations 历史表和 PRAGMA user_version
+- 旧数据库（pre-runner）的基线采用
+- Schema 版本检查和验证
+
+迁移规则：
+- 连续性：版本必须从 current+1 开始，不允许跳跃
+- 幂等性：重复执行不会重复应用
+- 事务性：每个迁移在事务中执行，失败时回滚
+- 一致性：schema_migrations 和 PRAGMA user_version 必须一致
+
+当前版本: 14（对应 v14: fix_revision_fingerprint）
+
+迁移清单：
+- v01: canonical_material_schema - 规范化材料 Schema
+- v02: ai_phase0_schema - AI 基础 Schema
+- v03: phase5_provider_metadata - Provider 元数据
+- v04: qa_operation_idempotency - QA 幂等性
+- v05: phase7_embedding_schema - Embedding Schema
+- v06: search_index_schema_contract - 搜索索引契约
+- v07: phase8_cards_exercises_schema - 卡片/练习
+- v08: phase8_exercise_provenance - 练习溯源
+- v09: phase9a_learning_plan_schema - 学习计划
+- v10: phase9b_material_learning_schema - 材料学习
+- v11: phase9c_exercise_feedback_schema - 练习反馈
+- v12: phase9d_extended_learning_schema - 扩展学习
+- v13: phase10_operation_task_schema - 后台任务
+- v14: fix_revision_fingerprint_material_id - 修订指纹修复
+
+错误码：
+- database_schema_version_unknown: 版本未知或不一致
+- database_migration_history_mismatch: 历史记录与注册表不匹配
+- database_migration_incomplete: 迁移不完整
+- database_migration_failed: 迁移执行失败
+- database_schema_unsupported: Schema 不支持（未知表/结构）
+"""
 from __future__ import annotations
 
 import sqlite3
@@ -36,6 +74,11 @@ HISTORY_TABLE = "schema_migrations"
 
 
 class MigrationError(ValueError):
+    """迁移错误。
+    
+    Args:
+        code: 错误码（如 'database_migration_failed'）
+    """
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
@@ -43,6 +86,13 @@ class MigrationError(ValueError):
 
 @dataclass(frozen=True)
 class MigrationResult:
+    """迁移执行结果。
+    
+    Attributes:
+        current_version: 当前 Schema 版本
+        applied_versions: 本次应用的版本列表（空表示无迁移）
+        adopted_legacy: 是否采用了旧数据库基线
+    """
     current_version: int
     applied_versions: tuple[int, ...]
     adopted_legacy: bool = False
@@ -75,6 +125,17 @@ _migration_v14 = v14.migrate
 
 
 def schema_version(connection: sqlite3.Connection) -> int:
+    """读取已记录的最高迁移版本。
+    
+    Args:
+        connection: SQLite 连接
+    
+    Returns:
+        最高版本号（空历史表返回 0）
+    
+    Raises:
+        MigrationError: 历史表不可读时
+    """
     try:
         rows = connection.execute(
             "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1"
@@ -102,6 +163,35 @@ def _check_history(connection: sqlite3.Connection) -> int:
 
 
 def migrate(connection: sqlite3.Connection) -> MigrationResult:
+    """执行数据库迁移（按需应用所有待执行版本）。
+    
+    执行流程：
+    1. 开启外键约束和 busy_timeout
+    2. 检查历史表：
+       - 存在且版本已到最新：验证基线完整性后直接返回
+       - 不存在：创建历史表，检查旧数据库
+    3. 旧数据库处理：
+       - 完整基线：采用（adopt），记录完整历史但不重放 ALTER
+       - 部分表：验证表集合属于已知核心表
+    4. 逐版本执行迁移（严格连续）
+    5. 验证基线完整性，更新 PRAGMA user_version
+    6. 提交事务
+    
+    Args:
+        connection: SQLite 连接（调用者负责事务边界之外的提交）
+    
+    Returns:
+        MigrationResult 包含当前版本和已应用版本
+    
+    Raises:
+        MigrationError: 历史不匹配、版本跳跃、
+                        基线不完整或迁移失败时（事务已回滚）
+    
+    注意:
+        - PRAGMA user_version 在成功后才更新
+        - 失败时事务回滚，数据库保持原状
+        - 每个 SQLite 连接独立执行，busy_timeout 防锁冲突
+    """
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA busy_timeout = 2000")
     adopted = False
@@ -167,7 +257,18 @@ def migrate(connection: sqlite3.Connection) -> MigrationResult:
 
 
 def inspect_schema_version(connection: sqlite3.Connection) -> int:
-    """Validate recorded history without applying a migration or changing the database."""
+    """验证已记录的迁移历史（不应用迁移、不修改数据库）。
+    
+    Args:
+        connection: SQLite 连接
+    
+    Returns:
+        当前 Schema 版本
+    
+    Raises:
+        MigrationError: 历史不匹配、user_version 不一致
+                        或版本低于 1 时
+    """
     version = _check_history(connection)
     pragma = int(connection.execute("PRAGMA user_version").fetchone()[0])
     if version < 1 or pragma != version:
@@ -176,6 +277,17 @@ def inspect_schema_version(connection: sqlite3.Connection) -> int:
 
 
 def assert_schema_version(connection: sqlite3.Connection) -> int:
+    """断言数据库已迁移到当前代码要求的最新版本。
+    
+    Args:
+        connection: SQLite 连接
+    
+    Returns:
+        当前 Schema 版本（必须等于 CURRENT_SCHEMA_VERSION）
+    
+    Raises:
+        MigrationError: 版本不是最新时
+    """
     version = inspect_schema_version(connection)
     if version != CURRENT_SCHEMA_VERSION:
         raise MigrationError("database_schema_version_unknown")
