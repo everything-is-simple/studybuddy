@@ -112,3 +112,27 @@ def test_phase9a_api_source_unavailable_is_safe(tmp_path: Path):
         with connect(tmp_path / "studybuddy.sqlite3") as connection:
             assert connection.execute("SELECT COUNT(*) FROM plan_item_source_links").fetchone()[0] == 0
             assert connection.execute("SELECT COUNT(*) FROM study_progress_events").fetchone()[0] == 0
+
+
+def test_phase9a_api_paused_plan_can_resume_to_active(tmp_path: Path):
+    with client_for(tmp_path) as client:
+        goal = client.post("/api/study/goals", json={"title": "Goal"}).json()
+        plan = client.post("/api/study/plans", json={"goal_id": goal["id"], "title": "Plan"}).json()
+        assert client.post(f"/api/study/plans/{plan['id']}/confirm").status_code == 200
+        assert client.post(f"/api/study/plans/{plan['id']}/activate").status_code == 200
+        assert client.post(f"/api/study/plans/{plan['id']}/pause").status_code == 200
+        resumed = client.post(f"/api/study/plans/{plan['id']}/activate")
+        assert resumed.status_code == 200
+        assert resumed.json()["status"] == "active"
+
+
+def test_phase9a_api_paused_plan_can_resume_to_active(tmp_path: Path):
+    with client_for(tmp_path) as client:
+        goal = client.post("/api/study/goals", json={"title": "Goal"}).json()
+        plan = client.post("/api/study/plans", json={"goal_id": goal["id"], "title": "Plan"}).json()
+        assert client.post(f"/api/study/plans/{plan['id']}/confirm").status_code == 200
+        assert client.post(f"/api/study/plans/{plan['id']}/activate").status_code == 200
+        assert client.post(f"/api/study/plans/{plan['id']}/pause").status_code == 200
+        resumed = client.post(f"/api/study/plans/{plan['id']}/activate")
+        assert resumed.status_code == 200
+        assert resumed.json()["status"] == "active"

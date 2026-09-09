@@ -111,3 +111,11 @@ All modules comply with 32 KiB policy verified by `backend/scripts/check-source-
 A3 static frontend delivery and A4 page delivery are completed in the declared scope; P1-1, P1-2 and P1-3 core migrations are verified on `/app`; `/app` is the default entry and `/legacy` remains a compatibility fallback for deferred P1-4 capabilities. B0 governance intake is scaffolded in `H:\studybuddy-composer`; B1 ASR uses the canonical `H:/WhisperCli` provenance/runtime contract and B1 ASR plus B2 PaddleOCR have each completed C0-C6 scoped closeout with bounded evidence. B3 C0-C6 scoped closeout is complete only for local deterministic project-scoped JSON/Markdown reports, with `delivery=off` preserved; B4 C0-C6 is limited to exact independently tested SMTP and Feishu synthetic paths, while Formal product API live delivery remains closed. RapidOCR Formal work and the `edge-tts` online TTS candidate remain separate from the completed B1-B4 scope. D0-D2 desktop work is explicitly deferred until the Web feature set is fully integrated and validated. These conclusions do not imply general ASR quality, OCR accuracy, generic provider compatibility, live delivery approval, a desktop package, or global real-pass.
 
 For the authoritative project status, task order, and governing decisions, see [`STATUS.md`]([需求+所有角色看]STATUS.md), [`PHASE_ROADMAP.md`](../.archive/historical-roadmaps/PHASE_ROADMAP.md), [`ROADMAP_CAPABILITIES.md`]([需求+架构看]ROADMAP_CAPABILITIES.md), [`TODO.md`]([需求看]TODO.md), and [`DECISIONS.md`]([架构+需求看]DECISIONS.md).
+
+## 2026-09-09 plans/plan-detail 逐元素测试与缺陷修复（用户实测驱动）
+
+- 新增 `backend/tests/browser_plans_plan_detail_full.spec.js`：24 个 Playwright 用例覆盖 plans.html 与 plan-detail.html 全部静态结构、动态分支、交互按钮、状态机与异常路径；测试计划见 `docs/roles/[需求+测试看]UI_TEST_PLAN_PLANS_PAGES.md`（全部勾选）。当前结果：**browser 24 passed；backend 624 passed, 3 skipped**（新增 paused→active 回归用例）。
+- 修复缺陷 1（前端）：plans.html 计划列表 `item_count` 恒为 0（后端不提供该字段），改为按非归档 items 实时计算。
+- 修复缺陷 2（后端）：`transition_study_plan` 放行 `paused→active`（"恢复计划"此前必然失败），补回归测试。
+- 修复缺陷 3（前端）：busy 解锁不再覆盖计划完成/归档态下的编辑禁用（`busyKeep` 标记）。
+- 行为确认：目标/模块/计划归档后从默认列表移除；进度历史加载横幅为隐藏态残留文本，不影响使用。
