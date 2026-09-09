@@ -38,3 +38,9 @@ tmp_sb/
 
 # local first-run helper overrides
 first-run-studybuddy.local.ps1
+
+# local agent/session state (never commit)
+.workbuddy/
+
+# local runtime data root (databases, uploaded originals, generated artifacts)
+data/

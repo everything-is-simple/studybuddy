@@ -397,7 +397,7 @@ def transition_study_plan(connection: sqlite3.Connection, *, project_id: str, pl
             raise ValueError("study_plan_confirm_required")
         if target not in allowed.get(str(row["status"]), set()):
             raise ValueError("study_plan_invalid_state")
-        if target == "active" and row["status"] != "confirmed":
+        if target == "active" and row["status"] not in {"confirmed", "paused"}:
             raise ValueError("study_plan_confirm_required")
         confirmed_at = now if target == "confirmed" else row["confirmed_at"]
         activated_at = now if target == "active" else row["activated_at"]
