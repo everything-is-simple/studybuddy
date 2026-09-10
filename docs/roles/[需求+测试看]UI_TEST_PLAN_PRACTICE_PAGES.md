@@ -120,3 +120,53 @@ git diff --check → 通过
 | practice.html | `tested`（倾向 `e2e-real-pass`，待 GPT 二审） | A 类 7 用例（含真重启）+ B 类回归 27 passed + 后端全量 628 passed；修复缺陷 1/2/3/4。**未覆盖**：真实 Provider、完整人工视觉焦点审查、屏幕阅读器、cram 冲刺会话创建的 A 类全链（仅覆盖目标创建与列表） |
 | practice-session.html | `tested`（倾向 `e2e-real-pass`，待 GPT 二审） | 同上；逐题作答/完成/过期边界由 A 类 + B 类共同覆盖。**未覆盖**：真实 Provider、会话过期倒计时的真实时钟边界（后端确定性测试覆盖）、屏幕阅读器 |
 | 两页合并 | `tested` | A 类、浏览器 B 类与后端边界测试通过；真实 Provider 与完整人工视觉审查仍未验证，GPT 二审通过前不升级为 `e2e-real-pass` |
+
+---
+
+## B 二审独立复核（2026-09-10，GPT）
+
+### 复跑结果
+- practice A 类：`browser_practice_userpath.spec.js` **7 passed**（17.8s）
+- today/qa A 类：`browser_today_userpath.spec.js` + `browser_qa_userpath.spec.js` **16 passed**（32.4s）
+- 相关回归（qa/today/plan系列）：**20 passed**
+- 后端全量：**628 passed, 3 skipped**
+- check-source-size、git diff --check：通过
+- 截图 artifact：10 文件存在（H:/studybuddy-test/artifacts/practice-userpath/）
+
+### A 类规则合规审查
+- ✅ 无 page.request 直调业务 API 创建数据（仅 readiness 探活）
+- ✅ 全部数据经页面 UI 创建（importViaUi/indexMaterialViaUi/createAndSelectSetViaUi/confirmExerciseViaUi）
+- ✅ session_id/material_id 从页面 URL/链接获取，非测试代码伪造
+- ✅ 服务真重启（A-E2E-PRAC-7: `stopServer()` → `startServer()` → `ready()`）
+- ✅ 故障注入用 `page.route` + `unrouteAll` 清理，显式标注
+- ✅ today/qa 同样遵守：真重启（QA-9 有两次重启），无直调 API
+
+### 缺陷验证
+1. **exercises.html?exercise_id 死参数** → practice.html 新增 `data-od-id="practice-exercise-entry"` 区，`entryExerciseId` 读取 URL 参数，load exercise → 创建单题会话。✅ 真实修复。
+2. **错题库题面覆盖** → mistake rendering 改为 `li.append(question, mistakeLinkRow)`，question div + 独立 link row。✅ 真实修复。
+3. **错题 API 无题面** → `get_mistake_case` 关联 exercises 表补充 `question`/`exercise_type`（backend/app/repositories/_legacy_part_05.py:171-176，含注释说明）。✅ 真实后端修复。
+4. **内嵌结果读错字段** → `viewResult` 改读 `result.summary.score_total/total_item_count`（practice.html:288，含注释 "legacy fields never existed"）。✅ 真实修复。
+
+### 遗留问题核查
+- **P-D21/22 稳定性**：本轮复跑 `browser_plans_plan_detail_full.spec.js` **24 passed**，P-D21/22 通过。A 审声称的"HEAD 版同样失败"在当前环境不成立，该测试已稳定。不再是阻塞问题。
+- **plans.html URL plan_id 怪癖**：`load()` 逻辑中 `selected` 优先于 URL `plan_id`，连续创建计划时详情面板滞留旧计划。真实存在，但 A 审已知并声明为遗留，非本轮引入。
+- **QA 线程/来源验证**：
+  - 线程继续：qa.html `currentThreadId=thread.id`，POST 时 `thread_id:currentThreadId||undefined`。✅ 正确。
+  - 来源不可用：`citationLink()` 检查 `source_deleted/source_unavailable`，移除 href，显示「来源不可用」；后端 `_legacy_part_14.py:59` 更新 `qa_citations` 状态；A-E2E-QA-8 回归通过。✅ 真实。
+  - 真重启持久化：A-E2E-QA-9 `stopServer`/`startServer`/`ready`，验证 6 threads + 引用状态持久。✅ 真实。
+
+### 未验证维度确认
+以下维度 A 审诚实标记为 `not_verified`，B 审确认保持：
+- 真实 Provider（全部为 deterministic fake，`STUDYBUDDY_AI_PROVIDER=fake`）
+- cram 冲刺会话创建的 A 类全链（仅覆盖目标创建与列表）
+- 真实 OCR/ASR 材料进入练习链路
+- 完整人工键盘逐键走查（自动化仅覆盖 Enter 提交 + Tab 焦点 + 焦点样式检查）
+- 屏幕阅读器（NVDA/JAWS/VoiceOver）实际使用验证
+
+### B 二审结论
+- **practice.html** = **`e2e-real-pass`**（A 类 7 用例全过，4 缺陷真实修复，回归通过，规则合规，未验证维度诚实声明）
+- **practice-session.html** = **`e2e-real-pass`**（同上）
+- **today.html** = **`e2e-real-pass`**（A 类 7 用例全过，真重启持久化，刷新恢复，窄屏无溢出，规则合规）
+- **qa.html** = **`e2e-real-pass`**（A 类 9 用例全过，线程/来源/重启逻辑真实，跨页引用回溯，边界覆盖，规则合规）
+
+上述四页升级为 `e2e-real-pass` 的前提是：本轮范围（页面交互、数据流、边界、持久化）的 A 类纯用户路径已全部通过，且缺陷已修复；未验证维度（真实 Provider、完整键盘、屏幕阅读器）不阻止本阶段状态升级，但需在后续专项轮次补齐后才可标记为"完全验证"。
