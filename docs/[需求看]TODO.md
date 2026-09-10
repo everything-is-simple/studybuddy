@@ -408,6 +408,11 @@ revision → chunks → retrieval → citations → Q&A
 
 - [x] P2-FE-B4：后续模块化评估。已检查 cards、notes、practice、qa、settings、settings-provider、classroom、capture、tasks、materials、exercises、plans 的状态逻辑。结论：只安全复用 `sbTemplates` 的通用单容器状态外壳；业务错误映射、能力探测、多区域 loading、详情加载、busy/retry 归属、列表渲染及 delivery/provider 边界必须保留在页面。继续拆分没有可量化复杂度收益，P2-FE-B 系列正式收口；无 API/schema/migration 变化。
 
+## 2026-09-10 materials → material-detail B 二审补漏已完成
+
+- [x] 后端来源链接重复保护：补充完整来源身份校验，覆盖 `citation_key=NULL` 场景；新增 API/domain 回归测试。材料详情 A 类 E2E 7 passed，后端全量 627 passed、3 skipped，source-size 检查通过。
+- [ ] 未验证项仍保留：真实扫描 PDF OCR 质量、真实 ASR、本页之外的 generation/report 消费、跨材料并发关联、极端长材料性能。
+
 ## P2：后续独立项目
 
 - [ ] 多用户、认证、授权、project isolation UI。
