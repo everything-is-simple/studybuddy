@@ -459,3 +459,10 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 遗留问题核查：P-D21/22 当前已通过（非阻塞）；plans.html URL plan_id 怪癖真实存在但非本轮引入（留待后续）；QA 线程/来源/重启逻辑全部真实。
 - [x] B 二审最终状态定稿：**practice.html/practice-session.html/today.html/qa.html = `e2e-real-pass`**（本轮范围的 A 类纯用户路径全过且缺陷已修复；未验证维度诚实声明但不阻止本阶段升级）。
 - [ ] 后续待补（不阻止本轮收口）：真实 Provider、cram 冲刺会话 A 类全链、真实 OCR/ASR 材料、完整键盘逐键走查、屏幕阅读器验证、plans.html URL plan_id 怪癖修复。
+
+## 2026-09-10 四页综合审查收口
+
+- [x] A 审视角补齐 today/qa：复跑 16 passed，spec A 类规则合规（数据全经 UI、真重启用例），页面代码审读无新缺陷（today：无注入面/竞态保护/请求合并/来源禁用；qa：textContent 安全/threadGeneration/Idempotency-Key）。
+- [x] 四页综合审查：23 用例一次全量 passed；8 条跨页链路全部有 A 类或代码级证据（详见 STATUS.md 综合审查记录）。
+- [x] 四页最终状态：practice.html / practice-session.html / today.html / qa.html = `e2e-real-pass`，本轮审查任务收口。
+- [ ] 后续专项轮次待补（not_verified 维持）：真实 Provider、cram 冲刺会话 A 类全链、真实 OCR/ASR 材料、完整键盘逐键走查、屏幕阅读器、plans.html URL plan_id 怪癖修复。

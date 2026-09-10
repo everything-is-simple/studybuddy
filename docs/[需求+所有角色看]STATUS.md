@@ -197,3 +197,26 @@ For the authoritative project status, task order, and governing decisions, see [
 - **qa.html** = **`e2e-real-pass`**（A 类 9 用例全过，线程/来源/重启逻辑真实，跨页引用回溯，边界覆盖，规则合规）
 
 注：`e2e-real-pass` 的前提是本轮范围（页面交互、数据流、边界、持久化）的 A 类纯用户路径已全部通过且缺陷已修复；未验证维度不阻止本阶段状态升级，但需后续专项轮次补齐。
+
+## 2026-09-10 四页综合审查收口（A 审视角补齐 today/qa + 综合验证）
+
+**A 审视角补齐（today/qa，此前 A 审为 50bc0d1 轮产出，本轮独立复核）**：
+- 复跑 today(7) + qa(9)：**16 passed**。
+- spec A 类规则审读：today 全部数据经页面表单创建（目标→计划→学习项→确认草稿→激活→节奏分配），qa 经 setInputFiles UI 导入 + 表单提问；两 spec 均无 page.request 直调业务 API；均含真重启用例（TD-6、QA-9）。
+- 页面代码审读：today.html（10.2KiB）——DOM 全部 createElement/textContent 无注入面、loadGeneration 竞态保护、activePlan 单请求复用（原三处重复请求已合并）、来源 invalid 时「查看资料」aria-disabled 禁用、失败 retry 恢复；qa.html（11.6KiB）——renderMessages textContent 安全、threadGeneration 竞态保护、提问/索引带 Idempotency-Key、Provider 未配置安全文案。**无新缺陷**。
+
+**四页综合审查（23 用例一次全量）**：
+- today(7) + qa(9) + practice(7)：**23 passed**（48.5s）。
+- 跨页链路核对（全部有 A 类或代码级证据）：
+  1. today → plans/plan-detail（开始学习带 return_to=today、item_id、local_date）— TD-3/4 + D-C12。
+  2. today → material-detail（查看资料仅来源 valid 可点）— TD 代码审读 + 页面断言。
+  3. qa → material-detail 引用回溯（material + citation 参数）— QA-4。
+  4. qa 线程继续/新对话（thread_id 语义）— QA-5。
+  5. qa 删除来源 → 引用「来源不可用」— QA-8 + 后端 _legacy_part_14.py。
+  6. exercises → practice 单题入口（exercise_id）— PRAC-4。
+  7. practice → practice-session → practice-result — PRAC-2。
+  8. practice → review 错题复盘 → 薄弱点 — PRAC-7。
+
+**轮次边界说明**：本四页分属两轮——Round 3（today/qa，A 审 50bc0d1）与 Round 4（practice/practice-session，A 审 437f27a）；B 二审（71b2b22）与本次 A 审视角补齐将两轮共同收口。四页最终状态维持 **`e2e-real-pass`**；未验证维度（真实 Provider、cram 冲刺 A 类全链、真实 OCR/ASR、完整键盘逐键、屏幕阅读器）保持 `not_verified`，不因轮次结束改标。
+
+**本轮审查任务到此收口。**
