@@ -437,3 +437,10 @@ revision → chunks → retrieval → citations → Q&A
 7. 可复现命令或测试 artifact。
 
 **2026-09-01 附加约束**：第 6 项不再包含「新建 evidence/contract 文档」。只有在同一切片确实改动了 `backend/app/` 或 `backend/app/static/`、且使用者可从浏览器或 CLI 实际操作时，才允许新增证据文档。纯审计、纯契约、纯状态切片不得作为活动工作项，除非使用者明确要求。
+
+## 2026-09-10 today/qa A 类纯用户路径增强（GLM 一审完成，待 GPT 二审）
+
+- [x] qa.html：新增线程「继续此对话」（携带 thread_id 续聊）与「新对话」控制；修复「回答已生成」先于线程列表刷新显示的竞态（既有 browser_p2_fe3_qa_app:15 依赖此行为且 HEAD 版同样失败，属既有缺陷）。默认不带 thread_id，既有「每次提问新线程」契约不变。
+- [x] today.html：无代码改动（三区独立加载/失败重试/空态出口已具备），补齐 A 类纯用户路径 E2E。
+- [x] 新增 `browser_today_userpath.spec.js`（7 passed，含真重启持久化、失败注入重试恢复、暂停/恢复边界）与 `browser_qa_userpath.spec.js`（9 passed，含跨页引用回溯、线程继续/新建、retrieval_not_ready/retrieval_empty/provider_not_configured 边界、删除来源后「来源不可用」、真重启持久化）；回归 14+24+32 passed；后端全量 627 passed 3 skipped；source-size 与 diff-check 通过。
+- [ ] 待办移交：① GPT 二审确认 today/qa 七维度状态（当前 `tested`，倾向 `e2e-real-pass`）；② `browser_plans_plan_detail_full.spec.js` P-D21/22 环境性稳定失败需独立归因（HEAD 版同样失败，与本轮无关）；③ plans.html「URL plan_id 优先导致连续创建计划时详情面板滞留旧计划」的页面怪癖待修；④ 真实 Provider、完整键盘审计、generation/report 消费保持 not_verified。
