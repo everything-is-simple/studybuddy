@@ -165,7 +165,16 @@ def get_mistake_case(connection: sqlite3.Connection, *, project_id: str,
         "SELECT id,mistake_case_id,event_kind,content,provenance,created_at "
         "FROM mistake_feedback_events WHERE mistake_case_id=? ORDER BY created_at,id", (mistake_case_id,)
     ).fetchall()]
-    return {**dict(case), "occurrences": occurrences, "feedback_events": feedback}
+    # The mistake row itself stores no question text; surface the exercise prompt
+    # so the mistake list/review pages can show which question was answered wrong.
+    exercise = connection.execute(
+        "SELECT prompt,exercise_type FROM exercises WHERE id=? AND project_id=?",
+        (case["exercise_id"], project_id),
+    ).fetchone()
+    return {**dict(case),
+            "question": str(exercise["prompt"]) if exercise is not None else "",
+            "exercise_type": str(exercise["exercise_type"]) if exercise is not None else None,
+            "occurrences": occurrences, "feedback_events": feedback}
 
 def list_mistake_cases(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
     rows = connection.execute("SELECT * FROM mistake_cases WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()

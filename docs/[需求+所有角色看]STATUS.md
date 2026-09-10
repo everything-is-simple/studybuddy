@@ -152,3 +152,16 @@ For the authoritative project status, task order, and governing decisions, see [
 - 测试结果：today spec `7 passed`；qa spec `9 passed`；QA 相关既有回归（p2_fe3_qa_app/p2_fe3_qa_threads_errors_app/p2_fe3_qa_p6c_app/p1_1_material_qa_migration）`14 passed`；legacy qa + materials 回归 `24 passed, 1 skipped`；today/plan 相关回归（plans_today_progress/weekly_trend/task_list/plans_plan_detail_userpath/static 等）`32 passed, 1 skipped`；后端全量 `627 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；`check-source-size.py --base HEAD` 通过（qa.html 11.6KiB，两 spec 为测试文件不受 32KiB 门禁约束）；`git diff --check` 通过。
 - 七维度状态：`today.html` = `tested`（A 类全过，倾向 `e2e-real-pass`，待 GPT 二审确认）；`qa.html` = `tested`（A 类全过，倾向 `e2e-real-pass`，待 GPT 二审确认）；generation/report = `not_verified`（本轮未涉及）；真实 Provider = `not_verified`（全部为确定性 fake）；键盘逐键走查与屏幕阅读器 = `not_verified`（本轮覆盖 390 窄屏溢出与链接可达，未做完整键盘审计）。
 - 已知遗留（均非本轮引入，交 B 二审与后续轮次）：① `browser_plans_plan_detail_full.spec.js` P-D21/22 在当前环境稳定失败（两次运行失败点不同：目标下拉为空 / 归档后计划仍在列表；HEAD 版 qa.html 下同样失败，与本轮改动无关，需单独归因）；② `browser_qa.spec.js:41` 曾在批量运行中出现一次失败、单跑通过（偶发时序）；③ plans.html 页面怪癖：URL 带 `?plan_id=` 时新建草稿后详情面板仍显示 URL 中的旧计划（`load()` 的 requested 参数优先于刚创建的计划），影响「连续创建两个计划」的用户路径，本轮测试通过单计划串行旅程规避。
+
+## 2026-09-10 practice/practice-session A 类纯用户路径 E2E（双层审核规程第一轮 GLM 实现）
+
+- 变更范围：`backend/app/static/practice.html`（前端缺陷修复 + 新增单题入口）、`backend/app/repositories/_legacy_part_05.py`（错题 API 补充公开题面字段）、`backend/tests/test_phase9c_api.py`（后端回归）、新增 `backend/tests/browser_practice_userpath.spec.js`（A 类 7 用例）。无 schema/migration 变化。
+- 修复的真实缺陷（详见 `docs/roles/[需求+测试看]UI_TEST_PLAN_PRACTICE_PAGES.md` 缺陷清单）：
+  1. exercises.html「开始作答」跳转 `/app/practice.html?exercise_id=…` 被目标页完全忽略（死参数，用户路径断裂）→ practice.html 新增「来自练习集的题目」入口区：ready 题目展示题面 + 「为该题目创建练习会话」一键创建单题会话；无效 ID 显示「题目不存在」。
+  2. 错题库把题目文本覆盖成「查看错题」链接，多条错题无法区分 → 题面与链接分行展示。
+  3. 【后端】错题 API 从不返回题面（`mistake_cases` 表无题目内容，响应无 `question`），真实数据下错题库/复盘页无题面可看，既有 B 类 spec 全 mock 数据掩盖该缺陷 → `get_mistake_case` 按 project 关联 exercises 补充公开 `question`/`exercise_type`（不暴露 answer_key/answer_json，隐私边界不变），后端回归 `test_s4b_api_mistake_surfaces_exercise_prompt`。
+  4. 会话详情内嵌「查看结果」读取不存在的 `result.score/result.total`，内嵌得分永远「得分: 0 / 0」→ 改读真实 `result.summary.score_total/total_item_count`。
+- 新增 A 类纯用户路径 E2E `browser_practice_userpath.spec.js`（7 passed，两次复跑稳定）：全部数据经页面 UI 创建（materials 导入真实 TXT→material-detail 索引→exercises 建集/生成 AI 草稿/确认→practice 推荐勾选→会话→逐题作答→完成→结果→错题→复盘→薄弱点），ID 全部从页面 URL/链接获取；含服务真重启持久化（会话/错题/薄弱点/内嵌得分）、page.route 失败注入安全文案与真实恢复、无效 exercise_id 边界、5 档响应式断言 + 截图留证（H:/studybuddy-test/artifacts/practice-userpath/，10 张）、键盘 Enter 建冲刺目标 + 100 字长标题 + 焦点样式自动检查（outline/box-shadow）、贯穿敏感可见文本扫描。
+- 测试结果：A 类 spec `7 passed`（稳定复跑）；本页相关既有回归 practice/result/review/workflow/recommendations/cram/weak-points `27 passed`，static/contract/visual `14 passed`；后端全量 `628 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；`check-source-size.py --base HEAD` 通过（practice.html 17.3KiB）；`audit-frontend-contract.py --strict` 0 findings；`git diff --check` 通过。
+- 七维度状态：`practice.html` = `tested`（倾向 `e2e-real-pass`，待 GPT 二审确认）；`practice-session.html` = `tested`（倾向 `e2e-real-pass`，待 GPT 二审确认）；测试计划见 `docs/roles/[需求+测试看]UI_TEST_PLAN_PRACTICE_PAGES.md`（全部勾选，含缺口清单）。
+- 未验证/not_verified：真实 Provider（练习生成/评分全为确定性 fake）、cram 冲刺会话创建的 A 类全链、真实 OCR/ASR 材料进入练习链路、完整键盘逐键审计、屏幕阅读器。

@@ -25,6 +25,13 @@
 </div>
 
 <div class="grid">
+
+<section class="card span-12" data-od-id="practice-exercise-entry" hidden>
+<h2>来自练习集的题目</h2>
+<div id="exercise-entry-status" class="notice" role="status" aria-live="polite"></div>
+<div id="exercise-entry" class="stack"></div>
+</section>
+
 <section class="card span-12" data-od-id="cram-workspace">
 <div class="section-heading"><div><h2>冲刺目标</h2><p class="muted">创建明确的考试目标，并从已确认且来源有效的题目中组建限时练习。</p></div><button class="btn" id="refresh-cram" type="button">刷新冲刺</button></div>
 <div id="cram-status" class="notice" role="status" aria-live="polite">正在加载冲刺目标...</div>
@@ -77,6 +84,10 @@ const recommendations=document.querySelector('#recommendations');
 const recommendationLimit=document.querySelector('#recommendation-limit');
 const createRecommendedSession=document.querySelector('#create-recommended-session');
 const refreshRecommendations=document.querySelector('#refresh-recommendations');
+const entrySection=document.querySelector('[data-od-id="practice-exercise-entry"]');
+const entryStatus=document.querySelector('#exercise-entry-status');
+const entryBox=document.querySelector('#exercise-entry');
+const entryExerciseId=new URLSearchParams(location.search).get('exercise_id')||'';
 let recommendedItems=[];
 let recommendationGeneration=0;
 let recommendationBusy=false;
@@ -162,8 +173,10 @@ mistakeLink.href=`/app/review.html?mistake_id=${encodeURIComponent(mistake.id)}`
 mistakeLink.className='mistake-link';
 mistakeLink.textContent='查看错题';
 mistakeLink.addEventListener('click',event=>event.stopPropagation());
-question.replaceChildren(mistakeLink);
-li.append(question);
+const mistakeLinkRow=document.createElement('div');
+mistakeLinkRow.style.marginTop='4px';
+mistakeLinkRow.append(mistakeLink);
+li.append(question,mistakeLinkRow);
 const fact=document.createElement('div');
 fact.className='mistake-fact';
 fact.style.marginTop='8px';
@@ -265,11 +278,14 @@ container.className='session-detail';
 const title=document.createElement('div');
 title.innerHTML='<strong>练习结果</strong>';
 container.append(title);
+// The result endpoint returns {session, summary:{score_total,total_item_count,...}};
+// the legacy result.score/result.total fields never existed.
+const summary=result.summary||{};
 const score=document.createElement('div');
 score.style.marginTop='12px';
 score.style.fontSize='20px';
 score.style.fontWeight='600';
-score.textContent=`得分: ${result.score||0} / ${result.total||0}`;
+score.textContent=`得分: ${summary.score_total||0} / ${summary.total_item_count||0}`;
 container.append(score);
 if(result.grading_note){
 const note=document.createElement('div');
@@ -284,11 +300,54 @@ detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
 }
 }
 
+async function loadExerciseEntry(){
+if(!entryExerciseId)return;
+entrySection.hidden=false;
+entryStatus.hidden=false;entryStatus.className='notice';entryStatus.textContent='正在加载题目...';
+entryBox.replaceChildren();
+try{
+const exercise=await sbApi.json(`/api/study/exercises/${encodeURIComponent(entryExerciseId)}`,{signal:pageRequest.signal});
+const title=document.createElement('div');
+title.style.fontWeight='600';
+title.textContent=text(exercise.prompt)||'题目';
+entryBox.append(title);
+const badge=document.createElement('span');
+badge.className='status-badge '+(exercise.status||'draft');
+badge.textContent=sbState.label(exercise.status||'draft');
+entryBox.append(badge);
+if(exercise.status==='ready'){
+const createBtn=document.createElement('button');
+createBtn.className='btn btn-primary';
+createBtn.textContent='为该题目创建练习会话';
+createBtn.onclick=async()=>{
+if(createBtn.disabled)return;
+createBtn.disabled=true;
+entryStatus.hidden=false;entryStatus.className='notice';entryStatus.textContent='正在创建练习会话...';
+try{
+const session=await sbApi.json('/api/study/practice-sessions',{method:'POST',body:JSON.stringify({title:'单题练习',exercise_ids:[exercise.id],duration_seconds:600,timezone:'UTC',local_date:new Date().toISOString().slice(0,10)}),signal:pageRequest.signal});
+location.href=`/app/practice-session.html?session_id=${encodeURIComponent(session.id)}`
+}catch(error){
+entryStatus.className='notice warn';entryStatus.textContent=sbApi.safeError(error);
+createBtn.disabled=false
+}};
+entryBox.append(createBtn);
+entryStatus.hidden=true
+}else{
+entryStatus.className='notice';
+entryStatus.textContent=`该题目当前状态：${sbState.label(exercise.status||'draft')}，确认后才能开始作答。`
+}
+}catch(error){
+entryBox.replaceChildren();
+entryStatus.className='notice warn';entryStatus.textContent=sbApi.safeError(error)
+}
+}
+
 refreshRecommendations.addEventListener('click',loadRecommendations);
 recommendationLimit.addEventListener('change',loadRecommendations);
 createRecommendedSession.addEventListener('click',createRecommended);
 refreshSessions.addEventListener('click',loadSessions);
 refreshMistakes.addEventListener('click',loadMistakes);
+loadExerciseEntry();
 loadRecommendations();
 loadSessions();
 loadMistakes()
