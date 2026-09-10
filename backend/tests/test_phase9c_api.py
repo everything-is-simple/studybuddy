@@ -99,6 +99,30 @@ def test_s4_api_review_mark_feedback_redo_and_scope(tmp_path: Path):
         assert other.post(f"/api/study/attempts/{attempt.json()['id']}/review", json={"decision": "correct"}).status_code == 404
 
 
+def test_s4b_api_mistake_surfaces_exercise_prompt(tmp_path: Path):
+    """错题 API 必须携带真实题面（practice/review 页展示错题的依赖）。"""
+    with _client(tmp_path, project_id="project_mistake") as client:
+        exercise = _exercise(client, kind="multiple_choice")
+        session = client.post(
+            "/api/study/practice-sessions",
+            json={"title": "Mistake prompt", "exercise_ids": [exercise["id"]]},
+        ).json()
+        assert client.post(f"/api/study/practice-sessions/{session['id']}/start").status_code == 200
+        item_id = client.get(f"/api/study/practice-sessions/{session['id']}").json()["items"][0]["id"]
+        submitted = client.post(
+            f"/api/study/practice-sessions/{session['id']}/items/{item_id}/submit", json={"answer": 0}
+        )
+        assert submitted.status_code == 200 and submitted.json()["is_correct"] is False
+        mistakes = client.get("/api/study/mistakes")
+        assert mistakes.status_code == 200 and len(mistakes.json()) == 1
+        case = mistakes.json()[0]
+        assert case["question"] == "Choose"
+        assert case["exercise_type"] == "multiple_choice"
+        detail = client.get(f"/api/study/mistakes/{case['id']}")
+        assert detail.status_code == 200 and detail.json()["question"] == "Choose"
+        assert "answer_key" not in detail.text and "answer_json" not in detail.text
+
+
 def test_s5_api_goal_session_result_and_invalid_boundaries(tmp_path: Path):
     with _client(tmp_path) as client:
         exercise = _exercise(client, kind="true_false")

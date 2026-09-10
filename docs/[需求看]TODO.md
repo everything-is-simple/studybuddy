@@ -444,3 +444,9 @@ revision → chunks → retrieval → citations → Q&A
 - [x] today.html：无代码改动（三区独立加载/失败重试/空态出口已具备），补齐 A 类纯用户路径 E2E。
 - [x] 新增 `browser_today_userpath.spec.js`（7 passed，含真重启持久化、失败注入重试恢复、暂停/恢复边界）与 `browser_qa_userpath.spec.js`（9 passed，含跨页引用回溯、线程继续/新建、retrieval_not_ready/retrieval_empty/provider_not_configured 边界、删除来源后「来源不可用」、真重启持久化）；回归 14+24+32 passed；后端全量 627 passed 3 skipped；source-size 与 diff-check 通过。
 - [ ] 待办移交：① GPT 二审确认 today/qa 七维度状态（当前 `tested`，倾向 `e2e-real-pass`）；② `browser_plans_plan_detail_full.spec.js` P-D21/22 环境性稳定失败需独立归因（HEAD 版同样失败，与本轮无关）；③ plans.html「URL plan_id 优先导致连续创建计划时详情面板滞留旧计划」的页面怪癖待修；④ 真实 Provider、完整键盘审计、generation/report 消费保持 not_verified。
+
+## 2026-09-10 practice/practice-session A 类纯用户路径 E2E（GLM 一审完成，待 GPT 二审）
+
+- [x] 修复 4 个真实缺陷：① exercises「开始作答」→ practice.html 的 `exercise_id` 死参数（新增单题会话入口区）；② 错题库题面被链接覆盖；③ 【后端】错题 API 无 `question` 题面字段（`get_mistake_case` 关联 exercises 补公开字段，隐私边界不变）；④ 会话详情内嵌结果读取不存在的 `result.score/total`（改读 `result.summary`）。
+- [x] 新增 `browser_practice_userpath.spec.js`（7 passed，含真重启持久化、失败注入恢复、无效 ID 边界、5 档响应式 + 截图、键盘 + 焦点样式、敏感文本扫描）；回归 27+14 passed；后端全量 628 passed 3 skipped；source-size / contract-audit / diff-check 通过。
+- [ ] 待办移交：① GPT 二审确认 practice/practice-session 七维度状态（当前 `tested`，倾向 `e2e-real-pass`），并同轮收口 today/qa 二审；② cram 冲刺会话创建的 A 类全链（激活目标→选题→冲刺会话）留待后续轮次；③ 真实 Provider、完整键盘审计、屏幕阅读器保持 not_verified；④ 既有遗留（plans P-D21/22 归因、plans.html URL plan_id 怪癖）仍开放。
