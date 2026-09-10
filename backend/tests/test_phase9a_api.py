@@ -101,6 +101,23 @@ def test_phase9a_api_dependency_cycle_and_state_errors(tmp_path: Path):
         assert "traceback" not in malformed.text.lower()
 
 
+def test_phase9a_api_rejects_duplicate_source_without_citation_key(tmp_path: Path):
+    with client_for(tmp_path) as client:
+        material = client.post("/api/materials", files={"file": ("source.txt", b"A source passage.", "text/plain")}).json()
+        material_id = material["material_id"]
+        indexed = client.post(f"/api/materials/{material_id}/ai-index").json()
+        goal = client.post("/api/study/goals", json={"title": "Goal"}).json()
+        plan = client.post("/api/study/plans", json={"goal_id": goal["id"], "title": "Plan"}).json()
+        item = client.post(f"/api/study/plans/{plan['id']}/items", json={"title": "Item"}).json()
+        candidate = client.get("/api/study/source-candidates").json()[0]
+        payload = {"material_id": candidate["material_id"], "revision_id": candidate["revision_id"], "extraction_id": candidate["extraction_id"], "chunk_id": candidate["chunk_id"]}
+        assert client.post(f"/api/study/plans/{plan['id']}/items/{item['id']}/sources", json=payload).status_code == 201
+        duplicate = client.post(f"/api/study/plans/{plan['id']}/items/{item['id']}/sources", json=payload)
+        assert duplicate.status_code == 409
+        assert duplicate.json()["detail"] == "study_source_duplicate"
+        assert client.get("/api/study/sources").json().__len__() == 1
+
+
 def test_phase9a_api_source_unavailable_is_safe(tmp_path: Path):
     with client_for(tmp_path) as client:
         goal = client.post("/api/study/goals", json={"title": "Goal"}).json()

@@ -136,6 +136,11 @@ def test_source_link_validates_identity_and_tracks_delete_restore(tmp_path: Path
             "chunk_id": chunk[0], "span_id": span_id,
         })
         assert item_link["status"] == "valid"
+        with pytest.raises(ValueError, match="study_source_duplicate"):
+            create_plan_item_source_link(connection, project_id="project_9a", plan_id=plan["id"], item_id=first["id"], payload={
+                "material_id": material_id, "revision_id": revision["id"], "extraction_id": extraction_id,
+                "chunk_id": chunk[0], "span_id": span_id,
+            })
         connection.execute("UPDATE materials SET deleted_at='deleted' WHERE id=?", (material_id,))
         refresh_study_source_links(connection, project_id="project_9a")
         assert connection.execute("SELECT status FROM module_source_links").fetchone()[0] == "source_deleted"

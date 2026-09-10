@@ -279,7 +279,7 @@ def register_routes(app, context: dict[str, object]) -> None:
             with connect(app.state.config.database_path) as connection:
                 return create_module_source_link(connection, project_id=app.state.config.project_id, module_id=module_id, payload=request.model_dump())
         except ValueError as error:
-            raise _study_error(error, default="study_source_create_failed", not_found={"knowledge_module_not_found"}, conflict={"knowledge_module_archived", "study_source_invalid"}) from None
+            raise _study_error(error, default="study_source_create_failed", not_found={"knowledge_module_not_found"}, conflict={"knowledge_module_archived", "study_source_invalid", "study_source_duplicate"}) from None
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="study_source_create_failed") from None
 
@@ -289,7 +289,7 @@ def register_routes(app, context: dict[str, object]) -> None:
             with connect(app.state.config.database_path) as connection:
                 return create_plan_item_source_link(connection, project_id=app.state.config.project_id, plan_id=plan_id, item_id=item_id, payload=request.model_dump())
         except ValueError as error:
-            raise _study_error(error, default="study_source_create_failed", not_found={"study_plan_item_not_found"}, conflict={"study_plan_edit_not_allowed", "study_source_invalid"}) from None
+            raise _study_error(error, default="study_source_create_failed", not_found={"study_plan_item_not_found"}, conflict={"study_plan_edit_not_allowed", "study_source_invalid", "study_source_duplicate"}) from None
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="study_source_create_failed") from None
 

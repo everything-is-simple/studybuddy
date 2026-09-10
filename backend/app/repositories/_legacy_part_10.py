@@ -258,6 +258,22 @@ def _study_source_payload(connection: sqlite3.Connection, *, project_id: str, pa
     return (f"{prefix}_{uuid.uuid4().hex}", project_id, material_id, revision_id, extraction_id, chunk_id,
             span_id, citation_key, status, utc_now(), utc_now())
 
+def _study_source_duplicate(connection: sqlite3.Connection, *, table: str, owner_column: str,
+                             owner_id: str, payload_row: tuple[object, ...]) -> bool:
+    """Return whether the same logical source is already linked to this owner.
+
+    The v9 UNIQUE(owner, citation_key) constraint does not protect rows whose
+    optional citation_key is NULL (SQLite permits multiple NULLs).  Compare
+    the complete source identity here so API callers and concurrent UI paths
+    receive the same duplicate protection.
+    """
+    _link_id, _project_id, material_id, revision_id, extraction_id, chunk_id, span_id, citation_key, _status, _created, _updated = payload_row
+    query = (
+        f"SELECT 1 FROM {table} WHERE {owner_column}=? AND material_id=? AND revision_id=? "
+        "AND extraction_id IS ? AND chunk_id=? AND span_id IS ? AND citation_key IS ? LIMIT 1"
+    )
+    return connection.execute(query, (owner_id, material_id, revision_id, extraction_id, chunk_id, span_id, citation_key)).fetchone() is not None
+
 def create_module_source_link(connection: sqlite3.Connection, *, project_id: str, module_id: str,
                               payload: dict[str, object]) -> dict[str, object]:
     with connection:
@@ -267,6 +283,8 @@ def create_module_source_link(connection: sqlite3.Connection, *, project_id: str
         if module["status"] != "active":
             raise ValueError("knowledge_module_archived")
         row = _study_source_payload(connection, project_id=project_id, payload=payload, owner_type="module")
+        if _study_source_duplicate(connection, table="module_source_links", owner_column="module_id", owner_id=module_id, payload_row=row):
+            raise ValueError("study_source_duplicate")
         link_id = row[0]
         try:
             connection.execute("INSERT INTO module_source_links (id,project_id,module_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (link_id, project_id, module_id, *row[2:]))
@@ -282,6 +300,8 @@ def create_plan_item_source_link(connection: sqlite3.Connection, *, project_id: 
             raise ValueError("study_plan_item_not_found")
         _study_item_edit_plan(connection, project_id=project_id, plan_id=plan_id)
         row = _study_source_payload(connection, project_id=project_id, payload=payload, owner_type="item")
+        if _study_source_duplicate(connection, table="plan_item_source_links", owner_column="plan_item_id", owner_id=item_id, payload_row=row):
+            raise ValueError("study_source_duplicate")
         link_id = row[0]
         try:
             connection.execute("INSERT INTO plan_item_source_links (id,project_id,plan_item_id,material_id,revision_id,extraction_id,chunk_id,span_id,citation_key,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (link_id, project_id, item_id, *row[2:]))
