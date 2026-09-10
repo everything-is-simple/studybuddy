@@ -13,8 +13,8 @@ from app.main import create_app
 from app.repository import connect
 
 
-def client_for(root: Path) -> TestClient:
-    return TestClient(create_app(AppConfig(data_root=root, project_id="default")))
+def client_for(root: Path, project_id: str = "default") -> TestClient:
+    return TestClient(create_app(AppConfig(data_root=root, project_id=project_id)))
 
 
 def test_phase9a_api_minimal_plan_and_progress_path(tmp_path: Path):
@@ -90,6 +90,9 @@ def test_phase9a_api_dependency_cycle_and_state_errors(tmp_path: Path):
         )
         assert cycle.status_code == 409
         assert cycle.json()["detail"] == "study_plan_dependency_cycle"
+        detail = client.get(f"/api/study/plans/{plan['id']}")
+        assert detail.status_code == 200
+        assert len(detail.json()["dependencies"]) == 1
         active_before_confirm = client.post(f"/api/study/plans/{plan['id']}/activate")
         assert active_before_confirm.status_code == 409
         assert active_before_confirm.json()["detail"] == "study_plan_confirm_required"
@@ -126,13 +129,39 @@ def test_phase9a_api_paused_plan_can_resume_to_active(tmp_path: Path):
         assert resumed.json()["status"] == "active"
 
 
-def test_phase9a_api_paused_plan_can_resume_to_active(tmp_path: Path):
+def test_phase9a_api_rejects_cross_plan_item_progress_and_source(tmp_path: Path):
     with client_for(tmp_path) as client:
         goal = client.post("/api/study/goals", json={"title": "Goal"}).json()
-        plan = client.post("/api/study/plans", json={"goal_id": goal["id"], "title": "Plan"}).json()
-        assert client.post(f"/api/study/plans/{plan['id']}/confirm").status_code == 200
-        assert client.post(f"/api/study/plans/{plan['id']}/activate").status_code == 200
-        assert client.post(f"/api/study/plans/{plan['id']}/pause").status_code == 200
-        resumed = client.post(f"/api/study/plans/{plan['id']}/activate")
-        assert resumed.status_code == 200
-        assert resumed.json()["status"] == "active"
+        first = client.post("/api/study/plans", json={"goal_id": goal["id"], "title": "First"}).json()
+        second = client.post("/api/study/plans", json={"goal_id": goal["id"], "title": "Second"}).json()
+        item = client.post(f"/api/study/plans/{first['id']}/items", json={"title": "First item"}).json()
+        assert client.post(f"/api/study/plans/{second['id']}/confirm").status_code == 200
+        assert client.post(f"/api/study/plans/{second['id']}/activate").status_code == 200
+        progress = client.post(
+            f"/api/study/plans/{second['id']}/items/{item['id']}/progress",
+            json={"event_type": "started"},
+        )
+        assert progress.status_code == 404
+        assert progress.json()["detail"] == "study_plan_item_not_found"
+        source = client.post(
+            f"/api/study/plans/{second['id']}/items/{item['id']}/sources",
+            json={"material_id": "missing", "revision_id": "missing", "chunk_id": "missing"},
+        )
+        assert source.status_code == 404
+        assert source.json()["detail"] == "study_plan_item_not_found"
+        assert "traceback" not in source.text.lower()
+
+
+def test_phase9a_api_rejects_cross_project_plan_access(tmp_path: Path):
+    first = client_for(tmp_path, "project-a")
+    goal = first.post("/api/study/goals", json={"title": "Private goal"}).json()
+    plan = first.post("/api/study/plans", json={"goal_id": goal["id"], "title": "Private plan"}).json()
+    first.close()
+    second = client_for(tmp_path, "project-b")
+    try:
+        response = second.get(f"/api/study/plans/{plan['id']}")
+        assert response.status_code == 404
+        assert "Private plan" not in response.text
+        assert "traceback" not in response.text.lower()
+    finally:
+        second.close()
