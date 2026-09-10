@@ -15,6 +15,7 @@
 - [x] 正式入口统一：`/`、`/app/`、`/app/index.html` 和全部正式页面品牌链接均进入 `/app/today.html`；`index.html` 仅保留兼容跳转，`/legacy` 保留旧 UI 兼容性。
 - [x] A3：静态前端迁移及限定范围浏览器验收完成；不等于完整 frontend-plan 页面架构和视觉系统完成
 - [x] E2E 用户流程测试：10 个端到端测试场景，覆盖导入、问答、学习、导航、错误恢复等完整用户旅程
+- [x] materials → material-detail 详情页增强（2026-09-10，待 GPT 二审）：列表页显式「详情」按钮；详情页新增处理链路状态（导入/解析/索引真实状态与文本可用性）、来源候选（含显式刷新与幂等重复刷新）、计划关联（展示/建立/取消关联，重复关联前端防护）、能力状态（OCR 真实组件状态、ASR 不适用、问答按索引状态、生成/报告标注 not_verified）与页面刷新按钮。纯前端改动，无 API/schema/migration 变化。新增 A 类纯用户路径 E2E `browser_material_detail_userpath.spec.js` 7 用例全过（含服务真重启持久化、无效 ID 错误态、无文字层 PDF 的真实 OCR 状态与不伪造成功）；materials 相关回归 8 spec 27 passed；后端全量 626 passed, 3 skipped；源码体积与 diff-check 通过。未验证：真实 OCR 对扫描 PDF 的解析质量、ASR（本页不适用）、generation、report 消费。
 
 ## 基础设施收尾已完成（v1 时间盒收口）
 
