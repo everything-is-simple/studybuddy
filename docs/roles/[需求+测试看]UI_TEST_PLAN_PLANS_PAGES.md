@@ -1,117 +1,120 @@
-# UI 逐页测试计划：plans.html（目标与计划）+ plan-detail.html（计划详情）
+# plans.html + plan-detail.html 七维度 UI 测试计划
 
-- 生成日期：2026-09-09
-- 测试方式：Playwright 全自动化（spec：`backend/tests/browser_plans_plan_detail_full.spec.js`，端口 8901，独立 data root，fake provider）
-- 勾选约定：`[x]` = 自动化测试已通过；`[ ]` = 未测/未通过。每通过一项由测试执行过程即时勾选。
-- 范围声明：本计划覆盖两页全部静态结构、动态渲染分支、交互按钮与状态机。来源链接"真实添加"依赖已索引材料，由既有 `browser_p1_4_c2_source_links.spec.js` 覆盖，此处测守卫与加载行为。
+> 规程依据：双层审核工作规程（GLM 一审 + GPT 二审）。页面状态采用五级：`implemented` / `tested` / `e2e-real-pass` / `not_verified` / `blocked`。**只有 A 类纯用户路径全部通过且 GPT 二审通过，页面才能标记 `e2e-real-pass`。**
+> 本文档是两页唯一测试计划（七个维度一章一节，不拆分多份）。旧版"静态元素逐项勾选"记录已被本版取代（旧版 64 项全过的结论只能算 `tested`）。
+> 旧版截图核对结论仍然有效，要点：来源区"正在加载"是未选中计划所致；"0 个项目"缺陷已修；开始/完成按钮需 active 计划 + item_id URL；截图重叠为拼接伪影。
 
-## 用户截图核对结论（2026-09-09 15:03/15:04 两张截图）
+## 范围与测试分类
 
-1. 来源链接区停在"正在加载来源工作区…"：不是缺陷。"关联到"下拉只有在**选中一个计划之后**才会填充学习项/模块选项；截图时尚未点选计划条目。→ 由 P-A27/28 验证。
-2. 计划列表显示"0 个项目"但详情页有 4 项：添加学习项后需点选该计划或"刷新数据"才会更新计数；若刷新后仍为 0 则是缺陷。→ 由 P-E21 验证。
-3. 计划详情页没有"开始学习/记录完成"按钮：不是漏点。这两个按钮只在 URL 带 `item_id` 且计划状态为 active 时渲染；草稿计划必须先在 plans.html 走"确认草稿 → 激活计划"。→ 由 D-C13 验证。
-4. 截图中文字重叠、出现两个"刷新进度"：长截图拼接伪影。源码只有一个 `#refresh-progress`。→ 由 D-A2/D-B7 间接验证（元素唯一性断言）。
+- A 类（纯用户路径 E2E）：`backend/tests/browser_plans_plan_detail_userpath.spec.js`——所有数据经页面 UI 创建，plan_id 从页面"打开详情"链接/URL 获取，禁止测试代码直调业务 API 取关键 ID。
+- B 类（接口与故障注入）：`backend/tests/browser_plans_plan_detail_full.spec.js`（describe 已标注 B-class）——允许 `page.request` 观察/取 ID、路由拦截注入失败；**不是纯用户路径 E2E**，用于补边界与错误验证。
 
-## P. plans.html —— 目标与计划
+## 维度一：页面结构
 
-### A. 静态结构与空库状态
-- [x] P-A1 页面标题、hero 文案、主导航、系统状态点渲染
-- [x] P-A2 三个区块（侧栏 plans-sidebar / 主区 plans-main / 来源链接 source-links）可见
-- [x] P-A3 空库初始状态：暂无目标 / 暂无模块 / "请先创建学习目标"
-- [x] P-A4 来源链接区初始提示与"关联到/资料定位"下拉存在，添加按钮禁用
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| plans 页标题/导航/空状态（暂无目标/暂无模块/请先创建学习目标） | P-A | [x] tested |
+| plans 页全部按钮/表单/下拉存在且可定位 | P-A~P-I、A-E2E-PLAN-FULL-LIFECYCLE | [x] tested |
+| plan-detail 页标题/返回链接/刷新进度/缺 plan_id 错误态 | D-A/B、D-D15 | [x] tested |
+| 详情区状态徽章/学习项卡片/依赖/进度摘要/进度历史渲染 | D-A/B | [x] tested |
 
-### B. 目标（Goal）
-- [x] P-B5 空目标名提交被 required 拦截
-- [x] P-B6 新建目标 → 列表出现 + 状态徽章"进行中" + 状态清空
-- [x] P-B7 查看目标 → 目标详情区显示标题与状态
-- [x] P-B8 重命名目标（prompt 确定）→ 列表与详情更新
-- [x] P-B9 重命名目标（prompt 空名）→ 警告"目标名称不能为空"，原名保留
-- [x] P-B10 归档目标（confirm）→ 从默认目标列表移除（已归档目标不再显示，非徽章变化）＋从"所属目标"下拉移除
+## 维度二：正常用户路径（A 类）
 
-### C. 模块（Module）
-- [x] P-C11 新建模块 → 列表出现 + 状态徽章
-- [x] P-C12 查看模块 → 模块详情区显示
-- [x] P-C13 重命名模块（确定 / 空名拒绝）
-- [x] P-C14 归档模块（confirm）→ 从默认模块列表移除＋不再出现在学习项模块下拉
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| 页面建目标→建模块→建计划草稿→加 2 个学习项（含绑定模块）→加依赖→存节奏→加分派 | A-E2E-PLAN-FULL-LIFECYCLE | [x] tested |
+| 确认→激活→经 today 页任务链接进入 detail（URL 含 item_id/return_to）→开始学习→记录完成 | A-E2E-PLAN-FULL-LIFECYCLE | [x] tested |
+| 暂停→恢复→完成计划→归档（编辑禁用验证） | A-E2E-PLAN-FULL-LIFECYCLE | [x] tested |
+| 从页面"打开详情"链接导航（不从 API 取 plan_id） | A-E2E-REAL-SOURCE-LINK、PERSIST | [x] tested |
+| 状态转换点击（B 类补充：确认/激活/暂停/恢复/完成/归档全链） | P-D20、P-D21/22 | [x] tested |
 
-### D. 计划生命周期
-- [x] P-D15 未选目标/未填名称提交 → 警告"请输入计划名称并选择目标"
-- [x] P-D16 新建计划草稿 → 列表出现"0 个项目 · 草稿"，详情区自动打开
-- [x] P-D17 计划条目鼠标点击选中；键盘 Enter/Space 也可选中
-- [x] P-D18 带 `?plan_id=` 直接访问自动选中该计划
-- [x] P-D19 保存计划编辑（改名称+描述）→ 状态提示"计划编辑保存"
-- [x] P-D20 状态机全链：确认草稿 → 激活计划 → 暂停计划 → 恢复计划 → 完成计划
-- [x] P-D21 归档计划 → 从默认计划列表移除、详情面板关闭（完成后编辑区禁用先已验证）
-- [x] P-D22 计划完成/归档后标题、描述、保存按钮 disabled
+## 维度三：错误路径
 
-### E. 学习项（Plan Item）
-- [x] P-E23 添加学习项（不绑定模块）→ 行出现，状态"待处理"
-- [x] P-E24 添加学习项（绑定模块）→ 模块下拉仅含未归档模块
-- [x] P-E25 保存学习项：改标题、改排序 → "学习项已保存"，刷新后保持
-- [x] P-E26 归档学习项 → 状态"已归档"，其编辑按钮消失
-- [x] P-E27 active 计划下"完成学习项" → 状态变"已完成"，完成后按钮消失
-- [x] P-E28 项目计数随增删刷新（0 个项目 → N 个项目）
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| 空目标名/空模块名/空计划名（required 拦截 + 后端空值拒绝） | P-B、P-C、P-D15 | [x] tested |
+| 依赖自环（predecessor==successor）拒绝 | P-F | [x] tested |
+| 节奏接口失败→提示"节奏加载失败，可重试"且不阻塞页面 | P-G39 | [x] tested |
+| 缺 plan_id → "缺少计划标识"，无重试按钮 | D-D15 | [x] tested |
+| 计划加载失败 → 错误提示 + 重试恢复 | D-D16/17/18 | [x] tested |
+| 对话框取消路径（prompt 空值/取消不产生数据） | P-B、A-E2E-RESPONSIVE-AND-KEYBOARD | [x] tested |
+| 页面错误状态不泄露 traceback/SQL/路径/密钥（显式可见文本扫描） | A-E2E-RESPONSIVE-AND-KEYBOARD | [x] tested |
 
-### F. 学习项依赖
-- [x] P-F29 前后选择同一项点"添加依赖" → 警告"依赖关系无效"
-- [x] P-F30 添加依赖 A→B → 依赖行显示"A → B"
-- [x] P-F31 删除依赖（confirm）→ 行消失
-- [x] P-F32 已激活计划不渲染依赖编辑器
+## 维度四：数据持久化（含服务真重启）
 
-### G. 学习节奏（Rhythm）
-- [x] P-G33 未保存节奏时"添加分配"按钮禁用
-- [x] P-G34 保存节奏设置（周期/时区/起始日/目标分钟）→ "学习节奏已保存"，添加分配解锁
-- [x] P-G35 导出节奏 JSON → 触发下载 studybuddy-rhythm.json
-- [x] P-G36 添加分配（项+日期+分钟）→ "已分配 N 分钟"行出现
-- [x] P-G37 调整分配（改日期/分钟）→ "学习项分配已调整"
-- [x] P-G38 删除分配 → 行消失
-- [x] P-G39 节奏 API 失败时显示"节奏加载失败，可重试。"且不阻塞其他区块
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| 刷新页面后计划/学习项/排序/描述保留 | P-D19、P-E23/24/25/28 | [x] tested |
+| **杀进程→同 data root 重启服务→等 /api/health→重开页面**：目标/计划/项目数/状态徽章/节奏参数/分派/进度全保留 | A-E2E-PERSIST-REAL-RESTART | [x] tested |
+| 重启后 today 页任务仍可见（经页面验证跨页持久化） | A-E2E-PERSIST-REAL-RESTART | [x] tested |
+| 来源链接重启后保留（杀进程→同 data root 重启→重进详情验证来源仍在→删除验证消失） | A-E2E-REAL-SOURCE-LINK（stopServer/startServer 段） | [x] tested |
 
-### H. 来源链接
-- [x] P-H40 未选计划时"关联到"为空、来源列表空
-- [x] P-H41 选中计划后"关联到"包含全部未归档学习项与未归档模块
-- [x] P-H42 无候选资料时"添加来源链接"保持禁用（守卫）
-- [x] P-H43 切换"关联到"触发来源加载提示与列表刷新
-- [x] P-H44 "刷新来源"按钮可点击不报错
+## 维度五：数据边界与状态边界
 
-### I. 全局行为
-- [x] P-I45 "刷新数据"按钮：重载三类列表且保持选中
-- [x] P-I46 mutation 期间禁用全部控件、结束后恢复（busy guard）
+> 命名说明：StudyBuddy 为本地单进程单用户系统，本维度是数据/状态边界，**不是**登录/角色/多用户隔离（系统不提供该能力，不在此声称）。
 
-## D. plan-detail.html —— 计划详情
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| 不存在/无效 plan_id（路由拦截模拟） | D-D16/17/18 | [x] tested |
+| 草稿计划不渲染开始/完成按钮（状态边界） | D-C14、P-D20 前置 | [x] tested |
+| 已完成计划禁用编辑；归档目标/模块从下拉移除；归档计划从列表移除 | P-B10、P-C14、P-D21/22、A-E2E-PLAN-FULL-LIFECYCLE | [x] tested |
+| 已归档学习项不可保存 | P-E26 | [x] tested |
+| 不属于当前计划的 item_id：进度/来源操作被后端拒绝，且不泄露 traceback | `test_phase9a_api_rejects_cross_plan_item_progress_and_source`（B 类 API 边界） | [x] tested |
+| 跨项目 plan_id：其他 project 返回 404，且不泄露计划标题/traceback | `test_phase9a_api_rejects_cross_project_plan_access`（B 类 API 边界） | [x] tested |
+| 依赖环 A→B→A：后端拒绝且保留已有依赖 | `test_phase9a_api_dependency_cycle_and_state_errors`（B 类 API 边界） | [x] tested |
 
-### A. 静态结构与加载
-- [x] D-A1 标题"计划详情"、lead 文案、"返回计划"链接渲染
-- [x] D-A2 页面仅一个"刷新进度"按钮（截图重复为拼接伪影）
-- [x] D-A3 加载完成后 #plan-status 隐藏、#plan-detail 显示
+## 维度六：响应式和键盘
 
-### B. 数据渲染
-- [x] D-B4 计划标题 + 状态徽章正确
-- [x] D-B5 描述存在时显示为 muted 段落
-- [x] D-B6 学习项依赖区：无依赖显示"暂无学习项依赖"；有依赖显示"A → B"行
-- [x] D-B7 计划项目列表：标题/状态/来源逐项正确；空计划显示"暂无计划项"
-- [x] D-B8 进度摘要 5 张卡数值正确（已完成/进行中/待处理/已跳过/完成率）
-- [x] D-B9 进度历史：有记录时显示事件、加载横幅隐藏；空态"暂无进度记录"在全新草稿计划上验证（D-C14 内）
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| 5 档 viewport（1280×720/1440×900/1920×1080/768×1024/390×844）：无横向溢出、plans 与 plan-detail 关键元素/长标题断言 | A-E2E-RESPONSIVE-AND-KEYBOARD | [x] tested |
+| 截图留证（供二审人工核验，DOM 断言之外的视觉检查） | H:\studybuddy-test\artifacts\plans-userpath\*.png（10 张） | [x] tested |
+| 键盘：Enter 提交目标表单；Tab 可达各表单/操作按钮；Enter/Space 选中计划；Tab 到"打开详情"；disabled（来源添加按钮空态）被跳过；prompt 取消不产生数据 | A-E2E-RESPONSIVE-AND-KEYBOARD | [x] tested |
+| 长中文标题（100 字）窄屏不撑破布局 | A-E2E-RESPONSIVE-AND-KEYBOARD | [x] tested |
+| 焦点样式自动检查（outline style/width、box-shadow 至少一项可见）：`#goal-title`、`#refresh-progress` | A-E2E-RESPONSIVE-AND-KEYBOARD（assertFocusStyle） | [x] tested |
+| 自动焦点样式：目标输入框、详情刷新按钮具有 outline/box-shadow | A-E2E-RESPONSIVE-AND-KEYBOARD | [x] tested |
+| 完整人工视觉焦点可见性审查（全部交互元素） | **未覆盖** | [ ] not_verified |
 
-### C. 交互与进度
-- [x] D-C10 "刷新进度"点击重新加载且防抖（sbSubmit.once）
-- [x] D-C11 "返回计划"默认回 plans.html
-- [x] D-C12 `?return_to=today` 时"返回计划"指向 today.html
-- [x] D-C13 active 计划 + `item_id` 参数：出现"开始学习/记录完成"；开始学习后该按钮禁用；记录完成 → 进度历史出现"记录完成"事件、摘要与完成率更新
-- [x] D-C14 草稿计划 + item_id：不渲染进度按钮（对应用户截图疑问）
+## 维度七：真实链路
 
-### D. 异常路径
-- [x] D-D15 无 plan_id 访问 → "缺少计划标识，无法加载详情"，不出现重试按钮
-- [x] D-D16 无效 plan_id → 错误状态 + "重试"按钮出现
-- [x] D-D17 点击"重试"在 API 恢复后成功加载
-- [x] D-D18 计划加载失败不阻塞进度历史独立报错（两区共享一次重试）
+| 检查项 | spec（用例） | 状态 |
+| --- | --- | --- |
+| 经 materials 页面导入真实 TXT fixture（H:\studybuddy-test\fixtures\真实链路测试材料.txt）→ material-detail 页点"索引"→"索引已建立" | A-E2E-REAL-SOURCE-LINK | [x] tested |
+| plans 页来源候选出现该材料片段→添加来源链接→链接列表持久→刷新后仍在 | A-E2E-REAL-SOURCE-LINK | [x] tested |
+| plan-detail 来源状态经页面验证：未关联→有效（静默）→删除后未关联 | A-E2E-REAL-SOURCE-LINK | [x] tested |
+| 真实 Provider（DeepSeek/Agnes 问答、卡片、练习生成） | 本轮明确不覆盖 | [ ] not_verified |
 
-## 结果记录（2026-09-09 执行完毕）
+## 执行记录（2026-09-09 第一轮，GLM 一审）
 
-- 自动化 spec：`backend/tests/browser_plans_plan_detail_full.spec.js`（24 个 Playwright 用例，串行，独立 data root，fake provider）
-- 最终结果：**24 passed / 0 failed**（Playwright）；后端聚焦回归 `test_phase9a_api.py` 5 passed；完整后端套件见当日记录。
-- 执行中发现并修复的缺陷（3 个真实缺陷 + 1 个行为确认）：
-  1. 【缺陷·已修】plans.html 计划列表永远显示"0 个项目"：前端读 `plan.item_count`，后端从不提供该字段（对应你截图中的现象）。修复为按非归档 items 实时计算。
-  2. 【缺陷·已修】已暂停计划点"恢复计划"被后端拒绝（`study_plan_confirm_required`）：`transition_study_plan` 只允许 confirmed→active。已放行 paused→active，并补后端回归测试。
-  3. 【缺陷·已修】计划完成后/归档前，busy 解锁会把本应禁用的计划名称、描述、保存按钮重新启用。渲染时打 `busyKeep` 标记，解锁时保留禁用。
-  4. 【行为确认】目标/模块/计划归档后从默认列表移除（不是显示"已归档"徽章）；进度历史加载横幅隐藏后残留旧文本，属隐藏态残留，不影响使用。
+```text
+执行命令 1：
+cd H:/studybuddy && npx playwright test backend/tests/browser_plans_plan_detail_userpath.spec.js --output="H:/studybuddy-test/runs/pw-out-userpath-<时间戳>"
+结果：4 passed（A-E2E-PLAN-FULL-LIFECYCLE 14.6s / A-E2E-REAL-SOURCE-LINK 9.6s / A-E2E-RESPONSIVE-AND-KEYBOARD 9.5s / A-E2E-PERSIST-REAL-RESTART 13.4s）
+
+执行命令 2：
+cd H:/studybuddy && npx playwright test backend/tests/browser_plans_plan_detail_full.spec.js --output="H:/studybuddy-test/runs/pw-out-full-<时间戳>"
+结果：（B 类）24 passed
+
+执行命令 3：
+C:/miniconda/py310/python.exe backend/scripts/check-source-size.py --base 3327254
+结果：source-size check passed（32768 字节策略）
+
+环境：
+- Python：C:\miniconda\py310\python.exe（uvicorn app.main:app，单进程）
+- Node/Playwright：仓库 package-lock 锁定版本，Chromium
+- viewport：响应式用例覆盖 5 档；其余默认 1280×720
+- data root：H:/studybuddy-test/runs/plans-plan-detail-userpath-<时间戳>（独立空目录，未触碰 H:\studybuddy\data 与 H:\studybuddy-data\live）
+- Provider：deterministic fake（STUDYBUDDY_AI_PROVIDER=fake）；计划和进度页面使用 fake Provider，未验证真实 GLM/DeepSeek Provider，未验证真实问答、卡片和练习生成。
+
+本轮发现并修复的缺陷：
+1.【缺陷·已修】plans.html 选中计划后列表不高亮：selectPlan 从不调用 renderLists，selected 类要等"刷新数据"才出现。修复：selectPlan 内按 dataset.planId 原位 toggle selected（不重建节点，保留焦点）。
+2.【行为确认·非缺陷】plan-detail 学习项卡片来源行只在状态异常时显示（valid 静默、无链接显示"来源：未关联来源"），appendSource 设计如此。
+```
+
+## 页面状态结论（GPT 二审前）
+
+| 页面 | 状态 | 依据与未覆盖项 |
+| --- | --- | --- |
+| plans.html | `tested` | A 类 4 用例 + B 类 24 用例通过；自动化已覆盖计划/项目边界与依赖环；**未覆盖**：完整人工视觉焦点审查、真实 Provider |
+| plan-detail.html | `tested` | 同上；return_to=today 经页面点击验证 |
+| 两页合并 | `tested` | A 类、浏览器 B 类和 API 边界测试通过；本次 GPT 二审已独立复跑通过，但真实 Provider 与完整人工视觉审查仍未验证，暂不升级为 `e2e-real-pass` |

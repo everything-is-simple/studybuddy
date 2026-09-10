@@ -27,7 +27,7 @@ async function planIdByTitle(request, title) {
   return plans.find(p => p.title === title).id;
 }
 
-test.describe.serial('plans + plan-detail full coverage', () => {
+test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, not pure user path)', () => {
   test.beforeAll(async () => {
     RUN_ROOT = `H:/studybuddy-test/runs/plans-plan-detail-full-${Date.now()}`;
     fs.rmSync(RUN_ROOT, { recursive: true, force: true });
