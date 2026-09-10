@@ -450,3 +450,12 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 修复 4 个真实缺陷：① exercises「开始作答」→ practice.html 的 `exercise_id` 死参数（新增单题会话入口区）；② 错题库题面被链接覆盖；③ 【后端】错题 API 无 `question` 题面字段（`get_mistake_case` 关联 exercises 补公开字段，隐私边界不变）；④ 会话详情内嵌结果读取不存在的 `result.score/total`（改读 `result.summary`）。
 - [x] 新增 `browser_practice_userpath.spec.js`（7 passed，含真重启持久化、失败注入恢复、无效 ID 边界、5 档响应式 + 截图、键盘 + 焦点样式、敏感文本扫描）；回归 27+14 passed；后端全量 628 passed 3 skipped；source-size / contract-audit / diff-check 通过。
 - [ ] 待办移交：① GPT 二审确认 practice/practice-session 七维度状态（当前 `tested`，倾向 `e2e-real-pass`），并同轮收口 today/qa 二审；② cram 冲刺会话创建的 A 类全链（激活目标→选题→冲刺会话）留待后续轮次；③ 真实 Provider、完整键盘审计、屏幕阅读器保持 not_verified；④ 既有遗留（plans P-D21/22 归因、plans.html URL plan_id 怪癖）仍开放。
+
+## 2026-09-10 B 二审收口（today/qa + practice 轮，GPT 独立复核完成）
+
+- [x] 独立复跑 practice A 类（7 passed）、today/qa A 类（16 passed）、相关回归（20 passed）、后端全量（628 passed 3 skipped）、门禁（check-source-size/diff-check 通过）、截图 artifact（10 文件存在）。
+- [x] A 类规则合规审查：无直调 API 建数据、全部数据经 UI、ID 从 URL 获取、真重启验证、故障注入 page.route 规范。
+- [x] 缺陷验证：practice 4 缺陷均为真实修复（exercise_id 死参数、错题题面覆盖、错题 API 无题面、内嵌结果读错字段），回归测试全部通过。
+- [x] 遗留问题核查：P-D21/22 当前已通过（非阻塞）；plans.html URL plan_id 怪癖真实存在但非本轮引入（留待后续）；QA 线程/来源/重启逻辑全部真实。
+- [x] B 二审最终状态定稿：**practice.html/practice-session.html/today.html/qa.html = `e2e-real-pass`**（本轮范围的 A 类纯用户路径全过且缺陷已修复；未验证维度诚实声明但不阻止本阶段升级）。
+- [ ] 后续待补（不阻止本轮收口）：真实 Provider、cram 冲刺会话 A 类全链、真实 OCR/ASR 材料、完整键盘逐键走查、屏幕阅读器验证、plans.html URL plan_id 怪癖修复。
