@@ -7,16 +7,155 @@
 </head>
 <body><div class="app-shell"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/today.html">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header>
 <main class="main"><p class="eyebrow">材料详情</p><h1 id="title">加载材料…</h1><p id="state" class="muted" role="status" aria-live="polite"></p>
-<div class="grid"><section class="card span-8" data-od-id="material-detail-content"><h2>材料信息</h2><div id="content" class="stack"><div class="notice">正在加载材料详情...</div></div><section class="material-body"><h2>解析正文</h2><div id="body-location" class="notice muted" hidden role="status"></div><pre id="body" class="material-text">正文将在材料加载后显示。</pre></section></section>
-<aside class="card span-4" data-od-id="material-detail-actions"><h2>操作</h2><div class="stack"><div class="action-group"><a id="qa" class="btn btn-primary" href="/app/qa.html">进入问答</a><button id="index" class="btn" type="button">建立 AI 索引</button><button id="export-original" class="btn" type="button">下载原文件</button><button id="export-text" class="btn" type="button">导出解析文本</button></div><div id="index-status" class="notice muted" role="status" aria-live="polite">正在检查索引状态…</div><a class="btn" href="/app/materials.html">返回资料库</a></div></aside></div></main></div>
+<div class="grid"><section class="card span-8" data-od-id="material-detail-content"><h2>材料信息</h2><div id="content" class="stack"><div class="notice">正在加载材料详情...</div></div><section class="material-body"><h2>处理状态</h2><dl id="pipeline" class="meta-grid"><dt>导入</dt><dd id="stage-import">等待材料加载…</dd><dt>解析</dt><dd id="stage-parse">等待材料加载…</dd><dt>索引</dt><dd id="stage-index">等待材料加载…</dd></dl></section><section class="material-body"><h2>解析正文</h2><div id="body-location" class="notice muted" hidden role="status"></div><pre id="body" class="material-text">正文将在材料加载后显示。</pre></section></section>
+<aside class="card span-4" data-od-id="material-detail-actions"><h2>操作</h2><div class="stack"><div class="action-group"><a id="qa" class="btn btn-primary" href="/app/qa.html">进入问答</a><button id="index" class="btn" type="button">建立 AI 索引</button><button id="export-original" class="btn" type="button">下载原文件</button><button id="export-text" class="btn" type="button">导出解析文本</button><button id="refresh-page" class="btn" type="button">刷新状态</button></div><div id="index-status" class="notice muted" role="status" aria-live="polite">正在检查索引状态…</div><a class="btn" href="/app/materials.html">返回资料库</a></div></aside></div>
+<div class="grid mt-24"><section class="card span-4" data-od-id="material-detail-source-candidates"><h2>来源候选</h2><div id="candidate-status" class="notice muted" role="status" aria-live="polite">等待材料加载…</div><ul id="candidates" class="list"></ul><button id="refresh-candidates" class="btn mt-12" type="button" disabled>刷新来源候选</button></section>
+<section class="card span-8" data-od-id="material-detail-plan-links"><h2>计划关联</h2><div id="link-status" class="notice muted" role="status" aria-live="polite">等待材料加载…</div><div id="plan-links" class="stack"></div><form id="link-form" class="stack mt-16" hidden><div class="field"><label for="link-plan">选择草稿计划</label><select id="link-plan" required></select></div><div class="field"><label for="link-item">选择学习项</label><select id="link-item" required></select></div><div class="field"><label for="link-candidate">选择本材料片段</label><select id="link-candidate" required></select></div><button id="link-add" class="btn btn-primary" type="submit" disabled>关联到学习项</button></form><p id="link-hint" class="muted" hidden>只有草稿状态的学习计划可以关联来源；其他状态请先在计划页处理。</p></section></div>
+<section class="card mt-24" data-od-id="material-detail-capabilities"><h2>能力状态</h2><dl id="capability-grid" class="meta-grid"><dt>加载中</dt><dd>等待材料加载…</dd></dl></section></main></div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script>
 <script>(function(){
 const id=new URLSearchParams(location.search).get('material'),citationKey=new URLSearchParams(location.search).get('citation'),request=sbApi.setPageScope('material-detail');
 const title=document.querySelector('#title'),state=document.querySelector('#state'),content=document.querySelector('#content'),body=document.querySelector('#body'),locationNotice=document.querySelector('#body-location'),qa=document.querySelector('#qa'),index=document.querySelector('#index'),indexStatus=document.querySelector('#index-status'),original=document.querySelector('#export-original'),text=document.querySelector('#export-text');let material=null,indexing=false;
 function showState(message,kind){state.className=kind?'error':'muted';state.textContent=message}function showIndex(message,kind){indexStatus.className='notice '+(kind||'muted');indexStatus.textContent=message}function label(value){return sbState.label(value||'unknown')}function disableActions(){qa.removeAttribute('href');index.disabled=true;original.disabled=true;text.disabled=true}
 function renderBody(value,start,end){body.replaceChildren();const source=typeof value==='string'?value:'';if(typeof start!=='number'||typeof end!=='number'||start<0||end<start||end>source.length){body.textContent=source||'没有可显示的正文';return}body.append(document.createTextNode(source.slice(0,start)));const mark=document.createElement('mark');mark.className='citation-highlight';mark.id='citation-location';mark.textContent=source.slice(start,end);body.append(mark,document.createTextNode(source.slice(end)));requestAnimationFrame(()=>mark.scrollIntoView({block:'center',inline:'nearest'}))}
-function renderMaterial(row){const name=typeof row.original_name==='string'?row.original_name:(typeof row.display_name==='string'?row.display_name:'材料详情');title.textContent=name;showState('材料已加载');const meta=document.createElement('dl');meta.className='meta-grid';for(const [key,value] of [['解析状态',label(row.status)],['解析器',row.parser_id||'未知'],['文件类型',row.media_type||'未知'],['文本长度',(row.text_length||0)+' 字符'],['片段数量',(row.span_count||0)+' 个']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;meta.append(dt,dd)}if(row.indexed_at){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='索引时间';dd.textContent=new Date(row.indexed_at).toLocaleString('zh-CN');meta.append(dt,dd)}if(Array.isArray(row.warnings)&&row.warnings.length){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='解析提示';dd.className='warn';dd.textContent=row.warnings.join('；');meta.append(dt,dd)}if(row.status==='empty'){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='下一步';dd.className='warn';dd.textContent=row.media_type==='application/pdf'?'此 PDF 没有可提取的文字层。请先使用 OCR 生成可搜索 PDF，或上传 UTF-8 文本。':'文件中没有可提取的正文。请确认内容不是仅图片、文本框或嵌入对象，再转换为 PDF 或纯文本重试。';meta.append(dt,dd)}if(row.status==='rejected'||row.status==='failed'){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='下一步';dd.className='warn';dd.textContent=(row.error_code?sbApi.safeError({code:row.error_code}):'解析失败')+'。请转换或修复文件后重新导入。';meta.append(dt,dd)}content.replaceChildren(meta);renderBody(row.text)}
-async function refreshIndex(){try{const data=await sbApi.json('/api/materials/'+encodeURIComponent(id)+'/ai-index',{signal:request.signal});const status=data.status||'unknown';showIndex(status==='ready'?'AI 索引已建立，可用于问答':status==='empty'?'材料没有可用于问答的正文':'当前索引状态：'+label(status),status==='ready'?'status-ready':'muted')}catch(error){showIndex('索引状态暂不可用','warn')}}
+function renderMaterial(row){const name=typeof row.original_name==='string'?row.original_name:(typeof row.display_name==='string'?row.display_name:'材料详情');title.textContent=name;showState('材料已加载');const meta=document.createElement('dl');meta.className='meta-grid';for(const [key,value] of [['解析状态',label(row.status)],['解析器',row.parser_id||'未知'],['文件类型',row.media_type||'未知'],['文本长度',(row.text_length||0)+' 字符'],['片段数量',(row.span_count||0)+' 个']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;meta.append(dt,dd)}if(row.indexed_at){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='索引时间';dd.textContent=new Date(row.indexed_at).toLocaleString('zh-CN');meta.append(dt,dd)}if(Array.isArray(row.warnings)&&row.warnings.length){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='解析提示';dd.className='warn';dd.textContent=row.warnings.join('；');meta.append(dt,dd)}if(row.status==='empty'){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='下一步';dd.className='warn';dd.textContent=row.media_type==='application/pdf'?'此 PDF 没有可提取的文字层。请先使用 OCR 生成可搜索 PDF，或上传 UTF-8 文本。':'文件中没有可提取的正文。请确认内容不是仅图片、文本框或嵌入对象，再转换为 PDF 或纯文本重试。';meta.append(dt,dd)}if(row.status==='rejected'||row.status==='failed'){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='下一步';dd.className='warn';dd.textContent=(row.error_code?sbApi.safeError({code:row.error_code}):'解析失败')+'。请转换或修复文件后重新导入。';meta.append(dt,dd)}content.replaceChildren(meta);renderBody(row.text);document.dispatchEvent(new CustomEvent('sb-material-loaded',{detail:row}))}
+async function refreshIndex(){try{const data=await sbApi.json('/api/materials/'+encodeURIComponent(id)+'/ai-index',{signal:request.signal});const status=data.status||'unknown';showIndex(status==='ready'?'AI 索引已建立，可用于问答':status==='empty'?'材料没有可用于问答的正文':'当前索引状态：'+label(status),status==='ready'?'status-ready':'muted');document.dispatchEvent(new CustomEvent('sb-index-updated',{detail:data}))}catch(error){showIndex('索引状态暂不可用','warn')}}
 async function locateCitation(){if(!citationKey)return;locationNotice.hidden=false;locationNotice.className='notice muted';locationNotice.textContent='正在定位引用…';try{const citation=await sbApi.json('/api/qa/citations/'+encodeURIComponent(citationKey),{signal:request.signal});if(citation.material_id!==id){locationNotice.className='notice warn';locationNotice.textContent='该引用不属于当前材料。';return}if(citation.status!=='valid'){locationNotice.className='notice warn';locationNotice.textContent=citation.status==='source_deleted'?'引用来源已删除，无法定位正文。':'引用来源当前不可用。';return}renderBody(material.text,citation.start_offset,citation.end_offset);locationNotice.className='notice status-ready';locationNotice.textContent='已定位引用来源'+(citation.excerpt?'：'+citation.excerpt:'');}catch(error){locationNotice.className='notice warn';locationNotice.textContent='引用定位失败，可返回问答历史重试。'}}
 index.onclick=async()=>{if(indexing)return;indexing=true;index.disabled=true;showIndex('正在建立 AI 索引…');try{await sbApi.json('/api/materials/'+encodeURIComponent(id)+'/ai-index',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},signal:request.signal});await refreshIndex()}catch(error){showIndex(sbApi.safeError(error)+' 可重试。','warn')}finally{indexing=false;index.disabled=false}};
-async function load(){if(!id){title.textContent='缺少材料标识';showState('请从资料库进入材料详情。');disableActions();showIndex('需要先选择材料。','warn');return}qa.href='/app/qa.html?material='+encodeURIComponent(id);try{material=await sbApi.json('/api/materials/'+encodeURIComponent(id),{signal:request.signal});renderMaterial(material);await Promise.all([refreshIndex(),locateCitation()]);original.onclick=()=>{location.href='/api/materials/'+encodeURIComponent(id)+'/original'};text.onclick=()=>{location.href='/api/materials/'+encodeURIComponent(id)+'/text'}}catch(error){title.textContent='材料不可用';showState(sbApi.safeError(error),true);content.replaceChildren(Object.assign(document.createElement('div'),{className:'notice warn',textContent:'该材料可能已删除、恢复中或当前不可访问。请返回资料库重试。'}));body.textContent='正文不可用。';disableActions();showIndex('索引状态不可用。','warn')}}load()})();</script></body></html>
+async function load(){if(!id){title.textContent='缺少材料标识';showState('请从资料库进入材料详情。');disableActions();showIndex('需要先选择材料。','warn');return}qa.href='/app/qa.html?material='+encodeURIComponent(id);try{material=await sbApi.json('/api/materials/'+encodeURIComponent(id),{signal:request.signal});renderMaterial(material);await Promise.all([refreshIndex(),locateCitation()]);original.onclick=()=>{location.href='/api/materials/'+encodeURIComponent(id)+'/original'};text.onclick=()=>{location.href='/api/materials/'+encodeURIComponent(id)+'/text'}}catch(error){title.textContent='材料不可用';showState(sbApi.safeError(error),true);content.replaceChildren(Object.assign(document.createElement('div'),{className:'notice warn',textContent:'该材料可能已删除、恢复中或当前不可访问。请返回资料库重试。'}));body.textContent='正文不可用。';disableActions();showIndex('索引状态不可用。','warn');document.dispatchEvent(new CustomEvent('sb-material-error'))}}load()})();
+</script>
+<script>
+(function(){
+const id=new URLSearchParams(location.search).get('material'),request=sbApi.setPageScope('material-detail-extra');
+const stageImport=document.querySelector('#stage-import'),stageParse=document.querySelector('#stage-parse'),stageIndex=document.querySelector('#stage-index');
+const candidateStatus=document.querySelector('#candidate-status'),candidatesRoot=document.querySelector('#candidates'),refreshCandidates=document.querySelector('#refresh-candidates');
+const linkStatus=document.querySelector('#link-status'),planLinksRoot=document.querySelector('#plan-links'),linkForm=document.querySelector('#link-form'),linkPlan=document.querySelector('#link-plan'),linkItem=document.querySelector('#link-item'),linkCandidate=document.querySelector('#link-candidate'),linkAdd=document.querySelector('#link-add'),linkHint=document.querySelector('#link-hint');
+const capGrid=document.querySelector('#capability-grid'),refreshPage=document.querySelector('#refresh-page');
+const text=v=>typeof v==='string'?v:'';
+const json=(url,options)=>sbApi.json(url,Object.assign({signal:request.signal},options||{}));
+const fmt=v=>{if(typeof v!=='string'||!v)return'未知';const d=new Date(v);return isNaN(d)?'未知':d.toLocaleString('zh-CN')};
+let candidates=[],links=[],plans=[],modules=[],caps=null,material=null,indexInfo=null,busy=false;
+function setNotice(node,message,kind){node.className='notice'+(kind?' '+kind:'');node.textContent=message}
+function capRow(key,value){const dt=document.createElement('dt');dt.textContent=key;const dd=document.createElement('dd');dd.textContent=value;capGrid.append(dt,dd)}
+function capText(status){return({available:'可用',not_configured:'未配置',disabled:'已关闭',not_installed:'未安装',degraded:'降级可用'})[status]||'状态未知'}
+if(!id){
+[stageImport,stageParse,stageIndex].forEach(node=>{node.textContent='需要先选择材料。'});
+setNotice(candidateStatus,'需要先选择材料。','warn');setNotice(linkStatus,'需要先选择材料。','warn');
+refreshCandidates.disabled=true;linkForm.hidden=true;refreshPage.disabled=true;
+capGrid.replaceChildren();capRow('提示','请从资料库进入材料详情。');return}
+refreshPage.onclick=()=>location.reload();
+function renderStages(){
+if(!material)return;
+stageImport.textContent='已导入 · '+fmt(material.created_at);
+const textLength=typeof material.text==='string'?material.text.length:0;
+const textReady=material.status==='success'&&textLength>0;
+stageParse.textContent=sbState.label(material.status)+' · '+(textReady?'文本可用，'+textLength+' 字符':'文本不可用')+' · 更新 '+fmt(material.updated_at);
+if(indexInfo){const s=indexInfo.status||'unknown';
+stageIndex.textContent=(s==='deleted'?'来源已删除':sbState.label(s))+' · 片段 '+(indexInfo.chunk_count||0)+' 个 · 更新 '+fmt(material.updated_at)}
+}
+function renderCandidates(){
+const mine=candidates.filter(item=>item.material_id===id);
+candidatesRoot.replaceChildren();
+if(!mine.length){const li=document.createElement('li');li.className='muted';li.textContent='暂无来源候选。需要先完成解析并建立索引。';candidatesRoot.append(li);return}
+mine.forEach(item=>{const li=document.createElement('li');li.textContent='片段 '+(Number(item.chunk_index)+1)+' · 修订 '+text(item.revision_id).slice(0,8);candidatesRoot.append(li)})
+}
+async function loadCandidates(){
+setNotice(candidateStatus,'正在加载来源候选…');
+try{candidates=await json('/api/study/source-candidates');renderCandidates();
+if(!linkForm.hidden)renderLinkCandidates();
+setNotice(candidateStatus,candidates.some(item=>item.material_id===id)?'已加载来源候选。':'暂无来源候选（需要先建立索引）。');
+refreshCandidates.disabled=false}
+catch(error){setNotice(candidateStatus,'来源候选加载失败：'+sbApi.safeError(error)+' 可重试。','warn');refreshCandidates.disabled=false}
+}
+refreshCandidates.onclick=async()=>{
+if(busy)return;busy=true;refreshCandidates.disabled=true;setNotice(candidateStatus,'正在刷新来源候选…');
+try{await json('/api/study/sources/refresh',{method:'POST'});await loadCandidates();await loadLinks()}
+catch(error){setNotice(candidateStatus,sbApi.safeError(error)+' 可重试。','warn')}
+finally{busy=false;refreshCandidates.disabled=false}
+};
+function itemIndex(){const map={};plans.forEach(plan=>{(plan.items||[]).forEach(item=>{map[item.id]={item,plan}})});return map}
+function renderLinks(){
+const mine=links.filter(link=>link.material_id===id);
+planLinksRoot.replaceChildren();
+const map=itemIndex();
+if(!mine.length){planLinksRoot.append(Object.assign(document.createElement('p'),{className:'muted',textContent:'还没有计划学习项关联此材料。'}))}
+mine.forEach(link=>{
+const row=document.createElement('div');row.className='plan-item-entry';
+const info=map[link.plan_item_id];
+const name=info?'学习项：'+text(info.item.title)+'（计划：'+text(info.plan.title)+'）':link.module_id?'模块：'+text((modules.find(m=>m.id===link.module_id)||{}).title):'学习项：'+text(link.plan_item_id);
+row.append(Object.assign(document.createElement('span'),{textContent:name}));
+row.append(Object.assign(document.createElement('span'),{className:'muted',textContent:'来源：'+sbState.source(link.status)}));
+const del=document.createElement('button');del.className='btn';del.type='button';del.textContent='取消关联';
+del.onclick=async()=>{
+if(busy)return;busy=true;del.disabled=true;setNotice(linkStatus,'正在取消关联…');
+try{const path=info?'/api/study/plans/'+encodeURIComponent(info.plan.id)+'/items/'+encodeURIComponent(link.plan_item_id)+'/sources/'+encodeURIComponent(link.id):'/api/study/modules/'+encodeURIComponent(link.module_id)+'/sources/'+encodeURIComponent(link.id);
+await json(path,{method:'DELETE'});setNotice(linkStatus,'已取消关联。','status-ready');await loadLinks()}
+catch(error){setNotice(linkStatus,sbApi.safeError(error)+' 可重试。','warn')}
+finally{busy=false;del.disabled=false}};
+row.append(del);planLinksRoot.append(row)});
+renderLinkForm();
+}
+function renderLinkForm(){
+const draftPlans=plans.filter(plan=>plan.status==='draft');
+linkHint.hidden=!plans.some(plan=>plan.status!=='archived'&&plan.status!=='draft');
+linkForm.hidden=!draftPlans.length;
+if(linkForm.hidden)return;
+const previous=linkPlan.value;
+linkPlan.replaceChildren();
+draftPlans.forEach(plan=>linkPlan.append(new Option(text(plan.title)||'未命名计划',plan.id)));
+if(previous&&draftPlans.some(plan=>plan.id===previous))linkPlan.value=previous;
+renderLinkItems();
+}
+function renderLinkItems(){
+const plan=plans.find(item=>item.id===linkPlan.value);
+linkItem.replaceChildren();
+((plan&&plan.items)||[]).filter(item=>item.status!=='archived'&&item.status!=='completed').forEach(item=>linkItem.append(new Option(text(item.title)||'未命名学习项',item.id)));
+renderLinkCandidates();
+}
+function renderLinkCandidates(){
+linkCandidate.replaceChildren();
+candidates.filter(item=>item.material_id===id).forEach(item=>linkCandidate.append(new Option('片段 '+(Number(item.chunk_index)+1),item.chunk_id)));
+updateLinkAdd();
+}
+function alreadyLinked(){return links.some(link=>link.material_id===id&&link.plan_item_id===linkItem.value&&link.chunk_id===linkCandidate.value)}
+function updateLinkAdd(){linkAdd.disabled=!linkPlan.value||!linkItem.value||!linkCandidate.value}
+linkPlan.onchange=renderLinkItems;linkItem.onchange=updateLinkAdd;linkCandidate.onchange=updateLinkAdd;
+linkForm.onsubmit=async event=>{
+event.preventDefault();
+if(busy)return;
+if(alreadyLinked()){setNotice(linkStatus,'该学习项已关联此片段，无需重复添加。','warn');return}
+const info=itemIndex()[linkItem.value],candidate=candidates.find(item=>item.material_id===id&&item.chunk_id===linkCandidate.value);
+if(!info||!candidate){setNotice(linkStatus,'请选择学习项和本材料片段。','warn');return}
+busy=true;linkAdd.disabled=true;setNotice(linkStatus,'正在关联…');
+try{await json('/api/study/plans/'+encodeURIComponent(info.plan.id)+'/items/'+encodeURIComponent(linkItem.value)+'/sources',{method:'POST',body:JSON.stringify({material_id:id,revision_id:candidate.revision_id,extraction_id:candidate.extraction_id,chunk_id:candidate.chunk_id})});
+setNotice(linkStatus,'已关联到学习项。','status-ready');await loadLinks()}
+catch(error){setNotice(linkStatus,sbApi.safeError(error)+' 可重试。','warn')}
+finally{busy=false;updateLinkAdd()}
+};
+async function loadPlans(){[plans,modules]=await Promise.all([json('/api/study/plans'),json('/api/study/modules')])}
+async function loadLinks(){links=await json('/api/study/sources');renderLinks()}
+function renderCapabilities(){
+capGrid.replaceChildren();
+const isPdf=text(material&&material.media_type)==='application/pdf';
+const ocr=caps&&caps.capabilities?caps.capabilities.ocr:null;
+capRow('OCR',isPdf?(ocr?'OCR 组件：'+capText(ocr.status)+(material.status==='empty'?'。此 PDF 没有可提取的文字层，OCR 不可用时请先提供可搜索 PDF 或 UTF-8 文本。':'。扫描件可经 OCR 生成可检索文本。'):'OCR 组件状态未知，可点击"刷新状态"重试。'):'本材料类型不需要 OCR。');
+capRow('ASR','文件材料不涉及音频转写；ASR 用于语音采集导入，本页不适用。');
+if(indexInfo){const s=indexInfo.status;
+capRow('问答',s==='ready'?'可用（范围：本材料），可从"进入问答"使用。':s==='empty'?'不可用：材料没有可用正文。':s==='not_indexed'?'不可用：尚未建立索引。':s==='deleted'?'不可用：来源已删除。':'当前索引状态：'+sbState.label(s)+'，问答可用性以索引完成为准。')}
+capRow('生成与报告','本页不提供卡片/练习生成入口（未在本页验证）；本材料的关联数据可被后续报告统计使用（not_verified）。');
+}
+async function loadCaps(){try{caps=await json('/api/system/capabilities')}catch(error){caps=null}if(material)renderCapabilities()}
+document.addEventListener('sb-material-loaded',event=>{
+material=event.detail;renderStages();renderCapabilities();
+(async()=>{try{await loadPlans();await loadLinks()}catch(error){setNotice(linkStatus,'计划关联加载失败：'+sbApi.safeError(error)+' 可重试。','warn')}})();
+loadCandidates();loadCaps();
+});
+document.addEventListener('sb-index-updated',event=>{indexInfo=event.detail;renderStages();if(material)renderCapabilities()});
+document.addEventListener('sb-material-error',()=>{
+[stageImport,stageParse,stageIndex].forEach(node=>{node.textContent='材料不可用'});
+setNotice(candidateStatus,'材料不可用，来源候选区域停用。','warn');setNotice(linkStatus,'材料不可用，计划关联区域停用。','warn');
+refreshCandidates.disabled=true;linkForm.hidden=true;
+capGrid.replaceChildren();capRow('能力状态','材料不可用，无法评估能力需求。');
+});
+})();
+</script></body></html>

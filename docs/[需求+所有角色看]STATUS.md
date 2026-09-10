@@ -119,3 +119,26 @@ For the authoritative project status, task order, and governing decisions, see [
 - 修复缺陷 2（后端）：`transition_study_plan` 放行 `paused→active`（"恢复计划"此前必然失败），补回归测试。
 - 修复缺陷 3（前端）：busy 解锁不再覆盖计划完成/归档态下的编辑禁用（`busyKeep` 标记）。
 - 行为确认：目标/模块/计划归档后从默认列表移除；进度历史加载横幅为隐藏态残留文本，不影响使用。
+
+## 2026-09-09 plans/plan-detail 七维度重审（A 类纯用户路径 E2E，双层审核规程第一轮）
+
+- 采用"GLM 一审 + GPT 二审"工作规程：测试计划重构为单份七维度文档 `docs/roles/[需求+测试看]UI_TEST_PLAN_PLANS_PAGES.md`（结构/正常路径/错误路径/持久化/边界/响应式键盘/真实链路）。
+- 新增 `backend/tests/browser_plans_plan_detail_userpath.spec.js`（A 类，4 用例）：全部数据经页面 UI 创建、plan_id 从"打开详情"链接获取、含服务真重启持久化、5 档响应式断言+截图留证（H:/studybuddy-test/artifacts/plans-userpath/）、键盘可达性、materials 页导入真实 TXT→索引→来源链接增删全链。
+- 修复缺陷 4（前端）：plans.html 选中计划后列表不高亮（selectPlan 不刷新列表 selected 类），改为按 dataset.planId 原位 toggle，保留焦点。
+- 状态：两页 = `tested`（A 类倾向 e2e-real-pass），待 GPT 二审；回归 browser 4+24 passed，backend 624 passed 3 skipped，源码体积门禁通过。
+
+## 2026-09-09 plans/plan-detail 二审收口（独立复核确认）
+
+- A 类 spec 按二审意见补齐：真实进度持久化（开始学习→记录完成→杀进程重启→验证已完成/进度事件/完成数=1）、来源链接跨服务重启（添加→刷新→重启→验证仍在→删除验证消失）、响应式测试自建独立目标/计划/学习项、详情页 5 档响应式断言、焦点样式自动检查（assertFocusStyle：outline/box-shadow）、页面可见文本敏感信息扫描（traceback/SQL/密钥/Windows 路径）。
+- 删除 test_phase9a_api.py 中重复的 paused→active 回归用例（保留唯一）。
+- 测试计划 A 类状态统一为 `tested`，两页保持 `tested`，未提前标 `e2e-real-pass`（跨计划越权、依赖环后端、真实 Provider、完整人工焦点审查仍 not_verified）。
+- GLM 独立复核（本轮）：复跑 A 类 4/4、B 类 24/24、backend 624 passed 3 skipped、源码体积与 diff-check 通过；同步修正测试计划文档 3 处与代码不一致的口径（来源链接跨重启已单测、焦点样式已自动化、未覆盖清单更新）。
+
+## 2026-09-10 materials → material-detail 详情页增强（A 类纯用户路径 E2E，双层审核规程第一轮 GLM 实现）
+
+- 变更范围（纯前端，无 API/schema/migration/后端 Python 改动）：`backend/app/static/materials.html` 为每条材料新增显式「详情」按钮（button 导航，保留原名称链接与筛选/回收站/批量导出交互）；`backend/app/static/material-detail.html` 新增四个区域：①处理链路状态（导入时间/解析状态与文本可用性/索引状态与 chunk 数，来自真实 API 响应）②来源候选（本材料的 chunk 候选列表 + 显式「刷新来源候选」按钮，走 `POST /api/study/sources/refresh`）③计划关联（展示引用本材料的计划学习项/模块来源链接及其真实状态，支持通过草稿计划+学习项+片段下拉建立关联，前端重复关联防护 + 删除关联；复用既有 source-candidates/sources/link API）④能力状态（OCR 按 media_type 显示真实组件状态 available/not_configured/disabled/状态未知；ASR 明确标注文件材料不适用；问答可用性按索引真实状态；生成/报告标注未在本页验证）。另有页面级「刷新状态」按钮；全部新区域在缺 ID/无效 ID/加载失败时进入明确停用态。
+- 七维度表达：import/parse=真实解析状态+文本可用性（用 `text` 长度判定，修复依赖不存在的 `text_length` 字段的问题）；OCR=PDF 材料显示真实能力状态（空白 PDF 导入如实显示 0/1 且详情页显示「没有可提取的正文」，不伪造成功，不阻塞 TXT）；ASR=文件材料不适用（不伪造）；index=真实 GET ai-index 状态与 chunk_count（修正了文档与实际返回不一致的认知：实际返回 `chunk_count`/status ready|empty|not_indexed|deleted）；Q&A=索引 ready 时明确「可用（范围：本材料）」；generation/report=本页不提供入口，明确标注 not_verified，不声称支持。
+- 新增 A 类纯用户路径 E2E `backend/tests/browser_material_detail_userpath.spec.js`（7 用例）：导入→列表详情按钮→详情页解析状态；建立索引→索引数量→刷新来源候选（含重复刷新幂等）；创建目标/计划/学习项→关联片段→重复关联被拒绝且不产生第二条链接；页面刷新恢复；**服务真重启**后解析/索引/关联全部持久化；无效 ID 与缺 ID 的错误状态（无 traceback/SQL/路径泄露）；无文字层 PDF 的真实 OCR 能力状态展示且 TXT 不受影响。全部数据经页面 UI 创建，无业务 API 直调建数据。
+- 验证：新 spec `7 passed`；materials 相关回归 8 spec `27 passed`（browser_p2_fe3_materials_app/material_management/static_pages/static_core/static_operations/frontend_page_contract/frontend_visual_matrix/p1_4_real_input_restart；沙箱 safe-delete 守卫需 `CODEBUDDY_SAFE_DELETE_ENABLED=0`，为已知环境约束非代码问题）；后端全量 `626 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；`check-source-size.py --base HEAD` 通过（默认 origin/master base 因本地无该 ref 且网络不可达无法解析，环境问题）；`git diff --check` 通过；material-detail.html 21.2KiB / materials.html 17.0KiB，均低于 32KiB 门禁。
+- 修复的页面级缺陷：①来源候选与来源链接加载顺序竞态（候选晚到时关联表单片段下拉为空）②漏调用能力快照加载导致 OCR 状态恒为未知 ③stage-parse 文本可用性误用不存在的 `text_length` 字段。
+- 状态：本页 = `tested`（A 类 7/7 倾向 e2e-real-pass，**待 GPT 二审**后才能标审核通过）。未验证/not_verified：真实 OCR 组件对扫描 PDF 的实际解析质量（本机探测为 available 但未做端到端 OCR 生成文本验证）、ASR 链路（本页不适用）、generation、report 消费、跨材料并发关联、极端长材料渲染性能。
