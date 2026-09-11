@@ -7,7 +7,7 @@ const path = require('path');
 // Rule: no business API calls from test code. All data created via page UI.
 // Chain: create user note -> module link -> edit -> reload -> material import
 //        -> index -> AI draft via material dropdown -> note-detail page ->
-//        confirm / reject -> export -> failure injection -> real restart.
+//        confirm / reject -> export -> archive visibility -> failure injection -> real restart.
 let RUN_ROOT = 'H:/studybuddy-test/runs/notes-userpath';
 const FIXTURES = 'H:/studybuddy-test/fixtures/notes-userpath';
 const ART = 'H:/studybuddy-test/artifacts/notes-userpath';
@@ -287,6 +287,41 @@ test.describe.serial('notes -> note-detail pure user path (A-class)', () => {
     const overflowDetail = await page.evaluate(() => document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth);
     expect(overflowDetail).toBeLessThanOrEqual(1);
     await screenshot(page, 'note-detail-390.png');
+    await assertNoSensitiveVisibleText(page);
+  });
+
+  test('A-E2E-ND-9 归档笔记可从页面重新查看，刷新与重启后仍可访问', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`${BASE}/app/notes.html`);
+    await notesLoaded(page);
+    // Create and archive through the page; the default list must not imply deletion.
+    await page.fill('#new-title', '归档后仍可查阅的笔记');
+    await page.fill('#new-content', '归档内容只读保存，供之后查阅和导出。');
+    await page.click('#create-form button[type=submit]');
+    await expect(page.locator('#note-status')).toContainText('用户笔记已创建', { timeout: 10000 });
+    await page.click('#note-archive');
+    await expect(page.locator('#note-status')).toContainText('笔记已归档', { timeout: 10000 });
+    await expect(page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' })).toHaveCount(0);
+
+    // The filter exposes the persisted archival record through its supported API mode.
+    await page.locator('#show-archived').check();
+    await expect(page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' })).toContainText('已归档', { timeout: 10000 });
+    await page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' }).click({ position: { x: 5, y: 5 } });
+    await expect(page.locator('#note-detail textarea')).toHaveValue('归档内容只读保存，供之后查阅和导出。');
+    await expect(page.locator('#note-detail textarea')).toBeDisabled();
+    await page.reload();
+    await notesLoaded(page);
+    await expect(page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' })).toHaveCount(1);
+
+    // A server restart must preserve the archived note and the UI must make it reachable again.
+    await stopServer();
+    server = startServer();
+    await ready();
+    await page.goto(`${BASE}/app/notes.html`);
+    await notesLoaded(page);
+    await expect(page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' })).toHaveCount(0);
+    await page.locator('#show-archived').check();
+    await expect(page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' })).toHaveCount(1, { timeout: 10000 });
     await assertNoSensitiveVisibleText(page);
   });
 });
