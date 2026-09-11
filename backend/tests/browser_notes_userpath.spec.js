@@ -255,7 +255,6 @@ test.describe.serial('notes -> note-detail pure user path (A-class)', () => {
     await page.waitForURL(/note-detail\.html/);
     await expect(page.locator('#note-detail')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#note-detail')).toContainText(/引用：ctx-/);
-    await expect(page.locator('#note-detail')).toContainText('生物基础模块').catch(() => {});
     await screenshot(page, 'note-detail-after-restart.png');
     await assertNoSensitiveVisibleText(page);
   });
@@ -272,9 +271,14 @@ test.describe.serial('notes -> note-detail pure user path (A-class)', () => {
     await page.goto(`${BASE}/app/notes.html`);
     await notesLoaded(page);
     const firstItem = page.locator('#notes .note-item').first();
+    // Real contract: pressing Enter on the focused list item opens THAT item.
+    // Read the item's own title from its leading text node (the <li> also
+    // contains a child "详情" button, so innerText alone would be ambiguous).
+    const firstTitle = await firstItem.evaluate(el => el.firstChild.nodeValue.split(' · ').pop().trim());
+    expect(firstTitle).toBeTruthy();
     await firstItem.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('#detail-title')).toContainText(/Notes on|光合作用/, { timeout: 10000 });
+    await expect(page.locator('#detail-title')).toHaveText(firstTitle, { timeout: 10000 });
     await page.locator('#notes .note-item', { hasText: 'AI 草稿' }).first().getByRole('button', { name: /打开笔记详情页/ }).focus();
     await page.keyboard.press('Enter');
     await page.waitForURL(/note-detail\.html/);
