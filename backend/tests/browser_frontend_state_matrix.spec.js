@@ -46,7 +46,7 @@ test('plan and note detail display source degradation as user labels',async({pag
   await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'计划',items:[{id:'item-1',title:'学习项'}],source_links:[{id:'link-1',plan_item_id:'item-1',status:'source_deleted'}]});
   await page.goto(`${BASE}/app/plans.html`);await page.locator('#plans .plan-item').click();await expect(page.locator('#plan-detail')).toContainText('来源: 来源已删除');
   await page.unrouteAll({behavior:'ignoreErrors'});
-  await mock(page,'**/api/study/notes',[{id:'note-1',title:'笔记',note_type:'ai_draft'}]);
-  await mock(page,'**/api/study/notes/note-1',{id:'note-1',title:'笔记',note_type:'ai_draft',source_citation_status:'source_unavailable'});
-  await page.goto(`${BASE}/app/notes.html`);await page.locator('#notes .note-item').click();await expect(page.locator('#note-detail')).toContainText('来源状态: 来源不可用');
+  await mock(page,'**/api/study/notes',[{id:'note-1',title:'笔记',provenance:'ai_generated',status:'draft'}]);
+  await mock(page,'**/api/study/notes/note-1',{id:'note-1',title:'笔记',status:'draft',provenance:'ai_generated',blocks:[{block_kind:'text',content:'内容',sources:[{citation_key:'ctx-a',status:'source_unavailable'}]}],modules:[],source_warning_count:1});
+  await page.goto(`${BASE}/app/notes.html`);await page.locator('#notes .note-item').click({position:{x:5,y:5}});await expect(page.locator('#note-detail')).toContainText('来源状态: 来源不可用');
 });

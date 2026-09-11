@@ -426,6 +426,14 @@ def create_note(connection: sqlite3.Connection, *, project_id: str, title: objec
     note_id = f"note_{uuid.uuid4().hex}"
     now = utc_now()
     with connection:
+        # Lazily ensure the default project row like the plan/module domains do
+        # (create_learning_goal / create_knowledge_module): a fresh data root has
+        # no projects row, and requiring one made the very first note creation
+        # fail with study_note_invalid_payload.
+        connection.execute(
+            "INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)",
+            (project_id, "Default project", now),
+        )
         if not _study_project_exists(connection, project_id):
             raise ValueError("study_note_invalid_payload")
         if provenance == "ai_generated" and connection.execute(

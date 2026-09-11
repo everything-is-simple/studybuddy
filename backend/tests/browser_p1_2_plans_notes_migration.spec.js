@@ -157,10 +157,13 @@ test('P1-2 notes page creates, edits, confirms and archives a user note',async({
 });
 
 test('P1-2 note generation keeps provider and source failures user-facing',async({page})=>{
+  const materialId=await createMaterial(page);
   await page.goto(`${BASE}/app/notes.html`);
+  const option=page.locator('#material-select option',{hasText:'p1-2-source.txt'});
+  await expect(option).toHaveCount(1,{timeout:10000});
   await page.locator('#topic').fill('材料摘要');
-  await page.locator('#material-id').fill('missing-material');
+  await page.selectOption('#material-select',materialId);
   await page.getByRole('button',{name:'生成 AI 草稿'}).click();
-  await expect(page.locator('#note-status')).toContainText('笔记操作失败，可重试');
+  await expect(page.locator('#note-status')).toContainText('笔记操作失败，可重试',{timeout:15000});
   await expect(page.locator('body')).not.toContainText(/provider_not_configured|traceback|H:\\|SELECT/i);
 });
