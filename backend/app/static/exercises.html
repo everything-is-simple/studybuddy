@@ -30,14 +30,14 @@
 <form id="set-create-form" class="stack"><input id="new-set-title" placeholder="新练习集名称" required><button class="btn btn-primary" type="submit">创建练习集</button></form>
 <div id="set-status" class="notice" role="status" aria-live="polite">正在加载练习集...</div>
 <ul id="sets" class="set-list"></ul>
-<button class="btn" id="refresh-sets" type="button" class="mt-12">刷新列表</button>
+<button class="btn mt-12" id="refresh-sets" type="button">刷新列表</button>
 </section>
 
 <section class="card span-8" data-od-id="exercises-detail">
 <h2 id="set-title">选择练习集</h2>
 <div id="set-summary" class="muted" hidden></div>
 <button id="retry-set-detail" class="btn mt-12" type="button" hidden>重试练习集详情</button>
-<div id="set-actions" class="stack" hidden><form id="exercise-create-form" class="stack"><select id="new-exercise-type"><option value="short_answer">简答题</option><option value="multiple_choice">选择题</option><option value="true_false">判断题</option></select><input id="new-exercise-prompt" placeholder="题目" required><input id="new-exercise-answer" placeholder="答案" required><button class="btn" type="button">创建题目</button></form><form id="exercise-generate-form" class="stack"><input id="exercise-topic" placeholder="AI 草稿主题" required><input id="exercise-material-ids" placeholder="材料 ID（逗号分隔）" required><button class="btn" type="submit">生成题目草稿</button></form></div>
+<div id="set-actions" class="stack" hidden><form id="exercise-create-form" class="stack"><select id="new-exercise-type"><option value="short_answer">简答题</option><option value="multiple_choice">选择题</option><option value="true_false">判断题</option></select><input id="new-exercise-prompt" placeholder="题目" required><input id="new-exercise-answer" placeholder="答案" required><button class="btn" type="submit">创建题目</button></form><form id="exercise-generate-form" class="stack"><input id="exercise-topic" placeholder="AI 草稿主题" required><input id="exercise-material-ids" placeholder="材料 ID（逗号分隔）" required><button class="btn" type="submit">生成题目草稿</button></form></div>
 <div id="exercise-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="exercise-detail" class="stack"></div>
 <ul id="exercises" class="exercise-list" hidden></ul>
@@ -220,49 +220,31 @@ statusBadge.className='status-badge '+(exercise.status||'draft');
 statusBadge.textContent=sbState.label(exercise.status||'draft');
 status.append(statusBadge);
 container.append(status);
-if(exercise.citation_keys&&exercise.citation_keys.length){
+if(Array.isArray(exercise.citations)&&exercise.citations.length){
+// The API returns a citations array (citation_key + status); the legacy
+// citation_keys field never existed, so source info was previously invisible.
 const citations=document.createElement('div');
 citations.className='mt-12';
 citations.innerHTML='<strong>引用来源：</strong>';
-exercise.citation_keys.forEach(key=>{
-const link=document.createElement('a');
-link.href='#';
-link.textContent=key;
-link.className='citation-link';
-link.onclick=e=>{e.preventDefault();alert('Citation: '+key)};
-citations.append(link)
+exercise.citations.forEach(citation=>{
+const row=document.createElement('div');
+row.className='citation-link';
+const statusSuffix=citation.status&&citation.status!=='valid'?`（${sbState.source(citation.status)}）`:'';
+row.textContent=`${sbList.text(citation.citation_key)||'引用'}${statusSuffix}`;
+citations.append(row)
 });
 container.append(citations)
 }
 if(exercise.status==='draft'){
-const actions=document.createElement('div');
-actions.className='mt-16';
-const confirmBtn=document.createElement('button');
-confirmBtn.className='btn btn-primary';
-confirmBtn.textContent='确认题目';
-confirmBtn.onclick=()=>confirmExercise(exerciseId);
-actions.append(confirmBtn);
-container.append(actions)
-}
-if(exercise.status==='draft'){container.append(await editExercise(exercise),button('确认题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/confirm',{method:'POST',signal:pageRequest.signal}),'题目已确认')),button('拒绝题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/reject',{method:'POST',signal:pageRequest.signal}),'题目已拒绝')))}if(exercise.status!=='archived')container.append(button('归档题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/archive',{method:'POST',signal:pageRequest.signal}),'题目已归档')));if(exercise.status==='ready')container.append(button('开始作答',()=>{location.href='/app/practice.html?exercise_id='+encodeURIComponent(exercise.id)}));exerciseDetail.append(container)
+// Single confirm entry: inline mutate keeps one error path and one button.
+container.append(await editExercise(exercise),button('确认题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/confirm',{method:'POST',signal:pageRequest.signal}),'题目已确认')),button('拒绝题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/reject',{method:'POST',signal:pageRequest.signal}),'题目已拒绝')))}if(exercise.status!=='archived')container.append(button('归档题目',()=>mutate(()=>sbApi.json('/api/study/exercises/'+encodeURIComponent(exercise.id)+'/archive',{method:'POST',signal:pageRequest.signal}),'题目已归档')));if(exercise.status==='ready')container.append(button('开始作答',()=>{location.href='/app/practice.html?exercise_id='+encodeURIComponent(exercise.id)}));exerciseDetail.append(container)
 }catch(e){
 exerciseStatus.className='notice warn';
 exerciseStatus.textContent=sbApi.safeError(e)
 }
 }
 
-async function confirmExercise(exerciseId){
-if(!confirm('确认此题目？确认后不可编辑。'))return;
-try{
-await sbApi.json(`/api/study/exercises/${encodeURIComponent(exerciseId)}/confirm`,{method:'POST'});
-alert('题目已确认');
-viewExercise(exerciseId)
-}catch(e){
-alert(sbApi.safeError(e))
-}
-}
-
-retrySetDetail.addEventListener('click',()=>{if(selectedSetId)loadSetDetail(selectedSetId)});document.querySelector('#set-create-form button').onclick=()=>mutate(()=>sbApi.json('/api/study/exercise-sets',{method:'POST',body:JSON.stringify({title:document.querySelector('#new-set-title').value}),signal:pageRequest.signal}),'练习集已创建');document.querySelector('#exercise-create-form button').onclick=()=>{const type=document.querySelector('#new-exercise-type').value,raw=document.querySelector('#new-exercise-answer').value;let answer=raw;if(type==='multiple_choice')answer=Number(raw);if(type==='true_false')answer=raw.toLowerCase()==='true';mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/exercises',{method:'POST',body:JSON.stringify({exercise_type:type,prompt:document.querySelector('#new-exercise-prompt').value,options:type==='multiple_choice'?['选项 A','选项 B']:[],answer_key:answer,explanation:'',citations:[],exercise_kind:'user_created'}),signal:pageRequest.signal}),'题目已创建')};document.querySelector('#exercise-generate-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/generate',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({topic:document.querySelector('#exercise-topic').value,material_ids:document.querySelector('#exercise-material-ids').value.split(',').map(value=>value.trim()).filter(Boolean),count:1,exercise_type:'multiple_choice'}),signal:pageRequest.signal}),'题目草稿已生成')};refreshSets.addEventListener('click',loadSets);
+retrySetDetail.addEventListener('click',()=>{if(selectedSetId)loadSetDetail(selectedSetId)});document.querySelector('#set-create-form button').onclick=()=>mutate(()=>sbApi.json('/api/study/exercise-sets',{method:'POST',body:JSON.stringify({title:document.querySelector('#new-set-title').value}),signal:pageRequest.signal}),'练习集已创建');document.querySelector('#exercise-create-form').onsubmit=event=>{event.preventDefault();const type=document.querySelector('#new-exercise-type').value,raw=document.querySelector('#new-exercise-answer').value;let answer=raw;if(type==='multiple_choice')answer=Number(raw);if(type==='true_false')answer=raw.toLowerCase()==='true';mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/exercises',{method:'POST',body:JSON.stringify({exercise_type:type,prompt:document.querySelector('#new-exercise-prompt').value,options:type==='multiple_choice'?['选项 A','选项 B']:[],answer_key:answer,explanation:'',citations:[],exercise_kind:'user_created'}),signal:pageRequest.signal}),'题目已创建')};document.querySelector('#exercise-generate-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/generate',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({topic:document.querySelector('#exercise-topic').value,material_ids:document.querySelector('#exercise-material-ids').value.split(',').map(value=>value.trim()).filter(Boolean),count:1,exercise_type:'multiple_choice'}),signal:pageRequest.signal}),'题目草稿已生成')};refreshSets.addEventListener('click',loadSets);
 loadSets()
 })();
 </script>
