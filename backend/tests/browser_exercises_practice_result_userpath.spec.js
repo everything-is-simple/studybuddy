@@ -307,6 +307,31 @@ test.describe.serial('exercises + practice-result pure user path (A-class)', () 
     await page.locator('#refresh-sets').click();
     await expect(page.locator('#sets .set-item', { hasText: SET_TITLE })).toBeVisible({ timeout: 15000 });
 
+    // Refresh failure must remain visible even after a previously successful load.
+    await page.route('**/api/study/exercise-sets', route => route.fulfill({
+      status: 500, contentType: 'application/json',
+      body: JSON.stringify({ detail: 'private_refresh_error', traceback: 'hidden-traceback' }),
+    }));
+    await page.locator('#refresh-sets').click();
+    await expect(page.locator('#set-status')).toContainText('请求失败，请重试', { timeout: 15000 });
+    await assertNoSensitiveVisibleText(page);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.locator('#refresh-sets').click();
+    await expect(page.locator('#sets .set-item', { hasText: SET_TITLE })).toBeVisible({ timeout: 15000 });
+
+    // The exercise list has its own failure/retry path, independent of set detail.
+    await page.route(/\/api\/study\/exercises\?set_id=/, route => route.fulfill({
+      status: 500, contentType: 'application/json',
+      body: JSON.stringify({ detail: 'private_backend_error', traceback: 'hidden-traceback' }),
+    }));
+    await page.locator('#sets .set-item', { hasText: SET_TITLE }).click();
+    await expect(page.locator('#exercise-status')).toContainText('请求失败，请重试', { timeout: 15000 });
+    await expect(page.locator('#retry-exercises')).toBeVisible();
+    await assertNoSensitiveVisibleText(page);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.locator('#retry-exercises').click();
+    await expect(page.locator('#exercises')).toContainText(MC_EDITED, { timeout: 15000 });
+
     await page.route('**/api/study/exercise-sets/*', route => route.fulfill({
       status: 500, contentType: 'application/json',
       body: JSON.stringify({ detail: 'private_backend_error', traceback: 'hidden-traceback' }),
