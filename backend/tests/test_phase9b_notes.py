@@ -225,3 +225,22 @@ def test_note_generation_persistence_rollback_and_user_note_protection(tmp_path:
             )
         fail_note_generation_operation(connection, operation_id=pending["operation_id"], error_code="study_note_generation_stale_source")
         assert connection.execute("SELECT source_revision FROM ai_operations WHERE id=?", (pending["operation_id"],)).fetchone()[0] == revision_id
+
+
+def test_first_user_note_on_fresh_database_succeeds(tmp_path: Path):
+    """Regression: a fresh data root has no projects row; the very first user
+    note must lazily create the default project instead of failing with
+    study_note_invalid_payload (plan/module domains already did this)."""
+    with connect(tmp_path / "studybuddy.sqlite3") as connection:
+        assert connection.execute("SELECT COUNT(*) FROM projects").fetchone()[0] == 0
+        note = create_user_note(
+            connection, project_id="project_fresh_notes", title="First note",
+            blocks=[{"block_kind": "text", "content": "Fresh root body"}],
+        )
+        assert note["title"] == "First note"
+        assert note["status"] == "draft"
+        assert connection.execute(
+            "SELECT 1 FROM projects WHERE id=?", ("project_fresh_notes",)
+        ).fetchone() is not None
+        detail = get_note(connection, project_id="project_fresh_notes", note_id=note["id"])
+        assert detail["blocks"][0]["content"] == "Fresh root body"

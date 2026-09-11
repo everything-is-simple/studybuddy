@@ -20,7 +20,7 @@ test('A3-PAGES plan and note details render safe source lifecycle and return nav
   await page.getByRole('link',{name:'返回计划'}).click();
   await expect(page).toHaveURL(/\/app\/plans\.html$/);
   await page.unrouteAll({behavior:'ignoreErrors'});
-  await mock(page,'**/api/study/notes/note-1',{id:'note-1',title:'复习笔记',note_type:'ai_draft',content:'安全的笔记内容',citation_keys:['ctx-safe'],source_citation_status:'source_unavailable'});
+  await mock(page,'**/api/study/notes/note-1',{id:'note-1',title:'复习笔记',status:'draft',provenance:'ai_generated',user_edited:0,blocks:[{block_kind:'text',content:'安全的笔记内容',sources:[{citation_key:'ctx-safe',status:'source_unavailable'}]}],modules:[],source_warning_count:1});
   await page.goto(`${BASE}/app/note-detail.html?note_id=note-1`);
   await expect(page.locator('#note-detail')).toContainText('复习笔记');
   await expect(page.locator('#note-detail')).toContainText('来源状态：来源不可用');

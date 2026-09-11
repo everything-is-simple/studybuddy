@@ -238,3 +238,20 @@ For the authoritative project status, task order, and governing decisions, see [
 - `practice-result.html` = **`e2e-real-pass`**（普通结果真实链路、简答题 pending_review、答错结果→复盘、reload、真重启、失败 retry、0/0、`id` 兼容参数和隐私边界均通过）。
 
 **仍为 `not_verified`**：真实 Provider、真实 OCR/ASR 进入练习链路、cram 创建的 A 类全链、完整人工视觉审查、完整键盘逐键审计、屏幕阅读器。
+
+## 2026-09-11 notes/note-detail A 类纯用户路径审查与功能交付（双层审核规程第一轮 GLM 实现）
+
+- 变更范围：`backend/app/static/notes.html`（12.7KiB）、`backend/app/static/note-detail.html`（4.9KiB）、`backend/app/repositories/_legacy_part_11.py`（26.8KiB，create_note 惰性建默认项目）；无 schema/migration 变化。新增 `backend/tests/browser_notes_userpath.spec.js`（A 类 8 用例）、`backend/tests/test_phase9b_notes.py` 新增 fresh-root 回归；同步修正 3 个使用旧伪造响应形状/已移除输入的既有 spec（browser_a3_pages/browser_frontend_state_matrix/browser_p1_2）。
+- 修复的真实缺陷（按 A 类路径执行顺序发现）：
+  1. 【后端】全新 data root 上第一笔用户笔记创建必然失败（400 `study_note_invalid_payload`）：`create_note` 校验 `_study_project_exists` 但从不惰性创建 projects 行，而计划/模块域（create_learning_goal/create_knowledge_module）都会惰性创建。既有 phase9b 测试先建目标/模块才建笔记，掩盖了该缺陷。修复后 `test_first_user_note_on_fresh_database_succeeds` 回归。
+  2. 【前端】`note-detail.html` 是死页面：全站无任何链接指向它，用户从 UI 无法到达。修复：notes.html 每条笔记新增「详情」按钮（stopPropagation，不触发选中）→ `/app/note-detail.html?note_id=…`。
+  3. 【前端】`note-detail.html` 读取后端不存在的字段（`content`/`note_type`/`material_name`/`module_name`/`citation_keys`/`source_citation_status`），真实 `get_note` 形状为 `provenance`/`blocks[]`(含 `sources[]`)/`modules[]`/`source_warning_count` → **笔记正文在详情页永不渲染**、来源状态恒「未关联来源」。修复：按真实形状渲染正文区块、逐块引用（invalid 引用带状态标注）、知识模块、来源警告、user_edited、派生来源状态。
+  4. 【前端】notes.html 内嵌详情读不存在的 `note.source_citation_status` → 来源状态恒「未关联来源」。修复：从 `blocks[].sources[].status` 派生（无来源=未关联来源，有 invalid=该状态，全 valid=来源有效）。
+  5. 【前端】「生成 AI 草稿」要求手输材料 ID，而材料 ID 在任何页面 UI 都不可见 → 用户路径断裂。修复：改为材料下拉选择（`GET /api/materials?limit=100`，显示真实材料名），加载失败有「重新加载材料列表」出口，未选择/未填主题有显式提示。
+  6. 【前端】生成接口返回 `{status,operation_id,note,replay}` 而页面读顶层 `id` → **生成成功后草稿永不选中展示**。修复：取 `result.note`。
+  7. 【前端】`setBusy(false)` 无差别重新启用所有输入，覆盖 render() 对已确认/已拒绝/已归档笔记的禁用态 → 状态流转后笔记在 UI 上重新「可编辑」（与 plans.html busy 缺陷同类）。修复：`data-busy-keep` 标记保留 render 设置的禁用态。
+  8. 【前端】列表项键盘处理器对冒泡事件无差别 `preventDefault()` → 焦点在「详情」按钮上按 Enter 被吞，**键盘用户无法激活详情按钮**。修复：li 的 onkeydown 仅响应 li 自身为事件目标。
+- 新增 A 类纯用户路径 E2E `browser_notes_userpath.spec.js`（8 passed，两次复跑稳定 30.6s）：全部数据经页面 UI 创建（笔记表单/模块关联/编辑保存/材料 UI 导入→详情页索引→下拉生成草稿→确认/拒绝），无业务 API 直调；覆盖空状态、编辑+刷新恢复、跨页跳转（notes→note-detail→返回）、导出 Markdown 真实下载、失败注入（page.route，列表页与详情页各自安全文案+真实恢复）、无效/缺失 note_id 边界、**服务真重启**持久化（3 条笔记+状态+引用+重启后详情页）、390 窄屏无横向溢出+截图留证（H:/studybuddy-test/artifacts/notes-userpath/ 4 张）、键盘 Enter 选中与激活详情按钮、贯穿敏感可见文本扫描。
+- 测试结果：A 类 spec `8 passed`×2；相关回归 6 spec `18 passed`（a3_pages/state_matrix/phase9b/p1_2/visual_matrix/static_baseline，其中 static_baseline 实测需 ~52s，已加 `test.slow()`（3× 超时），断言未放宽）；后端全量 `629 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke，较基线 +1 为本轮回归）；`audit-frontend-contract.py --strict` = **0 findings**；`check-source-size.py --base HEAD` 通过；`git diff --check` 通过（仅 CRLF 提示）。
+- 七维度状态：`notes.html` = `tested`（A 类全过，倾向 `e2e-real-pass`，待 GPT 二审确认）；`note-detail.html` = `tested`（A 类全过，倾向 `e2e-real-pass`，待 GPT 二审确认）。
+- 未验证/not_verified：真实 Provider（生成全为确定性 fake）、真实 OCR/ASR 材料进入笔记生成链路、vector/hybrid 检索模式（页面固定 lexical）、笔记 JSON 导出入口（页面仅暴露 Markdown 导出）、完整人工键盘逐键走查、屏幕阅读器、跨材料并发。
