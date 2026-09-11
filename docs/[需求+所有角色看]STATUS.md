@@ -220,3 +220,21 @@ For the authoritative project status, task order, and governing decisions, see [
 **轮次边界说明**：本四页分属两轮——Round 3（today/qa，A 审 50bc0d1）与 Round 4（practice/practice-session，A 审 437f27a）；B 二审（71b2b22）与本次 A 审视角补齐将两轮共同收口。四页最终状态维持 **`e2e-real-pass`**；未验证维度（真实 Provider、cram 冲刺 A 类全链、真实 OCR/ASR、完整键盘逐键、屏幕阅读器）保持 `not_verified`，不因轮次结束改标。
 
 **本轮审查任务到此收口。**
+
+## 2026-09-10 exercises/practice-result B 二审收口（独立复核）
+
+**复跑验证**：
+- 独立复跑 `backend/tests/browser_exercises_practice_result_userpath.spec.js`：**8 passed**（19.4s）；B 审补充题目列表失败/重试回归后再次复跑：**8 passed**（21.4s）。
+- 相关浏览器回归：`browser_p1_3_cards_exercises_review_migration.spec.js`、`browser_p2_fe4_exercise_set_detail_app.spec.js`、`browser_p2_fe3_practice_result_app.spec.js`、`browser_a3_pages.spec.js`、frontend static/state/visual、practice userpath、C4 cram、Phase 9C 合计 **31 passed**（2.5m）。
+- 后端 focused：`test_phase8_exercises.py`、`test_phase9c_api.py`、`test_phase9c_domain.py` 合计 **24 passed**（本轮无后端 Python/API/schema/migration 变更，未重复全量后端）。
+- `check-source-size.py --base HEAD` 通过；`audit-frontend-contract.py --strict` = **0 findings**；`git diff --check` 通过；本批 5 档响应式截图 10 张存在于 `H:/studybuddy-test/artifacts/exercises-result-userpath/`。
+
+**A 类规则复核**：新增 userpath spec 无 `page.request`/业务 `fetch` 数据创建或关键 ID 直读；材料、索引、练习集、题目、会话和结果均通过页面 UI 产生；ID 从页面 URL 获取；包含真实服务 stop/start/readiness 重启验证；故障注入使用 `page.route` 并清理。
+
+**B 审新增发现与修复**：题目列表 GET 失败时原页面只有「请求失败，请重试」文案，没有独立恢复控件，刷新练习集列表也不会明确重载当前题目列表。已在 `exercises.html` 增加「重试题目列表」控件，失败时显示、成功/重新选择时隐藏，点击后重新加载当前练习集题目；新增回归覆盖首次失败→安全文案→retry→真实题目恢复。
+
+**B 审最终状态**：
+- `exercises.html` = **`e2e-real-pass`**（A 类 8 用例全过，B 审复核通过，引用来源显示、唯一确认入口、题目列表 retry、表单 Enter 提交等缺陷已修复）。
+- `practice-result.html` = **`e2e-real-pass`**（普通结果真实链路、简答题 pending_review、答错结果→复盘、reload、真重启、失败 retry、0/0、`id` 兼容参数和隐私边界均通过）。
+
+**仍为 `not_verified`**：真实 Provider、真实 OCR/ASR 进入练习链路、cram 创建的 A 类全链、完整人工视觉审查、完整键盘逐键审计、屏幕阅读器。

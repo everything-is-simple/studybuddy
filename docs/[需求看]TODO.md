@@ -466,3 +466,12 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 四页综合审查：23 用例一次全量 passed；8 条跨页链路全部有 A 类或代码级证据（详见 STATUS.md 综合审查记录）。
 - [x] 四页最终状态：practice.html / practice-session.html / today.html / qa.html = `e2e-real-pass`，本轮审查任务收口。
 - [ ] 后续专项轮次待补（not_verified 维持）：真实 Provider、cram 冲刺会话 A 类全链、真实 OCR/ASR 材料、完整键盘逐键走查、屏幕阅读器、plans.html URL plan_id 怪癖修复。
+
+## 2026-09-10 exercises/practice-result B 二审收口（独立复核）
+
+- [x] 独立复跑 `browser_exercises_practice_result_userpath.spec.js`：8 passed；B 审补充题目列表失败→retry→恢复回归后再次 8 passed。
+- [x] 相关浏览器回归 31 passed；Phase 8/9C 后端 focused 24 passed；source-size、frontend contract audit（0 findings）、diff-check 通过；5 档响应式截图 10 张存在。
+- [x] A 类规则复核通过：无业务 API 直调建数据或关键 ID 直读；数据经页面 UI 创建；真实服务重启；page.route 故障注入与清理规范。
+- [x] B 审修复题目列表失败缺少独立 retry 控件的问题：`exercises.html` 新增「重试题目列表」，失败显示、成功/重新选择隐藏，点击后真实重载当前练习集题目。
+- [x] B 二审最终状态：`exercises.html` / `practice-result.html` = **`e2e-real-pass`**（本轮范围内 A 类路径完整通过且缺陷已修复）。
+- [ ] `not_verified` 保持：真实 Provider、真实 OCR/ASR、cram A 类创建全链、完整人工视觉/键盘逐键审查、屏幕阅读器。

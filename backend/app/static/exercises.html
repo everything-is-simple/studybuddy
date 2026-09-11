@@ -39,6 +39,7 @@
 <button id="retry-set-detail" class="btn mt-12" type="button" hidden>重试练习集详情</button>
 <div id="set-actions" class="stack" hidden><form id="exercise-create-form" class="stack"><select id="new-exercise-type"><option value="short_answer">简答题</option><option value="multiple_choice">选择题</option><option value="true_false">判断题</option></select><input id="new-exercise-prompt" placeholder="题目" required><input id="new-exercise-answer" placeholder="答案" required><button class="btn" type="submit">创建题目</button></form><form id="exercise-generate-form" class="stack"><input id="exercise-topic" placeholder="AI 草稿主题" required><input id="exercise-material-ids" placeholder="材料 ID（逗号分隔）" required><button class="btn" type="submit">生成题目草稿</button></form></div>
 <div id="exercise-status" class="notice" role="status" aria-live="polite" hidden></div>
+<button id="retry-exercises" class="btn mt-12" type="button" hidden>重试题目列表</button>
 <div id="exercise-detail" class="stack"></div>
 <ul id="exercises" class="exercise-list" hidden></ul>
 </section>
@@ -56,7 +57,7 @@ const refreshSets=document.querySelector('#refresh-sets');
 const setTitle=document.querySelector('#set-title');
 const exerciseStatus=document.querySelector('#exercise-status');
 const exerciseDetail=document.querySelector('#exercise-detail');
-const exercises=document.querySelector('#exercises'),setActions=document.querySelector('#set-actions'),setSummary=document.querySelector('#set-summary'),retrySetDetail=document.querySelector('#retry-set-detail');let busy=false;function setBusy(value){busy=value;document.querySelectorAll('button,input,textarea,select').forEach(node=>node.disabled=value)}function message(error){return ({provider_not_configured:'AI 服务尚未配置',retrieval_not_ready:'材料尚未建立索引',retrieval_empty:'未找到相关材料',citation_invalid:'引用来源不可用',exercise_edit_not_allowed:'该题目不可编辑',exercise_not_ready:'题目尚未就绪'})[error.code]||'练习操作失败，可重试'}async function mutate(action,success){if(busy)return;setBusy(true);try{await action();await loadSets();if(selectedSetId)await selectSet(selectedSetId,setTitle.textContent);if(selectedExerciseId)await viewExercise(selectedExerciseId);exerciseStatus.hidden=false;exerciseStatus.className='notice';exerciseStatus.textContent=success}catch(error){exerciseStatus.hidden=false;exerciseStatus.className='notice warn';exerciseStatus.textContent=message(error)}finally{setBusy(false)}}
+const exercises=document.querySelector('#exercises'),setActions=document.querySelector('#set-actions'),setSummary=document.querySelector('#set-summary'),retrySetDetail=document.querySelector('#retry-set-detail'),retryExercises=document.querySelector('#retry-exercises');let busy=false;function setBusy(value){busy=value;document.querySelectorAll('button,input,textarea,select').forEach(node=>node.disabled=value)}function message(error){return ({provider_not_configured:'AI 服务尚未配置',retrieval_not_ready:'材料尚未建立索引',retrieval_empty:'未找到相关材料',citation_invalid:'引用来源不可用',exercise_edit_not_allowed:'该题目不可编辑',exercise_not_ready:'题目尚未就绪'})[error.code]||'练习操作失败，可重试'}async function mutate(action,success){if(busy)return;setBusy(true);try{await action();await loadSets();if(selectedSetId)await selectSet(selectedSetId,setTitle.textContent);if(selectedExerciseId)await viewExercise(selectedExerciseId);exerciseStatus.hidden=false;exerciseStatus.className='notice';exerciseStatus.textContent=success}catch(error){exerciseStatus.hidden=false;exerciseStatus.className='notice warn';exerciseStatus.textContent=message(error)}finally{setBusy(false)}}
 
 let selectedSetId=null;
 let selectedExerciseId=null;
@@ -73,6 +74,7 @@ short_answer:'简答题'
 };
 
 async function loadSets(){
+setStatus.hidden=false;
 setStatus.textContent='正在加载练习集...';
 setStatus.className='notice';
 sets.replaceChildren();
@@ -121,6 +123,7 @@ retrySetDetail.hidden=true;
 exerciseStatus.hidden=false;
 exerciseStatus.textContent='正在加载练习...';
 exerciseStatus.className='notice';
+retryExercises.hidden=true;
 exerciseDetail.replaceChildren();
 setActions.hidden=false;
 exercises.replaceChildren();
@@ -136,9 +139,11 @@ if(run!==exerciseGeneration)return;
 const items=Array.isArray(data)?data:data.items||[];
 if(!items.length){
 exerciseStatus.textContent='该练习集暂无题目';
+retryExercises.hidden=true;
 return
 }
 exerciseStatus.hidden=true;
+retryExercises.hidden=true;
 exercises.hidden=false;
 sbList.render(exercises,items,exercise=>{
 const li=sbList.createItem('li',['exercise-item']);
@@ -171,7 +176,8 @@ return li
 })
 }catch(e){
 exerciseStatus.className='notice warn';
-exerciseStatus.textContent=sbApi.safeError(e)
+exerciseStatus.textContent=sbApi.safeError(e);
+retryExercises.hidden=false
 }
 }
 
@@ -244,7 +250,7 @@ exerciseStatus.textContent=sbApi.safeError(e)
 }
 }
 
-retrySetDetail.addEventListener('click',()=>{if(selectedSetId)loadSetDetail(selectedSetId)});document.querySelector('#set-create-form button').onclick=()=>mutate(()=>sbApi.json('/api/study/exercise-sets',{method:'POST',body:JSON.stringify({title:document.querySelector('#new-set-title').value}),signal:pageRequest.signal}),'练习集已创建');document.querySelector('#exercise-create-form').onsubmit=event=>{event.preventDefault();const type=document.querySelector('#new-exercise-type').value,raw=document.querySelector('#new-exercise-answer').value;let answer=raw;if(type==='multiple_choice')answer=Number(raw);if(type==='true_false')answer=raw.toLowerCase()==='true';mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/exercises',{method:'POST',body:JSON.stringify({exercise_type:type,prompt:document.querySelector('#new-exercise-prompt').value,options:type==='multiple_choice'?['选项 A','选项 B']:[],answer_key:answer,explanation:'',citations:[],exercise_kind:'user_created'}),signal:pageRequest.signal}),'题目已创建')};document.querySelector('#exercise-generate-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/generate',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({topic:document.querySelector('#exercise-topic').value,material_ids:document.querySelector('#exercise-material-ids').value.split(',').map(value=>value.trim()).filter(Boolean),count:1,exercise_type:'multiple_choice'}),signal:pageRequest.signal}),'题目草稿已生成')};refreshSets.addEventListener('click',loadSets);
+retrySetDetail.addEventListener('click',()=>{if(selectedSetId)loadSetDetail(selectedSetId)});retryExercises.addEventListener('click',()=>{if(selectedSetId)selectSet(selectedSetId,setTitle.textContent)});document.querySelector('#set-create-form button').onclick=()=>mutate(()=>sbApi.json('/api/study/exercise-sets',{method:'POST',body:JSON.stringify({title:document.querySelector('#new-set-title').value}),signal:pageRequest.signal}),'练习集已创建');document.querySelector('#exercise-create-form').onsubmit=event=>{event.preventDefault();const type=document.querySelector('#new-exercise-type').value,raw=document.querySelector('#new-exercise-answer').value;let answer=raw;if(type==='multiple_choice')answer=Number(raw);if(type==='true_false')answer=raw.toLowerCase()==='true';mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/exercises',{method:'POST',body:JSON.stringify({exercise_type:type,prompt:document.querySelector('#new-exercise-prompt').value,options:type==='multiple_choice'?['选项 A','选项 B']:[],answer_key:answer,explanation:'',citations:[],exercise_kind:'user_created'}),signal:pageRequest.signal}),'题目已创建')};document.querySelector('#exercise-generate-form').onsubmit=event=>{event.preventDefault();mutate(()=>sbApi.json('/api/study/exercise-sets/'+encodeURIComponent(selectedSetId)+'/generate',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({topic:document.querySelector('#exercise-topic').value,material_ids:document.querySelector('#exercise-material-ids').value.split(',').map(value=>value.trim()).filter(Boolean),count:1,exercise_type:'multiple_choice'}),signal:pageRequest.signal}),'题目草稿已生成')};refreshSets.addEventListener('click',loadSets);
 loadSets()
 })();
 </script>
