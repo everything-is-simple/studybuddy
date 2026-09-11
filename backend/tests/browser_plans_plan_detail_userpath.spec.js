@@ -311,6 +311,34 @@ test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
     await assertFocusStyle(page, '#refresh-progress');
   });
 
+  test('A-E2E-URL-PLAN-ID-NEW-PLAN-WINS', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`${BASE}/app/plans.html`);
+    await expect(status(page)).not.toContainText('正在加载', { timeout: 5000 });
+    await page.fill('#goal-title', 'URL 优先级回归目标');
+    await page.click('#goal-form button[type=submit]');
+    await expect(page.locator('#goals li.goal-item', { hasText: 'URL 优先级回归目标' })).toBeVisible();
+    await page.fill('#plan-title', '旧计划详情');
+    await page.locator('#plan-goal').selectOption({ label: 'URL 优先级回归目标' });
+    await page.click('#plan-form button[type=submit]');
+    await expect(status(page)).toHaveText('计划草稿已创建');
+    await expect(page.locator('#plan-detail > h3')).toHaveText('旧计划详情', { timeout: 5000 });
+    const oldPlanId = new URL(page.url()).searchParams.get('plan_id');
+    expect(oldPlanId).toBeTruthy();
+
+    // Keep the old plan_id in the URL while creating another plan through the
+    // visible form. The new plan must become the selected detail immediately.
+    await page.fill('#plan-title', '新计划详情');
+    await page.locator('#plan-goal').selectOption({ label: 'URL 优先级回归目标' });
+    await page.click('#plan-form button[type=submit]');
+    await expect(status(page)).toHaveText('计划草稿已创建');
+    await expect(page.locator('#plan-detail > h3')).toHaveText('新计划详情', { timeout: 5000 });
+    const newPlanId = new URL(page.url()).searchParams.get('plan_id');
+    expect(newPlanId).toBeTruthy();
+    expect(newPlanId).not.toBe(oldPlanId);
+    await assertNoSensitiveVisibleText(page);
+  });
+
   test('A-E2E-PERSIST-REAL-RESTART', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(`${BASE}/app/plans.html`);
