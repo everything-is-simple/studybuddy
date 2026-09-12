@@ -260,6 +260,26 @@ For the authoritative project status, task order, and governing decisions, see [
 - 七维度状态（2026-09-11 独立二审）：`notes.html` = `e2e-real-pass`；`note-detail.html` = `e2e-real-pass`，仅限本地单进程、SQLite、确定性 fake provider 与 Chromium 的已执行路径。二审新增并通过纯 UI A 类 ND-9：页面创建笔记→归档→默认列表隐藏→勾选「显示已归档笔记」→只读详情→刷新→真实服务重启→再次从 UI 访问。二审 B 类 `browser_notes_b_class.spec.js` 10 passed，确认并修复 4 个实际缺陷：归档项无 UI 可达入口（筛选状态现写入 URL，刷新保持）、读取失败只显示泛化文案、导出失败离开页面到裸错误响应、以及迟到详情响应覆盖新选择。A 类完整 `9 passed`，其中 ND-1~ND-5、ND-7~ND-9 为纯 UI 路径；ND-6 的故障注入仍为 B 类要素，不计入纯 A 类结论。Notes backend/API/契约 focused `18 passed`，相关前端回归 `9 passed`，前端契约审计为 `0 findings`。
 - 未验证/not_verified：真实 Provider（生成全为确定性 fake）、真实 OCR/ASR 材料进入笔记生成链路、vector/hybrid 检索模式（页面固定 lexical）、笔记 JSON 导出 UI、完整人工键盘逐键走查、屏幕阅读器、跨材料并发。
 
+## 2026-09-12 reports.html B 类独立二审收口
+
+- 独立重读 `reports.html`、`api.js`、报告 API、仓储投影和 A 类 spec；未信任 A 轮结论。发现并修复：报告专用 detail code 未进入共享 `sbApi.safeError` 映射（补齐 `report_not_found`、`report_invalid_period`、`report_invalid_state`、`report_redaction_violation`、`report_export_failed`、`payload_too_large`）；分页接入后既有 reports mock 仍拦截无 query URL，按真实 `limit/offset/has_more` 契约收紧。
+- 页面新增的报告列表分页、动态本地日期/时区默认值、生成请求选择 generation 绑定、预览/导出迟到响应丢弃和旧状态清理均通过独立 B 类检查；仓储仍校验 project scope、ready 状态和完整 safe payload，`CURRENT_SCHEMA_VERSION=15` 与本轮一致，无 schema/migration 变更。
+- 新增 `backend/tests/browser_reports_b_class.spec.js`：分页追加、迟到预览不覆盖新选择、迟到导出不触发旧报告下载，`3 passed`。A 类 `browser_reports_userpath.spec.js` 收紧为 14 项并全绿；规定前端矩阵（state/static-baseline/page-contract）`23 passed`；报告相关回归 `25 passed`；后端完整套件 `630 passed, 3 skipped`（仅 opt-in ASR/Provider smoke）。
+- 全量 Chromium 串行最新结果：`313 passed, 4 skipped, 3 failed, 15 did not run`；reports A/B 及相关 reports 回归均通过。3 个失败为非本页既有问题（`phase9c` 会话创建超时；`cram`/`plans` 测试数据或环境依赖），不将其伪装为全量全绿；报告页本轮验收结论不受影响。
+- 二审结论：`reports.html` = **`e2e-real-pass`（限定本轮 A/B 页面用户路径、确定性 fake、单进程 SQLite、Chromium 范围）**。不扩大为全局生产 real-pass。
+- 仍为 `not_verified`：真实 Provider 生成/报告外发、真实 delivery live（系统固定拒绝）、完整人工逐键键盘审查、屏幕阅读器、跨浏览器、极端长内容/长时稳定性。
+
+## 2026-09-12 reports.html B 类独立二审收口（限定范围 e2e-real-pass）
+
+- 独立重读 A 轮修改后的 `reports.html`、`api.js`、报告 API、仓储投影、migration 版本和全部相关 browser spec；发现并修复共享 `sbApi.safeError` 缺少报告专用 detail code 映射，补齐 `report_not_found`、`report_invalid_period`、`report_invalid_state`、`report_redaction_violation`、`report_export_failed`、`payload_too_large` 用户文案。
+- 发现分页接入后既有 reports mock 仍拦截无 query URL，按真实 `GET /api/study/reports?limit=100&offset=0` 与 `has_more` 契约收紧 `browser_a3_pages.spec.js`、`browser_b3_report_c5.spec.js`；未放宽选择器或吞掉失败。
+- 新增独立 `backend/tests/browser_reports_b_class.spec.js`（3 passed）：分页只追加下一页；迟到 preview 响应不得覆盖新选择或恢复旧提示；迟到 export 响应不得触发旧报告下载。
+- A 类 `browser_reports_userpath.spec.js` 收紧为 14 项全 UI 数据链（移除 API 播种，新增表单专用错误/失败恢复、XSS 纯文本渲染，真实分页 query 拦截和具体 `data-report-id` 选择器），14 passed；规定状态矩阵 + static baseline + page contract 合计 23 passed；后端完整 `630 passed, 3 skipped`，3 skips 仅为既有 opt-in ASR/Provider smoke；source-size/diff-check 通过。
+- `CURRENT_SCHEMA_VERSION=15` 与本轮一致，未改 migration/schema；报告仓储继续执行 project scope、ready 状态、safe payload 白名单和 source quality 生命周期规则。
+- 全量 Chromium 最新结果 `322 passed, 4 skipped, 3 failed, 15 did not run`；reports 及相关回归全通过。剩余失败均非本页：`phase9c` 创建会话时序超时（基线复现），`cram` 和 `plans` 测试数据/环境依赖；不将全量结果伪报为全绿。
+- 二审结论：`reports.html` = **`e2e-real-pass`**，仅限已执行的 A/B 页面路径、确定性 fake、单进程 SQLite、Chromium 和现有报告契约范围；不等于全局 production `real-pass`。
+- `not_verified`：真实 Provider 生成、真实报告外发/live delivery（系统固定拒绝）、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端内容与长时稳定性。
+
 ## 2026-09-12 reports.html A 类纯用户路径审查与缺陷修复（第一轮 GLM 实现）
 
 - 变更范围：`backend/app/static/reports.html`（6.7KiB）、`backend/app/static/js/state.js`（新增 daily/weekly/monthly/exam_alert 四个报告类型标签）、`backend/app/static/css/app.css`（全局 `[hidden]` 修复 + 列表项焦点样式）、`backend/app/repositories/_legacy_part_08.py`（报告投影惰性建默认项目）、`backend/app/templates/index.html`（/legacy 复习请求补 `Idempotency-Key`，并抽取 `uuid()` 辅助函数抵消非增长门禁体积）；无 schema/migration 变化。新增 `backend/tests/browser_reports_userpath.spec.js`（A 类 10 用例）。
@@ -276,5 +296,5 @@ For the authoritative project status, task order, and governing decisions, see [
   10. 【键盘可达性】`.report-item` 按钮不在共享 focus-visible 选择器内，键盘焦点无可见环。修复：app.css 选择器补全所有列表项类。
 - 新增 A 类 E2E `browser_reports_userpath.spec.js`（10 passed）：空数据根空态；列表用户可读标签+选中高亮+URL replaceState；脱敏统计与原始载荷字段隐私边界；preview 真实端点+busy 禁用；JSON/Markdown 真实下载文件名；URL `report_id` 直达+刷新持久化；列表失败注入安全文案+`#retry-reports` 真实恢复；详情失败+`#retry-detail` 真实恢复；快速切换竞态守卫（RP-7/8/9 含 `page.route` 故障注入/延迟，属 B 类要素，不计入纯 A 类通过）；390 窄屏无溢出+截图留证（H:/studybuddy-test/artifacts/reports-userpath/）+键盘 Enter 激活+焦点样式+跨页导航（移动端 nav-toggle 跨页返回后需重新展开）。两个 fixture 报告经报告 API 一次性播种（页面无创建控件，属 B 类设置要素，已在 spec 注释中如实标注；断言全部经页面 UI）。贯穿敏感可见文本扫描。
 - 测试结果：新 spec `10 passed`；报告相关既有回归（b3_report_c5/p2_fe4_report_preview/a3_pages/state_matrix/b3_templates/learning_pages）`29 passed`；`/legacy` 回归（phase8/browser_qa）`12 passed, 1 skipped`；后端全量 `630 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；完整 Chromium 串行 `323 passed, 4 skipped, 1` 个 p6e:105 偶发时序超时（单独重跑 3 passed，与 STATUS 既有记录的该 spec 家族 flaky 同类，非本轮引入）；`check-source-size.py` 通过；`git diff --check` 通过（仅 CRLF 提示）。
-- 七维度状态：`reports.html` = `tested`（A 类 10 用例全过，倾向 `e2e-real-pass`，待独立二审确认）；报告创建无正式 UI 入口（列表/预览/导出/重试均只读）保持既有 `intentional/not_exposed` 定性；report delivery UI 不开放（默认 off + 审计不可达）为既有安全边界。
+- 七维度状态（首轮快照）：`reports.html` = `tested`（已由同日 B 类二审升级为限定范围 `e2e-real-pass`）；报告创建无正式 UI 入口为首轮历史事实，已由二审补齐正式生成表单；report delivery UI 不开放（默认 off + 审计不可达）为既有安全边界。
 - 未验证/not_verified：真实 Provider、真实报告外发（delivery live 永久拒绝）、完整键盘逐键走查、屏幕阅读器、跨时区报告窗口（后端 focused 已覆盖 UTC/时区校验，UI 未专项验证）。

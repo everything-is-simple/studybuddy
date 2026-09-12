@@ -489,6 +489,23 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 测试结果：A 类 10 passed；报告相关回归 29 passed；/legacy 回归 12 passed 1 skipped；后端全量 630 passed 3 skipped；完整 Chromium 323 passed 4 skipped + 1 个 p6e:105 偶发时序超时（单独重跑通过，既有 flaky 家族）；check-source-size 与 git diff --check 通过。
 - [ ] 待办移交：① GPT 二审确认 reports.html 七维度状态（当前 `tested`，倾向 `e2e-real-pass`）；② 既有遗留保持开放：plans.html URL plan_id 怪癖、p6e/p9c 家族偶发时序、真实 Provider/OCR/ASR/外发、完整键盘逐键走查、屏幕阅读器。
 
+## 2026-09-12 reports.html B 类独立二审收口（限定范围 e2e-real-pass）
+
+- [x] 独立重读 A 轮页面、共享层、报告 API/仓储与测试；发现并修复报告专用错误码未映射到 `sbApi.safeError` 的缺口，补齐 `report_not_found`、`report_invalid_period`、`report_invalid_state`、`report_redaction_violation`、`report_export_failed`、`payload_too_large` 用户文案。
+- [x] 发现分页接入后既有 reports mock 未匹配真实 `?limit=100&offset=0` 请求；按 `limit/offset/has_more` 真实契约收紧 `browser_a3_pages.spec.js`、`browser_b3_report_c5.spec.js`，不是放宽页面选择器。
+- [x] 新增独立 `browser_reports_b_class.spec.js` 3 项：分页只追加下一页、迟到 preview 不覆盖新选择/旧提示、迟到 export 不触发旧报告下载；`3 passed`。
+- [x] 最终验证：A 类 reports `14 passed`；state/static-baseline/page-contract 合计 `23 passed`；后端完整 `630 passed, 3 skipped`（仅既有 opt-in smoke）；source-size 与 diff-check 通过。完整 Chromium 最新 `313 passed, 4 skipped, 3 failed, 15 did not run`，3 个失败均非 reports（phase9c 稳定超时、cram/plans 既有测试数据/环境依赖），不宣称全量全绿。
+- [x] 二审结论：`reports.html` = **`e2e-real-pass`**，仅限 A/B 页面路径、确定性 fake、单进程 SQLite、Chromium 和本次已执行契约范围；不等于全局 production `real-pass`。
+- [ ] `not_verified`：真实 Provider/报告外发、live delivery（固定拒绝）、完整人工键盘逐键、屏幕阅读器、跨浏览器、极端内容和长时稳定性。
+
+## 2026-09-12 reports.html B 类独立二审收口（限定范围 e2e-real-pass）
+
+- [x] 独立重读 A 轮页面、共享错误层、报告 API/仓储、migration 版本与全部 userpath 断言；补齐 `sbApi.safeError` 的 6 个报告专用 detail code 映射，生成/读取/导出错误不再退化为唯一泛化文案。
+- [x] 按真实分页契约修复既有 reports mock：`GET /api/study/reports?limit=100&offset=0` 和 `has_more`；收紧为查询参数拦截、具体 `data-report-id` 断言，未使用松散 OR、静默 catch 或 KNOWN DEFECT 占位。
+- [x] 新增独立 `browser_reports_b_class.spec.js`：分页追加、迟到预览不覆盖选择、迟到导出不下载旧报告，3 passed。A 类 spec 收紧为 14 passed；规定前端矩阵/基线/页面契约合计 23 passed；报告相关后端 focused 19 passed；后端完整 630 passed、3 skipped（仅 opt-in smoke）。
+- [x] 二审结论：`reports.html` = **`e2e-real-pass`**，仅限确定性 fake/单进程 SQLite/Chromium 和本轮已执行页面路径；不扩大为全局 production `real-pass`。
+- [ ] 保持 `not_verified`：真实 Provider/外发、live delivery（固定拒绝）、跨浏览器、完整人工键盘逐键、屏幕阅读器、极端内容/长时稳定性。完整 Chromium 最新 `322 passed, 4 skipped, 3 failed, 15 did not run`；3 个失败为非 reports 的 phase9c 时序、cram/plans 测试数据/环境依赖，不伪称全绿。
+
 ## 2026-09-12 reports.html 二审补漏：正式 UI 报告创建入口 + 纯 UI 数据 E2E（A 类复审完成）
 
 - [x] 复审发现首轮 spec 的报告 fixture 仍经 `page.request` 播种，不满足「只通过页面 UI 触发行为」的 A 类要求；且页面此前确实无报告创建控件（列表/预览/导出均只读）。本轮补齐：`reports.html` 新增「生成报告」表单（类型/开始/结束/时区，`POST /api/study/reports` 复用既有确定性快照幂等指纹契约，无 schema/API 变化）。

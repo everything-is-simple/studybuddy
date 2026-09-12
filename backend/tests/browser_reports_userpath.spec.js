@@ -122,20 +122,58 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-4 恶意列表文本按纯文本渲染，不创建 HTML 节点', async ({ page }) => {
-    await page.route('**/api/study/reports', route => route.fulfill({
+  test('A-E2E-RP-4 报告 API 周期错误走专用用户文案', async ({ page }) => {
+    await page.route('**/api/study/reports', route => route.request().method() === 'POST'
+      ? route.fulfill({ status: 400, contentType: 'application/json', body: '{"detail":"report_invalid_period","traceback":"hidden","path":"H:/secret"}' })
+      : route.continue());
+    await page.goto(`${BASE}/app/reports.html`);
+    await page.fill('#report-create-start', '2026-01-15');
+    await page.fill('#report-create-end', '2026-01-16');
+    await page.fill('#report-create-timezone', 'Mars/Olympus');
+    await page.getByRole('button', { name: '生成报告' }).click();
+    await expect(page.locator('#report-create-status')).toHaveText('报告日期范围无效，请检查开始和结束日期');
+    await expect(page.locator('#report-create-submit')).toBeEnabled();
+    await assertNoSensitiveVisibleText(page);
+  });
+
+  test('A-E2E-RP-5 报告生成失败后可从页面重试且不重复提交', async ({ page }) => {
+    let failing = true;
+    let posts = 0;
+    await page.route('**/api/study/reports', route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      posts += 1;
+      return failing
+        ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"private_backend_error","traceback":"hidden"}' })
+        : route.continue();
+    });
+    await page.goto(`${BASE}/app/reports.html`);
+    await page.fill('#report-create-start', '2026-09-15');
+    await page.fill('#report-create-end', '2026-09-16');
+    await page.getByRole('button', { name: '生成报告' }).click();
+    await expect(page.locator('#report-create-status')).toHaveText('请求失败，请重试');
+    await expect(page.locator('#report-create-submit')).toBeEnabled();
+    expect(posts).toBe(1);
+    failing = false;
+    await page.getByRole('button', { name: '生成报告' }).click();
+    await expect(page.locator('#report-create-status')).toHaveText('报告已生成', { timeout: 10000 });
+    expect(posts).toBe(2);
+    await assertNoSensitiveVisibleText(page);
+  });
+
+  test('A-E2E-RP-6 恶意列表文本按纯文本渲染，不创建 HTML 节点', async ({ page }) => {
+    await page.route('**/api/study/reports?*', route => route.fulfill({
       status: 200, contentType: 'application/json',
-      body: JSON.stringify({ items: [{ id: 'report-xss', title: '<img src=x onerror=alert(1)>', report_kind: 'daily', period_start: '2026-03-01', period_end: '2026-03-02' }] }),
+      body: JSON.stringify({ items: [{ id: 'report-xss', title: '<img src=x onerror=alert(1)>', report_kind: 'daily', period_start: '2026-03-01', period_end: '2026-03-02' }], has_more: false }),
     }));
     await page.goto(`${BASE}/app/reports.html`);
-    const item = page.locator('#report-list .report-item');
+    const item = page.locator('#report-list .report-item[data-report-id="report-xss"]');
     await expect(item).toHaveText('<img src=x onerror=alert(1)>');
     await expect(page.locator('#report-list img')).toHaveCount(0);
     await expect(page.locator('#report-list script')).toHaveCount(0);
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-5 详情展示脱敏统计且绝不出现原始载荷字段', async ({ page }) => {
+  test('A-E2E-RP-7 详情展示脱敏统计且绝不出现原始载荷字段', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'daily', '2026-03-15', '2026-03-16');
     const item = page.locator('#report-list .report-item').filter({ hasText: '2026-03-15' }).first();
@@ -150,7 +188,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-6 刷新报告预览真实走 preview 端点并保持详情', async ({ page }) => {
+  test('A-E2E-RP-8 刷新报告预览真实走 preview 端点并保持详情', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'daily', '2026-04-15', '2026-04-16');
     await page.locator('#report-list .report-item').filter({ hasText: '2026-04-15' }).click();
@@ -162,7 +200,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-7 导出 JSON 与 Markdown 真实下载文件名', async ({ page }) => {
+  test('A-E2E-RP-9 导出 JSON 与 Markdown 真实下载文件名', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'daily', '2026-05-15', '2026-05-16');
     await page.locator('#report-list .report-item').filter({ hasText: '2026-05-15' }).click();
@@ -176,7 +214,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-8 URL report_id 直达与刷新后持久化', async ({ page }) => {
+  test('A-E2E-RP-10 URL report_id 直达与刷新后持久化', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'daily', '2026-06-15', '2026-06-16');
     const item = page.locator('#report-list .report-item').filter({ hasText: '2026-06-15' }).first();
@@ -190,9 +228,9 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-9 列表失败注入：安全文案 + #retry-reports 真实恢复', async ({ page }) => {
+  test('A-E2E-RP-11 列表失败注入：安全文案 + #retry-reports 真实恢复', async ({ page }) => {
     let failing = true;
-    await page.route('**/api/study/reports', route => failing
+    await page.route('**/api/study/reports?*', route => failing
       ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"private_backend_error","path":"H:/secret","traceback":"hidden"}' })
       : route.continue());
     await page.goto(`${BASE}/app/reports.html`);
@@ -200,14 +238,14 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await expect(page.locator('#retry-reports')).toBeVisible();
     await expect(page.locator('body')).not.toContainText(/private_backend_error|H:\/secret|traceback/i);
     failing = false;
-    await page.unroute('**/api/study/reports');
+    await page.unroute('**/api/study/reports?*');
     await page.locator('#retry-reports').click();
     await expect(page.locator('#report-list .report-item').first()).toContainText('日报', { timeout: 10000 });
     await expect(page.locator('#retry-reports')).toBeHidden();
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-10 详情失败：独立重试控件真实恢复', async ({ page }) => {
+  test('A-E2E-RP-12 详情失败：独立重试控件真实恢复', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'daily', '2026-07-15', '2026-07-16');
     const item = page.locator('#report-list .report-item').filter({ hasText: '2026-07-15' }).first();
@@ -227,7 +265,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-11 通过页面生成第二份报告并快速切换：迟到旧响应不得覆盖新选择', async ({ page }) => {
+  test('A-E2E-RP-13 通过页面生成第二份报告并快速切换：迟到旧响应不得覆盖新选择', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'daily', '2026-01-15', '2026-01-16');
     await createReportFromUi(page, 'weekly', '2026-02-01', '2026-02-08');
@@ -254,7 +292,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-12 窄屏响应式、键盘焦点与跨页导航（nav-toggle 需重新展开）', async ({ page }) => {
+  test('A-E2E-RP-14 窄屏响应式、键盘焦点与跨页导航（nav-toggle 需重新展开）', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'weekly', '2026-08-01', '2026-08-08');
     // Desktop keyboard path: focus the list item and activate it with Enter.
