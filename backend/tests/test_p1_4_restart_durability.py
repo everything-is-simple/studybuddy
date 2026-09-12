@@ -31,8 +31,8 @@ def _client(root: Path) -> TestClient:
     )))
 
 
-def _post(client: TestClient, path: str, payload: object | None = None, *, expected: int = 200) -> dict:
-    response = client.post(path, json=payload) if payload is not None else client.post(path)
+def _post(client: TestClient, path: str, payload: object | None = None, *, expected: int = 200, headers: dict[str, str] | None = None) -> dict:
+    response = client.post(path, json=payload, headers=headers) if payload is not None else client.post(path, headers=headers)
     assert response.status_code == expected, (path, response.status_code, response.text)
     return response.json()
 
@@ -166,7 +166,7 @@ def test_card_write_confirm_and_review_survive_restart(tmp_path: Path):
         assert updated.status_code == 200, updated.text
         assert _post(client, f"/api/study/cards/{card['id']}/confirm")["status"] == "ready"
         # `cards.html` posts the FSRS-style grade values only.
-        review = _post(client, f"/api/study/cards/{card['id']}/reviews", {"result": "good"}, expected=201)
+        review = _post(client, f"/api/study/cards/{card['id']}/reviews", {"result": "good"}, expected=201, headers={"Idempotency-Key": "p1-4-review"})
         assert review["card_id"] == card["id"]
 
     with _client(root) as restarted:

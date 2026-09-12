@@ -13,7 +13,7 @@
 - 事务性：每个迁移在事务中执行，失败时回滚
 - 一致性：schema_migrations 和 PRAGMA user_version 必须一致
 
-当前版本: 14（对应 v14: fix_revision_fingerprint）
+当前版本: 15（对应 v15: card_review_schedule）
 
 迁移清单：
 - v01: canonical_material_schema - 规范化材料 Schema
@@ -30,6 +30,7 @@
 - v12: phase9d_extended_learning_schema - 扩展学习
 - v13: phase10_operation_task_schema - 后台任务
 - v14: fix_revision_fingerprint_material_id - 修订指纹修复
+- v15: card_review_schedule - 卡片复习排程与幂等
 
 错误码：
 - database_schema_version_unknown: 版本未知或不一致
@@ -67,9 +68,10 @@ from . import (
     _v12_phase9d_extended as v12,
     _v13_phase10_tasks as v13,
     _v14_fix_revision_fingerprint as v14,
+    _v15_card_review_schedule as v15,
 )
 
-CURRENT_SCHEMA_VERSION = 14
+CURRENT_SCHEMA_VERSION = 15
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -113,6 +115,7 @@ _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] =
     (12, "phase9d_extended_learning_schema", v12.migrate),
     (13, "phase10_operation_task_schema", v13.migrate),
     (14, "fix_revision_fingerprint_material_id", v14.migrate),
+    (15, "card_review_schedule", v15.migrate),
 )
 
 # Compatibility aliases for tests that monkeypatch migration functions

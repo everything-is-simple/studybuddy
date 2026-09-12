@@ -276,7 +276,9 @@ def _citation_rows(connection: sqlite3.Connection, citations: object, *, code: s
         if not isinstance(item, dict):
             raise ValueError("citation_invalid")
         key = item.get("citation_key")
-        if not isinstance(key, str) or not key or len(key) > 100 or key in seen:
+        if (not isinstance(key, str) or not key or len(key) > 100 or key in seen
+                or any(ord(char) < 32 for char in key) or "://" in key
+                or key.casefold().startswith(("javascript:", "data:", "vbscript:"))):
             raise ValueError("citation_invalid")
         seen.add(key)
         chunk_id = item.get("chunk_id")
@@ -315,38 +317,85 @@ def create_deck(connection: sqlite3.Connection, *, project_id: str, title: str,
                            (deck_id, project_id, title, description, "active", now, now, None))
     return get_deck(connection, project_id=project_id, deck_id=deck_id) or {}
 
+CARD_STATUSES = {"draft", "ready", "rejected", "stale", "archived"}
+
+
+def _card_source_status(citations: list[dict[str, object]]) -> str:
+    statuses = {str(item.get("status") or "source_unavailable") for item in citations}
+    for status in ("source_unavailable", "source_deleted", "stale", "invalid", "valid"):
+        if status in statuses:
+            return status
+    return "not_linked"
+
+
+def _card_projection(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
+    citations = list_card_citations(connection, str(row["id"]))
+    due_at = row["due_at"] if "due_at" in row.keys() else None
+    interval_days = int(row["interval_days"] or 0) if "interval_days" in row.keys() else 0
+    return {**dict(row), "tags": json.loads(row["tags_json"]), "citations": citations,
+            "source_status": _card_source_status(citations),
+            "review_count": int(connection.execute("SELECT COUNT(*) FROM card_reviews WHERE card_id=?", (row["id"],)).fetchone()[0]),
+            "due_date": due_at, "interval": interval_days}
+
+
 def get_deck(connection: sqlite3.Connection, *, project_id: str, deck_id: str) -> dict[str, object] | None:
     row = connection.execute("SELECT id,project_id,title,description,status,created_at,updated_at,archived_at FROM study_decks WHERE id=? AND project_id=?", (deck_id, project_id)).fetchone()
     if row is None:
         return None
     result = dict(row)
-    result["cards"] = list_cards(connection, project_id=project_id, deck_id=deck_id)
+    result["card_count"] = int(connection.execute("SELECT COUNT(*) FROM study_cards WHERE deck_id=?", (deck_id,)).fetchone()[0])
+    result["active_card_count"] = int(connection.execute("SELECT COUNT(*) FROM study_cards WHERE deck_id=? AND status!='archived'", (deck_id,)).fetchone()[0])
+    result["cards"] = list_cards(connection, project_id=project_id, deck_id=deck_id, status="all")
     return result
 
-def list_decks(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
-    return [dict(row) for row in connection.execute("SELECT id,project_id,title,description,status,created_at,updated_at,archived_at FROM study_decks WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()]
 
-def list_cards(connection: sqlite3.Connection, *, project_id: str, deck_id: str | None = None) -> list[dict[str, object]]:
+def list_decks(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
+    rows = connection.execute("SELECT d.*, (SELECT COUNT(*) FROM study_cards c WHERE c.deck_id=d.id) AS card_count, (SELECT COUNT(*) FROM study_cards c WHERE c.deck_id=d.id AND c.status!='archived') AS active_card_count FROM study_decks d WHERE d.project_id=? ORDER BY d.updated_at DESC,d.id DESC", (project_id,)).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_cards(connection: sqlite3.Connection, *, project_id: str, deck_id: str | None = None,
+               status: str | None = None, material_id: str | None = None,
+               limit: int | None = None, offset: int = 0) -> list[dict[str, object]]:
+    if status is not None and status != "all" and status not in CARD_STATUSES | {"active"}:
+        raise ValueError("invalid_card_filter")
     params: list[object] = [project_id]
     where = "c.project_id=?"
     if deck_id is not None:
         where += " AND c.deck_id=?"; params.append(deck_id)
+    if status == "active" or status is None:
+        where += " AND c.status IN ('draft','ready','stale','rejected')"
+    elif status != "all":
+        where += " AND c.status=?"; params.append(status)
+    if material_id is not None:
+        where += " AND EXISTS (SELECT 1 FROM card_citations mc WHERE mc.card_id=c.id AND mc.material_id=?)"; params.append(material_id)
+    count = int(connection.execute("SELECT COUNT(*) FROM study_cards c WHERE " + where, params).fetchone()[0])
+    query = "SELECT c.* FROM study_cards c WHERE " + where + " ORDER BY c.updated_at DESC,c.id DESC"
+    if limit is not None:
+        query += " LIMIT ? OFFSET ?"; params.extend((limit, offset))
     with connection:
-        rows = connection.execute("SELECT c.id,c.deck_id,c.card_type,c.status,c.front,c.back,c.explanation,c.tags_json,c.source_revision,c.edited_by_user,c.created_at,c.updated_at,c.confirmed_at,c.archived_at FROM study_cards c WHERE " + where + " ORDER BY c.updated_at DESC,c.id DESC", params).fetchall()
+        rows = connection.execute(query, params).fetchall()
         for row in rows:
             _refresh_card_citations(connection, str(row["id"]))
-    return [{**dict(row), "tags": json.loads(row["tags_json"]), "citations": list_card_citations(connection, str(row["id"]))} for row in rows]
+    result = [_card_projection(connection, row) for row in rows]
+    if limit is not None:
+        for item in result:
+            item["_total"] = count
+    return result
+
 
 def get_card(connection: sqlite3.Connection, *, project_id: str, card_id: str) -> dict[str, object] | None:
     with connection:
-        row = connection.execute("SELECT c.id,c.deck_id,c.card_type,c.status,c.front,c.back,c.explanation,c.tags_json,c.source_revision,c.edited_by_user,c.created_at,c.updated_at,c.confirmed_at,c.archived_at FROM study_cards c WHERE c.project_id=? AND c.id=?", (project_id, card_id)).fetchone()
+        row = connection.execute("SELECT c.* FROM study_cards c WHERE c.project_id=? AND c.id=?", (project_id, card_id)).fetchone()
         if row is None:
             return None
         _refresh_card_citations(connection, card_id)
-    return {**dict(row), "tags": json.loads(row["tags_json"]), "citations": list_card_citations(connection, card_id)}
+    return _card_projection(connection, row)
+
 
 def list_card_citations(connection: sqlite3.Connection, card_id: str) -> list[dict[str, object]]:
-    return [dict(row) for row in connection.execute("SELECT citation_key,material_id,revision_id,extraction_id,chunk_id,span_id,quote,position,status FROM card_citations WHERE card_id=? ORDER BY position,id", (card_id,)).fetchall()]
+    rows = connection.execute("SELECT c.citation_key,c.material_id,c.revision_id,c.extraction_id,c.chunk_id,c.span_id,c.quote,c.position,c.status,m.original_name AS material_name FROM card_citations c LEFT JOIN materials m ON m.id=c.material_id WHERE c.card_id=? ORDER BY c.position,c.id", (card_id,)).fetchall()
+    return [dict(row) for row in rows]
 
 def _refresh_card_citations(connection: sqlite3.Connection, card_id: str) -> list[str]:
     statuses: list[str] = []
@@ -383,7 +432,12 @@ def create_card(connection: sqlite3.Connection, *, project_id: str, deck_id: str
     now = utc_now()
     citations = _citation_rows(connection, payload.get("citations", []), code="invalid_card_payload", artifact_id=card_id, table="card")
     with connection:
-        connection.execute("INSERT INTO study_cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (card_id, deck_id, project_id, card_type, "draft", front, back, explanation, json.dumps(tags, ensure_ascii=False), source_revision, 0, None, now, now, None, None))
+        connection.execute(
+        "INSERT INTO study_cards (id,deck_id,project_id,card_type,status,front,back,explanation,tags_json,source_revision,edited_by_user,generation_operation_id,created_at,updated_at,confirmed_at,archived_at,due_at,interval_days) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (card_id, deck_id, project_id, card_type, "draft", front, back, explanation,
+         json.dumps(tags, ensure_ascii=False), source_revision, 0, None, now, now, None, None, None, 0),
+    )
         connection.executemany("INSERT INTO card_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citations)
     return next(item for item in list_cards(connection, project_id=project_id, deck_id=deck_id) if item["id"] == card_id)
 

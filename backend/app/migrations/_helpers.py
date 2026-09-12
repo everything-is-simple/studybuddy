@@ -291,6 +291,11 @@ def _baseline_complete(connection: sqlite3.Connection, current_schema_version: i
             "lease_expires_at", "heartbeat_at", "created_at", "started_at", "finished_at",
         }.issubset(_columns(connection, "operation_task_attempts")):
             return False
+    if current_schema_version >= 15:
+        if not {"due_at", "interval_days"}.issubset(_columns(connection, "study_cards")):
+            return False
+        if "idempotency_key" not in _columns(connection, "card_reviews"):
+            return False
     return True
 
 

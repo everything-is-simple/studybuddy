@@ -21,8 +21,8 @@ from app.startup_preflight import StartupPreflightError
 def test_new_database_has_versioned_schema_and_is_idempotent(tmp_path: Path):
     database = tmp_path / "studybuddy.sqlite3"
     with connect(database) as connection:
-        assert assert_schema_version(connection) == 14
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 14
+        assert assert_schema_version(connection) == 15
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 15
         ai_tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")}
         assert ai_tables >= {"projects", "materials", "extractions", "text_spans",
                              "material_revisions", "chunks", "chunk_spans", "embeddings",
@@ -246,7 +246,7 @@ def test_legacy_database_is_adopted_without_losing_data(tmp_path: Path):
         row = connection.execute("SELECT updated_at, deleted_at FROM materials").fetchone()
         assert row[0] == "2025-01-01T00:00:00+00:00" and row[1] is None
         assert connection.execute("SELECT error_code FROM extractions").fetchone()[0] is None
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 14
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 15
         assert connection.execute("SELECT provider_request_id, total_tokens, finish_reason, idempotency_key, retrieval_run_id FROM ai_operations").description is not None
         assert connection.execute("SELECT id,operation_id,status,progress_percent FROM operation_tasks").description is not None
         assert connection.execute("SELECT id,task_id,attempt_number,lease_expires_at FROM operation_task_attempts").description is not None
@@ -418,7 +418,7 @@ def test_v13_database_upgrades_to_v14_once(monkeypatch, tmp_path: Path):
             "VALUES ('fp_rev','fp_mat','fp_ext','sha','esha','text','1.0.0','old_fp',1,'now')"
         )
     monkeypatch.setattr(runner, "CURRENT_SCHEMA_VERSION", 14)
-    monkeypatch.setattr(runner, "_MIGRATIONS", migrations)
+    monkeypatch.setattr(runner, "_MIGRATIONS", migrations[:14])
     with connect(database) as connection:
         assert assert_schema_version(connection) == 14
         assert tuple(connection.execute("SELECT version, name FROM schema_migrations WHERE version=14").fetchone()) == (
@@ -524,7 +524,7 @@ def test_backup_manifest_and_restored_database_retain_version(tmp_path: Path):
     backup = tmp_path / "backup"
     backup_data(source, backup)
     manifest = json.loads((backup / "manifest.json").read_text())
-    assert manifest["database"]["schema_version"] == 14
+    assert manifest["database"]["schema_version"] == 15
     assert verify_backup(backup)["status"] == "valid"
     manifest["database"]["schema_version"] = 99
     (backup / "manifest.json").write_text(json.dumps(manifest))

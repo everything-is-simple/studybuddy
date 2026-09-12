@@ -32,7 +32,7 @@ test('learning lists render shared labels for lifecycle and source states',async
 
 test('card and exercise source degradation does not expose raw status as the only label',async({page})=>{
   await mock(page,'**/api/study/decks',[{id:'deck-1',title:'卡组',status:'draft',card_count:1}]);
-  await mock(page,'**/api/study/cards?deck_id=deck-1',[{id:'card-1',front:'问题',status:'draft',source_status:'source_unavailable'}]);
+  await mock(page,'**/api/study/cards?deck_id=deck-1&status=active',[{id:'card-1',front:'问题',status:'draft',source_status:'source_unavailable'}]);
   await page.goto(`${BASE}/app/cards.html`);await page.locator('#decks .deck-item').click();await expect(page.locator('#cards')).toContainText('来源: 来源不可用');
   await page.unrouteAll({behavior:'ignoreErrors'});
   await mock(page,'**/api/study/exercise-sets',[{id:'set-1',title:'练习集',status:'draft',exercise_count:1}]);

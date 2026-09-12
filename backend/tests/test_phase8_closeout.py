@@ -50,7 +50,7 @@ def test_phase8_backup_restore_preserves_artifacts_history_operations_and_source
         assert generated_card.status_code == 200
         ready_card_id = generated_card.json()["artifacts"][0]["id"]
         assert api.post(f"/api/study/cards/{ready_card_id}/confirm").status_code == 200
-        assert api.post(f"/api/study/cards/{ready_card_id}/reviews", json={"result": "good"}).status_code == 201
+        assert api.post(f"/api/study/cards/{ready_card_id}/reviews", json={"result": "good"}, headers={"Idempotency-Key": "closeout-review"}).status_code == 201
 
         rejected_card = api.post(f"/api/study/decks/{deck_id}/cards", json={"front": "Reject", "back": "Later"}).json()
         assert api.post(f"/api/study/cards/{rejected_card['id']}/reject").status_code == 200

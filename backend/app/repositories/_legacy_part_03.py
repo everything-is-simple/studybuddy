@@ -65,7 +65,12 @@ def persist_generated_draft(connection: sqlite3.Connection, *, project_id: str, 
                 front, back, explanation, tags = _validate_card_payload(item)
                 artifact_id = f"card_{uuid.uuid4().hex}"
                 citation_rows = _citation_rows(connection, citations_payload, code="generation_schema_invalid", artifact_id=artifact_id, table="card")
-                connection.execute("INSERT INTO study_cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (artifact_id, container_id, project_id, "ai_generated", "draft", front, back, explanation, json.dumps(tags, ensure_ascii=False), source_revision, 0, operation_id, utc_now(), utc_now(), None, None))
+                now = utc_now()
+                connection.execute(
+                    "INSERT INTO study_cards (id,deck_id,project_id,card_type,status,front,back,explanation,tags_json,source_revision,edited_by_user,generation_operation_id,created_at,updated_at,confirmed_at,archived_at,due_at,interval_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (artifact_id, container_id, project_id, "ai_generated", "draft", front, back, explanation,
+                     json.dumps(tags, ensure_ascii=False), source_revision, 0, operation_id, now, now, None, None, None, 0),
+                )
                 connection.executemany("INSERT INTO card_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citation_rows)
             else:
                 exercise_type = item.get("exercise_type")
