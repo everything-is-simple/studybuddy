@@ -274,11 +274,11 @@ def test_evaluation_document_records_decision() -> None:
 def test_schema_version_unchanged_by_this_slice() -> None:
     """验证本切片未变更 schema 版本。
 
-    P1-5-3 是纯评估切片，不得引入 migration。
+    P1-5-3 的持久化评估不改变当前 schema 合同。
     """
     runner_source = (MIGRATIONS_ROOT / "runner.py").read_text(encoding="utf-8")
     match = re.search(r"CURRENT_SCHEMA_VERSION\s*=\s*(\d+)", runner_source)
     assert match is not None, "无法读取 CURRENT_SCHEMA_VERSION"
-    assert int(match.group(1)) == 14, (
-        "P1-5-3 是评估切片，不得变更 schema 版本（应保持 14）"
+    assert int(match.group(1)) == 15, (
+        "P1-5-3 评估必须匹配当前 schema 版本（应为 15）"
     )

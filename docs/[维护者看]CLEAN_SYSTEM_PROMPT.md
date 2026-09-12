@@ -18,7 +18,7 @@
 
 ### 项目基本信息
 - **Git HEAD**: `2bd69a1 docs(p1-7): create real-use observation checklist`
-- **Schema**: v14
+- **Schema**: v15
 - **Backend 测试基线**: 623 passed, 3 skipped
 - **Frontend 测试基线**: 208 passed, 4 skipped (61 files / 212 tests)
 - **功能状态**: P2-FE 系列完成，P1-5/P1-6/P2-USE 完成，进入 P1-7 真实自用阶段

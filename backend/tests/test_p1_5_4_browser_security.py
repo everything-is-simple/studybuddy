@@ -51,9 +51,9 @@ def test_p1_5_4_provider_export_uses_provider_id_and_email_export_is_complete() 
     assert 'id="email-copy"' in text
 
 
-def test_p1_5_4_schema_remains_v14_and_evidence_exists() -> None:
+def test_p1_5_4_schema_matches_current_version_and_evidence_exists() -> None:
     runner = (ROOT / "backend/app/migrations/runner.py").read_text(encoding="utf-8")
-    assert re.search(r"CURRENT_SCHEMA_VERSION\s*=\s*14", runner)
+    assert re.search(r"CURRENT_SCHEMA_VERSION\s*=\s*15", runner)
     assert EVIDENCE.exists()
     evidence = EVIDENCE.read_text(encoding="utf-8")
     assert "browser-pass" in evidence

@@ -87,7 +87,7 @@ def test_scan_script_output_is_redacted_and_bounded() -> None:
 
 def test_schema_and_persistence_boundaries_remain_unchanged() -> None:
     runner = (APP_ROOT / "migrations" / "runner.py").read_text(encoding="utf-8")
-    assert "CURRENT_SCHEMA_VERSION = 14" in runner
+    assert "CURRENT_SCHEMA_VERSION = 15" in runner
     page = (APP_ROOT / "static" / "settings-provider.html").read_text(encoding="utf-8")
     for forbidden in ("localStorage", "sessionStorage", "indexedDB", "STUDYBUDDY_REPORT_DELIVERY_MODE=live"):
         assert forbidden not in page

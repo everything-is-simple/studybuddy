@@ -31,6 +31,7 @@
 from ._legacy_runtime import *
 from ._legacy_part_00 import *
 from ._legacy_part_01 import *
+from ._legacy_part_01 import _card_projection
 def confirm_card(connection: sqlite3.Connection, *, project_id: str, card_id: str) -> dict[str, object]:
     row = connection.execute("SELECT deck_id,status FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
     if row is None: raise ValueError("card_not_found")
@@ -39,28 +40,59 @@ def confirm_card(connection: sqlite3.Connection, *, project_id: str, card_id: st
         _refresh_card_citations(connection, card_id)
     if connection.execute("SELECT 1 FROM card_citations WHERE card_id=? AND status='valid'", (card_id,)).fetchone() is None:
         if connection.execute("SELECT card_type FROM study_cards WHERE id=?", (card_id,)).fetchone()[0] == "ai_generated": raise ValueError("citation_invalid")
-    with connection: connection.execute("UPDATE study_cards SET status='ready',confirmed_at=?,updated_at=? WHERE id=?", (utc_now(), utc_now(), card_id))
+    now = utc_now()
+    with connection: connection.execute("UPDATE study_cards SET status='ready',confirmed_at=?,updated_at=?,due_at=COALESCE(due_at,?) WHERE id=?", (now, now, now, card_id))
     return next(item for item in list_cards(connection, project_id=project_id, deck_id=row["deck_id"]) if item["id"] == card_id)
 
 def transition_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, target: str) -> dict[str, object]:
     row = connection.execute("SELECT deck_id,status FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
     if row is None:
         raise ValueError("card_not_found")
-    allowed = {"rejected": {"draft"}, "archived": {"draft", "ready", "rejected", "stale"}}
+    allowed = {"rejected": {"draft"}, "archived": {"draft", "ready", "rejected", "stale"}, "ready": {"archived"}}
     if target not in allowed or row["status"] not in allowed[target]:
         raise ValueError("card_invalid_state")
     now = utc_now()
-    with connection:
-        connection.execute("UPDATE study_cards SET status=?,updated_at=?,archived_at=? WHERE id=?", (target, now, now if target == "archived" else None, card_id))
+    if target == "ready":
+        with connection:
+            connection.execute("UPDATE study_cards SET status='ready',updated_at=?,archived_at=NULL,due_at=COALESCE(due_at,?) WHERE id=?", (now, now, card_id))
+    else:
+        with connection:
+            connection.execute("UPDATE study_cards SET status=?,updated_at=?,archived_at=? WHERE id=?", (target, now, now if target == "archived" else None, card_id))
     result = connection.execute("SELECT * FROM study_cards WHERE id=?", (card_id,)).fetchone()
     return _card_public(connection, result)
 
-def review_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, result: str) -> dict[str, object]:
-    if result not in {"again", "hard", "good", "easy"}: raise ValueError("invalid_card_review")
-    if connection.execute("SELECT 1 FROM study_cards WHERE id=? AND project_id=? AND status='ready'", (card_id, project_id)).fetchone() is None: raise ValueError("card_not_ready")
-    review_id = f"review_{uuid.uuid4().hex}"
-    with connection: connection.execute("INSERT INTO card_reviews VALUES (?,?,?,?,?)", (review_id, card_id, result, utc_now(), "{}"))
-    return {"id": review_id, "card_id": card_id, "result": result}
+def review_card(connection: sqlite3.Connection, *, project_id: str, card_id: str, result: str,
+                idempotency_key: str | None = None) -> dict[str, object]:
+    if result not in {"again", "hard", "good", "easy"}:
+        raise ValueError("invalid_card_review")
+    if idempotency_key is None:
+        raise ValueError("card_review_idempotency_required")
+    if not idempotency_key or len(idempotency_key) > 200 or any(ord(char) < 32 for char in idempotency_key):
+        raise ValueError("invalid_card_review_key")
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        card = connection.execute("SELECT status,interval_days FROM study_cards WHERE id=? AND project_id=?", (card_id, project_id)).fetchone()
+        if card is None or card["status"] != "ready":
+            raise ValueError("card_not_ready")
+        existing = connection.execute("SELECT id,card_id,result FROM card_reviews WHERE card_id=? AND idempotency_key=?", (card_id, idempotency_key)).fetchone()
+        if existing is not None:
+            if existing["result"] != result:
+                raise ValueError("card_review_idempotency_conflict")
+            connection.commit()
+            return {"id": existing["id"], "card_id": existing["card_id"], "result": existing["result"], "replay": True}
+        review_id = f"review_{uuid.uuid4().hex}"
+        previous = int(card["interval_days"] or 0)
+        intervals = {"again": 0, "hard": max(1, previous or 1), "good": max(1, (previous or 1) * 2), "easy": max(2, (previous or 1) * 3)}
+        interval = intervals[result]
+        due_at = (datetime.now(timezone.utc) + timedelta(days=interval)).isoformat()
+        connection.execute("INSERT INTO card_reviews (id,card_id,result,reviewed_at,metadata_json,idempotency_key) VALUES (?,?,?,?,?,?)", (review_id, card_id, result, utc_now(), json.dumps({"interval_days": interval}, ensure_ascii=False), idempotency_key))
+        connection.execute("UPDATE study_cards SET interval_days=?,due_at=?,updated_at=? WHERE id=?", (interval, due_at, utc_now(), card_id))
+        connection.commit()
+        return {"id": review_id, "card_id": card_id, "result": result, "interval_days": interval, "due_at": due_at, "replay": False}
+    except Exception:
+        connection.rollback()
+        raise
+
 
 MAX_EXERCISE_EXPLANATION_LENGTH = 4000
 
@@ -228,8 +260,7 @@ def _generation_public(connection: sqlite3.Connection, operation: sqlite3.Row) -
             "artifacts": artifacts}
 
 def _card_public(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, object]:
-    return {**dict(row), "tags": json.loads(row["tags_json"]),
-            "citations": list_card_citations(connection, str(row["id"]))}
+    return _card_projection(connection, row)
 
 def create_generation_operation(connection: sqlite3.Connection, *, project_id: str, artifact_kind: str,
                                 container_id: str, topic: str, material_ids: list[str], retrieval_mode: str,

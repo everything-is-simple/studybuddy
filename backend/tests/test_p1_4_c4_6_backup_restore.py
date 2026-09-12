@@ -77,5 +77,5 @@ def test_c4_6_backup_verify_restore_new_root_and_two_normal_restarts(tmp_path: P
         assert client.get("/api/readiness").status_code == 200
     assert snapshot(restored, ids["plan_id"]) == before
     with sqlite3.connect(restored / "studybuddy.sqlite3") as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 14
-        assert db.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 14
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 15
+        assert db.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 15

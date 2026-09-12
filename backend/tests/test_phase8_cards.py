@@ -36,7 +36,7 @@ def test_card_draft_edit_confirm_review_and_privacy(tmp_path: Path):
         assert confirmed.status_code == 200
         assert confirmed.json()["status"] == "ready"
         assert api.patch(f"/api/study/cards/{card['id']}", json={"front": "No", "back": "No"}).status_code == 409
-        review = api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "good"})
+        review = api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "good"}, headers={"Idempotency-Key": "review-basic"})
         assert review.status_code == 201
         assert api.get(f"/api/study/decks/{deck_id}").json()["cards"][0]["status"] == "ready"
 
@@ -60,9 +60,33 @@ def test_card_invalid_payload_and_review_state_are_safe(tmp_path: Path):
         deck_id = api.post("/api/study/decks", json={"title": "Safe"}).json()["id"]
         assert api.post(f"/api/study/decks/{deck_id}/cards", json={"front": "", "back": "x"}).json()["detail"] == "invalid_card_payload"
         card = api.post(f"/api/study/decks/{deck_id}/cards", json={"front": "x", "back": "y"}).json()
-        assert api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "good"}).status_code == 404
+        assert api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "good"}, headers={"Idempotency-Key": "review-not-ready"}).status_code == 404
         assert api.post(f"/api/study/cards/{card['id']}/confirm").status_code == 200
-        assert api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "bad"}).status_code == 400
+        assert api.post(f"/api/study/cards/{card['id']}/reviews", json={"result": "bad"}, headers={"Idempotency-Key": "review-invalid"}).status_code == 400
+
+
+def test_card_filters_schedule_review_idempotency_and_restore(tmp_path: Path):
+    with client(tmp_path) as api:
+        deck_id = api.post("/api/study/decks", json={"title": "Filter deck"}).json()["id"]
+        draft = api.post(f"/api/study/decks/{deck_id}/cards", json={"front": "draft", "back": "answer"}).json()
+        assert api.get(f"/api/study/cards?deck_id={deck_id}&status=draft&limit=20&offset=0").json()["total"] == 1
+        assert api.post(f"/api/study/cards/{draft['id']}/confirm").status_code == 200
+        first = api.post(f"/api/study/cards/{draft['id']}/reviews", json={"result": "good"}, headers={"Idempotency-Key": "review-once"})
+        replay = api.post(f"/api/study/cards/{draft['id']}/reviews", json={"result": "good"}, headers={"Idempotency-Key": "review-once"})
+        assert first.status_code == replay.status_code == 201
+        assert replay.json()["replay"] is True
+        conflict = api.post(f"/api/study/cards/{draft['id']}/reviews", json={"result": "again"}, headers={"Idempotency-Key": "review-once"})
+        assert conflict.status_code == 400
+        assert conflict.json()["detail"] == "card_review_idempotency_conflict"
+        assert api.get(f"/api/study/cards/{draft['id']}").json()["review_count"] == 1
+        projection = api.get(f"/api/study/cards/{draft['id']}").json()
+        assert projection["due_date"] and projection["interval"] >= 1
+        assert len(api.get(f"/api/study/cards/{draft['id']}/reviews").json()) == 1
+        assert api.post(f"/api/study/cards/{draft['id']}/archive").status_code == 200
+        assert api.get(f"/api/study/cards?deck_id={deck_id}&status=active").json() == []
+        assert api.get(f"/api/study/cards?deck_id={deck_id}&status=archived&limit=20&offset=0").json()["items"][0]["status"] == "archived"
+        assert api.post(f"/api/study/cards/{draft['id']}/restore").status_code == 200
+        assert api.get(f"/api/study/cards/{draft['id']}").json()["status"] == "ready"
 
 
 def test_card_reject_archive_and_source_lifecycle(tmp_path: Path):
@@ -82,8 +106,16 @@ def test_card_reject_archive_and_source_lifecycle(tmp_path: Path):
             "front": "Q", "back": "A", "card_type": "ai_generated", "source_revision": revision_id,
             "citations": [{"citation_key": "card-source", "chunk_id": chunk["id"], "quote": chunk["text"]}],
         }).json()
+        citation = api.get("/api/study/card-citations/card-source")
+        assert citation.status_code == 200
+        assert citation.json()["status"] == "valid"
+        assert citation.json()["material_id"] == material_id
+        assert citation.json()["end_offset"] > citation.json()["start_offset"]
         assert api.delete(f"/api/materials/{material_id}").status_code == 204
         listed = api.get(f"/api/study/decks/{deck_id}").json()["cards"]
         assert next(item for item in listed if item["id"] == card["id"])["citations"][0]["status"] == "source_deleted"
+        deleted_citation = api.get("/api/study/card-citations/card-source")
+        assert deleted_citation.status_code == 200
+        assert deleted_citation.json()["status"] == "source_deleted"
         assert api.post(f"/api/materials/{material_id}/restore").status_code == 200
         assert api.post(f"/api/study/cards/{card['id']}/confirm").status_code == 200

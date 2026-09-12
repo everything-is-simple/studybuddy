@@ -49,10 +49,64 @@ def register_routes(app, context: dict[str, object]) -> None:
         return result
 
     @app.get("/api/study/cards")
-    def study_cards(deck_id: str | None = None) -> list[dict[str, object]]:
-        """List study cards, optionally filtered by deck."""
+    def study_cards(deck_id: str | None = None, status: str | None = None,
+                    material_id: str | None = None, limit: int | None = None,
+                    offset: int = 0) -> list[dict[str, object]] | dict[str, object]:
+        """List cards with optional lifecycle/source filters and pagination."""
+        if limit is not None and (limit < 1 or limit > 100):
+            raise HTTPException(status_code=400, detail="invalid_pagination")
+        if offset < 0:
+            raise HTTPException(status_code=400, detail="invalid_pagination")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                rows = list_cards(connection, project_id=app.state.config.project_id, deck_id=deck_id,
+                                  status=status, material_id=material_id, limit=limit, offset=offset)
+            if limit is None:
+                return rows
+            total = int(rows[0].get("_total", 0)) if rows else 0
+            for row in rows:
+                row.pop("_total", None)
+            return {"items": rows, "total": total, "limit": limit, "offset": offset,
+                    "has_more": offset + len(rows) < total}
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from None
+
+    @app.get("/api/study/card-citations/{citation_key}")
+    def study_card_citation(citation_key: str) -> dict[str, object]:
+        """Resolve a card citation to its material location."""
+        if not citation_key or len(citation_key) > 100:
+            raise HTTPException(status_code=404, detail="citation_not_found")
         with connect(app.state.config.database_path) as connection:
-            return list_cards(connection, project_id=app.state.config.project_id, deck_id=deck_id)
+            citation = connection.execute(
+                "SELECT cc.material_id,cc.revision_id,cc.extraction_id,cc.chunk_id,m.original_name AS material_name "
+                "FROM card_citations cc JOIN study_cards c ON c.id=cc.card_id AND c.project_id=? "
+                "LEFT JOIN materials m ON m.id=cc.material_id WHERE cc.citation_key=? "
+                "ORDER BY cc.position,cc.id LIMIT 1",
+                (app.state.config.project_id, citation_key),
+            ).fetchone()
+            if citation is None:
+                raise HTTPException(status_code=404, detail="citation_not_found")
+            base = {"citation_key": citation_key, "material_id": citation["material_id"],
+                    "material_name": citation["material_name"], "revision_id": citation["revision_id"],
+                    "chunk_id": citation["chunk_id"]}
+            material = connection.execute("SELECT deleted_at FROM materials WHERE id=?", (citation["material_id"],)).fetchone()
+            if material is None:
+                return {**base, "status": "source_unavailable"}
+            if material["deleted_at"] is not None:
+                return {**base, "status": "source_deleted"}
+            chunk = connection.execute(
+                "SELECT c.start_offset,c.end_offset,c.revision_id,r.extraction_id FROM chunks c "
+                "JOIN material_revisions r ON r.id=c.revision_id "
+                "WHERE c.id=? AND c.material_id=? AND c.status='ready' AND r.is_current=1",
+                (citation["chunk_id"], citation["material_id"]),
+            ).fetchone()
+            if chunk is None:
+                return {**base, "status": "source_unavailable"}
+            if (chunk["revision_id"] != citation["revision_id"] or
+                    chunk["extraction_id"] != citation["extraction_id"]):
+                return {**base, "status": "stale"}
+            return {**base, "status": "valid", "start_offset": chunk["start_offset"],
+                    "end_offset": chunk["end_offset"]}
 
     @app.get("/api/study/cards/{card_id}")
     def study_card(card_id: str) -> dict[str, object]:
@@ -124,7 +178,7 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/cards/{card_id}/archive")
     def archive_study_card(card_id: str) -> dict[str, object]:
-        """Archive a confirmed card, removing it from active review."""
+        """Archive a card, removing it from active review."""
         try:
             with connect(app.state.config.database_path) as connection:
                 return transition_card(connection, project_id=app.state.config.project_id, card_id=card_id, target="archived")
@@ -134,12 +188,34 @@ def register_routes(app, context: dict[str, object]) -> None:
         except sqlite3.Error:
             raise HTTPException(status_code=500, detail="card_archive_failed") from None
 
+    @app.post("/api/study/cards/{card_id}/restore")
+    def restore_study_card(card_id: str) -> dict[str, object]:
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return transition_card(connection, project_id=app.state.config.project_id, card_id=card_id, target="ready")
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "card_not_found" else 409, detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="card_restore_failed") from None
+
+    @app.get("/api/study/cards/{card_id}/reviews")
+    def study_card_reviews(card_id: str) -> list[dict[str, object]]:
+        with connect(app.state.config.database_path) as connection:
+            if connection.execute("SELECT 1 FROM study_cards WHERE id=? AND project_id=?", (card_id, app.state.config.project_id)).fetchone() is None:
+                raise HTTPException(status_code=404, detail="card_not_found")
+            return [dict(row) for row in connection.execute(
+                "SELECT id,card_id,result,reviewed_at,metadata_json FROM card_reviews WHERE card_id=? ORDER BY reviewed_at DESC,id DESC", (card_id,)
+            ).fetchall()]
+
     @app.post("/api/study/cards/{card_id}/reviews", status_code=201)
-    def review_study_card(card_id: str, request: CardReviewRequest) -> dict[str, object]:
+    def review_study_card(card_id: str, request: CardReviewRequest,
+                          idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")) -> dict[str, object]:
         """Record a spaced-repetition review result for a card."""
         try:
             with connect(app.state.config.database_path) as connection:
-                return review_card(connection, project_id=app.state.config.project_id, card_id=card_id, result=request.result)
+                return review_card(connection, project_id=app.state.config.project_id, card_id=card_id,
+                                   result=request.result, idempotency_key=idempotency_key)
         except ValueError as error:
             code = str(error); status = 404 if code == "card_not_ready" else 400
             raise HTTPException(status_code=status, detail=code) from None
