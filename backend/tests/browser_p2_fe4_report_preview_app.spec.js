@@ -15,13 +15,13 @@ test('formal app report preview reads the preview endpoint and restores after re
  const report=await createReport(page);let previewCalls=0;
  await page.route(`${BASE}/api/study/reports/${report.id}/preview`,async route=>{previewCalls++;return route.continue()});
  await page.goto(`${BASE}/app/reports.html?report_id=${encodeURIComponent(report.id)}`);
- await expect(page.locator('#report-detail-title')).toContainText('报告 · daily');
+ await expect(page.locator('#report-detail-title')).toContainText('报告 · 日报');
  await expect(page.locator('#preview-report')).toBeVisible();
  await page.locator('#preview-report').click();
  await expect.poll(()=>previewCalls).toBe(1);
  await expect(page.locator('#report-detail')).toContainText('交付：未发送');
  await page.reload();
- await expect(page.locator('#report-detail-title')).toContainText('报告 · daily');
+ await expect(page.locator('#report-detail-title')).toContainText('报告 · 日报');
  await expect(page.locator('body')).not.toContainText(/traceback|SELECT |H:\\|stored_path|secret/i);
 });
 

@@ -41,7 +41,18 @@ def build_report_projection(connection: sqlite3.Connection, *, project_id: str,
     )
     end_value = date.fromisoformat(str(period_end)).isoformat()
     if not _study_project_exists(connection, project_id):
-        raise ValueError("project_scope_violation")
+        # Lazily ensure the default project row like the plan/module/note
+        # domains do: a fresh data root has no projects row, and requiring
+        # one made the very first report creation fail with
+        # project_scope_violation. An empty report over safe zero values is
+        # the documented 9D behavior for a fresh project. The caller's
+        # transaction (create_report_snapshot) owns the commit.
+        connection.execute(
+            "INSERT OR IGNORE INTO projects (id,name,created_at) VALUES (?,?,?)",
+            (project_id, "Default project", utc_now()),
+        )
+        if not _study_project_exists(connection, project_id):
+            raise ValueError("project_scope_violation")
 
     goals = _phase9d_rows_in_period(list(connection.execute(
         "SELECT id,status,updated_at FROM learning_goals WHERE project_id=?", (project_id,)

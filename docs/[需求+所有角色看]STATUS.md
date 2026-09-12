@@ -1,5 +1,6 @@
 # StudyBuddy Status
 
+> 更新：2026-09-12（**reports.html A 类纯用户路径审查收口**：详情失败新增独立重试控件、快速切换报告 generation 竞态守卫、列表选中高亮、`report_kind` 走 `sbState.label` 用户可读标签（日报/周报/月报/考试提醒）并补齐来源过期统计、导出 busy 防重复；修复共享 CSS `[hidden]` 被 `display` 类覆盖导致 `#report-actions`/`#today-exits` 恒可见的真实缺陷；后端修复 fresh data root 首次报告创建必然 `project_scope_violation`（与 notes 轮同类的惰性建项目缺陷）；修复 cards v15 幂等化后 `/legacy` 卡片复习缺 `Idempotency-Key` 必然失败的回归；新增 10 用例 A 类 userpath E2E `browser_reports_userpath.spec.js` 全绿。后端全量 `630 passed, 3 skipped`；完整 Chromium 串行 `323 passed, 4 skipped, 1` 个 p6e:105 偶发时序超时（单独重跑通过，与既有记录的该 spec 家族 flaky 同类）。源码体积与 diff-check 通过。）
 > 更新：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
 >
 > **2026-09-01 执行方向修订**（保留）：证据梯子 → 可用优先。新增 P2-USE 主线；原 P1-6-3-1～P1-6-3-7 取消立项。
@@ -256,3 +257,22 @@ For the authoritative project status, task order, and governing decisions, see [
 - 测试结果：A 类 spec `8 passed`×2；相关回归 6 spec `18 passed`（a3_pages/state_matrix/phase9b/p1_2/visual_matrix/static_baseline，其中 static_baseline 实测需 ~52s，已加 `test.slow()`（3× 超时），断言未放宽）；后端全量 `629 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke，较基线 +1 为本轮回归）；`audit-frontend-contract.py --strict` = **0 findings**；`check-source-size.py --base HEAD` 通过；`git diff --check` 通过（仅 CRLF 提示）。
 - 七维度状态（2026-09-11 独立二审）：`notes.html` = `e2e-real-pass`；`note-detail.html` = `e2e-real-pass`，仅限本地单进程、SQLite、确定性 fake provider 与 Chromium 的已执行路径。二审新增并通过纯 UI A 类 ND-9：页面创建笔记→归档→默认列表隐藏→勾选「显示已归档笔记」→只读详情→刷新→真实服务重启→再次从 UI 访问。二审 B 类 `browser_notes_b_class.spec.js` 10 passed，确认并修复 4 个实际缺陷：归档项无 UI 可达入口（筛选状态现写入 URL，刷新保持）、读取失败只显示泛化文案、导出失败离开页面到裸错误响应、以及迟到详情响应覆盖新选择。A 类完整 `9 passed`，其中 ND-1~ND-5、ND-7~ND-9 为纯 UI 路径；ND-6 的故障注入仍为 B 类要素，不计入纯 A 类结论。Notes backend/API/契约 focused `18 passed`，相关前端回归 `9 passed`，前端契约审计为 `0 findings`。
 - 未验证/not_verified：真实 Provider（生成全为确定性 fake）、真实 OCR/ASR 材料进入笔记生成链路、vector/hybrid 检索模式（页面固定 lexical）、笔记 JSON 导出 UI、完整人工键盘逐键走查、屏幕阅读器、跨材料并发。
+
+## 2026-09-12 reports.html A 类纯用户路径审查与缺陷修复（第一轮 GLM 实现）
+
+- 变更范围：`backend/app/static/reports.html`（6.7KiB）、`backend/app/static/js/state.js`（新增 daily/weekly/monthly/exam_alert 四个报告类型标签）、`backend/app/static/css/app.css`（全局 `[hidden]` 修复 + 列表项焦点样式）、`backend/app/repositories/_legacy_part_08.py`（报告投影惰性建默认项目）、`backend/app/templates/index.html`（/legacy 复习请求补 `Idempotency-Key`，并抽取 `uuid()` 辅助函数抵消非增长门禁体积）；无 schema/migration 变化。新增 `backend/tests/browser_reports_userpath.spec.js`（A 类 10 用例）。
+- 修复的真实缺陷（按 A 类路径执行顺序发现）：
+  1. 【后端】全新 data root 上首次报告创建必然失败（400 `project_scope_violation`）：`build_report_projection` 校验 `_study_project_exists` 但从不惰性创建 projects 行（与 notes 轮修复的 `create_note` 缺陷同类；既有 B3 测试先导入材料掩盖了该缺陷）。修复后空数据根可直接生成空报告（安全零值，符合 9D 合同）。
+  2. 【后端回归】cards v15 复习排程把 `review_card` 改为强制 `Idempotency-Key`，但 `/legacy` 页 `reviewStudyCard` 未同步，卡片复习必然「复习记录失败」。修复：补随机 `Idempotency-Key`（与正式 cards.html `sbApi.idempotencyKey()` 语义一致）；同步 `uuid()` 辅助函数使 legacy 非增长门禁通过。
+  3. 【共享 CSS】`.stack-actions{display:flex}` 等类覆盖 UA `[hidden]{display:none}`，导致 `#report-actions`（预览/导出按钮）与 `#today-exits` 在无选中/无数据时**恒可见**。修复：app.css 增加 `[hidden]{display:none!important}`。
+  4. 【前端】详情标题与列表项直接展示原始枚举 `daily/weekly/monthly/exam_alert`，违反「状态字段走 sbState.label 用户可读标签」规则。修复：`sbState.label` 映射为日报/周报/月报/考试提醒，列表与详情统一；既有 4 处断言同步更新。
+  5. 【前端】快速切换报告时旧详情响应晚到会覆盖新选择（无 generation 守卫）。修复：`detailGeneration`/`listGeneration` 双计数器，过期响应丢弃；A 类 RP-9 用 400ms 延迟注入验证迟到响应被拒。
+  6. 【前端】详情加载失败只显示错误文案、无恢复控件。修复：新增 `#retry-detail` 独立重试按钮（失败显示、成功/重选隐藏）。
+  7. 【前端】列表项无选中高亮（`.report-item.selected` CSS 类从未被使用）。修复：`data-report-id` 原位 toggle，刷新/URL 直达后保持。
+  8. 【前端】导出无 busy 防重复，双击触发两次下载。修复：`downloadBusy` + 双导出按钮统一禁用。
+  9. 【前端】详情缺「来源过期」统计展示。修复：补 `stale_count` 行。
+  10. 【键盘可达性】`.report-item` 按钮不在共享 focus-visible 选择器内，键盘焦点无可见环。修复：app.css 选择器补全所有列表项类。
+- 新增 A 类 E2E `browser_reports_userpath.spec.js`（10 passed）：空数据根空态；列表用户可读标签+选中高亮+URL replaceState；脱敏统计与原始载荷字段隐私边界；preview 真实端点+busy 禁用；JSON/Markdown 真实下载文件名；URL `report_id` 直达+刷新持久化；列表失败注入安全文案+`#retry-reports` 真实恢复；详情失败+`#retry-detail` 真实恢复；快速切换竞态守卫（RP-7/8/9 含 `page.route` 故障注入/延迟，属 B 类要素，不计入纯 A 类通过）；390 窄屏无溢出+截图留证（H:/studybuddy-test/artifacts/reports-userpath/）+键盘 Enter 激活+焦点样式+跨页导航（移动端 nav-toggle 跨页返回后需重新展开）。两个 fixture 报告经报告 API 一次性播种（页面无创建控件，属 B 类设置要素，已在 spec 注释中如实标注；断言全部经页面 UI）。贯穿敏感可见文本扫描。
+- 测试结果：新 spec `10 passed`；报告相关既有回归（b3_report_c5/p2_fe4_report_preview/a3_pages/state_matrix/b3_templates/learning_pages）`29 passed`；`/legacy` 回归（phase8/browser_qa）`12 passed, 1 skipped`；后端全量 `630 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；完整 Chromium 串行 `323 passed, 4 skipped, 1` 个 p6e:105 偶发时序超时（单独重跑 3 passed，与 STATUS 既有记录的该 spec 家族 flaky 同类，非本轮引入）；`check-source-size.py` 通过；`git diff --check` 通过（仅 CRLF 提示）。
+- 七维度状态：`reports.html` = `tested`（A 类 10 用例全过，倾向 `e2e-real-pass`，待独立二审确认）；报告创建无正式 UI 入口（列表/预览/导出/重试均只读）保持既有 `intentional/not_exposed` 定性；report delivery UI 不开放（默认 off + 审计不可达）为既有安全边界。
+- 未验证/not_verified：真实 Provider、真实报告外发（delivery live 永久拒绝）、完整键盘逐键走查、屏幕阅读器、跨时区报告窗口（后端 focused 已覆盖 UTC/时区校验，UI 未专项验证）。
