@@ -1,6 +1,8 @@
 # StudyBuddy Status
 
-> 更新：2026-09-12（**reports.html A 类纯用户路径审查收口**：详情失败新增独立重试控件、快速切换报告 generation 竞态守卫、列表选中高亮、`report_kind` 走 `sbState.label` 用户可读标签（日报/周报/月报/考试提醒）并补齐来源过期统计、导出 busy 防重复；修复共享 CSS `[hidden]` 被 `display` 类覆盖导致 `#report-actions`/`#today-exits` 恒可见的真实缺陷；后端修复 fresh data root 首次报告创建必然 `project_scope_violation`（与 notes 轮同类的惰性建项目缺陷）；修复 cards v15 幂等化后 `/legacy` 卡片复习缺 `Idempotency-Key` 必然失败的回归；新增 10 用例 A 类 userpath E2E `browser_reports_userpath.spec.js` 全绿。后端全量 `630 passed, 3 skipped`；完整 Chromium 串行 `323 passed, 4 skipped, 1` 个 p6e:105 偶发时序超时（单独重跑通过，与既有记录的该 spec 家族 flaky 同类）。源码体积与 diff-check 通过。）
+> 更新：2026-09-12（**reports.html A 类审查二审补漏**：新增「生成报告」正式 UI 表单（复用既有确定性快照幂等契约，无 schema/API 变化），修复生成后焦点被忙态解锁重置、导出无 reportId+generation 守卫、刷新重试用旧 URL 参数覆盖当前选择，文案「不会自动发送」与事实对齐；`browser_reports_userpath.spec.js` 重写为 12 用例全 UI 数据链（删除 API 播种，新增表单校验与 XSS 纯文本用例）全绿。专项与相关回归 25 passed、后端 focused 7 passed、完整 Chromium 323 passed 4 skipped + 2 个既有/偶发失败（phase9c:47 基线复现、b2_ocr:71 复跑通过，均非本轮引入）；源码体积与 diff-check 通过。首轮收口内容见下方同日条目。）
+>
+> 同日首轮（**reports.html A 类纯用户路径审查收口**：详情失败新增独立重试控件、快速切换报告 generation 竞态守卫、列表选中高亮、`report_kind` 走 `sbState.label` 用户可读标签（日报/周报/月报/考试提醒）并补齐来源过期统计、导出 busy 防重复；修复共享 CSS `[hidden]` 被 `display` 类覆盖导致 `#report-actions`/`#today-exits` 恒可见的真实缺陷；后端修复 fresh data root 首次报告创建必然 `project_scope_violation`（与 notes 轮同类的惰性建项目缺陷）；修复 cards v15 幂等化后 `/legacy` 卡片复习缺 `Idempotency-Key` 必然失败的回归；后端全量 `630 passed, 3 skipped`。）
 > 更新：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
 >
 > **2026-09-01 执行方向修订**（保留）：证据梯子 → 可用优先。新增 P2-USE 主线；原 P1-6-3-1～P1-6-3-7 取消立项。
