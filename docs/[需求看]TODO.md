@@ -488,3 +488,12 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 新增 `backend/tests/browser_reports_userpath.spec.js` 10 用例全绿（RP-7/8/9 含故障注入属 B 类要素，fixture 报告经 API 播种已在 spec 注释如实标注）。
 - [x] 测试结果：A 类 10 passed；报告相关回归 29 passed；/legacy 回归 12 passed 1 skipped；后端全量 630 passed 3 skipped；完整 Chromium 323 passed 4 skipped + 1 个 p6e:105 偶发时序超时（单独重跑通过，既有 flaky 家族）；check-source-size 与 git diff --check 通过。
 - [ ] 待办移交：① GPT 二审确认 reports.html 七维度状态（当前 `tested`，倾向 `e2e-real-pass`）；② 既有遗留保持开放：plans.html URL plan_id 怪癖、p6e/p9c 家族偶发时序、真实 Provider/OCR/ASR/外发、完整键盘逐键走查、屏幕阅读器。
+
+## 2026-09-12 reports.html 二审补漏：正式 UI 报告创建入口 + 纯 UI 数据 E2E（A 类复审完成）
+
+- [x] 复审发现首轮 spec 的报告 fixture 仍经 `page.request` 播种，不满足「只通过页面 UI 触发行为」的 A 类要求；且页面此前确实无报告创建控件（列表/预览/导出均只读）。本轮补齐：`reports.html` 新增「生成报告」表单（类型/开始/结束/时区，`POST /api/study/reports` 复用既有确定性快照幂等指纹契约，无 schema/API 变化）。
+- [x] 随表单修复的 3 个真实缺陷：① 生成成功后日期/时区清空、焦点回落类型下拉的意图被 `finally` 忙态解锁重置（首次 UI 用例即暴露），改为解锁后再按「字段已空」恢复焦点；② 导出请求缺少与当前选择绑定的 generation/reportId 守卫，快速切换报告后旧导出仍会落地；③ `load()` 重试/刷新仍用页面初始 `params` 中的 report_id 覆盖当前选择，改为实时读取 `location.search`。
+- [x] 文案修正：首屏「报告不会自动发送或生成」与新增表单事实矛盾，改为「报告不会自动发送」（投递默认 off 边界不变）。
+- [x] `browser_reports_userpath.spec.js` 重写为 12 用例全 UI 数据链（删除 API 播种）：新增表单必填/日期顺序校验留在页面并保留焦点 + 提交忙态禁用用例、恶意列表标题（`<img onerror>`）以纯文本渲染不建 HTML 节点的 XSS 用例；原竞态/失败注入用例改经表单建数，定位从「列表首条」改为按周期文本定位（串行共享数据根下顺序稳定）。
+- [x] 测试结果：专项 `12 passed`；报告相关回归（b3_report_c5/p2_fe4_report_preview/phase9d/a3_pages）`25 passed`；报告后端 focused `7 passed`（本轮无后端代码改动）；完整 Chromium 串行 `323 passed, 4 skipped` + 2 个非本轮失败（phase9c:47 基线 HEAD 复现同败、b2_ocr:71 偶发且复跑通过，均与本页无关）；`check-source-size.py` 与 `git diff --check` 通过。
+- [ ] 状态更新：`reports.html` = `tested`（A 类 12 用例全过、数据全经 UI）；「报告创建无正式 UI 入口」的旧 `intentional/not_exposed` 定性由本轮取消。not_verified 保持：真实 Provider/外发、完整键盘逐键、屏幕阅读器。
