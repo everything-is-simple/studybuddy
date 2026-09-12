@@ -63,12 +63,12 @@ test('B3 C5 reports page renders safe projection, exports, reloads, and never pr
 });
 
 test('B3 C5 reports page masks detail failures and permits list retry', async ({page}) => {
-  await page.route('**/api/study/reports', route => route.fulfill({status: 500, contentType: 'application/json', body: JSON.stringify({detail: 'private_report_failure', path: 'H:/secret', traceback: 'hidden'})}));
+  await page.route('**/api/study/reports?*', route => route.fulfill({status: 500, contentType: 'application/json', body: JSON.stringify({detail: 'private_report_failure', path: 'H:/secret', traceback: 'hidden'})}));
   await page.goto(`${BASE}/app/reports.html`);
   await expect(page.locator('#report-status')).toContainText('请求失败，请重试');
   await expect(page.locator('#report-status')).not.toContainText(/private_report_failure|H:\/secret|traceback/i);
   await expect(page.locator('#retry-reports')).toBeVisible();
-  await page.unroute('**/api/study/reports');
+  await page.unroute('**/api/study/reports?*');
   await page.locator('#retry-reports').click();
   await expect(page.locator('#report-status')).toContainText('暂无报告');
 });

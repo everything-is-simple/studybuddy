@@ -63,7 +63,7 @@ test('A3-PAGES review reports and settings retain safe current boundaries',async
   await page.goto(`${BASE}/app/review.html`);
   await expect(page.locator('#review-list')).toContainText('基础概念');
   await page.unrouteAll({behavior:'ignoreErrors'});
-  await mock(page,'**/api/study/reports',{items:[{id:'report-1',title:'脱敏周报',created_at:'2026-01-01T00:00:00Z'}]});
+  await mock(page,'**/api/study/reports?*',{items:[{id:'report-1',title:'脱敏周报',created_at:'2026-01-01T00:00:00Z'}],has_more:false});
   await page.goto(`${BASE}/app/reports.html`);
   await expect(page.locator('#report-list')).toContainText('脱敏周报');
   await expect(page.locator('body')).not.toContainText('已发送');
