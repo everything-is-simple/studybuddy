@@ -37,16 +37,16 @@ test('learning pages remain usable across the approved viewport matrix', async (
 
 test('learning page list failures are safe and expose retry-capable controls', async ({ page }) => {
   const cases = [
-    ['plans.html', '**/api/study/goals', '#goal-status', '#refresh-all'],
-    ['notes.html', '**/api/study/notes', '#note-status', '#refresh-notes'],
-    ['cards.html', '**/api/study/decks', '#deck-status', '#refresh-decks'],
-    ['exercises.html', '**/api/study/exercise-sets', '#set-status', '#refresh-sets'],
-    ['practice.html', '**/api/study/practice-sessions', '#session-status', '#refresh-sessions'],
+    ['plans.html', '**/api/study/goals', '#goal-status', '#refresh-all', '请求失败'],
+    ['notes.html', '**/api/study/notes', '#note-status', '#refresh-notes', '失败，可重试'],
+    ['cards.html', '**/api/study/decks', '#deck-status', '#refresh-decks', '请求失败'],
+    ['exercises.html', '**/api/study/exercise-sets', '#set-status', '#refresh-sets', '请求失败'],
+    ['practice.html', '**/api/study/practice-sessions', '#session-status', '#refresh-sessions', '请求失败'],
   ];
-  for (const [name, route, status, retry] of cases) {
+  for (const [name, route, status, retry, expected] of cases) {
     await page.route(route, routeCall => routeCall.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'private_backend_error', path: 'C:/secret', traceback: 'hidden' }) }));
     await page.goto(`${BASE}/app/${name}`);
-    await expect(page.locator(status)).toContainText('请求失败');
+    await expect(page.locator(status)).toContainText(expected);
     await expect(page.locator(retry)).toBeEnabled();
     await expect(page.locator('body')).not.toContainText(/private_backend_error|C:\/|traceback/i);
     await page.unroute(route);

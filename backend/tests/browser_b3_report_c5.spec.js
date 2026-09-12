@@ -44,7 +44,7 @@ test('B3 C5 reports page renders safe projection, exports, reloads, and never pr
   page.on('request', request => { if (!request.url().startsWith(BASE)) external.push(request.url()); });
   const report = await createReport(page);
   await page.goto(`${BASE}/app/reports.html?report_id=${encodeURIComponent(report.id)}`);
-  await expect(page.locator('#report-detail-title')).toContainText('报告 · daily');
+  await expect(page.locator('#report-detail-title')).toContainText('报告 · 日报');
   await expect(page.locator('#report-detail')).toContainText('交付：未发送');
   await expect(page.locator('#report-detail')).toContainText('有效来源：0');
   await expect(page.locator('body')).not.toContainText(/stored_path|answer_key|safe_payload_json|secret|traceback|已发送/i);
@@ -55,7 +55,7 @@ test('B3 C5 reports page renders safe projection, exports, reloads, and never pr
   await page.locator('#export-markdown').click();
   expect((await markdownDownload).suggestedFilename()).toBe('studybuddy-report.md');
   await page.reload();
-  await expect(page.locator('#report-detail-title')).toContainText('报告 · daily');
+  await expect(page.locator('#report-detail-title')).toContainText('报告 · 日报');
   await page.setViewportSize({width: 390, height: 844});
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   expect(errors).toEqual([]);

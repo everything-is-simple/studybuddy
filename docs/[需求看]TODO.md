@@ -1,6 +1,8 @@
 # StudyBuddy TODO 清单
 
-> 更新：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
+> 更新：2026-09-12（**reports.html A 类审查收口：修复 fresh-root 报告创建 project_scope_violation、/legacy 复习缺幂等键回归、[hidden] 恒可见共享缺陷、报告枚举标签与竞态守卫，新增 10 用例 A 类 E2E；后端全量 630 passed 3 skipped；详见 STATUS.md**。
+>
+> 历史快照：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
 > 基线记录：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v15；最近已验证后端快照为 `623 passed, 3 skipped`（本前端切片未重跑后端全量）。当前 Chromium 完整串行回归为 `208 passed, 4 skipped`（61 files / 212 tests）；本轮材料专项 `8 passed`、重命名后端 focused `3 passed`。4 个 browser skip 均为 opt-in 真实 Provider/ASR smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](../.archive/frontend/frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](../.archive/contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`]([需求+所有角色看]STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](../.archive/evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
 > 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，P1-6 系列仍为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
@@ -476,3 +478,13 @@ revision → chunks → retrieval → citations → Q&A
 - [x] B 审修复题目列表失败缺少独立 retry 控件的问题：`exercises.html` 新增「重试题目列表」，失败显示、成功/重新选择隐藏，点击后真实重载当前练习集题目。
 - [x] B 二审最终状态：`exercises.html` / `practice-result.html` = **`e2e-real-pass`**（本轮范围内 A 类路径完整通过且缺陷已修复）。
 - [ ] `not_verified` 保持：真实 Provider、真实 OCR/ASR、cram A 类创建全链、完整人工视觉/键盘逐键审查、屏幕阅读器。
+
+## 2026-09-12 reports.html A 类纯用户路径审查与缺陷修复（第一轮 GLM 实现，待 GPT 二审）
+
+- [x] 后端：`build_report_projection` 惰性创建默认 projects 行，修复 fresh data root 首次报告创建必然 400 `project_scope_violation`（与 notes 轮 `create_note` 同类缺陷）。
+- [x] 后端回归：cards v15 幂等化后 `/legacy` 卡片复习请求缺 `Idempotency-Key` 必然失败，补随机键并与正式页语义对齐；legacy 体积以 `uuid()` 辅助函数抵消，非增长门禁通过。
+- [x] 共享 CSS：`[hidden]{display:none!important}` 修复 `.stack-actions` 等 display 类覆盖 hidden 属性导致 `#report-actions`/`#today-exits` 恒可见；列表项类补入 focus-visible 选择器。
+- [x] 前端 reports.html：report_kind 走 `sbState.label`（日报/周报/月报/考试提醒）、列表选中高亮、详情/列表 generation 竞态守卫、详情失败独立 `#retry-detail`、导出 busy 防重复、补来源过期统计。
+- [x] 新增 `backend/tests/browser_reports_userpath.spec.js` 10 用例全绿（RP-7/8/9 含故障注入属 B 类要素，fixture 报告经 API 播种已在 spec 注释如实标注）。
+- [x] 测试结果：A 类 10 passed；报告相关回归 29 passed；/legacy 回归 12 passed 1 skipped；后端全量 630 passed 3 skipped；完整 Chromium 323 passed 4 skipped + 1 个 p6e:105 偶发时序超时（单独重跑通过，既有 flaky 家族）；check-source-size 与 git diff --check 通过。
+- [ ] 待办移交：① GPT 二审确认 reports.html 七维度状态（当前 `tested`，倾向 `e2e-real-pass`）；② 既有遗留保持开放：plans.html URL plan_id 怪癖、p6e/p9c 家族偶发时序、真实 Provider/OCR/ASR/外发、完整键盘逐键走查、屏幕阅读器。
