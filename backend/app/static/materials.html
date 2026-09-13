@@ -277,6 +277,7 @@ if(generation!==loadGeneration)return;
 renderPage(data)
 }
 }catch(e){
+if(generation!==loadGeneration)return;
 state.textContent='加载失败';
 error.textContent=sbApi.safeError(e);
 error.hidden=false;
