@@ -129,7 +129,11 @@ test('formal app P2-FE-3-8-2: detail view expands, feedback saves, archive disab
     // Verify archive success
     await expect(page.locator('#review-status')).toContainText('错题已归档');
 
-    // Verify redo/archive buttons disabled
+    // Archived mistakes leave the default list; the filter is the only way back.
+    await expect(page.locator('#review-list article')).toHaveCount(0);
+    await expect(page.locator('#review-list [data-review-hint]')).toContainText('已归档');
+    await page.locator('#show-archived').check();
+    await expect(page.locator('#review-list article')).toHaveCount(1);
     await expect(page.locator('button:has-text("再次练习")')).toBeDisabled();
     await expect(page.locator('button:has-text("归档")')).toBeDisabled();
 
@@ -171,12 +175,12 @@ test('formal app P2-FE-3-8-3: redo creates new session', async({page})=>{
     await page.goto(`${BASE}/app/review.html`);
     await page.waitForTimeout(1500);
 
-    // Click redo button
+    // Click redo button — it must hand the user off to the new session page.
     await page.click('button:has-text("再次练习")');
-    await page.waitForTimeout(1000);
-
-    // Verify success message
-    await expect(page.locator('#review-status')).toContainText('已创建再次练习会话');
+    await page.waitForURL(/practice-session\.html\?session_id=/, { timeout: 15000 });
+    expect(page.url()).toContain('session_id=');
+    await expect(page.locator('#session-detail')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#session-detail')).toContainText('Redo');
 
   }finally{
     stop(server);

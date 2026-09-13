@@ -525,4 +525,6 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 测试结果：两份 B 类专项 `8 passed`；materials/plans 相关回归 14 spec `74 passed`；前端状态矩阵/静态基线/页面契约/系统矩阵 `17 passed`；完整 Chromium 串行 **`339 passed, 4 skipped, 0 failed`**（343 tests，含本轮新增 8 例）；后端全量 `630 passed, 3 skipped`；`check-source-size.py` 与 `git diff --check` 通过。无 API/schema/migration 变化。
 - [x] 二审结论：`materials.html` / `material-detail.html` / `plans.html` / `plan-detail.html` 四页 = **限定范围 `e2e-real-pass`**（A 类 userpath + 本轮 B 类独立证据 + 完整回归全绿；确定性 fake/单进程 SQLite/Chromium 范围），不扩大为全局 production `real-pass`。
 - [ ] `not_verified` 保持：真实 Provider、真实 OCR/ASR 质量、live delivery（固定拒绝）、跨浏览器、屏幕阅读器、完整人工键盘逐键、极端长内容与长时稳定性。
-- [ ] 下一步：`review.html → tasks.html → settings* → classroom.html → capture.html → index.html` 的 A/B 类审查。
+- [x] `review.html` A 类纯用户路径审查：新增 `browser_review_userpath.spec.js` 的 RV-1~RV-12，所有业务数据经正式页面 UI 创建；覆盖空态、错题详情/反馈/来源链接、再次练习、掌握/归档、薄弱点、失败恢复、详情竞态、响应式/键盘、真重启和跨页状态恢复。修复详情/来源深链、归档筛选与持久化、独立详情重试、`detailGeneration` 守卫、busy 禁用、再次练习跳转和 review 错误码映射。验证：A 类 12 passed，关联 Chromium 47 passed，完整后端 630 passed、3 skipped，source-size/diff-check 通过。
+- [ ] `review.html` B 类独立契约/故障审查：分页、迟到详情、XSS、busy 重复点击和错误码安全文案；完成后才可将 review 标记为限定范围 `e2e-real-pass`。
+- [ ] 下一步：`tasks.html → settings* → classroom.html → capture.html → index.html` 的 A/B 类审查。
