@@ -514,3 +514,15 @@ revision → chunks → retrieval → citations → Q&A
 - [x] `browser_reports_userpath.spec.js` 重写为 12 用例全 UI 数据链（删除 API 播种）：新增表单必填/日期顺序校验留在页面并保留焦点 + 提交忙态禁用用例、恶意列表标题（`<img onerror>`）以纯文本渲染不建 HTML 节点的 XSS 用例；原竞态/失败注入用例改经表单建数，定位从「列表首条」改为按周期文本定位（串行共享数据根下顺序稳定）。
 - [x] 测试结果：专项 `12 passed`；报告相关回归（b3_report_c5/p2_fe4_report_preview/phase9d/a3_pages）`25 passed`；报告后端 focused `7 passed`（本轮无后端代码改动）；完整 Chromium 串行 `323 passed, 4 skipped` + 2 个非本轮失败（phase9c:47 基线 HEAD 复现同败、b2_ocr:71 偶发且复跑通过，均与本页无关）；`check-source-size.py` 与 `git diff --check` 通过。
 - [ ] 状态更新：`reports.html` = `tested`（A 类 12 用例全过、数据全经 UI）；「报告创建无正式 UI 入口」的旧 `intentional/not_exposed` 定性由本轮取消。not_verified 保持：真实 Provider/外发、完整键盘逐键、屏幕阅读器。
+
+## 2026-09-13 materials/plans B 类独立二审收口（页面级证据统一，限定范围 e2e-real-pass）
+
+- [x] 独立复读 `materials.html`、`material-detail.html`、`plans.html`、`plan-detail.html` 四页与真实 API 契约（`/api/materials` 返回 `{items,total,limit,offset,has_more}`、FastAPI 错误体 `{"detail":"<code>"}`）；material-detail 与 plan-detail 复读未发现新缺陷（plan-detail load 已有 generation+settle 模式，material-detail 单发加载无用户可触发的并发路径）。
+- [x] 修复 3 个真实迟到响应竞态（与 reports/notes 轮同类）：① `materials.html` `load()` catch 无 generation 守卫，迟到的旧列表失败把已成功加载的新视图翻成错误态并残留重试按钮；② `plans.html` `load()` catch 同类问题，迟到失败覆盖 goals/modules/plans 三区状态；③ `plans.html` `loadSourceLinks()` 无世代守卫，快速切换计划时旧计划的迟到来源链接串页渲染到新计划详情。
+- [x] 三处修复均做过撤守卫反证：撤掉守卫 → 对应 B 类用例失败；恢复守卫 → 通过。测试真实覆盖缺陷，不是摆设断言。
+- [x] 新增独立 `browser_materials_b_class.spec.js` 4 用例：分页请求遵循 `limit=20&offset` 契约且 `has_more`/`total` 驱动翻页与计数、迟到列表失败不覆盖新视图、恶意重命名输入（`<img onerror>`/`<svg onload>` 开标签 payload，避开后端 `_valid_filename` 拒绝的 `/`）纯文本渲染不建 HTML 节点、重命名失败走 `material_update_failed` 专用安全文案 + busy 防重复 + 恢复后真实重试成功。
+- [x] 新增独立 `browser_plans_b_class.spec.js` 4 用例：迟到计划列表失败（`database_unavailable`）不覆盖新加载状态、快速切换计划时迟到来源链接不串页（1200ms 迟到响应 vs 即时真实响应）、恶意目标/计划标题纯文本渲染、慢创建期间全表单禁用（`refresh-all` 除外）且不产生重复目标。
+- [x] 测试结果：两份 B 类专项 `8 passed`；materials/plans 相关回归 14 spec `74 passed`；前端状态矩阵/静态基线/页面契约/系统矩阵 `17 passed`；完整 Chromium 串行 **`339 passed, 4 skipped, 0 failed`**（343 tests，含本轮新增 8 例）；后端全量 `630 passed, 3 skipped`；`check-source-size.py` 与 `git diff --check` 通过。无 API/schema/migration 变化。
+- [x] 二审结论：`materials.html` / `material-detail.html` / `plans.html` / `plan-detail.html` 四页 = **限定范围 `e2e-real-pass`**（A 类 userpath + 本轮 B 类独立证据 + 完整回归全绿；确定性 fake/单进程 SQLite/Chromium 范围），不扩大为全局 production `real-pass`。
+- [ ] `not_verified` 保持：真实 Provider、真实 OCR/ASR 质量、live delivery（固定拒绝）、跨浏览器、屏幕阅读器、完整人工键盘逐键、极端长内容与长时稳定性。
+- [ ] 下一步：`review.html → tasks.html → settings* → classroom.html → capture.html → index.html` 的 A/B 类审查。
