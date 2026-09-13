@@ -1,271 +1,46 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · 任务状态</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
 </head>
-<body>
-<div class="app-shell">
-<header class="topbar">
-<div class="topbar-inner">
-<a class="brand" href="/app/today.html">StudyBuddy</a>
-<nav class="nav" data-nav aria-label="主导航"></nav>
-<span class="status-dot" data-system-status>检查系统状态…</span>
-</div>
-</header>
+<body><div class="app-shell">
+<header class="topbar"><div class="topbar-inner"><a class="brand" href="/app/today.html">StudyBuddy</a><nav class="nav" data-nav aria-label="主导航"></nav><span class="status-dot" data-system-status>检查系统状态…</span></div></header>
 <main class="main">
-<div class="hero">
-<div>
-<p class="eyebrow">系统监控</p>
-<h1>任务状态</h1>
-<p class="lead">查看后台任务的运行状态、重试和取消操作。</p>
-</div>
-</div>
-
-<section class="card" data-od-id="task-capability-notice">
-<h2>任务运行器状态</h2>
-<div class="task-notice">
-<p><strong>当前支持的任务类型：</strong></p>
-<ul class="list-indented">
-<li><code class="code-inline">embedding_index</code> — 材料向量索引（已验证）</li>
-</ul>
-<p class="mt-12 mb-0"><strong>其它任务类型显示为"尚未接入任务运行器"。</strong></p>
-</div>
-</section>
-
-<section class="card mt-24" data-od-id="task-list">
-<div class="section-label">
-<h2>任务列表</h2>
-<span id="state" class="muted" role="status" aria-live="polite">说明</span>
-</div>
-<div class="filters">
-<select id="status-filter" aria-label="状态筛选">
-<option value="">全部状态</option>
-<option value="queued">等待中</option>
-<option value="running">运行中</option>
-<option value="succeeded">已完成</option>
-<option value="failed">失败</option>
-<option value="cancelled">已取消</option>
-</select>
-<button class="btn" id="apply-filters" type="button">应用筛选</button>
-<button class="btn" id="refresh-btn" type="button">刷新</button>
-</div>
-<div id="error" class="error" role="alert" hidden></div>
-<div id="tasks" class="task-grid"></div>
-<div id="info" class="notice mt-16">
-<p><strong>说明：</strong>当前页面仅展示通过材料详情页、问答页面等触发的 <code>embedding_index</code> 任务。</p>
-<p class="mt-8 mb-0">如需查看具体任务，请通过触发任务的功能入口（如材料索引、问答）访问，或在地址栏输入 <code>/app/tasks.html?task_id=&lt;任务ID&gt;</code>。</p>
-</div>
-</section>
-
-<section class="card mt-24" data-od-id="task-detail" id="task-detail-section" hidden>
-<div class="section-label">
-<h2>任务详情</h2>
-<span id="detail-state" class="muted" role="status" aria-live="polite"></span>
-</div>
-<div id="detail-error" class="error" role="alert" hidden></div>
-<div id="task-detail"></div>
-</section>
-</main>
-</div>
-<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
-<script src="/app/js/shell.js"></script>
+<div class="hero"><div><p class="eyebrow">系统监控</p><h1>任务状态</h1><p class="lead">查看后台任务的运行状态、重试和取消操作。</p></div></div>
+<section class="card" data-od-id="task-capability-notice"><h2>任务运行器状态</h2><div class="task-notice"><p><strong>当前支持的任务类型：</strong></p><ul class="list-indented"><li><code class="code-inline">embedding_index</code> — 材料向量索引（已验证）</li></ul><p class="mt-12 mb-0"><strong>其它任务类型显示为“尚未接入任务运行器”。</strong></p></div></section>
+<section class="card mt-24" data-od-id="task-list"><div class="section-label"><h2>任务列表</h2><span id="state" class="muted" role="status" aria-live="polite">说明</span></div><div class="filters"><select id="status-filter" aria-label="状态筛选"><option value="">全部状态</option><option value="queued">等待中</option><option value="running">运行中</option><option value="cancel_requested">取消中</option><option value="succeeded">已完成</option><option value="failed">失败</option><option value="cancelled">已取消</option><option value="stale">已过期</option></select><button class="btn" id="apply-filters" type="button">应用筛选</button><button class="btn" id="refresh-btn" type="button">刷新</button></div><div id="error" class="error" role="alert" hidden></div><button class="btn mt-12" id="retry-list" type="button" hidden>重新加载任务</button><div id="tasks" class="task-grid"></div><div id="pagination" class="pagination" hidden></div><div id="info" class="notice mt-16"><p><strong>说明：</strong>当前页面仅展示通过材料详情页等入口触发的 <code>embedding_index</code> 任务。</p><p class="mt-8 mb-0">如需查看具体任务，请通过触发任务的功能入口访问，或在地址栏输入 <code>/app/tasks.html?task_id=&lt;任务ID&gt;</code>。</p></div></section>
+<section class="card mt-24" data-od-id="task-detail" id="task-detail-section" hidden><div class="section-label"><h2>任务详情</h2><span id="detail-state" class="muted" role="status" aria-live="polite"></span></div><div id="detail-error" class="error" role="alert" hidden></div><button class="btn mt-12" id="retry-detail" type="button" hidden>重新加载详情</button><div id="detail-notice" class="notice mt-12" role="status" aria-live="polite" hidden></div><div id="task-detail"></div></section>
+</main></div>
+<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script>
 <script>
 (function(){
 const pageRequest=sbApi.setPageScope('tasks');
-const state=document.querySelector('#state');
-const error=document.querySelector('#error');
-const tasks=document.querySelector('#tasks');
-const info=document.querySelector('#info');
-const statusFilter=document.querySelector('#status-filter');
-const applyFilters=document.querySelector('#apply-filters');
-const refreshBtn=document.querySelector('#refresh-btn');
-let listGeneration=0;let listBusy=false;
-
-const taskDetailSection=document.querySelector('#task-detail-section');
-const detailState=document.querySelector('#detail-state');
-const detailError=document.querySelector('#detail-error');
-const taskDetail=document.querySelector('#task-detail');
-
-const urlParams=new URLSearchParams(window.location.search);
-const taskId=urlParams.get('task_id');
-let detailGeneration=0;
-let pollTimer=null;
-
-function text(value){return typeof value==='string'?value:''}
-
-if(taskId){
-info.hidden=true;
-taskDetailSection.hidden=false;
-loadTaskDetail(taskId);
-pollTimer=setInterval(()=>loadTaskDetail(taskId),3000);
-window.addEventListener('pagehide',()=>clearInterval(pollTimer),{once:true})
-}else{
-loadTaskList();
-}
-
-async function loadTaskDetail(id){
-const generation=++detailGeneration;
-detailState.textContent='加载中…';
-detailError.hidden=true;
-taskDetail.replaceChildren();
-try{
-const data=await sbApi.json(`/api/tasks/${encodeURIComponent(id)}`,{signal:pageRequest.signal});
-if(generation!==detailGeneration)return;
-detailState.textContent='已加载';
-renderTaskDetail(data)
-}catch(e){
-detailState.textContent='加载失败';
-detailError.textContent=sbApi.safeError(e);
-detailError.hidden=false
-}
-}
-
-function renderTaskDetail(data){
-taskDetail.replaceChildren();
-
-const card=document.createElement('div');
-card.className='task-card';
-
-const header=document.createElement('div');
-header.className='task-header';
-
-const h3=document.createElement('h3');
-h3.textContent=text(data.task_id).slice(0,12)+'...';
-h3.title=text(data.task_id);
-header.append(h3);
-
-const statusBadge=createStatusBadge(data.status);
-header.append(statusBadge);
-
-card.append(header);
-
-const dl=document.createElement('dl');
-dl.className='task-meta';
-
-addMeta(dl,'任务类型',text(data.task_kind)||text(data.operation_type)||'未知');
-addMeta(dl,'状态',sbState.label(data.status));
-if(data.created_at)addMeta(dl,'创建于',formatDate(data.created_at));
-if(data.started_at)addMeta(dl,'开始于',formatDate(data.started_at));
-if(data.finished_at)addMeta(dl,'完成于',formatDate(data.finished_at));
-if(data.error_code)addMeta(dl,'错误码',text(data.error_code));
-if(data.retry_count!=null)addMeta(dl,'重试次数',String(data.retry_count));
-
-card.append(dl);
-
-if(data.progress_percent!=null&&data.progress_percent>=0&&data.progress_percent<=100){
-const progress=data.progress_percent;
-const progressBar=document.createElement('div');
-progressBar.className='progress-bar';
-const progressFill=document.createElement('div');
-progressFill.className='progress-fill';
-progressFill.style.width=progress+'%';
-progressFill.setAttribute('role','progressbar');progressFill.setAttribute('aria-valuemin','0');progressFill.setAttribute('aria-valuemax','100');progressFill.setAttribute('aria-valuenow',String(data.progress));
-progressBar.append(progressFill);
-card.append(progressBar);
-
-const progressLabel=document.createElement('p');
-progressLabel.className='muted';
-progressLabel.classList.add('item-meta');
-progressLabel.textContent=`进度：${progress}%`;
-card.append(progressLabel)
-}
-
-const actions=document.createElement('div');
-actions.className='task-actions';
-
-if(data.status==='pending'||data.status==='running'){
-const cancelBtn=document.createElement('button');
-cancelBtn.className='btn';
-cancelBtn.textContent='取消';
-cancelBtn.onclick=()=>cancelTask(data.task_id);
-actions.append(cancelBtn)
-}
-
-if(data.status==='failed'||data.status==='cancelled'){
-const retryBtn=document.createElement('button');
-retryBtn.className='btn btn-primary';
-retryBtn.textContent='重试';
-retryBtn.onclick=()=>retryTask(data.task_id);
-actions.append(retryBtn)
-}
-
-card.append(actions);
-
-taskDetail.append(card)
-}
-
-async function loadTaskList(){
-const run=++listGeneration;state.textContent='加载中…';error.hidden=true;tasks.replaceChildren();
-try{const params=new URLSearchParams();if(statusFilter.value)params.set('status',statusFilter.value);const data=await sbApi.json('/api/tasks?'+params,{signal:pageRequest.signal});if(run!==listGeneration)return;const items=Array.isArray(data.items)?data.items:[];state.textContent=items.length?`共 ${data.total||0} 个任务`:'当前无全局任务列表';if(!items.length){tasks.append(Object.assign(document.createElement('p'),{className:'muted',textContent:'暂无任务'}));return}items.forEach(renderTaskCard)}catch(e){if(run!==listGeneration)return;state.textContent='加载失败';error.textContent=sbApi.safeError(e);error.hidden=false}}
-function renderTaskCard(data){const card=document.createElement('article');card.className='task-card';const h3=document.createElement('h3');h3.textContent=text(data.task_id).slice(0,12)+'…';card.append(h3,createStatusBadge(data.status));const meta=document.createElement('p');meta.className='muted';meta.textContent=`${text(data.operation_type)||'任务'} · ${data.progress_percent||0}% · ${formatDate(data.created_at)}`;card.append(meta);const open=document.createElement('a');open.className='btn';open.href=`/app/tasks.html?task_id=${encodeURIComponent(data.task_id)}`;open.textContent='查看详情';card.append(open);tasks.append(card)}
-
-function createStatusBadge(status){
-const badge=document.createElement('span');
-badge.className='task-status '+status;
-const statusMap={
-pending:'等待中',
-queued:'等待中',
-running:'运行中',
-success:'已完成',
-succeeded:'已完成',
-failed:'失败',
-cancelled:'已取消'
-};
-badge.textContent=statusMap[status]||sbState.label(status);
-return badge
-}
-
-function addMeta(dl,key,value){
-const dt=document.createElement('dt');
-dt.textContent=key;
-const dd=document.createElement('dd');
-dd.textContent=value;
-dl.append(dt,dd)
-}
-
-function formatDate(iso){
-if(!iso)return'未知';
-try{
-return new Date(iso).toLocaleString('zh-CN')
-}catch(e){
-return iso
-}
-}
-
-async function cancelTask(id){
-if(!confirm('确定取消此任务吗？'))return;
-try{
-await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/cancel`,{method:'POST',signal:pageRequest.signal});
-alert('任务已取消');
-loadTaskDetail(id)
-}catch(e){
-alert(sbApi.safeError(e))
-}
-}
-
-async function retryTask(id){
-if(!confirm('确定重试此任务吗？'))return;
-try{
-await sbApi.json(`/api/tasks/${encodeURIComponent(id)}/retry`,{method:'POST',signal:pageRequest.signal});
-alert('任务已加入重试队列');
-loadTaskDetail(id)
-}catch(e){
-alert(sbApi.safeError(e))
-}
-}
-
-refreshBtn.onclick=()=>{
-if(taskId){
-loadTaskDetail(taskId)
-}
-};
-
-applyFilters.onclick=()=>loadTaskList();
-refreshBtn.onclick=()=>taskId?loadTaskDetail(taskId):loadTaskList();
+const state=document.querySelector('#state'),error=document.querySelector('#error'),tasks=document.querySelector('#tasks'),info=document.querySelector('#info'),statusFilter=document.querySelector('#status-filter'),applyFilters=document.querySelector('#apply-filters'),refreshBtn=document.querySelector('#refresh-btn'),retryList=document.querySelector('#retry-list'),pagination=document.querySelector('#pagination');
+const detailSection=document.querySelector('#task-detail-section'),detailState=document.querySelector('#detail-state'),detailError=document.querySelector('#detail-error'),retryDetail=document.querySelector('#retry-detail'),detailNotice=document.querySelector('#detail-notice'),taskDetail=document.querySelector('#task-detail');
+const params=new URLSearchParams(location.search),initialTaskId=params.get('task_id'),terminal=new Set(['succeeded','failed','cancelled','stale']),active=new Set(['queued','pending','running','cancel_requested']);
+let listGeneration=0,detailGeneration=0,pollTimer=null,actionBusy=false,detailId=initialTaskId,listPage=Math.max(0,Number(params.get('page'))||0),listStatus=params.get('status')||'';const pageSize=25;
+const text=value=>typeof value==='string'?value:'';
+const statusLabel=status=>({pending:'等待中',queued:'等待中',running:'运行中',cancel_requested:'取消中',success:'已成功',succeeded:'已成功',failed:'失败',cancelled:'已取消',stale:'已过期'}[status]||'状态未知');
+const taskKindLabel=kind=>kind==='embedding_index'||kind==='embedding'?'材料向量索引（embedding_index）':kind?'已接入任务':'未知任务';
+const stageLabel=stage=>({queued:'等待执行',reading_source:'读取材料',indexing:'建立索引',provider_call:'调用本地 Provider',persisting:'保存索引',finalizing:'完成收尾',recovery_required:'等待恢复'}[stage]||'处理中');
+function syncUrl(){const next=new URLSearchParams();if(listStatus)next.set('status',listStatus);if(listPage)next.set('page',String(listPage));if(detailId)next.set('task_id',detailId);history.replaceState(null,'',next.toString()?location.pathname+'?'+next:location.pathname)}
+function clearPolling(){if(pollTimer!==null){clearInterval(pollTimer);pollTimer=null}}
+function notice(message,kind){detailNotice.hidden=!message;detailNotice.className='notice mt-12'+(kind?' '+kind:'');detailNotice.textContent=message||''}
+function addMeta(dl,key,value){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;dl.append(dt,dd)}
+function badge(status){const node=document.createElement('span');node.className='task-status '+({queued:'pending',pending:'pending',running:'running',cancel_requested:'running',succeeded:'success',success:'success',failed:'failed',cancelled:'cancelled',stale:'stale'}[status]||'unknown');node.textContent=statusLabel(status);return node}
+function renderDetail(data){taskDetail.replaceChildren();if(terminal.has(String(data.status||'')))clearPolling();const card=document.createElement('div');card.className='task-card';const header=document.createElement('div');header.className='task-header';const h3=document.createElement('h3');h3.textContent=text(data.task_id).slice(0,12)+'…';h3.title=text(data.task_id);header.append(h3,badge(data.status));card.append(header);const dl=document.createElement('dl');dl.className='task-meta';addMeta(dl,'任务类型',taskKindLabel(data.task_kind||data.operation_type));addMeta(dl,'状态',statusLabel(data.status));if(data.stage_code)addMeta(dl,'当前阶段',stageLabel(data.stage_code));if(data.created_at)addMeta(dl,'创建于',formatDate(data.created_at));if(data.started_at)addMeta(dl,'开始于',formatDate(data.started_at));if(data.finished_at)addMeta(dl,'完成于',formatDate(data.finished_at));if(data.error_code)addMeta(dl,'处理结果',safeTaskError(data.error_code));if(data.retry_count!=null)addMeta(dl,'重试次数',String(data.retry_count));if(data.attempt_count!=null)addMeta(dl,'执行次数',String(data.attempt_count));card.append(dl);const numeric=Number(data.progress_percent);if(Number.isFinite(numeric)){const progress=Math.max(0,Math.min(100,numeric));const bar=document.createElement('div');bar.className='progress-bar';const fill=document.createElement('div');fill.className='progress-fill';fill.setAttribute('role','progressbar');fill.setAttribute('aria-valuemin','0');fill.setAttribute('aria-valuemax','100');fill.setAttribute('aria-valuenow',String(progress));fill.style.width=progress+'%';bar.append(fill);card.append(bar);const label=document.createElement('p');label.className='muted item-meta';label.textContent='进度：'+progress+'%';card.append(label)}const actions=document.createElement('div');actions.className='task-actions';if(['queued','pending','running'].includes(data.status)){const cancel=document.createElement('button');cancel.className='btn';cancel.type='button';cancel.dataset.action='cancel';cancel.textContent='取消';cancel.onclick=()=>cancelTask(data.task_id);actions.append(cancel)}if(data.status==='failed'||data.status==='stale'){const retry=document.createElement('button');retry.className='btn btn-primary';retry.type='button';retry.dataset.action='retry';retry.textContent='重试';retry.onclick=()=>retryTask(data.task_id);actions.append(retry)}card.append(actions);taskDetail.append(card)}
+function safeTaskError(code){return sbApi.safeError({code:code})}
+function formatDate(iso){if(!iso)return'未知';const date=new Date(iso);return Number.isNaN(date.getTime())?'未知':date.toLocaleString('zh-CN')}
+function renderListCard(data){const card=document.createElement('article');card.className='task-card';const h3=document.createElement('h3');h3.textContent=text(data.task_id).slice(0,12)+'…';h3.title=text(data.task_id);card.append(h3,badge(data.status));const meta=document.createElement('p');meta.className='muted';const progress=Number.isFinite(Number(data.progress_percent))?Math.max(0,Math.min(100,Number(data.progress_percent))):0;meta.textContent=taskKindLabel(data.task_kind||data.operation_type)+' · '+progress+'% · '+formatDate(data.created_at);card.append(meta);const link=document.createElement('a');link.className='btn';const target=new URLSearchParams();target.set('task_id',text(data.task_id));if(listStatus)target.set('status',listStatus);if(listPage)target.set('page',String(listPage));link.href='/app/tasks.html?'+target;link.textContent='查看详情';card.append(link);tasks.append(card)}
+function renderPagination(data){const count=Array.isArray(data.items)?data.items.length:0;const hasMore=data.has_more===true||(Number(data.offset||0)+count)<Number(data.total||0);pagination.replaceChildren();if(listPage===0&&!hasMore){pagination.hidden=true;return}pagination.hidden=false;const prev=document.createElement('button');prev.className='btn';prev.textContent='上一页';prev.disabled=listPage===0;prev.onclick=()=>{if(listPage>0){listPage--;loadList()}};const current=document.createElement('span');current.className='muted';current.textContent='第 '+(listPage+1)+' 页';const next=document.createElement('button');next.className='btn';next.textContent='下一页';next.disabled=!hasMore;next.onclick=()=>{if(hasMore){listPage++;loadList()}};pagination.append(prev,current,next)}
+async function loadList(){const generation=++listGeneration;state.textContent='加载中…';error.hidden=true;retryList.hidden=true;retryList.disabled=true;tasks.replaceChildren();pagination.hidden=true;try{const query=new URLSearchParams();if(listStatus)query.set('status',listStatus);query.set('limit',String(pageSize));query.set('offset',String(listPage*pageSize));const data=await sbApi.json('/api/tasks?'+query,{signal:pageRequest.signal});if(generation!==listGeneration)return;const rows=Array.isArray(data.items)?data.items:[];state.textContent=rows.length?'显示 '+(listPage*pageSize+1)+'-'+(listPage*pageSize+rows.length)+'，共 '+(data.total||0)+' 个任务':'当前无全局任务列表';if(!rows.length){tasks.append(Object.assign(document.createElement('p'),{className:'muted',textContent:'暂无任务'}));return}rows.forEach(renderListCard);renderPagination(data)}catch(exception){if(generation!==listGeneration)return;state.textContent='加载失败';error.textContent=sbApi.safeError(exception);error.hidden=false;retryList.hidden=false;retryList.disabled=false}}
+function startPolling(id,generation,status){clearPolling();if(!active.has(status))return;pollTimer=setInterval(()=>{if(generation===detailGeneration&&detailId===id)loadDetail(id)},3000)}
+async function loadDetail(id){const generation=++detailGeneration;detailId=id;clearPolling();detailState.textContent='加载中…';detailError.hidden=true;retryDetail.hidden=true;retryDetail.disabled=true;notice('');taskDetail.replaceChildren();try{const data=await sbApi.json('/api/tasks/'+encodeURIComponent(id),{signal:pageRequest.signal});if(generation!==detailGeneration||detailId!==id)return;detailState.textContent='已加载';renderDetail(data);startPolling(id,generation,String(data.status||''))}catch(exception){if(generation!==detailGeneration||detailId!==id)return;clearPolling();detailState.textContent='加载失败';detailError.textContent=sbApi.safeError(exception);detailError.hidden=false;retryDetail.hidden=false;retryDetail.disabled=false}}
+async function cancelTask(id){if(actionBusy||!confirm('确定取消此任务吗？'))return;actionBusy=true;notice('正在取消任务…');const button=taskDetail.querySelector('[data-action="cancel"]');if(button)button.disabled=true;try{const data=await sbApi.json('/api/tasks/'+encodeURIComponent(id)+'/cancel',{method:'POST',signal:pageRequest.signal});const message=data.status==='cancel_requested'?'已请求取消，任务将在安全点停止。':'任务已取消。';await loadDetail(id);await loadList();notice(message,'status-success')}catch(exception){if(detailId===id){notice(sbApi.safeError(exception)+' 可重试。','warn');if(button)button.disabled=false}}finally{actionBusy=false}}
+async function retryTask(id){if(actionBusy||!confirm('确定重试此任务吗？'))return;actionBusy=true;notice('正在重新加入任务队列…');const button=taskDetail.querySelector('[data-action="retry"]');if(button)button.disabled=true;try{await sbApi.json('/api/tasks/'+encodeURIComponent(id)+'/retry',{method:'POST',signal:pageRequest.signal});await loadDetail(id);await loadList();notice('任务已加入重试队列。','status-success')}catch(exception){if(detailId===id){notice(sbApi.safeError(exception)+' 可重试。','warn');if(button)button.disabled=false}}finally{actionBusy=false}}
+retryList.onclick=()=>{if(!retryList.disabled)loadList()};retryDetail.onclick=()=>{if(detailId&&!retryDetail.disabled)loadDetail(detailId)};refreshBtn.onclick=()=>detailId?Promise.all([loadDetail(detailId),loadList()]):loadList();applyFilters.onclick=()=>{listStatus=statusFilter.value;listPage=0;detailId=null;detailGeneration++;clearPolling();detailSection.hidden=true;info.hidden=false;syncUrl();loadList()};statusFilter.value=listStatus;window.addEventListener('pagehide',()=>{clearPolling();pageRequest.cancel()},{once:true});
+if(initialTaskId){info.hidden=true;detailSection.hidden=false;loadDetail(initialTaskId)}else{loadList()}
 })();
-</script>
-</body>
-</html>
+</script></body></html>

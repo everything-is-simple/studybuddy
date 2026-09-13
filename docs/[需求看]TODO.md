@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-13（**tasks.html A/B 二审限定范围收口**：已补齐纯 UI 用户路径与独立 B 类 spec；分页、终态轮询、详情/列表重试、取消/重试 busy 与失败恢复、安全错误映射和纯文本渲染已覆盖。A 类 6 passed、B 类 5 passed，关联 Chromium 25 passed，后端全量 631 passed/3 skipped。完整 Chromium 串行本轮未重跑，最终推送仍待执行，故保留 not_verified。）
+
 > 更新：2026-09-12（**reports.html A 类审查收口：修复 fresh-root 报告创建 project_scope_violation、/legacy 复习缺幂等键回归、[hidden] 恒可见共享缺陷、报告枚举标签与竞态守卫，新增 10 用例 A 类 E2E；后端全量 630 passed 3 skipped；详见 STATUS.md**。
 >
 > 历史快照：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
