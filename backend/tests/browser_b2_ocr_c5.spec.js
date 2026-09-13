@@ -23,8 +23,17 @@ async function ready() {
   }, {timeout: 20000}).toBe(true);
 }
 
-function stop() {
-  if (server && !server.killed) server.kill();
+async function stop() {
+  if (server && !server.killed) {
+    const dying = server;
+    await new Promise(resolve => {
+      let settled = false;
+      const finish = () => { if (!settled) { settled = true; resolve(); } };
+      dying.once('exit', finish);
+      dying.kill();
+      setTimeout(finish, 5000);
+    });
+  }
   server = null;
 }
 

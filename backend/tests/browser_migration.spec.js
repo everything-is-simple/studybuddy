@@ -24,7 +24,19 @@ async function ready() {
   throw new Error('server_not_ready');
 }
 
-function stop() { if (server && !server.killed) server.kill(); server = null; }
+async function stop() {
+  if (server && !server.killed) {
+    const dying = server;
+    await new Promise(resolve => {
+      let settled = false;
+      const finish = () => { if (!settled) { settled = true; resolve(); } };
+      dying.once('exit', finish);
+      dying.kill();
+      setTimeout(finish, 5000);
+    });
+  }
+  server = null;
+}
 
 test.beforeEach(async () => { fs.rmSync(RUN_ROOT, { recursive: true, force: true }); server = startServer(); await ready(); });
 test.afterEach(stop);

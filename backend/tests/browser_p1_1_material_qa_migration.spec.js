@@ -16,7 +16,19 @@ async function ready() {
   await expect.poll(async () => { try { return (await fetch(`${BASE}/api/health`)).ok; } catch (_) { return false; } }, {timeout: 15000}).toBe(true);
 }
 test.beforeEach(async () => { fs.rmSync(ROOT, {recursive: true, force: true}); server = startServer(); await ready(); });
-test.afterEach(() => { if (server && !server.killed) server.kill(); server = null; });
+test.afterEach(async () => {
+  if (server && !server.killed) {
+    const dying = server;
+    await new Promise(resolve => {
+      let settled = false;
+      const finish = () => { if (!settled) { settled = true; resolve(); } };
+      dying.once('exit', finish);
+      dying.kill();
+      setTimeout(finish, 5000);
+    });
+  }
+  server = null;
+});
 
 async function createMaterial(page) {
   const response = await page.request.post(`${BASE}/api/materials`, {multipart: {file: {name: 'p1-source.txt', mimeType: 'text/plain', buffer: Buffer.from('P1 citation evidence identifies the indexed body location. This verified study source contains enough public text for lexical retrieval. The indexed body location is supported by the citation evidence in this material.')}}});

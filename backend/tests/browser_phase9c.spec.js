@@ -52,7 +52,8 @@ test('Phase 9C S3 workspace starts, submits, results, reloads and preserves priv
   await page.getByRole('link', {name: '练习反馈'}).click();
   await expect(page.locator('#phase9c')).toBeVisible();
   await expect(page.locator('#phase9c-session-list')).toContainText('尚无限时练习');
-  await page.locator('#phase9c-refresh').click();
+  await expect(page.locator('#phase9c-status')).toHaveText('已加载', { timeout: 10000 });
+  await expect(page.locator('.phase9c-exercise-choice')).toHaveCount(1, { timeout: 10000 });
   await page.locator('.phase9c-exercise-choice').check();
   const createdSession = page.waitForResponse(response => response.url().includes('/api/study/practice-sessions') && response.request().method() === 'POST');
   await page.locator('#phase9c-session-create').click();
