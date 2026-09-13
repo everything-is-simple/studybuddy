@@ -292,25 +292,43 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-RP-14 窄屏响应式、键盘焦点与跨页导航（nav-toggle 需重新展开）', async ({ page }) => {
+  test('A-E2E-RP-14 五档响应式、键盘焦点、真重启持久化与跨页导航', async ({ page }) => {
     await page.goto(`${BASE}/app/reports.html`);
     await createReportFromUi(page, 'weekly', '2026-08-01', '2026-08-08');
-    // Desktop keyboard path: focus the list item and activate it with Enter.
+    // Desktop keyboard path: focus the concrete report item and activate it.
     await page.goto(`${BASE}/app/reports.html`);
     const item = page.locator('#report-list .report-item').filter({ hasText: '2026-08-01' }).first();
     await expect(item).toBeVisible({ timeout: 10000 });
-    await assertFocusStyle(page, '#report-list .report-item');
+    const reportId = await item.getAttribute('data-report-id');
+    expect(reportId).toBeTruthy();
+    await assertFocusStyle(page, `#report-list .report-item[data-report-id="${reportId}"]`);
     await item.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#report-detail-title')).toHaveText('报告 · 周报', { timeout: 10000 });
+    const persistedUrl = `${BASE}/app/reports.html?report_id=${encodeURIComponent(reportId)}`;
 
-    // Narrow viewport without horizontal overflow + screenshot artifact.
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    await page.screenshot({ path: `${ART}/reports-390.png`, fullPage: true });
+    // Five approved viewport classes: desktop, laptop, tablet, narrow mobile,
+    // and compact mobile. Both list and selected detail must stay usable.
+    for (const [width, height] of [[1920, 1080], [1280, 800], [768, 1024], [540, 800], [390, 844]]) {
+      await page.setViewportSize({ width, height });
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await expect(page.locator(`#report-list .report-item[data-report-id="${reportId}"]`)).toHaveClass(/selected/);
+      await expect(page.locator('#report-detail-title')).toHaveText('报告 · 周报');
+      await page.screenshot({ path: `${ART}/reports-${width}x${height}.png`, fullPage: true });
+    }
 
-    // Cross-page: from today, the mobile nav must be re-expanded before the
-    // reports link is reachable, and it collapses again after navigation.
+    // Real process restart, not only page.reload: the deep link and report
+    // projection must be readable from the persisted SQLite/data_root state.
+    await stopServer();
+    server = startServer();
+    await ready();
+    await page.goto(persistedUrl);
+    await expect(page.locator('#report-detail-title')).toHaveText('报告 · 周报', { timeout: 10000 });
+    await expect(page.locator('#report-detail')).toContainText('范围：2026-08-01 至 2026-08-08');
+    await expect(page.locator(`#report-list .report-item[data-report-id="${reportId}"]`)).toHaveClass(/selected/);
+
+    // Cross-page: the mobile nav is rebuilt after navigation and must be
+    // explicitly re-expanded before the reports link is reachable.
     await page.goto(`${BASE}/app/today.html`);
     const toggle = page.locator('.nav-toggle');
     await expect(toggle).toBeVisible();
@@ -322,10 +340,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await toggle.click();
     await expect(page.locator('#primary-navigation')).toBeVisible();
     await toggle.click();
-    await expect(page.locator('#report-list .report-item').filter({ hasText: '周报' }).first()).toContainText('2026-08-01', { timeout: 10000 });
-
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await expect(page.locator('#report-list .report-item').filter({ hasText: '2026-08-01' })).toHaveCount(1);
+    await expect(page.locator(`#report-list .report-item[data-report-id="${reportId}"]`)).toContainText('2026-08-01', { timeout: 10000 });
     await assertNoSensitiveVisibleText(page);
   });
 });
