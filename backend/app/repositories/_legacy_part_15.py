@@ -72,8 +72,9 @@ def list_operation_tasks_public(connection: sqlite3.Connection, *, project_id: s
         "SELECT t.id FROM operation_tasks t JOIN ai_operations o ON o.id=t.operation_id WHERE " + clause +
         " ORDER BY t.created_at DESC,t.id DESC LIMIT ? OFFSET ?", params + [limit, offset],
     ).fetchall()
-    return {"items": [get_operation_task_public(connection, task_id=str(row["id"]), project_id=project_id) for row in rows],
-            "total": int(total), "limit": limit, "offset": offset}
+    items = [get_operation_task_public(connection, task_id=str(row["id"]), project_id=project_id) for row in rows]
+    return {"items": items, "total": int(total), "limit": limit, "offset": offset,
+            "has_more": offset + len(items) < int(total)}
 
 def get_operation_task_public(connection: sqlite3.Connection, *, task_id: str,
                               project_id: str) -> dict[str, object]:
