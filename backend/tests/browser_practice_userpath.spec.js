@@ -88,8 +88,14 @@ async function indexMaterialViaUi(page) {
 // set is selected so both creation forms are usable.
 async function createAndSelectSetViaUi(page, title) {
   await page.goto(`${BASE}/app/exercises.html`);
-  // #set-status keeps stale text when hidden once sets exist; wait on the list itself.
-  await expect(page.locator('#sets .set-item, #set-status:not([hidden])').first()).toBeVisible({ timeout: 15000 });
+  // #set-status is VISIBLE with a loading message before the list renders, so a
+  // plain visibility wait can win the race and then create a duplicate set.
+  // Settle on the real load outcome instead: rows exist, or loading text is gone.
+  await expect.poll(async () => {
+    if (await page.locator('#sets .set-item').count() > 0) return true;
+    const text = (await page.locator('#set-status').innerText()).trim();
+    return text !== '' && !text.includes('正在加载');
+  }, { timeout: 15000 }).toBe(true);
   const existing = page.locator('#sets .set-item', { hasText: title });
   if (await existing.count() === 0) {
     await page.fill('#new-set-title', title);

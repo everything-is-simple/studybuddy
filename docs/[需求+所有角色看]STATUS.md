@@ -300,3 +300,12 @@ For the authoritative project status, task order, and governing decisions, see [
 - 测试结果：新 spec `10 passed`；报告相关既有回归（b3_report_c5/p2_fe4_report_preview/a3_pages/state_matrix/b3_templates/learning_pages）`29 passed`；`/legacy` 回归（phase8/browser_qa）`12 passed, 1 skipped`；后端全量 `630 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；完整 Chromium 串行 `323 passed, 4 skipped, 1` 个 p6e:105 偶发时序超时（单独重跑 3 passed，与 STATUS 既有记录的该 spec 家族 flaky 同类，非本轮引入）；`check-source-size.py` 通过；`git diff --check` 通过（仅 CRLF 提示）。
 - 七维度状态（首轮快照）：`reports.html` = `tested`（已由同日 B 类二审升级为限定范围 `e2e-real-pass`）；报告创建无正式 UI 入口为首轮历史事实，已由二审补齐正式生成表单；report delivery UI 不开放（默认 off + 审计不可达）为既有安全边界。
 - 未验证/not_verified：真实 Provider、真实报告外发（delivery live 永久拒绝）、完整键盘逐键走查、屏幕阅读器、跨时区报告窗口（后端 focused 已覆盖 UTC/时区校验，UI 未专项验证）。
+
+## 2026-09-13 review.html A 类纯用户路径审查收口
+
+- 变更范围：`backend/app/static/review.html`、`backend/app/static/js/api.js`、`backend/app/repositories/_legacy_part_05.py`，以及复盘/练习相关既有回归；新增 `backend/tests/browser_review_userpath.spec.js`（RV-1 至 RV-12）。无 schema/migration 变化。
+- 修复的真实页面缺陷：详情缺少题面、状态和来源材料深链；归档错题仍在默认列表中；没有“显示已归档”筛选与跨页/刷新恢复；详情失败无独立重试；快速切换错题时迟到详情可能覆盖当前选择；反馈、掌握、归档和再次练习未绑定 busy 禁用；再次练习创建会话后未跳转会话页；错误码会退化为泛化文案。页面现以 `textContent`/DOM 节点渲染用户内容，详情使用独立 `detailGeneration` 丢弃过期响应。
+- A 类用户链路：所有材料、索引、练习集、题目、练习会话和错题均经页面 UI 创建，关键 ID 从页面 URL 或已渲染 DOM 取得；没有通过 `page.request` 创建或读取业务状态。RV-1~RV-12 覆盖空态、真实错题列表、详情/反馈/来源链接、再次练习、掌握与归档持久化、薄弱点、列表与详情失败恢复、竞态、五档响应式、键盘焦点、真服务重启和跨页筛选/选中恢复。RV-8~RV-10 的失败/延迟仅以 `page.route` 注入。
+- 验证：`browser_review_userpath.spec.js` **12 passed**；review/practice/exercises/weak-points/static/state/visual 关联 Chromium 回归 **47 passed**；完整后端 `630 passed, 3 skipped`（仅 opt-in real ASR/Provider smoke）；`check-source-size.py` 与 `git diff --check` 通过。
+- 当前结论：`review.html` = **`tested`（A 类纯用户路径已通过）**。尚未执行独立 B 类分页/契约/故障矩阵收口，因此此项不提前标为 A/B 限定范围 `e2e-real-pass`。
+- `not_verified`：独立 B 类契约最终结论、真实 Provider、真实 OCR/ASR 进入复盘链路、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端长内容与长时稳定性。

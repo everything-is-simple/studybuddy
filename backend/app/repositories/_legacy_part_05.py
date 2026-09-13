@@ -150,6 +150,28 @@ def archive_mistake_case(connection: sqlite3.Connection, *, project_id: str, mis
         result = connection.execute("SELECT * FROM mistake_cases WHERE id=?", (mistake_case_id,)).fetchone()
         return dict(result)
 
+def _phase9c_mistake_source_material(connection: sqlite3.Connection, *, project_id: str,
+                                     exercise_id: str, attempt_id: str | None) -> str | None:
+    """解析错题背后的来源材料 id，供复盘页深链回原始材料。
+
+    优先使用最近一次尝试的会话项目快照（practice_session_items.source_material_id），
+    退化到题目自身的引用（exercise_citations.material_id）。只回传 id，绝不回传密钥。
+    """
+    if attempt_id is not None:
+        row = connection.execute(
+            "SELECT i.source_material_id AS material_id FROM exercise_attempts a "
+            "JOIN practice_session_items i ON i.id=a.session_item_id "
+            "WHERE a.id=? AND i.project_id=?", (attempt_id, project_id)
+        ).fetchone()
+        if row is not None and row["material_id"]:
+            return str(row["material_id"])
+    row = connection.execute(
+        "SELECT material_id FROM exercise_citations "
+        "WHERE exercise_id=? AND material_id IS NOT NULL ORDER BY position,id LIMIT 1",
+        (exercise_id,),
+    ).fetchone()
+    return str(row["material_id"]) if row is not None and row["material_id"] else None
+
 def get_mistake_case(connection: sqlite3.Connection, *, project_id: str,
                      mistake_case_id: str) -> dict[str, object] | None:
     case = connection.execute(
@@ -174,6 +196,10 @@ def get_mistake_case(connection: sqlite3.Connection, *, project_id: str,
     return {**dict(case),
             "question": str(exercise["prompt"]) if exercise is not None else "",
             "exercise_type": str(exercise["exercise_type"]) if exercise is not None else None,
+            "source_material_id": _phase9c_mistake_source_material(
+                connection, project_id=project_id, exercise_id=str(case["exercise_id"]),
+                attempt_id=str(occurrences[-1]["attempt_id"]) if occurrences else None,
+            ),
             "occurrences": occurrences, "feedback_events": feedback}
 
 def list_mistake_cases(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
