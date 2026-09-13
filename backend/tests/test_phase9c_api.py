@@ -84,8 +84,8 @@ def test_s4_api_review_mark_feedback_redo_and_scope(tmp_path: Path):
         assert review.status_code == 200
         assert "answer_json" not in review.text and "answer_key" not in review.text
         mistakes = client.get("/api/study/mistakes")
-        assert mistakes.status_code == 200 and len(mistakes.json()) == 1
-        mistake_id = mistakes.json()[0]["id"]
+        assert mistakes.status_code == 200 and mistakes.json()["total"] == 1
+        mistake_id = mistakes.json()["items"][0]["id"]
         detail = client.get(f"/api/study/mistakes/{mistake_id}")
         assert detail.status_code == 200 and "private answer" not in detail.text
         feedback = client.post(f"/api/study/mistakes/{mistake_id}/feedback", json={"event_kind": "user_correction", "content": "Correction"})
@@ -97,6 +97,16 @@ def test_s4_api_review_mark_feedback_redo_and_scope(tmp_path: Path):
     with _client(tmp_path / "other", project_id="other") as other:
         assert other.get(f"/api/study/mistakes/{mistake_id}").status_code == 404
         assert other.post(f"/api/study/attempts/{attempt.json()['id']}/review", json={"decision": "correct"}).status_code == 404
+
+
+def test_s4b_api_mistake_list_pagination_contract(tmp_path: Path):
+    with _client(tmp_path, project_id="project_mistake_pagination") as client:
+        first = client.get("/api/study/mistakes?limit=1&offset=0")
+        assert first.status_code == 200
+        assert first.json() == {"items": [], "total": 0, "limit": 1, "offset": 0, "has_more": False}
+        invalid = client.get("/api/study/mistakes?limit=0&offset=0")
+        assert invalid.status_code == 400
+        assert invalid.json()["detail"] == "mistake_invalid_query"
 
 
 def test_s4b_api_mistake_surfaces_exercise_prompt(tmp_path: Path):
@@ -114,8 +124,8 @@ def test_s4b_api_mistake_surfaces_exercise_prompt(tmp_path: Path):
         )
         assert submitted.status_code == 200 and submitted.json()["is_correct"] is False
         mistakes = client.get("/api/study/mistakes")
-        assert mistakes.status_code == 200 and len(mistakes.json()) == 1
-        case = mistakes.json()[0]
+        assert mistakes.status_code == 200 and mistakes.json()["total"] == 1
+        case = mistakes.json()["items"][0]
         assert case["question"] == "Choose"
         assert case["exercise_type"] == "multiple_choice"
         detail = client.get(f"/api/study/mistakes/{case['id']}")

@@ -202,8 +202,14 @@ def get_mistake_case(connection: sqlite3.Connection, *, project_id: str,
             ),
             "occurrences": occurrences, "feedback_events": feedback}
 
-def list_mistake_cases(connection: sqlite3.Connection, *, project_id: str) -> list[dict[str, object]]:
-    rows = connection.execute("SELECT * FROM mistake_cases WHERE project_id=? ORDER BY updated_at DESC,id DESC", (project_id,)).fetchall()
+def list_mistake_cases(connection: sqlite3.Connection, *, project_id: str, limit: int | None = None,
+                       offset: int = 0) -> list[dict[str, object]]:
+    query = "SELECT * FROM mistake_cases WHERE project_id=? ORDER BY updated_at DESC,id DESC"
+    params: list[object] = [project_id]
+    if limit is not None:
+        query += " LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+    rows = connection.execute(query, params).fetchall()
     return [get_mistake_case(connection, project_id=project_id, mistake_case_id=str(row["id"])) or {} for row in rows]
 
 def redo_mistake_case(connection: sqlite3.Connection, *, project_id: str,

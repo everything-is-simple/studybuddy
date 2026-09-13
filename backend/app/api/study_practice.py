@@ -184,10 +184,19 @@ def register_routes(app, context: dict[str, object]) -> None:
             raise HTTPException(status_code=500, detail="practice_result_read_failed") from None
 
     @app.get("/api/study/mistakes")
-    def study_mistakes() -> list[dict[str, object]]:
-        """List all mistake cases (wrong answers requiring review)."""
+    def study_mistakes(limit: int = 100, offset: int = 0) -> dict[str, object]:
+        """List mistake cases with bounded pagination and public fields only."""
+        if not 1 <= limit <= 100 or offset < 0:
+            raise HTTPException(status_code=400, detail="mistake_invalid_query")
         with connect(app.state.config.database_path) as connection:
-            return list_mistake_cases(connection, project_id=app.state.config.project_id)
+            total = connection.execute(
+                "SELECT COUNT(*) AS count FROM mistake_cases WHERE project_id=?",
+                (app.state.config.project_id,),
+            ).fetchone()["count"]
+            items = list_mistake_cases(connection, project_id=app.state.config.project_id,
+                                       limit=limit, offset=offset)
+        return {"items": items, "total": total, "limit": limit, "offset": offset,
+                "has_more": offset + len(items) < total}
 
     @app.get("/api/study/mistakes/{mistake_id}")
     def get_study_mistake(mistake_id: str) -> dict[str, object]:

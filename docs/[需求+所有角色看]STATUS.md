@@ -309,3 +309,12 @@ For the authoritative project status, task order, and governing decisions, see [
 - 验证：`browser_review_userpath.spec.js` **12 passed**；review/practice/exercises/weak-points/static/state/visual 关联 Chromium 回归 **47 passed**；完整后端 `630 passed, 3 skipped`（仅 opt-in real ASR/Provider smoke）；`check-source-size.py` 与 `git diff --check` 通过。
 - 当前结论：`review.html` = **`tested`（A 类纯用户路径已通过）**。尚未执行独立 B 类分页/契约/故障矩阵收口，因此此项不提前标为 A/B 限定范围 `e2e-real-pass`。
 - `not_verified`：独立 B 类契约最终结论、真实 Provider、真实 OCR/ASR 进入复盘链路、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端长内容与长时稳定性。
+
+## 2026-09-13 review.html B 类独立审查收口
+
+- 独立复读 A 类页面、共享错误映射、练习 API/仓储与既有回归后发现：错题列表 API 是无界全量响应，页面也没有“加载更多”，因此首版 B-RV-1 的“全量渲染”不能证明任务要求的分页契约。现补 `GET /api/study/mistakes?limit=1..100&offset>=0`，响应固定为 `{items,total,limit,offset,has_more}`；仓储按 `LIMIT/OFFSET` 查询，页面以 20 条为一页追加渲染、busy 防重复，并保留对旧数组 mock 的兼容读取。
+- 新增独立 `backend/tests/browser_review_b_class.spec.js` 5 项：B-RV-1 断言 `limit/offset/has_more` 与“加载更多”只追加、不重复；B-RV-2 迟到详情不得覆盖当前选择；B-RV-3 错题/反馈 XSS 仅作纯文本且 API 拒绝非法反馈；B-RV-4 反馈提交 busy 禁用并拒绝重复请求；B-RV-5 标记已掌握与归档的业务/服务错误码映射为安全文案，失败后保留真实重试能力。
+- 修复回归：分页 query 使既有 review mock 未命中，已按真实 URL/分页响应更新；390px 下长 `exercise_id` 会撑出横向滚动，`app.css` 现对 `.item-card` 使用 `overflow-wrap:anywhere`。新增 `mistake_invalid_query` 安全文案及后端分页参数测试。
+- 验证：B 类 **5 passed**；A 类复跑 **12 passed**；review/practice/weak-points/static 关联 Chromium **41 passed**；Phase9C API/domain focused **20 passed**；完整后端 **631 passed, 3 skipped**（仅 opt-in real ASR/Provider smoke）；source-size 与 diff-check 通过。完整 Chromium 在第 186/360 项因非 review 的 QA fixture 目录删除 `EPERM` 后继续运行至总时限而中断，未将其宣称为全量通过。
+- 二审结论：`review.html` = **限定范围 `e2e-real-pass`**，仅限确定性 fake、单进程 SQLite、Chromium 的 A/B 页面路径及已执行 API 契约；不扩大为全局 production `real-pass`。
+- `not_verified`：真实 Provider、真实 OCR/ASR 进入复盘链路、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端长内容、长时稳定性，以及因本次非 review `EPERM` 中断而未取得的完整 Chromium 串行结论。

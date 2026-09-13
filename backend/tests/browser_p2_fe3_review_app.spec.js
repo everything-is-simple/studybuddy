@@ -201,7 +201,7 @@ test('formal app P2-FE-3-8-4: empty state and retry recovery', async({page})=>{
     await expect(page.locator('#review-list article')).toHaveCount(0);
 
     // Inject failure
-    await page.route('**/api/study/mistakes', route => route.abort());
+    await page.route('**/api/study/mistakes*', route => route.abort());
     await page.reload();
     await page.waitForTimeout(1000);
 
@@ -210,7 +210,7 @@ test('formal app P2-FE-3-8-4: empty state and retry recovery', async({page})=>{
     await expect(page.locator('#retry-review')).toBeVisible();
 
     // Remove route and retry
-    await page.unroute('**/api/study/mistakes');
+    await page.unroute('**/api/study/mistakes*');
     await page.click('#retry-review');
     await page.waitForTimeout(1000);
 

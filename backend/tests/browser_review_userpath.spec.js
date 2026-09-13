@@ -300,7 +300,7 @@ test.describe.serial('review.html pure user path (A-class)', () => {
   });
 
   test('RV-8 列表失败注入：安全文案 + #retry-review 真实恢复', async ({ page }) => {
-    await page.route(`${BASE}/api/study/mistakes`, route => route.fulfill({
+    await page.route(`${BASE}/api/study/mistakes?*`, route => route.fulfill({
       status: 500, contentType: 'application/json',
       body: JSON.stringify({ detail: 'private_backend_error', traceback: 'hidden-traceback', path: 'H:/secret' }),
     }));
