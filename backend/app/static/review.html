@@ -34,6 +34,7 @@
 </label>
 <div id="review-list"></div>
 <button id="retry-review" class="btn mt-16" type="button" hidden>重试</button>
+<button id="load-more-review" class="btn mt-16" type="button" hidden>加载更多</button>
 </section>
 
 <section class="card mt-24" data-od-id="review-weak-points">
@@ -50,12 +51,12 @@
 <script src="/app/js/templates.js"></script>
 <script>
 (function(){
-const params=new URLSearchParams(location.search),request=sbApi.setPageScope('review'),status=document.querySelector('#review-status'),list=document.querySelector('#review-list'),retry=document.querySelector('#retry-review'),weakStatus=document.querySelector('#weak-point-status'),weakList=document.querySelector('#weak-points'),weakRetry=document.querySelector('#retry-weak-points'),showArchivedInput=document.querySelector('#show-archived');
+const params=new URLSearchParams(location.search),request=sbApi.setPageScope('review'),status=document.querySelector('#review-status'),list=document.querySelector('#review-list'),retry=document.querySelector('#retry-review'),loadMoreButton=document.querySelector('#load-more-review'),weakStatus=document.querySelector('#weak-point-status'),weakList=document.querySelector('#weak-points'),weakRetry=document.querySelector('#retry-weak-points'),showArchivedInput=document.querySelector('#show-archived');
 let saved=null;
 try{saved=JSON.parse(sessionStorage.getItem('review:state')||'null')}catch(_){saved=null}
 let selectedId=params.get('mistake_id')||params.get('id')||(saved&&saved.mistake_id)||null;
 let showArchived=params.get('show_archived')==='1'||(params.get('show_archived')===null&&Boolean(saved&&saved.show_archived));
-let generation=0,detailGeneration=0,weakGeneration=0,lastItems=[];
+let generation=0,detailGeneration=0,weakGeneration=0,lastItems=[],listHasMore=false,listBusy=false;
 const busy=new Set();
 
 function text(value){return typeof value==='string'?value:''}
@@ -152,7 +153,7 @@ function render(items){
 lastItems=Array.isArray(items)?items:[];
 const visible=showArchived?lastItems:lastItems.filter(item=>item.status!=='archived');
 list.replaceChildren();
-if(!lastItems.length){show('暂无错题记录');return}
+if(!lastItems.length){show('暂无错题记录');loadMoreButton.hidden=true;return}
 status.textContent='';
 status.hidden=true;
 const hiddenArchived=showArchived?0:lastItems.length-visible.length;
@@ -189,21 +190,47 @@ row.append(actions);
 list.append(row);
 if(item.id===selectedId)loadDetail(item.id,row);
 });
+loadMoreButton.hidden=!listHasMore;
 }
 
 async function load(){
 const run=++generation;
 show('正在加载复盘…');
 retry.hidden=true;
+loadMoreButton.hidden=true;
 list.replaceChildren();
 try{
-const data=await sbApi.json('/api/study/mistakes',{signal:request.signal});
+const data=await sbApi.json('/api/study/mistakes?limit=20&offset=0',{signal:request.signal});
 if(run!==generation)return;
-render(Array.isArray(data)?data:data.items||[]);
+const page=Array.isArray(data)?{items:data,has_more:false}:{items:data.items||[],has_more:Boolean(data.has_more)};
+listHasMore=page.has_more;
+render(page.items);
 }catch(error){
 if(run!==generation)return;
 show(sbApi.safeError(error),'error');
 retry.hidden=false;
+}
+}
+
+async function loadMore(){
+if(listBusy||!listHasMore)return;
+const run=++generation;
+listBusy=true;
+loadMoreButton.disabled=true;
+loadMoreButton.textContent='正在加载…';
+try{
+const data=await sbApi.json('/api/study/mistakes?limit=20&offset='+lastItems.length,{signal:request.signal});
+if(run!==generation)return;
+const page=Array.isArray(data)?{items:data,has_more:false}:{items:data.items||[],has_more:Boolean(data.has_more)};
+lastItems=lastItems.concat(page.items);
+listHasMore=page.has_more;
+render(lastItems);
+}catch(error){
+if(run===generation)show(sbApi.safeError(error),'error');
+}finally{
+listBusy=false;
+loadMoreButton.disabled=false;
+loadMoreButton.textContent='加载更多';
 }
 }
 
@@ -316,6 +343,7 @@ if(data){await load();show('已创建再次练习会话')}
 }
 
 retry.addEventListener('click',load);
+loadMoreButton.addEventListener('click',loadMore);
 weakRetry.addEventListener('click',loadWeakPoints);
 showArchivedInput.checked=showArchived;
 showArchivedInput.addEventListener('change',()=>{showArchived=showArchivedInput.checked;syncState();render(lastItems)});

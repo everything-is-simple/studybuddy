@@ -59,7 +59,7 @@ test('A3-PAGES practice session and result render approved read-only data',async
 });
 
 test('A3-PAGES review reports and settings retain safe current boundaries',async({page})=>{
-  await mock(page,'**/api/study/mistakes',[{id:'mistake-1',question:'错题',mistake_fact:'概念混淆',weak_point:'基础概念'}]);
+  await mock(page,'**/api/study/mistakes*',[{id:'mistake-1',question:'错题',mistake_fact:'概念混淆',weak_point:'基础概念'}]);
   await page.goto(`${BASE}/app/review.html`);
   await expect(page.locator('#review-list')).toContainText('基础概念');
   await page.unrouteAll({behavior:'ignoreErrors'});

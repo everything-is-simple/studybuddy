@@ -26,7 +26,7 @@ test('learning lists render shared labels for lifecycle and source states',async
   await page.goto(`${BASE}/app/exercises.html`);await expect(page.locator('#sets')).toContainText('已拒绝');
   await page.unrouteAll({behavior:'ignoreErrors'});
   await mock(page,'**/api/study/practice-sessions',[{id:'session-1',title:'练习',status:'expired'}]);
-  await mock(page,'**/api/study/mistakes',[]);
+  await mock(page,'**/api/study/mistakes*',[]);
   await page.goto(`${BASE}/app/practice.html`);await expect(page.locator('#sessions')).toContainText('已过期');
 });
 

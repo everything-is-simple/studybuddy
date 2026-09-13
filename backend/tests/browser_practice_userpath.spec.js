@@ -258,7 +258,7 @@ test.describe.serial('practice + practice-session pure user path (A-class)', () 
       status: 500, contentType: 'application/json',
       body: JSON.stringify({ detail: 'private_backend_error', traceback: 'hidden-traceback' }),
     }));
-    await page.route('**/api/study/mistakes', route => route.fulfill({
+    await page.route('**/api/study/mistakes*', route => route.fulfill({
       status: 500, contentType: 'application/json',
       body: JSON.stringify({ detail: 'private_backend_error', traceback: 'hidden-traceback' }),
     }));

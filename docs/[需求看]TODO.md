@@ -526,5 +526,5 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 二审结论：`materials.html` / `material-detail.html` / `plans.html` / `plan-detail.html` 四页 = **限定范围 `e2e-real-pass`**（A 类 userpath + 本轮 B 类独立证据 + 完整回归全绿；确定性 fake/单进程 SQLite/Chromium 范围），不扩大为全局 production `real-pass`。
 - [ ] `not_verified` 保持：真实 Provider、真实 OCR/ASR 质量、live delivery（固定拒绝）、跨浏览器、屏幕阅读器、完整人工键盘逐键、极端长内容与长时稳定性。
 - [x] `review.html` A 类纯用户路径审查：新增 `browser_review_userpath.spec.js` 的 RV-1~RV-12，所有业务数据经正式页面 UI 创建；覆盖空态、错题详情/反馈/来源链接、再次练习、掌握/归档、薄弱点、失败恢复、详情竞态、响应式/键盘、真重启和跨页状态恢复。修复详情/来源深链、归档筛选与持久化、独立详情重试、`detailGeneration` 守卫、busy 禁用、再次练习跳转和 review 错误码映射。验证：A 类 12 passed，关联 Chromium 47 passed，完整后端 630 passed、3 skipped，source-size/diff-check 通过。
-- [ ] `review.html` B 类独立契约/故障审查：分页、迟到详情、XSS、busy 重复点击和错误码安全文案；完成后才可将 review 标记为限定范围 `e2e-real-pass`。
+- [x] `review.html` B 类独立契约/故障审查：新增 `browser_review_b_class.spec.js` 5 项，覆盖 `limit/offset/has_more` 分页与加载更多只追加、迟到详情、XSS 纯文本、反馈 busy 防重复、标记/归档失败安全映射和真实重试。修复无界错题列表，API 现返回 `{items,total,limit,offset,has_more}`，页面按 20 条追加；修复 390px 长 exercise_id 横向溢出。B 类 5 passed，A 类复跑 12 passed，关联 Chromium 41 passed，后端全量 631 passed、3 skipped，source-size/diff-check 通过。`review.html` 升级为限定范围 `e2e-real-pass`；完整 Chromium 本轮在非 review QA fixture 目录删除 `EPERM` 后超时中断，不伪称全量通过。
 - [ ] 下一步：`tasks.html → settings* → classroom.html → capture.html → index.html` 的 A/B 类审查。
