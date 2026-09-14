@@ -27,282 +27,517 @@
 <div class="grid">
 <section class="card span-6" data-od-id="classroom-captures">
 <h2>采集会话</h2>
-<div id="capture-status" class="notice" role="status" aria-live="polite">正在加载采集会话...</div>
-<ul id="captures" class="capture-list"></ul>
-<button class="btn" id="refresh-captures" type="button" class="mt-12">刷新列表</button>
+<div id="capture-status" class="notice" role="status" aria-live="polite">正在加载采集会话…</div>
+<button id="refresh-captures" class="btn mt-12" type="button">刷新采集列表</button>
+<button id="load-more-captures" class="btn mt-12" type="button" hidden>加载更多会话</button>
+<div id="captures"></div>
 </section>
 
 <section class="card span-6" data-od-id="classroom-reports">
 <h2>学习报告</h2>
-<div id="report-status" class="notice" role="status" aria-live="polite">正在加载报告...</div>
-<ul id="reports" class="report-list"></ul>
-<button class="btn" id="refresh-reports" type="button" class="mt-12">刷新</button>
+<div id="report-status" class="notice" role="status" aria-live="polite">正在加载报告列表…</div>
+<button id="refresh-reports" class="btn mt-12" type="button">刷新报告列表</button>
+<div id="reports"></div>
 </section>
+</div>
 
-<section class="card span-12" data-od-id="classroom-detail" hidden>
-<h2 id="detail-title">详情</h2>
+<section class="card" data-od-id="classroom-detail">
+<h2>详情区</h2>
+<div id="detail-status" class="notice" role="status" aria-live="polite" hidden></div>
+<button id="retry-detail" class="btn mt-12" type="button" hidden>重试加载详情</button>
 <div id="detail-content"></div>
 </section>
-</div>
+
 </main>
 </div>
-<script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/state.js"></script>
 <script src="/app/js/shell.js"></script>
 <script>
-(function(){
+(()=>{
+'use strict';
 const pageRequest=sbApi.setPageScope('classroom');
+window.addEventListener('pagehide',()=>sbApi.cancelAll());
+
 const captureStatus=document.querySelector('#capture-status');
-const captures=document.querySelector('#captures');
 const refreshCaptures=document.querySelector('#refresh-captures');
+const loadMoreCaptures=document.querySelector('#load-more-captures');
+const capturesContainer=document.querySelector('#captures');
 const reportStatus=document.querySelector('#report-status');
-const reports=document.querySelector('#reports');
 const refreshReports=document.querySelector('#refresh-reports');
-const detailSection=document.querySelector('[data-od-id="classroom-detail"]');
-const detailTitle=document.querySelector('#detail-title');
+const reportsContainer=document.querySelector('#reports');
+const detailStatus=document.querySelector('#detail-status');
+const retryDetail=document.querySelector('#retry-detail');
 const detailContent=document.querySelector('#detail-content');
 
-let captureGeneration=0;
-let reportGeneration=0;
-let detailGeneration=0;
-function text(value){return typeof value==='string'?value:''}
+let captureGeneration=0,reportGeneration=0,detailGeneration=0;
+let currentCaptureId=null,currentReportId=null,detailMode=null;
+let busyConfirm=false;
+let capOffset=0,capHasMore=false,capItems=[];
 
-async function loadCaptures(){
-const generation=++captureGeneration;
-captureStatus.textContent='正在加载采集会话...';
-captureStatus.className='notice';
-captures.replaceChildren();
-try{
-const data=await sbApi.json('/api/study/capture-sessions',{signal:pageRequest.signal});
-if(generation!==captureGeneration)return;
-const items=Array.isArray(data)?data:data.items||[];
-if(!items.length){
-captureStatus.textContent='暂无采集会话';
-return
+const KIND_LABEL={audio:'音频',image:'图片'};
+const QUALITY_LABEL={clear:'清晰',uncertain:'低置信'};
+function kindLabel(value){return KIND_LABEL[value]||'未知类型'}
+
+const errorMap={
+capture_list_failed:'采集会话列表加载失败，请重试',
+capture_read_failed:'采集会话详情加载失败，请重试',
+capture_not_found:'采集会话不存在或已删除',
+capture_invalid_state:'当前会话状态不允许此操作',
+transcript_not_found:'转写草稿不存在或已删除',
+transcript_confirm_failed:'转写确认失败，请重试',
+transcript_reject_failed:'转写拒绝失败，请重试',
+transcript_user_edit_protected:'草稿已确认，不能再次编辑',
+report_list_failed:'报告列表加载失败，请重试',
+report_read_failed:'报告详情加载失败，请重试',
+report_not_found:'报告不存在或已删除',
+delivery_audit_failed:'交付审计加载失败，请重试',
+};
+function mapError(e){
+const code=e.code||e.message||'';
+return errorMap[code]||'请求失败，请重试';
 }
-captureStatus.hidden=true;
-items.forEach(capture=>{
-const li=document.createElement('li');
-li.className='capture-item';
+
+async function loadCaptures(reset=true){
+const gen=++captureGeneration;
+if(reset){capOffset=0;capItems=[];capHasMore=false}
+try{
+captureStatus.textContent=reset?'正在加载采集会话…':'正在加载更多…';
+captureStatus.className='notice';
+captureStatus.hidden=false;
+refreshCaptures.disabled=true;
+const response=await sbApi.json(`/api/study/capture-sessions?limit=100&offset=${capOffset}`,{signal:pageRequest.signal});
+if(gen!==captureGeneration)return;
+const items=Array.isArray(response.items)?response.items:[];
+capItems=capItems.concat(items);
+capHasMore=Boolean(response.has_more);
+capOffset+=items.length;
+capturesContainer.replaceChildren();
+if(capItems.length===0){
+captureStatus.textContent='暂无采集会话';
+captureStatus.className='notice';
+refreshCaptures.disabled=false;
+return;
+}
+const list=document.createElement('div');
+list.className='list';
+for(const capture of capItems){
+const item=document.createElement('div');
+item.className='capture-item';
+item.setAttribute('data-capture-id',capture.id);
 const title=document.createElement('div');
 title.className='item-title';
-title.textContent=text(capture.title)||'未命名会话';
-const status=document.createElement('span');
-status.className='status-badge '+(capture.status||'draft');
-status.textContent=sbState.label(capture.status||'draft');
-title.append(status);
-li.append(title);
+title.textContent=capture.original_name||capture.title||'未命名会话';
+item.append(title);
 const meta=document.createElement('div');
-meta.className='muted item-meta';
-if(capture.capture_type){
-meta.textContent='类型: '+(capture.capture_type==='deterministic'?'确定性转写':'loopback 转写')
+meta.className='meta';
+const typeLabel=document.createElement('span');
+typeLabel.className='badge';
+typeLabel.textContent=kindLabel(capture.asset_kind);
+meta.append(typeLabel);
+const statusLabel=document.createElement('span');
+statusLabel.className='badge';
+statusLabel.textContent=sbState.label(capture.status,'状态未知');
+meta.append(statusLabel);
+item.append(meta);
+const actions=document.createElement('div');
+actions.className='action-group';
+const viewBtn=document.createElement('button');
+viewBtn.className='btn btn-sm';
+viewBtn.type='button';
+viewBtn.textContent='查看详情';
+viewBtn.onclick=()=>viewCapture(capture.id);
+actions.append(viewBtn);
+item.append(actions);
+list.append(item);
 }
-li.append(meta);
-li.onclick=()=>viewCapture(capture.id);
-captures.append(li)
-})
+capturesContainer.append(list);
+captureStatus.hidden=true;
+loadMoreCaptures.hidden=!capHasMore;
+if(capHasMore){
+captureStatus.textContent=`已显示 ${capItems.length} 个会话（还有更多）`;
+captureStatus.hidden=false;
+}
+refreshCaptures.disabled=false;
 }catch(e){
+if(e.name==='AbortError')return;
+if(gen!==captureGeneration)return;
+captureStatus.textContent=mapError(e);
 captureStatus.className='notice warn';
-captureStatus.textContent=sbApi.safeError(e)
+captureStatus.setAttribute('role','alert');
+captureStatus.hidden=false;
+refreshCaptures.disabled=false;
 }
 }
 
 async function loadReports(){
-const generation=++reportGeneration;
-reportStatus.textContent='正在加载报告...';
-reportStatus.className='notice';
-reports.replaceChildren();
+const gen=++reportGeneration;
 try{
-const data=await sbApi.json('/api/study/reports',{signal:pageRequest.signal});
-if(generation!==reportGeneration)return;
-const items=Array.isArray(data)?data:data.items||[];
-if(!items.length){
-reportStatus.textContent='暂无报告';
-return
+reportStatus.textContent='正在加载报告列表…';
+reportStatus.className='notice';
+reportStatus.hidden=false;
+refreshReports.disabled=true;
+const response=await sbApi.json('/api/study/reports?limit=100&offset=0',{signal:pageRequest.signal});
+if(gen!==reportGeneration)return;
+reportsContainer.replaceChildren();
+if(!response.items||response.items.length===0){
+reportStatus.textContent='暂无学习报告';
+reportStatus.className='notice';
+refreshReports.disabled=false;
+return;
 }
-reportStatus.hidden=true;
-items.forEach(report=>{
-const li=document.createElement('li');
-li.className='report-item';
+const list=document.createElement('div');
+list.className='list';
+for(const report of response.items){
+const item=document.createElement('div');
+item.className='report-item';
+item.setAttribute('data-report-id',report.id);
 const title=document.createElement('div');
 title.className='item-title';
-title.textContent=text(report.title)||'学习报告';
-li.append(title);
-const meta=document.createElement('div');
-meta.className='muted item-meta';
-if(report.created_at){
-meta.textContent='创建: '+new Date(report.created_at).toLocaleString('zh-CN')
+title.textContent=`${sbState.label(report.report_kind,'报告')} · ${report.period_start||''}`;
+item.append(title);
+const viewBtn=document.createElement('button');
+viewBtn.className='btn btn-sm';
+viewBtn.type='button';
+viewBtn.textContent='查看详情';
+viewBtn.onclick=()=>viewReport(report.id);
+item.append(viewBtn);
+list.append(item);
 }
-li.append(meta);
-li.onclick=()=>viewReport(report.id);
-reports.append(li)
-})
+reportsContainer.append(list);
+reportStatus.hidden=true;
+refreshReports.disabled=false;
 }catch(e){
+if(e.name==='AbortError')return;
+if(gen!==reportGeneration)return;
+reportStatus.textContent=mapError(e);
 reportStatus.className='notice warn';
-reportStatus.textContent=sbApi.safeError(e)
+reportStatus.setAttribute('role','alert');
+reportStatus.hidden=false;
+refreshReports.disabled=false;
 }
 }
 
 async function viewCapture(captureId){
-const generation=++detailGeneration;
-detailSection.hidden=false;
-detailTitle.textContent='采集会话详情';
-detailContent.innerHTML='<div class="notice">正在加载采集详情...</div>';
+const gen=++detailGeneration;
+currentCaptureId=captureId;
+currentReportId=null;
+detailMode='capture';
 try{
-const capture=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`,{signal:pageRequest.signal});
-if(generation!==detailGeneration)return;
+detailStatus.textContent='正在加载采集详情…';
+detailStatus.className='notice';
+detailStatus.hidden=false;
+retryDetail.hidden=true;
 detailContent.replaceChildren();
+const capture=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`,{signal:pageRequest.signal});
+if(gen!==detailGeneration)return;
 const container=document.createElement('div');
-const title=document.createElement('div');
-title.innerHTML='<strong>标题：</strong>';
-title.append(document.createTextNode(text(capture.title)));
-container.append(title);
-const status=document.createElement('div');
-status.style.marginTop='8px';
-status.innerHTML='<strong>状态：</strong>';
-const statusBadge=document.createElement('span');
-statusBadge.className='status-badge '+(capture.status||'draft');
-statusBadge.textContent=sbState.label(capture.status||'draft');
-status.append(statusBadge);
-container.append(status);
-if(capture.source_status){const source=document.createElement('div');source.className='source-link '+capture.source_status;source.textContent='来源状态：'+sbState.source(capture.source_status);container.append(source)}
-if(capture.capture_type){
-const type=document.createElement('div');
-type.style.marginTop='8px';
-type.innerHTML='<strong>转写类型：</strong>';
-const typeText=capture.capture_type==='deterministic'?'确定性转写 (Deterministic)':'回环转写 (Loopback)';
-type.append(document.createTextNode(typeText));
-container.append(type)
-}
+const heading=document.createElement('h3');
+heading.textContent='采集会话详情';
+container.append(heading);
+const info=document.createElement('div');
+info.className='meta-grid';
+const nameRow=document.createElement('div');
+const nameLabel=document.createElement('strong');
+nameLabel.textContent='名称：';
+nameRow.append(nameLabel);
+const nameValue=document.createElement('span');
+nameValue.textContent=capture.original_name||capture.title||'未命名';
+nameRow.append(nameValue);
+info.append(nameRow);
+const kindRow=document.createElement('div');
+const kindLabelNode=document.createElement('strong');
+kindLabelNode.textContent='类型：';
+kindRow.append(kindLabelNode);
+const kindValue=document.createElement('span');
+kindValue.textContent=kindLabel(capture.asset_kind);
+kindRow.append(kindValue);
+info.append(kindRow);
+const statusRow=document.createElement('div');
+const statusLabel=document.createElement('strong');
+statusLabel.textContent='状态：';
+statusRow.append(statusLabel);
+const statusValue=document.createElement('span');
+statusValue.textContent=sbState.label(capture.status,'未知');
+statusRow.append(statusValue);
+info.append(statusRow);
+container.append(info);
+const actions=document.createElement('div');
+actions.className='action-group mt-12';
 const transcriptBtn=document.createElement('button');
 transcriptBtn.className='btn';
-transcriptBtn.style.marginTop='16px';
+transcriptBtn.type='button';
 transcriptBtn.textContent='查看转写稿';
 transcriptBtn.onclick=()=>viewTranscript(captureId);
-container.append(transcriptBtn);
-if(capture.status==='draft'){
+actions.append(transcriptBtn);
+if(capture.status==='review_required'&&capture.transcript_drafts&&capture.transcript_drafts.length>0){
+const draft=capture.transcript_drafts[capture.transcript_drafts.length-1];
 const confirmBtn=document.createElement('button');
 confirmBtn.className='btn btn-primary';
-confirmBtn.style.marginTop='16px';
-confirmBtn.style.marginLeft='8px';
+confirmBtn.type='button';
 confirmBtn.textContent='确认转写';
-confirmBtn.onclick=()=>confirmCapture(captureId);
-container.append(confirmBtn)
+confirmBtn.onclick=()=>confirmCapture(captureId,draft.id,confirmBtn);
+actions.append(confirmBtn);
 }
-detailContent.append(container)
+container.append(actions);
+detailContent.append(container);
+detailStatus.hidden=true;
 }catch(e){
-detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+if(gen!==detailGeneration)return;
+detailStatus.textContent=mapError(e);
+detailStatus.className='notice warn';
+detailStatus.setAttribute('role','alert');
+detailStatus.hidden=false;
+retryDetail.hidden=false;
 }
 }
 
 async function viewTranscript(captureId){
+const gen=++detailGeneration;
+currentCaptureId=captureId;
+currentReportId=null;
+detailMode='transcript';
 try{
-const transcript=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript`,{signal:pageRequest.signal});
+detailStatus.textContent='正在加载转写稿…';
+detailStatus.className='notice';
+detailStatus.hidden=false;
+retryDetail.hidden=true;
 detailContent.replaceChildren();
+const response=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript`,{signal:pageRequest.signal});
+if(gen!==detailGeneration)return;
 const container=document.createElement('div');
-const title=document.createElement('div');
-title.innerHTML='<strong>转写结果</strong>';
-container.append(title);
-if(transcript.uncertain_segments&&transcript.uncertain_segments.length>0){
-const warning=document.createElement('div');
-warning.className='notice warn';
-warning.style.marginTop='8px';
-warning.textContent=`包含 ${transcript.uncertain_segments.length} 个不确定片段`;
-container.append(warning)
+const heading=document.createElement('h3');
+heading.textContent='转写稿';
+container.append(heading);
+if(!response.transcript_drafts||response.transcript_drafts.length===0){
+const empty=document.createElement('div');
+empty.className='notice';
+empty.textContent='无转写内容';
+container.append(empty);
+detailContent.append(container);
+detailStatus.hidden=true;
+return;
 }
-const transcriptBox=document.createElement('div');
-transcriptBox.className='transcript-box';
-transcriptBox.textContent=text(transcript.text)||'无转写内容';
-container.append(transcriptBox);
-detailContent.append(container)
+const draft=response.transcript_drafts[response.transcript_drafts.length-1];
+const textContainer=document.createElement('div');
+textContainer.style.whiteSpace='pre-wrap';
+textContainer.textContent=draft.text||'（空白转写）';
+container.append(textContainer);
+if(draft.segments&&draft.segments.length>0){
+const segmentsHeading=document.createElement('h4');
+segmentsHeading.className='mt-12';
+segmentsHeading.textContent='分段详情';
+container.append(segmentsHeading);
+const segmentList=document.createElement('div');
+for(const segment of draft.segments){
+const segmentItem=document.createElement('div');
+segmentItem.className='mt-6';
+const segmentText=document.createElement('div');
+segmentText.textContent=segment.text;
+segmentItem.append(segmentText);
+const segmentMeta=document.createElement('div');
+segmentMeta.className='meta';
+const qualityBadge=document.createElement('span');
+qualityBadge.className='badge';
+qualityBadge.textContent=QUALITY_LABEL[segment.quality]||'未知';
+segmentMeta.append(qualityBadge);
+const confidenceSpan=document.createElement('span');
+confidenceSpan.textContent=`置信度：${(segment.confidence*100).toFixed(1)}%`;
+segmentMeta.append(confidenceSpan);
+segmentItem.append(segmentMeta);
+segmentList.append(segmentItem);
+}
+container.append(segmentList);
+}
+detailContent.append(container);
+detailStatus.hidden=true;
 }catch(e){
-detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+if(gen!==detailGeneration)return;
+detailStatus.textContent=mapError(e);
+detailStatus.className='notice warn';
+detailStatus.setAttribute('role','alert');
+detailStatus.hidden=false;
+retryDetail.hidden=false;
 }
 }
 
-async function confirmCapture(captureId){
-if(!confirm('确认此转写结果？确认后可作为学习材料。'))return;
+async function confirmCapture(captureId,draftId,btn){
+if(busyConfirm)return;
+busyConfirm=true;
+if(btn)btn.disabled=true;
 try{
-await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/confirm`,{method:'POST'});
-alert('转写已确认');
-loadCaptures();
-viewCapture(captureId)
+detailStatus.textContent='正在确认转写…';
+detailStatus.className='notice';
+detailStatus.hidden=false;
+await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/confirm`,{
+method:'POST',
+signal:pageRequest.signal,
+headers:{'content-type':'application/json'},
+body:JSON.stringify({draft_id:draftId})
+});
+detailStatus.textContent='转写已确认，已转为学习材料。';
+detailStatus.className='notice';
+detailStatus.hidden=false;
+await loadCaptures(true);
+await viewCapture(captureId);
 }catch(e){
-alert(sbApi.safeError(e))
+if(e.name!=='AbortError'){
+detailStatus.textContent=mapError(e);
+detailStatus.className='notice warn';
+detailStatus.setAttribute('role','alert');
+detailStatus.hidden=false;
+}
+if(btn)btn.disabled=false;
+}finally{
+busyConfirm=false;
 }
 }
 
 async function viewReport(reportId){
-detailSection.hidden=false;
-detailTitle.textContent='学习报告';
-detailContent.innerHTML='<div class="notice">正在加载报告...</div>';
+const gen=++detailGeneration;
+currentReportId=reportId;
+currentCaptureId=null;
+detailMode='report';
 try{
-const report=await sbApi.json(`/api/study/reports/${encodeURIComponent(reportId)}`,{signal:pageRequest.signal});
+detailStatus.textContent='正在加载报告详情…';
+detailStatus.className='notice';
+detailStatus.hidden=false;
+retryDetail.hidden=true;
 detailContent.replaceChildren();
+const report=await sbApi.json(`/api/study/reports/${encodeURIComponent(reportId)}`,{signal:pageRequest.signal});
+if(gen!==detailGeneration)return;
 const container=document.createElement('div');
-const title=document.createElement('div');
-title.innerHTML='<strong>报告标题：</strong>';
-title.append(document.createTextNode(text(report.title)));
-container.append(title);
-if(report.summary){
-const summary=document.createElement('div');
-summary.style.marginTop='12px';
-summary.innerHTML='<strong>摘要：</strong>';
-const summaryText=document.createElement('div');
-summaryText.style.marginTop='4px';
-summaryText.textContent=text(report.summary);
-summary.append(summaryText);
-container.append(summary)
-}
-const delivery=document.createElement('div');
-delivery.className='delivery-status';
-delivery.innerHTML='<strong>交付状态：</strong><br>';
-const deliveryText=document.createElement('span');
-deliveryText.className='muted';
-deliveryText.textContent='交付功能当前为关闭/dry-run 模式，live 固定禁用。';
-delivery.append(deliveryText);
-container.append(delivery);
+const heading=document.createElement('h3');
+heading.textContent=`报告 · ${sbState.label(report.report_kind,'未知')}`;
+container.append(heading);
+const info=document.createElement('div');
+info.className='meta-grid';
+const periodRow=document.createElement('div');
+const periodLabel=document.createElement('strong');
+periodLabel.textContent='范围：';
+periodRow.append(periodLabel);
+const periodValue=document.createElement('span');
+periodValue.textContent=`${report.period_start||''} 至 ${report.period_end||''}`;
+periodRow.append(periodValue);
+info.append(periodRow);
+const statusRow=document.createElement('div');
+const statusLabel=document.createElement('strong');
+statusLabel.textContent='状态：';
+statusRow.append(statusLabel);
+const statusValue=document.createElement('span');
+statusValue.textContent=sbState.label(report.status,'未知');
+statusRow.append(statusValue);
+info.append(statusRow);
+container.append(info);
+const actions=document.createElement('div');
+actions.className='action-group mt-12';
 const auditBtn=document.createElement('button');
 auditBtn.className='btn';
-auditBtn.style.marginTop='16px';
+auditBtn.type='button';
 auditBtn.textContent='查看交付审计';
-auditBtn.onclick=viewDeliveryAudit;
-container.append(auditBtn);
-detailContent.append(container)
+auditBtn.onclick=()=>viewDeliveryAudit(reportId);
+actions.append(auditBtn);
+container.append(actions);
+detailContent.append(container);
+detailStatus.hidden=true;
 }catch(e){
-detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+if(gen!==detailGeneration)return;
+detailStatus.textContent=mapError(e);
+detailStatus.className='notice warn';
+detailStatus.setAttribute('role','alert');
+detailStatus.hidden=false;
+retryDetail.hidden=false;
 }
 }
 
-async function viewDeliveryAudit(){
+async function viewDeliveryAudit(reportId){
+const gen=++detailGeneration;
+currentReportId=reportId;
+currentCaptureId=null;
+detailMode='audit';
 try{
-const audit=await sbApi.json('/api/study/reports',{signal:pageRequest.signal});
+detailStatus.textContent='正在加载交付审计…';
+detailStatus.className='notice';
+detailStatus.hidden=false;
+retryDetail.hidden=true;
 detailContent.replaceChildren();
+const response=await sbApi.json(`/api/study/reports/${encodeURIComponent(reportId)}/delivery-attempts`,{signal:pageRequest.signal});
+if(gen!==detailGeneration)return;
 const container=document.createElement('div');
-const title=document.createElement('div');
-title.innerHTML='<strong>交付审计</strong>';
-container.append(title);
-const status=document.createElement('div');
-status.style.marginTop='12px';
-status.innerHTML='<strong>当前模式：</strong>';
-const statusText=document.createElement('span');
-statusText.textContent=sbState.label(audit.mode||'off');
-status.append(statusText);
-container.append(status);
-const info=document.createElement('div');
-info.className='notice';
-info.style.marginTop='12px';
-info.textContent='交付功能仅支持 off/dry-run 模式。live 交付被系统明确禁用。';
-container.append(info);
-detailContent.append(container)
+const heading=document.createElement('h3');
+heading.textContent='交付审计';
+container.append(heading);
+if(!response.items||response.items.length===0){
+const empty=document.createElement('div');
+empty.className='notice';
+empty.textContent='暂无交付记录';
+container.append(empty);
+}else{
+const list=document.createElement('div');
+list.className='list';
+for(const attempt of response.items){
+const item=document.createElement('div');
+item.className='list-item';
+const modeLabel=document.createElement('div');
+modeLabel.className='list-title';
+modeLabel.textContent=`模式：${sbState.label(attempt.mode,'未知')}`;
+item.append(modeLabel);
+const meta=document.createElement('div');
+meta.className='meta';
+const statusBadge=document.createElement('span');
+statusBadge.className='badge';
+statusBadge.textContent=sbState.label(attempt.status,'未知');
+meta.append(statusBadge);
+if(attempt.error_code){
+const errorSpan=document.createElement('span');
+errorSpan.textContent=mapError({code:attempt.error_code});
+meta.append(errorSpan);
+}
+item.append(meta);
+list.append(item);
+}
+container.append(list);
+}
+const notice=document.createElement('div');
+notice.className='notice mt-12';
+notice.textContent='交付功能仅支持 off/dry-run 模式。live 交付被系统明确禁用。';
+container.append(notice);
+detailContent.append(container);
+detailStatus.hidden=true;
 }catch(e){
-detailContent.innerHTML=`<div class="notice warn">${sbApi.safeError(e)}</div>`
+if(gen!==detailGeneration)return;
+detailStatus.textContent=mapError(e);
+detailStatus.className='notice warn';
+detailStatus.setAttribute('role','alert');
+detailStatus.hidden=false;
+retryDetail.hidden=false;
 }
 }
 
-refreshCaptures.addEventListener('click',loadCaptures);
+retryDetail.onclick=()=>{
+if(detailMode==='capture'&&currentCaptureId){
+viewCapture(currentCaptureId);
+}else if(detailMode==='transcript'&&currentCaptureId){
+viewTranscript(currentCaptureId);
+}else if(detailMode==='report'&&currentReportId){
+viewReport(currentReportId);
+}else if(detailMode==='audit'&&currentReportId){
+viewDeliveryAudit(currentReportId);
+}
+};
+
+refreshCaptures.addEventListener('click',()=>loadCaptures(true));
+loadMoreCaptures.addEventListener('click',()=>loadCaptures(false));
 refreshReports.addEventListener('click',loadReports);
-loadCaptures();
-loadReports()
+loadCaptures(true);
+loadReports();
+
+// Deep links: classroom.html?capture_id=... or ?report_id=... opens the detail view.
+const params=new URLSearchParams(location.search);
+const deepCapture=params.get('capture_id');
+const deepReport=params.get('report_id');
+if(deepCapture)viewCapture(deepCapture);
+else if(deepReport)viewReport(deepReport);
 })();
 </script>
 </body>
