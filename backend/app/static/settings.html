@@ -150,24 +150,30 @@ async function loadSettings(){
   catch(error){if(error.name!=='AbortError'&&gen===settingsGeneration){notice($('ai-result'),false,'已保存配置读取失败，可点击重试');$('settings-retry').hidden=false}}
 }
 
+function formBusy(button,busy,label){
+  const form=button.closest('form');
+  if(!form)return true;
+  if(busy){if(form.dataset.busy==='1')return false;form.dataset.busy='1';form.querySelectorAll('button').forEach(item=>sbUi.busy(item,true,item===button?label:item.textContent));return true}
+  delete form.dataset.busy;form.querySelectorAll('button').forEach(item=>sbUi.busy(item,false));return true
+}
 async function save(payload,resultEl,button,label){
-  sbUi.busy(button,true,label);
+  if(!formBusy(button,true,label))return;
   try{
     const data=await sbApi.json('/api/system/settings',{method:'PUT',body:JSON.stringify(payload)});
     applySettings(data.settings||{});applyCapabilitySnapshot(data);
     notice(resultEl,true,'已保存并立即生效');
     ['ai-key','embedding-key','ocr-root','asr-runtime','asr-model'].forEach(id=>{$(id).value=''});
   }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
-  finally{sbUi.busy(button,false,label)}
+  finally{formBusy(button,false,label)}
 }
 async function clearKeys(keys,resultEl,button,label){
-  sbUi.busy(button,true,label);
+  if(!formBusy(button,true,label))return;
   try{
     const data=await sbApi.json('/api/system/settings/clear',{method:'POST',body:JSON.stringify({keys:keys})});
     applySettings(data.settings||{});applyCapabilitySnapshot(data);
     notice(resultEl,true,'已清除，配置立即生效');
   }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
-  finally{sbUi.busy(button,false,label)}
+  finally{formBusy(button,false,label)}
 }
 
 $('ai-form').addEventListener('submit',event=>{
@@ -200,13 +206,13 @@ $('local-form').addEventListener('submit',event=>{
 });
 $('local-clear').addEventListener('click',()=>sbSubmit.once('local-clear',()=>clearKeys(['ocr_enabled','ocr_model_root','asr_runtime_path','asr_model_path'],$('local-result'),$('local-clear'),'清除本机组件覆盖')));
 
-$('settings-retry').addEventListener('click',()=>{$('settings-retry').hidden=true;loadSettings()});
-$('capability-refresh').addEventListener('click',()=>loadCapabilities());
+$('settings-retry').addEventListener('click',()=>sbSubmit.once('settings-retry',async()=>{const button=$('settings-retry');sbUi.busy(button,true,'重试读取配置');try{await loadSettings()}finally{sbUi.busy(button,false,'重试读取配置')}}));
+$('capability-refresh').addEventListener('click',()=>sbSubmit.once('capability-refresh',async()=>{const button=$('capability-refresh');sbUi.busy(button,true,'刷新状态');try{await loadCapabilities()}finally{sbUi.busy(button,false,'刷新状态')}}));
 $('capability-recheck').addEventListener('click',()=>sbSubmit.once('capability-recheck',async()=>{
-  const button=$('capability-recheck');sbUi.busy(button,true,'重新自检');
+  const button=$('capability-recheck'),gen=++capabilityGeneration;sbUi.busy(button,true,'重新自检');
   $('capability-error').hidden=true;
-  try{renderCapabilities(await sbApi.json('/api/system/capabilities/self-check',{method:'POST',body:JSON.stringify({})}))}
-  catch(error){if(error.name!=='AbortError'){const box=$('capability-error');box.hidden=false;box.textContent=message(error)}}
+  try{const data=await sbApi.json('/api/system/capabilities/self-check',{method:'POST',body:JSON.stringify({})});if(gen===capabilityGeneration)renderCapabilities(data)}
+  catch(error){if(error.name!=='AbortError'&&gen===capabilityGeneration){const box=$('capability-error');box.hidden=false;box.textContent=message(error)}}
   finally{sbUi.busy(button,false,'重新自检')}
 }));
 

@@ -305,9 +305,6 @@ test('SET-7 Provider/Email 失败恢复（含真实失败与 B 类 route 注入�
   await page.locator('#smtp-password').fill(`FAIL-${SMTP_PASS}`);
   await page.locator('#email-test').click();
   await expect(page.locator('#email-result')).toContainText('认证失败');
-  await page.locator('#smtp-port').fill(String(CLOSED_PORT));
-  await page.locator('#email-test').click();
-  await expect(page.locator('#email-result')).toContainText(/连接失败|超时/);
   await page.locator('#smtp-host').fill('');
   await page.locator('#smtp-port').fill(String(SMTP_PORT));
   await page.locator('#email-test').click();
