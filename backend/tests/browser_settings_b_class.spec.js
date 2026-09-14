@@ -217,12 +217,10 @@ test('B-SET-4 Email connection-test 契约与渠道隔离', async ({ request }) 
   expect((await api(request, 'POST', '/api/system/email-connection-test', { channel: 'bogus', feishu_webhook: WEBHOOK })).text).toContain('invalid_channel');
   expect((await api(request, 'POST', '/api/system/email-connection-test', { channel: 'feishu', feishu_webhook: 'https://evil.example.com/hook' })).text).toContain('delivery_configuration_invalid');
   expect((await api(request, 'POST', '/api/system/email-connection-test', { channel: 'feishu', feishu_webhook: WEBHOOK.replace('open.feishu.cn', 'evil.example.com') })).text).toContain('delivery_configuration_invalid');
-  // A Feishu test payload must not be polluted with SMTP fields; the
-  // invalid-host rejection never touches the network. Valid-host feishu
-  // success/failure mapping is covered by mocked backend unit tests, not by
-  // this default-offline suite.
-  const bad = await api(request, 'POST', '/api/system/email-connection-test', { channel: 'feishu', feishu_webhook: WEBHOOK, smtp_host: 'smtp.qq.com', smtp_password: SMTP_PASS, timeout_seconds: 10 });
-  expect(bad.text).toMatch(/delivery_configuration_invalid|delivery_failed|delivery_connection_failed|delivery_timeout/);
+  // Valid-host Feishu success/failure is covered by backend mock tests. The
+  // browser contract suite must remain offline and must not POST to Feishu.
+  const bad = await api(request, 'POST', '/api/system/email-connection-test', { channel: 'feishu', feishu_webhook: 'https://evil.example.com/hook', smtp_host: 'smtp.qq.com', smtp_password: SMTP_PASS, timeout_seconds: 10 });
+  expect(bad.text).toContain('delivery_configuration_invalid');
   expect(bad.text).not.toContain(SMTP_PASS);
   expect((await api(request, 'GET', '/api/system/capabilities')).body.delivery_mode).toBe('off');
 });
