@@ -117,13 +117,13 @@ test('A4 capture page creates a session and keeps failure state safe', async ({ 
   await expect(page.locator('#state')).toHaveText('暂无会话');
   await page.locator('#new-session-btn').click();
   await expect(page.locator('#new-session-dialog')).toBeVisible();
-  await page.locator('#original-name').fill('A4 synthetic lecture');
+  await page.locator('#original-name').fill('A4 synthetic lecture.wav');
   await page.locator('#new-session-form button[type="submit"]').click();
-  await expect(page.locator('#state')).toContainText('共 1 个会话');
-  await expect(page.locator('#sessions')).toContainText('A4 synthetic lecture');
+  await expect(page.locator('#state')).toContainText('已显示 1 个会话');
+  await expect(page.locator('#sessions')).toContainText('A4 synthetic lecture.wav');
   await page.getByRole('button', { name: '查看详情' }).click();
   await expect(page.locator('#session-detail-dialog')).toBeVisible();
-  await expect(page.locator('#session-detail-content')).toContainText('A4 synthetic lecture');
+  await expect(page.locator('#session-detail-content')).toContainText('A4 synthetic lecture.wav');
   await page.locator('#close-detail-btn').click();
   await page.route('**/api/study/capture-sessions?*', route => route.fulfill({
     status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'private_capture_error', path: 'C:/secret' }),
@@ -135,7 +135,7 @@ test('A4 capture page creates a session and keeps failure state safe', async ({ 
   await expect(page.locator('#error')).not.toContainText('C:/secret');
   await page.unroute('**/api/study/capture-sessions?*');
   await page.locator('#refresh-btn').click();
-  await expect(page.locator('#state')).toContainText('共 1 个会话');
+  await expect(page.locator('#state')).toContainText('已显示 1 个会话');
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.keyboard.press('Tab');

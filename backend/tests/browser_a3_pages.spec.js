@@ -10,7 +10,7 @@ function startServer(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backe
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:15000}).toBe(true)}
 async function mock(page,url,body,status=200){await page.route(url,route=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)}))}
 test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=startServer();await ready()});
-test.afterEach(()=>{if(server&&!server.killed)server.kill();server=null});
+test.afterEach(async()=>{if(!server||server.killed){server=null;return}await new Promise(resolve=>{let done=false;const finish=()=>{if(!done){done=true;server=null;resolve()}};server.once('exit',finish);server.kill();setTimeout(finish,5000)})});
 
 test('A3-PAGES plan and note details render safe source lifecycle and return navigation',async({page})=>{
   await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'本周计划',status:'active',description:'安全计划摘要',items:[{id:'item-1',title:'阅读材料',status:'completed'}],source_links:[{id:'link-1',plan_item_id:'item-1',status:'source_deleted'}]});

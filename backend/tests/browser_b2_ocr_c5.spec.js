@@ -60,12 +60,11 @@ test('B2 C5 image capture exposes OCR gate and preserves review boundary', async
   await page.locator('#new-session-form button[type="submit"]').click();
   await expect(page.locator('#sessions')).toContainText('c5-slide.png');
   await page.getByRole('button', {name: '查看详情'}).click();
-  await expect(page.locator('input[type="file"]')).toHaveAttribute('accept', 'image/png,image/jpeg,image/webp');
+  await expect(page.locator('input[type="file"]')).toHaveAttribute('accept', 'image/png');
   await page.locator('input[type="file"]').setInputFiles({name: 'c5-slide.png', mimeType: 'image/png', buffer: pngBuffer()});
-  await expect(page.locator('[id^="upload-status-"]')).toContainText('上传成功');
-  await expect(page.locator('#session-detail-dialog')).not.toBeVisible({timeout: 5000});
-  await page.getByRole('button', {name: '查看详情'}).click();
-  await expect(page.getByRole('button', {name: /转写/})).toBeVisible();
+  await expect(page.locator('#session-detail-status')).toContainText('上传成功');
+  await expect(page.locator('#session-detail-dialog')).toBeVisible();
+  await expect(page.getByRole('button', {name: /识别/})).toBeVisible();
   await page.locator('#close-detail-btn').click();
   await page.reload();
   await expect(page.locator('#sessions')).toContainText('c5-slide.png');

@@ -20,7 +20,7 @@
 <div>
 <p class="eyebrow">课堂采集</p>
 <h1>采集与转写</h1>
-<p class="lead">上传音频/视频，查看转写草稿，确认或编辑后转为学习材料。</p>
+<p class="lead">上传音频/图片，查看转写草稿，确认或编辑后转为学习材料。</p>
 </div>
 <div class="hero-action">
 <button class="btn btn-primary" id="new-session-btn" type="button">新建采集会话</button>
@@ -29,12 +29,9 @@
 
 <section class="card" data-od-id="capture-asr-status">
 <h2>转写能力状态</h2>
-<div class="asr-notice" id="asr-notice" role="status" aria-live="polite">
-<p>正在加载转写能力状态…</p>
-</div>
-<div class="asr-notice mt-12" id="ocr-notice" role="status" aria-live="polite">
-<p>正在加载 OCR 能力状态…</p>
-</div>
+<div id="asr-notice" class="notice" role="status" aria-live="polite">正在加载转写能力状态…</div>
+<div id="ocr-notice" class="notice mt-12" role="status" aria-live="polite">正在加载 OCR 能力状态…</div>
+<div class="mt-12"><button id="retry-asr" class="btn" type="button" hidden>重试加载能力状态</button></div>
 </section>
 
 <section class="card mt-24" data-od-id="capture-sessions">
@@ -43,426 +40,655 @@
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
 </div>
 <div class="filters">
-<label>
-<input type="checkbox" id="include-archived">
-<span>显示已归档</span>
-</label>
+<label><input type="checkbox" id="include-archived"><span>显示已归档</span></label>
 <button class="btn" id="refresh-btn" type="button">刷新</button>
 </div>
-<div id="error" class="error" role="alert" hidden></div>
+<div id="error" class="error" role="alert" aria-live="polite" hidden></div>
+<div class="mt-12"><button id="retry-list" class="btn" type="button" hidden>重试加载列表</button></div>
 <div id="sessions" class="session-grid"></div>
+<button id="load-more" class="btn mt-12" type="button" hidden>加载更多会话</button>
 <div id="empty" class="empty" hidden>还没有采集会话</div>
 </section>
+</main>
+</div>
 
-<!-- New Session Modal (simplified inline for now) -->
-<dialog id="new-session-dialog" class="dialog dialog-small">
-<h2>新建采集会话</h2>
+<dialog id="new-session-dialog" class="dialog dialog-small" aria-labelledby="new-session-title">
+<h2 id="new-session-title">新建采集会话</h2>
 <form id="new-session-form">
 <div class="field">
 <label for="asset-kind">类型</label>
 <select id="asset-kind" required>
 <option value="audio">音频</option>
-<option value="video">视频</option>
 <option value="image">图片</option>
 </select>
 </div>
 <div class="field mt-16">
-<label for="original-name">名称</label>
-<input type="text" id="original-name" placeholder="例：第三章课堂讲解" required>
+<label for="original-name">名称（需带文件后缀）</label>
+<input type="text" id="original-name" placeholder="例：第三章课堂讲解.wav" required maxlength="255">
+<p class="muted field-hint" id="name-hint">音频建议 .wav/.mp3/.m4a 结尾；图片建议 .png/.jpg/.webp 结尾。上传时将校验后缀与媒体类型一致。</p>
 </div>
 <div class="field mt-16">
 <label for="media-type">媒体类型</label>
-<input type="text" id="media-type" placeholder="例：audio/mpeg" value="audio/mpeg">
+<select id="media-type" required>
+<option value="audio/wav">audio/wav（.wav）</option>
+<option value="audio/mpeg">audio/mpeg（.mp3）</option>
+<option value="audio/mp4">audio/mp4（.m4a/.mp4）</option>
+<option value="image/png">image/png（.png）</option>
+<option value="image/jpeg">image/jpeg（.jpg/.jpeg）</option>
+<option value="image/webp">image/webp（.webp）</option>
+</select>
 </div>
+<div id="new-session-status" class="notice warn" role="alert" hidden></div>
 <div class="stack-actions">
-<button type="submit" class="btn btn-primary">创建</button>
+<button type="submit" class="btn btn-primary" id="submit-new-session">创建</button>
 <button type="button" class="btn" id="cancel-dialog-btn">取消</button>
 </div>
 </form>
 </dialog>
 
-<!-- Session Detail Modal -->
-<dialog id="session-detail-dialog" class="dialog dialog-wide">
+<dialog id="session-detail-dialog" class="dialog dialog-wide" aria-labelledby="session-detail-title">
+<h2 id="session-detail-title">会话详情</h2>
+<div id="session-detail-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="session-detail-content"></div>
 <div class="mt-24">
 <button type="button" class="btn" id="close-detail-btn">关闭</button>
 </div>
 </dialog>
 
-</main>
-</div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
 <script src="/app/js/shell.js"></script>
 <script>
-(function(){
+(()=>{
 const pageRequest=sbApi.setPageScope('capture');
+const asrNotice=document.querySelector('#asr-notice');
+const ocrNotice=document.querySelector('#ocr-notice');
+const retryAsr=document.querySelector('#retry-asr');
 const state=document.querySelector('#state');
-const error=document.querySelector('#error');
+const retryList=document.querySelector('#retry-list');
 const sessions=document.querySelector('#sessions');
+const loadMore=document.querySelector('#load-more');
 const empty=document.querySelector('#empty');
+const error=document.querySelector('#error');
 const includeArchived=document.querySelector('#include-archived');
 const refreshBtn=document.querySelector('#refresh-btn');
 const newSessionBtn=document.querySelector('#new-session-btn');
 const newSessionDialog=document.querySelector('#new-session-dialog');
 const newSessionForm=document.querySelector('#new-session-form');
+const newSessionStatus=document.querySelector('#new-session-status');
 const cancelDialogBtn=document.querySelector('#cancel-dialog-btn');
+const submitNewSession=document.querySelector('#submit-new-session');
 const sessionDetailDialog=document.querySelector('#session-detail-dialog');
+const sessionDetailStatus=document.querySelector('#session-detail-status');
 const sessionDetailContent=document.querySelector('#session-detail-content');
 const closeDetailBtn=document.querySelector('#close-detail-btn');
 
+const SUFFIX_BY_MEDIA={
+'audio/wav':['.wav'],'audio/mpeg':['.mp3'],'audio/mp4':['.m4a','.mp4'],
+'image/png':['.png'],'image/jpeg':['.jpg','.jpeg'],'image/webp':['.webp']};
+const KIND_LABEL={audio:'音频',image:'图片'};
+const MEDIA_LABEL={'audio/wav':'音频 WAV','audio/mpeg':'音频 MP3','audio/mp4':'音频 M4A','image/png':'图片 PNG','image/jpeg':'图片 JPEG','image/webp':'图片 WebP'};
+
 let currentSessions=[];
-let loadGeneration=0;
-let detailGeneration=0;
-let captureCapability={status:'demo',provider_id:'fake',model_id:'fake-capture-v1'};
-let ocrCapability={status:'not_configured',provider_id:null,model_id:null};
+let loadGeneration=0,detailGeneration=0,capabilityGeneration=0;
+let listOffset=0,listHasMore=false,listItems=[];
+let captureCapability={status:'loading'},ocrCapability={status:'loading'};
+const busy={create:false,upload:false,transcribe:false,edit:false,confirm:false,reject:false};
+let uploadTimerId=null;
 
 function text(value){return typeof value==='string'?value:''}
+function kindLabel(value){return KIND_LABEL[value]||'未知类型'}
+function mediaLabel(value){return MEDIA_LABEL[value]||text(value)||'未知媒体'}
+
+const errorMap={
+capture_list_failed:'采集会话列表加载失败，请重试',
+capture_read_failed:'采集会话详情加载失败，请重试',
+capture_not_found:'采集会话不存在或已删除',
+capture_invalid_state:'当前会话状态不允许此操作',
+capture_invalid_payload:'会话信息无效，请检查名称和类型',
+capture_upload_failed:'上传失败，请重试',
+capture_asset_type_not_supported:'文件类型不受支持：名称后缀需与媒体类型一致（如 .wav 对应 audio/wav）',
+capture_asset_too_large:'文件过大，请选择较小的文件',
+capture_source_unavailable:'采集原件当前不可用',
+transcription_provider_not_configured:'转写 Provider 尚未配置',
+transcription_not_ready:'当前会话还不能转写（需先上传原件）',
+transcription_failed:'转写失败，请重试',
+transcript_not_found:'转写草稿不存在或已删除',
+transcript_edit_failed:'草稿编辑失败，请重试',
+transcript_confirm_failed:'草稿确认失败，请重试',
+transcript_reject_failed:'草稿拒绝失败，请重试',
+transcript_empty_or_invalid:'转写内容为空或无效',
+transcript_user_edit_protected:'草稿已确认，不能再次编辑',
+transcript_citation_invalid:'转写来源校验失败，请重试',
+file_too_large:'文件过大，请选择较小的文件',
+unsupported_format:'不支持的文件格式',
+invalid_pagination:'分页参数无效',
+request_failed:'请求失败，请重试',
+upload_failed:'上传失败，请重试',
+};
+function mapError(e){const code=e.code||e.message||'';return errorMap[code]||'请求失败，请重试'}
+
+function showStatus(el,message,failed){
+if(!el)return;
+el.hidden=false;
+el.className=failed?'notice warn':'notice';
+el.setAttribute('role',failed?'alert':'status');
+el.setAttribute('aria-live','polite');
+el.textContent=message;
+}
+function hideStatus(el){if(!el)return;el.hidden=true;el.textContent=''}
 
 async function loadCaptureCapability(){
+const generation=++capabilityGeneration;
+showStatus(asrNotice,'正在加载转写能力状态…');
+retryAsr.hidden=true;
 try{
 const data=await sbApi.json('/api/ai/capabilities',{signal:pageRequest.signal});
-captureCapability=data&&typeof data.capture==='object'?data.capture:captureCapability;
-ocrCapability=data&&typeof data.ocr==='object'?data.ocr:ocrCapability;
-}catch(e){if(e.name!=='AbortError')captureCapability={status:'unknown',provider_id:null,model_id:null}}
-const notice=document.querySelector('#asr-notice');
-notice.replaceChildren();
-const ocrNotice=document.querySelector('#ocr-notice');
+if(generation!==capabilityGeneration)return;
+captureCapability=data&&typeof data.capture==='object'?data.capture:{status:'unknown'};
+ocrCapability=data&&typeof data.ocr==='object'?data.ocr:{status:'unknown'};
+}catch(e){
+if(e.name==='AbortError')return;
+if(generation!==capabilityGeneration)return;
+captureCapability={status:'failed'};
+ocrCapability={status:'failed'};
+}
+renderCapability();
+}
+
+function renderCapability(){
+const notice=asrNotice;
+const ocrStatus=ocrCapability.status;
 ocrNotice.replaceChildren();
+const ocrHeading=document.createElement('p');
+const ocrEmphasis=document.createElement('strong');
+const ocrDetail=document.createElement('p');
+ocrDetail.className='mt-8 mb-0';
+if(ocrStatus==='configured'){
+  ocrEmphasis.textContent='本机 OCR 已配置：';
+  ocrHeading.append(ocrEmphasis,document.createTextNode('图片识别结果仍需人工核对。'));
+  ocrDetail.textContent=`Provider：${text(ocrCapability.provider_id)} · 模型：${text(ocrCapability.model_id)}。`;
+}else if(ocrStatus==='failed'){
+  ocrNotice.className='notice warn';
+  ocrNotice.setAttribute('role','alert');
+  ocrEmphasis.textContent='OCR 能力状态加载失败：';
+  ocrHeading.append(ocrEmphasis,document.createTextNode('组件状态暂不可用，不等于未配置。'));
+  ocrDetail.textContent='可点击下方按钮重试；页面不会显示运行时或模型路径。';
+}else if(ocrStatus==='not_configured'){
+  ocrNotice.className='notice warn';
+  ocrNotice.removeAttribute('role');
+  ocrEmphasis.textContent='OCR Provider 未配置：';
+  ocrHeading.append(ocrEmphasis,document.createTextNode('无法识别图片。'));
+  ocrDetail.textContent='请由本机运行配置提供有效的 OCR Provider；页面不会显示模型路径。';
+}else{
+  ocrNotice.className='notice';
+  ocrEmphasis.textContent='OCR 状态：';
+  ocrHeading.append(ocrEmphasis,document.createTextNode(ocrStatus==='loading'?'正在加载…':'状态暂时无法确认，不等于未配置。'));
+  ocrDetail.textContent='图片识别结果仍需人工核对。';
+}
+ocrNotice.append(ocrHeading,ocrDetail);
+notice.replaceChildren();
 const heading=document.createElement('p');
 const emphasis=document.createElement('strong');
 const detail=document.createElement('p');detail.className='mt-8 mb-0';
-if(captureCapability.status==='configured'){
+const status=captureCapability.status;
+if(status==='loading'){
+emphasis.textContent='正在加载转写能力状态…';
+heading.append(emphasis);
+}else if(status==='failed'){
+notice.className='notice warn';
+notice.setAttribute('role','alert');
+emphasis.textContent='转写能力状态加载失败：';
+heading.append(emphasis,document.createTextNode('组件状态暂不可用，当前无法确认转写能力；已发起转写会按安全边界拒绝。'));
+detail.textContent='可点击下方按钮重试；页面不会显示运行时或模型路径。';
+notice.append(heading,detail);
+retryAsr.hidden=false;
+return;
+}else if(status==='configured'){
+notice.className='notice';
+notice.removeAttribute('role');
 emphasis.textContent='本机 ASR 已配置：';
 heading.append(emphasis,document.createTextNode('转写将使用当前进程显式配置的本地 Provider。'));
 detail.textContent=`Provider：${text(captureCapability.provider_id)} · 模型：${text(captureCapability.model_id)}。转写先创建草稿，必须人工确认后才会转为学习材料。`;
-}else if(captureCapability.status==='demo'){
-emphasis.textContent='当前为 fake 转写：';
+}else if(status==='demo'){
+notice.className='notice warn';
+notice.removeAttribute('role');
+emphasis.textContent='当前为 fake 转写（演示模式）：';
 heading.append(emphasis,document.createTextNode('仅用于测试和演示。'));
-detail.textContent='上传的音频文件会保存，但转写结果为模拟数据。';
-}else{
+detail.textContent=`Provider：${text(captureCapability.provider_id)} · 模型：${text(captureCapability.model_id)}。上传的文件会保存，但转写结果为确定性模拟数据，不是真实语音识别。转写先创建草稿，必须人工确认后才会转为学习材料。页面不会显示运行时或模型路径。`;
+}else if(status==='not_configured'){
+notice.className='notice warn';
+notice.removeAttribute('role');
 emphasis.textContent='转写 Provider 未配置：';
 heading.append(emphasis,document.createTextNode('无法执行转写。'));
 detail.textContent='请由本机运行配置提供有效的转写 Provider；页面不会显示运行时或模型路径。';
+}else{
+notice.className='notice warn';
+notice.removeAttribute('role');
+emphasis.textContent='转写能力状态未知：';
+heading.append(emphasis,document.createTextNode('状态暂时无法确认，不等于未配置。'));
+detail.textContent='可点击下方按钮重试；页面不会显示运行时或模型路径。';
+notice.append(heading,detail);
+retryAsr.hidden=false;
+return;
 }
 notice.append(heading,detail);
-const ocrHeading=document.createElement('p');
-const ocrEmphasis=document.createElement('strong');
-const ocrDetail=document.createElement('p');ocrDetail.className='mt-8 mb-0';
-if(ocrCapability.status==='configured'){
-ocrEmphasis.textContent='本机 OCR 已配置：';
-ocrHeading.append(ocrEmphasis,document.createTextNode('图片识别结果仍需人工核对。'));
-ocrDetail.textContent=`Provider：${text(ocrCapability.provider_id)} · 模型：${text(ocrCapability.model_id)}。`;
-}else{
-ocrEmphasis.textContent='OCR Provider 未配置：';
-ocrHeading.append(ocrEmphasis,document.createTextNode('图片不会回退到 fake 或 ASR。'));
-ocrDetail.textContent='请由本机运行配置提供有效的 OCR Provider；页面不会显示模型路径。';
-}
-ocrNotice.append(ocrHeading,ocrDetail)
+retryAsr.hidden=true;
 }
 
-async function load(){
+async function load(reset=true){
 const generation=++loadGeneration;
-state.textContent='加载中…';
+if(reset){listOffset=0;listItems=[];listHasMore=false}
+state.textContent=reset?'加载中…':'正在加载更多…';
 empty.hidden=true;
 error.hidden=true;
-sessions.replaceChildren();
-empty.hidden=true;
+retryList.hidden=true;
+if(reset)sessions.replaceChildren();
+loadMore.hidden=true;
+refreshBtn.disabled=true;
 try{
 const params=new URLSearchParams();
 params.set('include_archived',includeArchived.checked?'true':'false');
 params.set('limit','100');
+params.set('offset',String(listOffset));
 const data=await sbApi.json('/api/study/capture-sessions?'+params,{signal:pageRequest.signal});
 if(generation!==loadGeneration)return;
-currentSessions=data.items||[];
-if(currentSessions.length===0){
+const items=Array.isArray(data.items)?data.items:[];
+listItems=listItems.concat(items);
+currentSessions=listItems;
+listHasMore=Boolean(data.has_more);
+listOffset+=items.length;
+if(listItems.length===0){
 state.textContent='暂无会话';
-empty.hidden=false
+empty.hidden=false;
 }else{
-state.textContent=`共 ${currentSessions.length} 个会话`;
-renderSessions(currentSessions)
+state.textContent=`已显示 ${listItems.length} 个会话${listHasMore?'（还有更多）':''}`;
+renderSessions(listItems);
+loadMore.hidden=!listHasMore;
 }
+refreshBtn.disabled=false;
 }catch(e){
 if(e.name==='AbortError')return;
+if(generation!==loadGeneration)return;
 state.textContent='加载失败';
-error.textContent=sbApi.safeError(e);
-error.hidden=false
+error.textContent=mapError(e);
+error.hidden=false;
+retryList.hidden=false;
+refreshBtn.disabled=false;
 }
 }
 
 function renderSessions(items){
 sessions.replaceChildren();
-items.forEach(item=>{
-const card=createSessionCard(item);
-sessions.append(card)
-})
+items.forEach(item=>sessions.append(createSessionCard(item)));
 }
 
 function createSessionCard(item){
 const card=document.createElement('div');
 card.className='session-card';
+card.setAttribute('data-session-id',text(item.id));
 
 const header=document.createElement('div');
 header.className='session-header';
-
 const h3=document.createElement('h3');
-h3.textContent=text(item.original_name)||'未命名';
+h3.textContent=text(item.original_name)||'未命名会话';
 header.append(h3);
-
 const badge=document.createElement('span');
 badge.className='badge';
 badge.textContent=sbState.label(item.status,'未知状态');
 header.append(badge);
-
 card.append(header);
 
 const meta=document.createElement('div');
 meta.className='session-meta';
-meta.textContent=`类型：${text(item.asset_kind)||'未知'} · 创建于 ${formatDate(item.created_at)}`;
+meta.textContent=`类型：${kindLabel(item.asset_kind)} · 媒体：${mediaLabel(item.media_type)} · 创建于 ${formatDate(item.created_at)}`;
 card.append(meta);
+if(item.source_status){
+const source=document.createElement('div');
+source.className='muted';
+source.textContent=`来源状态：${sbState.source(item.source_status)}`;
+card.append(source);
+}
 
 if(item.transcript_drafts&&item.transcript_drafts.length>0){
-const draft=item.transcript_drafts[0];
+const draft=item.transcript_drafts[item.transcript_drafts.length-1];
 const preview=document.createElement('div');
 preview.className='transcript-view';
 const previewText=text(draft.text).slice(0,200);
-preview.textContent=previewText+(previewText.length<text(draft.text).length?'...':'');
-card.append(preview)
+preview.textContent=previewText+(previewText.length<text(draft.text).length?'…':'');
+card.append(preview);
 }
 
 const actions=document.createElement('div');
 actions.className='session-actions';
-
 const viewBtn=document.createElement('button');
 viewBtn.className='btn btn-primary';
+viewBtn.type='button';
 viewBtn.textContent='查看详情';
-viewBtn.onclick=()=>viewSession(item.id);
+viewBtn.onclick=()=>viewSession(text(item.id));
 actions.append(viewBtn);
-
-if(item.status==='uploaded'){
-const transcribeBtn=document.createElement('button');
-transcribeBtn.className='btn';
-const capability=item.asset_kind==='image'?ocrCapability:captureCapability;
-transcribeBtn.textContent=capability.status==='configured'?'转写':(item.asset_kind==='image'?'转写（OCR 未配置）':'转写（fake）');
-transcribeBtn.onclick=()=>transcribeSession(item.id);
-actions.append(transcribeBtn)
-}
-
 card.append(actions);
-
-return card
+return card;
 }
 
 function formatDate(iso){
 if(!iso)return'未知';
-try{
-return new Date(iso).toLocaleString('zh-CN')
-}catch(e){
-return iso
-}
+try{return new Date(iso).toLocaleString('zh-CN')}catch(e){return iso}
 }
 
 async function viewSession(captureId){
 const generation=++detailGeneration;
 try{
+showStatus(sessionDetailStatus,'正在加载会话详情…');
+sessionDetailContent.replaceChildren();
 const data=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}`,{signal:pageRequest.signal});
 if(generation!==detailGeneration)return;
 renderSessionDetail(data);
-sessionDetailDialog.showModal()
+if(!sessionDetailDialog.open)sessionDetailDialog.showModal();
+hideStatus(sessionDetailStatus);
 }catch(e){
-if(e.name!=='AbortError')alert(sbApi.safeError(e))
+if(e.name==='AbortError')return;
+if(generation!==detailGeneration)return;
+showStatus(sessionDetailStatus,mapError(e),true);
+if(!sessionDetailDialog.open)sessionDetailDialog.showModal();
 }
 }
 
-function renderSessionDetail(data){const captureId=data.id;
-sessionDetailContent.innerHTML='';
+function renderSessionDetail(data){
+const captureId=text(data.id);
+sessionDetailContent.replaceChildren();
 
-const title=document.createElement('h2');
+const title=document.createElement('h3');
 title.style.marginTop='0';
-title.textContent=text(data.original_name)||'未命名';
+title.textContent=text(data.original_name)||'未命名会话';
 sessionDetailContent.append(title);
 
 const meta=document.createElement('div');
 meta.className='session-meta';
-meta.replaceChildren();
-[['状态',sbState.label(data.status)],['类型',`${text(data.asset_kind)} · 媒体：${text(data.media_type)}`],['创建于',formatDate(data.created_at)],...(data.source_status?[['来源状态',sbState.source(data.source_status)]]:[])].forEach(([label,value])=>{const p=document.createElement('p');p.append(document.createTextNode(label+'：'));const strong=document.createElement('strong');strong.textContent=value;p.append(strong);meta.append(p)});
+[['状态',sbState.label(data.status,'未知状态')],['类型',`${kindLabel(data.asset_kind)} · 媒体：${mediaLabel(data.media_type)}`],['创建于',formatDate(data.created_at)],
+...(data.source_status?[['来源状态',sbState.source(data.source_status)]]:[])].forEach(([label,value])=>{
+const p=document.createElement('p');p.append(document.createTextNode(label+'：'));
+const strong=document.createElement('strong');strong.textContent=value;p.append(strong);meta.append(p);
+});
 sessionDetailContent.append(meta);
 
 if(data.status==='draft'&&!data.material_id){
 const uploadSection=document.createElement('div');
 uploadSection.className='upload-section';
-uploadSection.innerHTML=`
-<h3>上传文件</h3>
-<div class="upload-area" id="upload-area-${captureId}">
-<input type="file" id="file-input-${captureId}" accept="${data.asset_kind==='image'?'image/png,image/jpeg,image/webp':'audio/*,video/*'}">
-<p><strong>点击选择文件</strong>或拖放到此处</p>
-</div>
-<div id="upload-status-${captureId}" class="notice mt-12" hidden></div>
-`;
-sessionDetailContent.append(uploadSection);
-
-const uploadArea=uploadSection.querySelector(`#upload-area-${captureId}`);
-const fileInput=uploadSection.querySelector(`#file-input-${captureId}`);
-const uploadStatus=uploadSection.querySelector(`#upload-status-${captureId}`);
-uploadArea.onclick=()=>fileInput.click();
+const uploadTitle=document.createElement('h3');uploadTitle.textContent='上传文件';uploadSection.append(uploadTitle);
+const uploadArea=document.createElement('div');
+uploadArea.className='upload-area';
+uploadArea.setAttribute('tabindex','0');
+uploadArea.setAttribute('role','button');
+uploadArea.setAttribute('aria-label','选择要上传的文件');
+const uploadHint=document.createElement('p');
+const strong=document.createElement('strong');strong.textContent='点击选择文件';
+uploadHint.append(strong,document.createTextNode(`（${mediaLabel(data.media_type)}，需与名称后缀一致）`));
+uploadArea.append(uploadHint);
+const fileInput=document.createElement('input');
+fileInput.type='file';
+fileInput.id='file-input';
+fileInput.className='file-input-hidden';
+fileInput.accept=text(data.media_type);
+uploadArea.append(fileInput);
+const uploadStatus=document.createElement('div');
+uploadStatus.className='notice mt-12';
+uploadStatus.hidden=true;
+uploadSection.append(uploadArea,uploadStatus);
+uploadArea.onclick=()=>{if(!busy.upload)fileInput.click()};
+uploadArea.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!busy.upload){e.preventDefault();fileInput.click()}};
 fileInput.onchange=()=>{
-if(fileInput.files.length)uploadFile(captureId,fileInput.files[0],uploadStatus)
+if(!fileInput.files.length)return;
+uploadFile(captureId,fileInput.files[0],uploadStatus,fileInput);
+};
+sessionDetailContent.append(uploadSection);
 }
+
+if(data.status==='uploaded'&&data.material_id){
+const transcribeSection=document.createElement('div');
+transcribeSection.className='upload-section';
+const transcribeTitle=document.createElement('h3');transcribeTitle.textContent='发起转写';transcribeSection.append(transcribeTitle);
+const transcribeHint=document.createElement('p');transcribeHint.className='muted';
+transcribeHint.textContent='转写先产生草稿，不会自动转为学习材料；确认前可自由编辑或拒绝。';
+transcribeSection.append(transcribeHint);
+const transcribeBtn=document.createElement('button');
+transcribeBtn.className='btn btn-primary';transcribeBtn.type='button';
+transcribeBtn.textContent=data.asset_kind==='image'?'开始识别（OCR）':'开始转写（ASR）';
+transcribeBtn.onclick=()=>transcribeSession(captureId,transcribeBtn);
+transcribeSection.append(transcribeBtn);
+sessionDetailContent.append(transcribeSection);
+}
+
+if(data.status==='transcribing'){
+const running=document.createElement('div');
+running.className='notice';
+running.textContent='转写进行中，请稍后点击「刷新」查看结果。';
+sessionDetailContent.append(running);
 }
 
 if(data.transcript_drafts&&data.transcript_drafts.length>0){
 data.transcript_drafts.forEach(draft=>{
-const draftId=text(draft.id)||text(draft.draft_id);
-const draftStatus=text(draft.status)||text(draft.draft_status);
+const draftId=text(draft.id);
+const draftStatus=text(draft.status)||'draft';
 const draftSection=document.createElement('div');
 draftSection.className='draft-editor';
-const draftTitle=document.createElement('h3');draftTitle.textContent=(data.asset_kind==='image'?'OCR 草稿 · ':'转写草稿 · ')+sbState.label(draftStatus);draftSection.append(draftTitle);const draftView=document.createElement('div');draftView.className='transcript-view';draftView.textContent=text(draft.text)||'(空)';draftSection.append(draftView);
+const draftTitle=document.createElement('h3');
+draftTitle.textContent=(data.asset_kind==='image'?'OCR 草稿 · ':'转写草稿 · ')+sbState.label(draftStatus,'未知');
+draftSection.append(draftTitle);
+const draftView=document.createElement('div');
+draftView.className='transcript-view';
+draftView.textContent=text(draft.text)||'(空)';
+draftSection.append(draftView);
+if(text(draft.quality_status)==='uncertain'){
+const warn=document.createElement('p');
+warn.className='muted';
+warn.textContent='包含低置信度片段，建议人工核对后再确认。';
+draftSection.append(warn);
+}
 
-if(['draft','pending_review','review_required'].includes(draftStatus)){
+if(['draft'].includes(draftStatus)&&data.status==='review_required'){
 const editArea=document.createElement('textarea');
 editArea.value=text(draft.text);
-editArea.placeholder='编辑转写内容...';
+editArea.setAttribute('aria-label','编辑转写内容');
 draftSection.append(editArea);
-
 const btnGroup=document.createElement('div');
 btnGroup.className='stack-actions mt-12';
 
 const saveBtn=document.createElement('button');
-saveBtn.className='btn';
-saveBtn.textContent='保存编辑';
-saveBtn.onclick=()=>editDraft(captureId,draftId,editArea.value);
+saveBtn.className='btn';saveBtn.type='button';saveBtn.textContent='保存编辑';
+saveBtn.onclick=()=>{
+if(busy.edit)return;
+busy.edit=true;saveBtn.disabled=true;
+editDraft(captureId,draftId,editArea.value,saveBtn);
+};
 btnGroup.append(saveBtn);
 
 const confirmBtn=document.createElement('button');
-confirmBtn.className='btn btn-primary';
-confirmBtn.textContent='确认';
-confirmBtn.onclick=()=>confirmDraft(captureId,draftId);
+confirmBtn.className='btn btn-primary';confirmBtn.type='button';confirmBtn.textContent='确认转为学习材料';
+confirmBtn.onclick=()=>{
+if(busy.confirm)return;
+busy.confirm=true;confirmBtn.disabled=true;
+confirmDraft(captureId,draftId,confirmBtn);
+};
 btnGroup.append(confirmBtn);
 
 const rejectBtn=document.createElement('button');
-rejectBtn.className='btn';
-rejectBtn.textContent='拒绝';
-rejectBtn.onclick=()=>rejectDraft(captureId,draftId);
+rejectBtn.className='btn';rejectBtn.type='button';rejectBtn.textContent='拒绝草稿';
+rejectBtn.onclick=()=>{
+if(busy.reject)return;
+busy.reject=true;rejectBtn.disabled=true;
+rejectDraft(captureId,draftId,rejectBtn);
+};
 btnGroup.append(rejectBtn);
-
-draftSection.append(btnGroup)
+draftSection.append(btnGroup);
 }
-
-sessionDetailContent.append(draftSection)
-})
+sessionDetailContent.append(draftSection);
+});
 }
 }
 
-async function uploadFile(captureId,file,statusEl){
-statusEl.hidden=false;
-statusEl.className='notice';
-statusEl.textContent=`正在上传 ${file.name}...`;
+async function uploadFile(captureId,file,statusEl,fileInput){
+if(busy.upload)return;
+busy.upload=true;
+if(fileInput)fileInput.disabled=true;
+showStatus(statusEl,`正在上传 ${file.name}…`);
+showStatus(sessionDetailStatus,'正在上传文件…');
 try{
-await sbApi.upload(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/upload`,file);
-statusEl.className='notice';
-statusEl.textContent='上传成功！';
-setTimeout(()=>{
-sessionDetailDialog.close();
-load()
-},1500)
+await sbApi.upload(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/upload`,file,{signal:pageRequest.signal});
+showStatus(statusEl,'上传成功');
+showStatus(sessionDetailStatus,'上传成功');
+await load();
+if(uploadTimerId){clearTimeout(uploadTimerId);uploadTimerId=null}
+await viewSession(captureId);
+showStatus(sessionDetailStatus,'上传成功');
 }catch(e){
-if(e.name==='AbortError')return;
-statusEl.className='notice warn';
-statusEl.textContent=sbApi.safeError(e)+' 可重试。'
+if(e.name==='AbortError'){if(fileInput)fileInput.disabled=false;return}
+const message=mapError(e)+' 可重新选择文件重试。';
+showStatus(statusEl,message,true);
+showStatus(sessionDetailStatus,message,true);
+if(fileInput){fileInput.value='';fileInput.disabled=false;}
+}finally{
+busy.upload=false;
 }
 }
 
-async function transcribeSession(captureId){
-const item=currentSessions.find(entry=>entry.id===captureId);
+async function transcribeSession(captureId,btn){
+if(busy.transcribe)return;
+const item=currentSessions.find(entry=>text(entry.id)===captureId);
 const isImage=item&&item.asset_kind==='image';
 const capability=isImage?ocrCapability:captureCapability;
-const configured=capability.status==='configured';
-if(!configured){alert(isImage?'OCR Provider 未配置。':'转写 Provider 未配置。');return}
-if(!confirm(isImage?'确定使用当前配置的本机 OCR Provider 吗？':'确定使用当前配置的本机转写 Provider 吗？'))return;
+if(capability.status==='failed'||capability.status==='loading'||capability.status==='unknown'){
+showStatus(sessionDetailStatus,'转写能力状态未确认，请先在页面顶部重试加载能力状态。',true);
+return;
+}
+if(capability.status==='not_configured'){
+showStatus(sessionDetailStatus,isImage?'OCR Provider 未配置，无法识别图片。':'转写 Provider 未配置，无法转写。',true);
+return;
+}
+busy.transcribe=true;
+if(btn)btn.disabled=true;
+showStatus(sessionDetailStatus,isImage?'正在识别图片…':'正在转写…');
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcribe`,{method:'POST',signal:pageRequest.signal});
-alert(isImage?'OCR 已完成，结果等待人工确认。':'转写已完成，结果等待人工确认。');
-load()
+await load();
+await viewSession(captureId);
+showStatus(sessionDetailStatus,isImage?'识别完成，请核对结果后再确认。':'转写完成，请核对草稿后再确认。');
 }catch(e){
-if(e.name!=='AbortError')alert(sbApi.safeError(e))
+if(e.name!=='AbortError')showStatus(sessionDetailStatus,mapError(e),true);
+if(btn)btn.disabled=false;
+}finally{
+busy.transcribe=false;
 }
 }
 
-async function editDraft(captureId,draftId,text){
+async function editDraft(captureId,draftId,value,btn){
 try{
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/transcript/edit`,{
 method:'POST',signal:pageRequest.signal,
-body:JSON.stringify({draft_id:draftId,text})
+body:JSON.stringify({draft_id:draftId,text:value})
 });
-alert('草稿已保存');
-viewSession(captureId)
+await viewSession(captureId);
+showStatus(sessionDetailStatus,'草稿已保存。');
 }catch(e){
-alert(sbApi.safeError(e))
+if(e.name!=='AbortError')showStatus(sessionDetailStatus,mapError(e),true);
+if(btn)btn.disabled=false;
+}finally{
+busy.edit=false;
 }
 }
 
-async function confirmDraft(captureId,draftId){
-if(!confirm('确认此转写草稿？确认后将转为正式材料。'))return;
+async function confirmDraft(captureId,draftId,btn){
 try{
+showStatus(sessionDetailStatus,'正在确认草稿…');
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/confirm`,{
 method:'POST',signal:pageRequest.signal,
 body:JSON.stringify({draft_id:draftId})
 });
-alert('草稿已确认');
-sessionDetailDialog.close();
-load()
+await load();
+await viewSession(captureId);
+showStatus(sessionDetailStatus,'草稿已确认，转写文本已转为学习材料。');
 }catch(e){
-alert(sbApi.safeError(e))
+if(e.name!=='AbortError')showStatus(sessionDetailStatus,mapError(e),true);
+if(btn)btn.disabled=false;
+}finally{
+busy.confirm=false;
 }
 }
 
-async function rejectDraft(captureId,draftId){
-if(!confirm('拒绝此转写草稿？'))return;
+async function rejectDraft(captureId,draftId,btn){
 try{
+showStatus(sessionDetailStatus,'正在拒绝草稿…');
 await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(captureId)}/reject`,{
 method:'POST',signal:pageRequest.signal,
 body:JSON.stringify({draft_id:draftId})
 });
-alert('草稿已拒绝');
-viewSession(captureId)
+await load();
+await viewSession(captureId);
+showStatus(sessionDetailStatus,'草稿已拒绝。可重新上传并转写。');
+setTimeout(()=>{if(sessionDetailDialog.open)sessionDetailDialog.close()},0);
 }catch(e){
-alert(sbApi.safeError(e))
+if(e.name!=='AbortError')showStatus(sessionDetailStatus,mapError(e),true);
+if(btn)btn.disabled=false;
+}finally{
+busy.reject=false;
 }
 }
 
-newSessionBtn.onclick=()=>newSessionDialog.showModal();
-cancelDialogBtn.onclick=()=>newSessionDialog.close();
-closeDetailBtn.onclick=()=>sessionDetailDialog.close();
-
-newSessionForm.onsubmit=async(e)=>{
-e.preventDefault();
-const assetKind=document.querySelector('#asset-kind').value;
-const originalName=document.querySelector('#original-name').value;
-const mediaType=document.querySelector('#media-type').value;
-try{
-await sbApi.json('/api/study/capture-sessions',{
-method:'POST',signal:pageRequest.signal,
-headers:{'content-type':'application/json'},
-body:JSON.stringify({asset_kind:assetKind,original_name:originalName,media_type:mediaType})
-});
-newSessionDialog.close();
-newSessionForm.reset();
-load()
-}catch(e){
-alert(sbApi.safeError(e))
-}
+newSessionBtn.onclick=()=>{hideStatus(newSessionStatus);newSessionDialog.showModal()};
+cancelDialogBtn.onclick=()=>{newSessionDialog.close();newSessionForm.reset();hideStatus(newSessionStatus)};
+closeDetailBtn.onclick=()=>{
+if(uploadTimerId){clearTimeout(uploadTimerId);uploadTimerId=null}
+sessionDetailDialog.close();
 };
 
 document.querySelector('#asset-kind').onchange=e=>{
 const image=e.target.value==='image';
 const media=document.querySelector('#media-type');
-media.value=image?'image/png':'audio/mpeg';
-media.placeholder=image?'例：image/png':'例：audio/mpeg';
+media.value=image?'image/png':'audio/wav';
 };
-includeArchived.onchange=load;
-refreshBtn.onclick=load;
-window.addEventListener('pagehide',()=>{if(sessionDetailDialog.open)sessionDetailDialog.close()});
 
-Promise.all([loadCaptureCapability(),load()])
+newSessionForm.onsubmit=async(e)=>{
+e.preventDefault();
+if(busy.create)return;
+hideStatus(newSessionStatus);
+const assetKind=document.querySelector('#asset-kind').value;
+const originalName=document.querySelector('#original-name').value.trim();
+const mediaType=document.querySelector('#media-type').value;
+const dot=originalName.lastIndexOf('.');
+const suffix=dot>0?originalName.slice(dot).toLowerCase():'';
+if(!suffix||!(SUFFIX_BY_MEDIA[mediaType]||[]).includes(suffix)){
+showStatus(newSessionStatus,`名称需以 ${mediaType} 允许的后缀（${(SUFFIX_BY_MEDIA[mediaType]||[]).join('、')}）结尾，否则后续无法上传文件。`,true);
+return;
+}
+busy.create=true;
+submitNewSession.disabled=true;
+try{
+await sbApi.json('/api/study/capture-sessions',{
+method:'POST',signal:pageRequest.signal,
+body:JSON.stringify({asset_kind:assetKind,original_name:originalName,media_type:mediaType})
+});
+newSessionDialog.close();
+newSessionForm.reset();
+await load();
+}catch(e){
+if(e.name!=='AbortError')showStatus(newSessionStatus,mapError(e),true);
+}finally{
+submitNewSession.disabled=false;
+busy.create=false;
+}
+};
+
+retryAsr.onclick=()=>{if(!retryAsr.disabled)loadCaptureCapability()};
+retryList.onclick=()=>{if(!retryList.disabled)load(true)};
+loadMore.onclick=()=>{if(!loadMore.disabled)load(false)};
+includeArchived.onchange=()=>load(true);
+refreshBtn.onclick=()=>{if(!refreshBtn.disabled)load(true)};
+
+window.addEventListener('pagehide',()=>{
+if(uploadTimerId){clearTimeout(uploadTimerId);uploadTimerId=null}
+if(sessionDetailDialog.open)sessionDetailDialog.close();
+});
+
+Promise.all([loadCaptureCapability(),load(true)]);
 })();
 </script>
 </body>
