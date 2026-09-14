@@ -36,6 +36,7 @@
 <div class="field"><label for="ai-key">API Key</label><input id="ai-key" name="ai_api_key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示不修改已保存的密钥"></div>
 </div>
 <div id="ai-result" class="notice" role="status" aria-live="polite" hidden></div>
+<button class="btn" type="button" id="settings-retry" hidden>重试读取配置</button>
 <div class="stack-actions"><button class="btn btn-primary" type="submit" id="ai-save">保存并生效</button><button class="btn" type="button" id="ai-clear">清除已保存配置</button><a class="btn" href="/app/settings-provider.html">先测试连接</a></div>
 </form>
 </section>
@@ -85,7 +86,8 @@ const ORDER=['import_parse','ocr','asr','index','qa','generation','report'];
 const STATUS={available:{text:'可用',cls:'available',badge:'badge badge-success'},degraded:{text:'降级可用',cls:'',badge:'badge badge-warn'},not_configured:{text:'未配置',cls:'',badge:'badge badge-warn'},not_installed:{text:'未安装',cls:'unavailable',badge:'badge badge-warn'},disabled:{text:'已关闭',cls:'unavailable',badge:'badge'}};
 const REASONS={paddleocr_package_missing:'未安装 PaddleOCR 运行库',rapidocr_package_missing:'未安装 RapidOCR 运行库',onnxruntime_missing:'未安装 ONNX Runtime',rapidocr_models_not_found:'RapidOCR 模型文件缺失',rapidocr_package_unreadable:'RapidOCR 安装目录不可读',ocr_model_root_not_found:'未找到本机 OCR 模型目录',ocr_model_root_invalid:'指定的 OCR 模型目录结构不完整',ocr_disabled_by_configuration:'已按配置关闭',asr_runtime_not_found:'未找到本机转写程序',asr_runtime_invalid:'指定的转写程序不存在',asr_model_not_found:'未找到转写模型文件',provider_not_configured:'尚未填写 Provider',provider_credentials_missing:'缺少 Base URL 或 API Key',embedding_provider_not_configured:'关键词检索可用；配置 Embedding 后才有向量与混合检索'};
 const SOURCES={detected:'来源：本机探测',settings:'来源：本页保存',environment:'来源：启动环境变量',demo:'来源：演示模式',unset:'来源：尚未配置'};
-const SETTING_ERRORS={settings_invalid_value:'填写内容无效，请检查格式',settings_unknown_key:'配置项不受支持',settings_empty_payload:'没有需要保存的内容',settings_payload_too_large:'配置内容过大',settings_write_failed:'配置写入失败，请重试',capability_probe_failed:'本机组件探测失败，请重试'};
+const UNKNOWN_REASON='组件状态暂不可用';
+const SETTING_ERRORS={settings_invalid_value:'填写内容无效，请检查格式',settings_unknown_key:'配置项不受支持',settings_empty_payload:'没有需要保存的内容',settings_payload_too_large:'配置内容过大',settings_write_failed:'配置写入失败，请重试',settings_read_failed:'配置读取失败，请重试',settings_clear_failed:'配置清除失败，请重试',capability_probe_failed:'本机组件探测失败，请重试',capability_read_failed:'能力状态读取失败，请重试'};
 function message(error){return SETTING_ERRORS[error.code]||sbApi.safeError(error)}
 function notice(el,ok,text){el.hidden=false;el.className='notice '+(ok?'status-success':'status-failed');el.textContent=text}
 
@@ -105,7 +107,7 @@ function renderCapabilities(data){
     const meta=document.createElement('dl');meta.className='capability-meta';
     function row(label,value){if(!value)return;const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;meta.append(dt,dd)}
     row('模型',item.model_id);
-    row('说明',item.reason?(REASONS[item.reason]||item.reason):'');
+    row('说明',item.reason?(REASONS[item.reason]||UNKNOWN_REASON):'');
     row('配置',SOURCES[item.source]||'');
     if(meta.childElementCount)card.append(meta);
     grid.append(card);
@@ -131,21 +133,28 @@ function fillSettings(settings){
   $('asr-model').placeholder=settings.asr_model_path_set?'已设置（不回显），填写新值可覆盖':'仅当自动探测失败时填写';
 }
 
+let capabilityGeneration=0,settingsGeneration=0;
+function applyCapabilitySnapshot(data){capabilityGeneration++;renderCapabilities(data)}
+function applySettings(settings){settingsGeneration++;fillSettings(settings)}
+
 async function loadCapabilities(){
+  const gen=++capabilityGeneration;
   $('capability-error').hidden=true;
-  try{renderCapabilities(await sbApi.json('/api/system/capabilities',{signal:pageRequest.signal}))}
-  catch(error){if(error.name==='AbortError')return;$('capability-loading').hidden=true;const box=$('capability-error');box.hidden=false;box.textContent='能力状态加载失败，可点击刷新状态重试';$('capability-summary').textContent='状态未知'}
+  if($('capability-grid').childElementCount===0){$('capability-loading').hidden=false;}
+  try{const data=await sbApi.json('/api/system/capabilities',{signal:pageRequest.signal});if(gen!==capabilityGeneration)return;renderCapabilities(data)}
+  catch(error){if(error.name==='AbortError'||gen!==capabilityGeneration)return;$('capability-loading').hidden=true;const box=$('capability-error');box.hidden=false;box.textContent='能力状态加载失败，可点击刷新状态重试';$('capability-summary').textContent='状态未知'}
 }
 async function loadSettings(){
-  try{fillSettings((await sbApi.json('/api/system/settings',{signal:pageRequest.signal})).settings||{})}
-  catch(error){if(error.name!=='AbortError')notice($('ai-result'),false,'已保存配置读取失败，可刷新页面重试')}
+  const gen=++settingsGeneration;
+  try{const data=(await sbApi.json('/api/system/settings',{signal:pageRequest.signal})).settings||{};if(gen!==settingsGeneration)return;fillSettings(data);$('settings-retry').hidden=true;if($('ai-result').classList.contains('status-failed'))$('ai-result').hidden=true}
+  catch(error){if(error.name!=='AbortError'&&gen===settingsGeneration){notice($('ai-result'),false,'已保存配置读取失败，可点击重试');$('settings-retry').hidden=false}}
 }
 
 async function save(payload,resultEl,button,label){
   sbUi.busy(button,true,label);
   try{
     const data=await sbApi.json('/api/system/settings',{method:'PUT',body:JSON.stringify(payload)});
-    fillSettings(data.settings||{});renderCapabilities(data);
+    applySettings(data.settings||{});applyCapabilitySnapshot(data);
     notice(resultEl,true,'已保存并立即生效');
     ['ai-key','embedding-key','ocr-root','asr-runtime','asr-model'].forEach(id=>{$(id).value=''});
   }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
@@ -155,7 +164,7 @@ async function clearKeys(keys,resultEl,button,label){
   sbUi.busy(button,true,label);
   try{
     const data=await sbApi.json('/api/system/settings/clear',{method:'POST',body:JSON.stringify({keys:keys})});
-    fillSettings(data.settings||{});renderCapabilities(data);
+    applySettings(data.settings||{});applyCapabilitySnapshot(data);
     notice(resultEl,true,'已清除，配置立即生效');
   }catch(error){if(error.name!=='AbortError')notice(resultEl,false,message(error))}
   finally{sbUi.busy(button,false,label)}
@@ -191,9 +200,11 @@ $('local-form').addEventListener('submit',event=>{
 });
 $('local-clear').addEventListener('click',()=>sbSubmit.once('local-clear',()=>clearKeys(['ocr_enabled','ocr_model_root','asr_runtime_path','asr_model_path'],$('local-result'),$('local-clear'),'清除本机组件覆盖')));
 
+$('settings-retry').addEventListener('click',()=>{$('settings-retry').hidden=true;loadSettings()});
 $('capability-refresh').addEventListener('click',()=>loadCapabilities());
 $('capability-recheck').addEventListener('click',()=>sbSubmit.once('capability-recheck',async()=>{
   const button=$('capability-recheck');sbUi.busy(button,true,'重新自检');
+  $('capability-error').hidden=true;
   try{renderCapabilities(await sbApi.json('/api/system/capabilities/self-check',{method:'POST',body:JSON.stringify({})}))}
   catch(error){if(error.name!=='AbortError'){const box=$('capability-error');box.hidden=false;box.textContent=message(error)}}
   finally{sbUi.busy(button,false,'重新自检')}

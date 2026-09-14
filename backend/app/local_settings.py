@@ -92,6 +92,12 @@ def _validated_text(key: str, value: object) -> str | None:
     if key.endswith("_provider_id") or key.endswith("_model_id"):
         if any(char not in _PROVIDER_ID_CHARS and not char.isalnum() for char in trimmed):
             raise SettingsError("settings_invalid_value")
+    if key.endswith("_root") or key.endswith("_path"):
+        # Path overrides are probed read-only by the capability layer; they must
+        # never act as traversal vectors into other directories.
+        segments = trimmed.replace("\\", "/").split("/")
+        if any(segment == ".." for segment in segments):
+            raise SettingsError("settings_invalid_value")
     if key.endswith("_base_url"):
         parsed = urlparse(trimmed)
         if (parsed.scheme not in {"http", "https"} or not parsed.hostname

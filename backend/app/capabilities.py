@@ -155,7 +155,13 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
     ai_model = base.ai_model_id
     ai_base_url = base.ai_base_url
     ai_api_key = base.ai_api_key
-    if not base.demo_mode:
+    # An explicit STUDYBUDDY_AI_PROVIDER=fake is a deterministic demo lock: the
+    # fake registry only accepts its own model id, so applying a stored model
+    # id on top used to flip qa/generation into invalid_config and break Q&A.
+    # Stored AI overrides are therefore skipped entirely while that lock holds.
+    ai_env_locked = (_env_present("STUDYBUDDY_AI_PROVIDER")
+                     and (os.environ.get("STUDYBUDDY_AI_PROVIDER") or "").strip().lower() == "fake")
+    if not base.demo_mode and not ai_env_locked:
         if not _env_present("STUDYBUDDY_AI_PROVIDER") and stored.get("ai_provider_id"):
             ai_provider = str(stored["ai_provider_id"])
         if not _env_present("STUDYBUDDY_AI_MODEL") and stored.get("ai_model_id"):

@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-13（**settings.html + settings-provider.html A/B 二审收口 = 限定范围 e2e-real-pass**：A 类 `browser_settings_userpath.spec.js` 12 passed（纯 UI 10 + 含 route 故障注入 B 类要素 2），B 类独立 `browser_settings_b_class.spec.js` 17 passed；settings 相关回归 25 passed、focused 后端 68 passed、后端全量 631 passed/3 skipped；完整 Chromium 串行 398 passed/4 skipped/1 failed（`browser_material_recycle_bin` purge 既有偶发，隔离复跑 3 passed，非本轮引入）；source-size 与 diff-check 通过。修复：安全渲染（innerHTML 清零）、全异步区域 generation 守卫、独立重试按钮、在途验证作废、未知 reason 兑底、错误映射补齐、busy 再入防护、`settings_unknown_key` 与路径 traversal 后端契约、fake-env 演示锁定与存储 AI 配置叠加缺陷。用户决定：源码大小限制从 32 KiB 放宽到 100 KB（AGENTS.md 已记录）。未验证：真实第三方 Provider、真实 SMTP/Feishu 外发、跨浏览器、系统级屏幕阅读器。）
+
 > 更新：2026-09-13（**tasks.html A/B 二审收口，限定范围保持 scoped browser-pass**：已补齐纯 UI 用户路径与独立 B 类 spec；分页、终态轮询、详情/列表重试、取消/重试 busy 与失败恢复、安全错误映射、纯文本渲染、键盘取消/重试和真实失败任务重试成功已覆盖。A 类 7 passed、B 类 7 passed，关联 Chromium 18 passed，后端全量 631 passed/3 skipped。当前快照完整 Chromium 串行 374 项在第 298 项后超过 20 分钟工具窗口，未取得完整汇总；观察到的非 tasks plans full-coverage 归档失败已由 plans A 类隔离复跑 5 passed，不能据此宣称全局全绿。最终保持 not_verified，推送仍待执行。）
 
 > 更新：2026-09-12（**reports.html A 类审查收口：修复 fresh-root 报告创建 project_scope_violation、/legacy 复习缺幂等键回归、[hidden] 恒可见共享缺陷、报告枚举标签与竞态守卫，新增 10 用例 A 类 E2E；后端全量 630 passed 3 skipped；详见 STATUS.md**。
