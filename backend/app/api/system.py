@@ -96,12 +96,22 @@ def register_routes(app, context: dict[str, object]) -> None:
         return {"settings": public_settings(stored)}
 
     @app.put("/api/system/settings")
-    def write_local_settings(request: LocalSettingsRequest) -> dict[str, object]:
+    async def write_local_settings(request: LocalSettingsRequest, raw_request: Request) -> dict[str, object]:
         """Persist local settings under data_root (no restart required).
         
         Empty strings clear the corresponding stored value. Returns updated
         settings and capability snapshot.
         """
+        # Pydantic silently drops undeclared fields, so the unknown-key contract
+        # is enforced here against the raw body without echoing any value.
+        try:
+            raw_body = await raw_request.json()
+        except Exception:
+            raw_body = None
+        if isinstance(raw_body, dict):
+            unknown = set(raw_body) - set(LocalSettingsRequest.model_fields)
+            if unknown:
+                raise HTTPException(status_code=400, detail="settings_unknown_key")
         supplied = request.model_dump(exclude_unset=True)
         if not supplied:
             raise HTTPException(status_code=400, detail="settings_empty_payload")

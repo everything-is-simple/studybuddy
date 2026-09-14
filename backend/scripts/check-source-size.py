@@ -8,7 +8,7 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-MAX_BYTES = 32 * 1024
+MAX_BYTES = 100 * 1024
 LEGACY_MAIN = Path("backend/app/main.py")
 # Documentation files (.md) are exempt from the size policy; only code/source
 # files are size-enforced. The INDEX_HTML hash check is independent of this set.

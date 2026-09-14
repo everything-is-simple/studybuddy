@@ -217,8 +217,9 @@ def test_p1_5_0_frontend_config_page_is_test_then_save() -> None:
     assert "$('provider-save').hidden=false" in settings_provider
     assert "$('email-save').hidden=false" in settings_provider
     # A passing test is required before saving, and editing the form withdraws it.
-    assert "if(!providerVerified)return" in settings_provider
-    assert "if(!emailVerified)return" in settings_provider
+    # The guard also refuses re-entry while the save button is busy (B-SET-8).
+    assert "if(!providerVerified||$('provider-save').disabled)return" in settings_provider
+    assert "if(!emailVerified||$('email-save').disabled)return" in settings_provider
     assert "dropProviderVerification" in settings_provider
     assert "dropEmailVerification" in settings_provider
 
