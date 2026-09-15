@@ -8,8 +8,8 @@ const ROOT = 'H:/studybuddy-test/runs/p2-fe3-practice-session';
 const PORT = 8794;
 const BASE = `http://127.0.0.1:${PORT}`;
 function start() { const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: ROOT, STUDYBUDDY_AI_PROVIDER: 'fake'}; return spawn('C:/miniconda/py310/python.exe', ['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)], {cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true}); }
-async function ready() { for(let i=0;i<100;i++){try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ } await new Promise(r=>setTimeout(r,100))} throw new Error('server_not_ready') }
-function stop(server){if(server&&!server.killed)server.kill()}
+async function ready() { for(let i=0;i<300;i++){try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ } await new Promise(r=>setTimeout(r,100))} throw new Error('server_not_ready') }
+async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
 
 test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true})});
 
@@ -57,7 +57,7 @@ test('formal app P2-FE-3-6-1: practice session draft→start→active state tran
     expect(hasQuestion || statusText.includes('已开始')).toBeTruthy();
     
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -80,7 +80,7 @@ test('formal app P2-FE-3-6-2: session not found shows safe error', async({page})
     expect(statusText).not.toContain('ValueError');
     
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -115,7 +115,7 @@ test('formal app P2-FE-3-6-3: narrow viewport 390x844 no horizontal overflow', a
     expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 1);
     
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -156,6 +156,6 @@ test('formal app P2-FE-3-6-4: keyboard focus visible on buttons', async({page})=
     expect(hasFocusVisible).toBeTruthy();
     
   }finally{
-    stop(server);
+    await stop(server);
   }
 });

@@ -15,8 +15,8 @@ const ROOT = 'H:/studybuddy-test/runs/p2-fe3-review';
 const PORT = 8799;
 const BASE = `http://127.0.0.1:${PORT}`;
 function start() { const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: ROOT, STUDYBUDDY_AI_PROVIDER: 'fake'}; return spawn('C:/miniconda/py310/python.exe', ['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)], {cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true}); }
-async function ready() { for(let i=0;i<100;i++){try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ } await new Promise(r=>setTimeout(r,100))} throw new Error('server_not_ready') }
-function stop(server){if(server&&!server.killed)server.kill()}
+async function ready() { for(let i=0;i<300;i++){try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ } await new Promise(r=>setTimeout(r,100))} throw new Error('server_not_ready') }
+async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
 
 test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true})});
 
@@ -69,7 +69,7 @@ test('formal app P2-FE-3-8-1: review list loads and displays mistake status', as
     await expect(page.locator('#review-list button:has-text("归档")')).toBeVisible();
 
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -138,7 +138,7 @@ test('formal app P2-FE-3-8-2: detail view expands, feedback saves, archive disab
     await expect(page.locator('button:has-text("归档")')).toBeDisabled();
 
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -183,7 +183,7 @@ test('formal app P2-FE-3-8-3: redo creates new session', async({page})=>{
     await expect(page.locator('#session-detail')).toContainText('Redo');
 
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -218,7 +218,7 @@ test('formal app P2-FE-3-8-4: empty state and retry recovery', async({page})=>{
     await expect(page.locator('#review-status')).toContainText('暂无错题记录');
 
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -305,6 +305,6 @@ test('formal app P2-FE-3-8-5: privacy, narrow viewport, keyboard focus', async({
     expect(focusVisible).toBe(true);
 
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
