@@ -28,7 +28,7 @@ async function ready() {
   }
   throw new Error('server_not_ready');
 }
-function stop(server) { if (server && !server.killed) server.kill(); }
+async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
 async function uploadAndIndex(page) {
   await page.locator('#file').setInputFiles({name: 'phase7.txt', mimeType: 'text/plain', buffer: Buffer.from('Phase seven retrieval mode evidence supports the answer.')});
   await page.locator('#file-import').click();
@@ -50,7 +50,7 @@ async function uploadAndIndex(page) {
       await expect(page.locator('#qa-answer')).toContainText('Fake answer');
     }
     await expect(page.locator('#qa-retrieval-mode')).toHaveValue('hybrid');
-  } finally { stop(server); }
+  } finally { await stop(server); }
 });
 
 test('hybrid fallback is visible and vector mode remains explicit failure', async ({page}) => {
@@ -66,5 +66,5 @@ test('hybrid fallback is visible and vector mode remains explicit failure', asyn
     await page.locator('#qa-question').fill('retrieval mode evidence');
     await page.locator('#qa-ask').click();
     await expect(page.locator('#qa-status')).toContainText('Embedding 尚未配置');
-  } finally { stop(server); }
+  } finally { await stop(server); }
 });

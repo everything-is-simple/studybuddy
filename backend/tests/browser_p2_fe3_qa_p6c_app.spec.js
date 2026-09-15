@@ -5,8 +5,8 @@ const ROOT = 'H:/studybuddy-test/runs/p2-fe3-qa-p6c-app';
 const PORT = 8795;
 const BASE = `http://127.0.0.1:${PORT}`;
 function start(provider = 'fake') { const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: ROOT, STUDYBUDDY_AI_PROVIDER: provider}; return spawn('C:/miniconda/py310/python.exe', ['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)], {cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true}); }
-async function ready() { for(let i=0;i<100;i++){try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ } await new Promise(r=>setTimeout(r,100))} throw new Error('server_not_ready') }
-function stop(server){if(server&&!server.killed)server.kill()}
+async function ready() { for(let i=0;i<300;i++){try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ } await new Promise(r=>setTimeout(r,100))} throw new Error('server_not_ready') }
+async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
 
 test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true})});
 
@@ -84,7 +84,7 @@ test('formal app P6-C: materials → QA scope → citation → detail → export
     await expect(page.locator('#threads .thread-item')).toHaveCount(1);
     
   }finally{
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -117,6 +117,6 @@ test('formal app P6-C: deleted material disables export buttons', async({page})=
     await expect(page.locator('#export-text')).toBeDisabled();
     
   }finally{
-    stop(server);
+    await stop(server);
   }
 });

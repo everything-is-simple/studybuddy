@@ -14,7 +14,7 @@ function startServer(provider = 'fake') {
   delete env.STUDYBUDDY_AI_MODEL; delete env.STUDYBUDDY_AI_BASE_URL; delete env.STUDYBUDDY_AI_API_KEY;
   return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
-async function ready() { for (let i=0;i<100;i++) { try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch (_) {} await new Promise(r=>setTimeout(r,100)); } throw Error('server_not_ready'); }
+async function ready() { for (let i=0;i<300;i++) { try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch (_) {} await new Promise(r=>setTimeout(r,100)); } throw Error('server_not_ready'); }
 function stop() { if (server && !server.killed) server.kill(); server = null; }
 async function uploadAndIndex(page, name='phase8.txt') { await page.locator('#file').setInputFiles({name, mimeType:'text/plain', buffer:Buffer.from('A controlled study establishes a stable learning result.')}); await page.locator('#file-import').click(); await expect(page.locator('#status')).toContainText('导入完成'); await page.locator('#ai-index').click(); await expect(page.locator('#qa-status')).toContainText('AI 索引已建立'); }
 async function createDeck(page, title='Cards') { await page.locator('#nav-study').click(); await page.locator('#deck-title').fill(title); await page.locator('#deck-create').click(); await expect(page.locator('#study-status')).toContainText('已加载学习内容'); }

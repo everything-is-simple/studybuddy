@@ -13,13 +13,13 @@ function startServer(extra={}){
   return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true});
 }
 async function ready(){
-  for(let i=0;i<100;i++){
+  for(let i=0;i<300;i++){
     try{if((await fetch(`${BASE}/api/health`)).ok)return}catch(_){ }
     await new Promise(resolve=>setTimeout(resolve,100));
   }
   throw new Error('server_not_ready');
 }
-function stop(server){if(server&&!server.killed)server.kill()}
+async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
 
 async function openMaterials(page){
   await page.goto(`${BASE}/app/materials.html`);
@@ -50,7 +50,7 @@ test('P2-FE-3 formal materials page imports single and batch files with real sta
     await expect(page.locator('#upload-status')).toContainText('已导入 2/2 个文件',{timeout:15000});
     await expect(page.locator('#items li')).toHaveCount(3);
     expect(errors).toEqual([]);
-  }finally{stop(server)}
+  }finally{await stop(server)}
 });
 
 test('P2-FE-3 formal materials page imports a directory and paginates real records',async({page})=>{
@@ -72,7 +72,7 @@ test('P2-FE-3 formal materials page imports a directory and paginates real recor
     await page.locator('#apply-filters').click();
     await expect(page.locator('#items li')).toHaveCount(1);
     await expect(page.locator('#items li')).toContainText('folder-21.txt');
-  }finally{stop(server)}
+  }finally{await stop(server)}
 });
 
 test('P2-FE-3 formal materials page filters by real extraction status',async({page})=>{
@@ -100,7 +100,7 @@ test('P2-FE-3 formal materials page filters by real extraction status',async({pa
     await expect(page.locator('#items li')).toContainText('empty.pptx');
     await expect(page.locator('#status-filter option[value="available"]')).toHaveCount(0);
     await expect(page.locator('#status-filter option[value="indexing"]')).toHaveCount(0);
-  }finally{stop(server)}
+  }finally{await stop(server)}
 });
 
 test('P2-FE-3 formal materials page exposes a retry after list failure',async({page})=>{
@@ -125,6 +125,6 @@ test('P2-FE-3 formal materials page exposes a retry after list failure',async({p
   }finally{
     fail=false;
     await page.unroute('**/api/materials?*').catch(()=>{});
-    stop(server);
+    await stop(server);
   }
 });

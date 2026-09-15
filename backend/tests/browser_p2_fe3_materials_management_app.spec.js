@@ -13,7 +13,7 @@ function startServer() {
   return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function ready() { for (let i = 0; i < 100; i++) { try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch (_) {} await new Promise(r => setTimeout(r, 100)); } throw new Error('server_not_ready'); }
-function stop(server) { if (server && !server.killed) server.kill(); }
+async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
 function reset() { fs.rmSync(ROOT, {recursive: true, force: true}); fs.mkdirSync(ROOT, {recursive: true}); }
 async function importFiles(page, names = ['sample.txt', 'sample.md']) {
   await page.locator('#file-input').setInputFiles(names.map(name => path.join(FIXTURES, name)));
@@ -70,7 +70,7 @@ test('formal app rename persists, safely retries and blocks duplicate submit', a
   } finally {
     if (release) release();
     await page.unroute(`${BASE}/api/materials/*`).catch(() => {});
-    stop(server);
+    await stop(server);
   }
 });
 
@@ -100,7 +100,7 @@ test('formal app delete and restore lifecycle', async ({page}) => {
       await page.setViewportSize({width, height: 800});
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
     }
-  } finally { stop(server); }
+  } finally { await stop(server); }
 });
 
 test('formal app ZIP export variants, failure recovery and selection protection', async ({page}) => {
@@ -118,7 +118,7 @@ test('formal app ZIP export variants, failure recovery and selection protection'
     await expect(page.locator('#export-status')).not.toContainText('synthetic/private/path');
     await expect(page.locator('#export-all')).toBeEnabled();
     await page.unroute(`${BASE}/api/materials/export`);
-  } finally { await page.unroute(`${BASE}/api/materials/export`).catch(() => {}); stop(server); }
+  } finally { await page.unroute(`${BASE}/api/materials/export`).catch(() => {}); await stop(server); }
 });
 
 test('formal app delete and restore failures are retryable and single-submit', async ({page}) => {
@@ -145,5 +145,5 @@ test('formal app delete and restore failures are retryable and single-submit', a
     await restore.click();
     await expect(restore).toBeEnabled();
     await page.unroute(`${BASE}/api/materials/*/restore`);
-  } finally { await page.unroute(`${BASE}/api/materials/*`).catch(() => {}); stop(server); }
+  } finally { await page.unroute(`${BASE}/api/materials/*`).catch(() => {}); await stop(server); }
 });

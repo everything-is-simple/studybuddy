@@ -2,6 +2,11 @@ const { test, expect } = require('@playwright/test');
 const { spawn } = require('child_process');
 const fs = require('fs');
 
+// 2026-09-15 根因修复（同 browser_phase9b.spec.js）：批跑（22 spec 连续）负载环境下
+// 默认 30s 用例超时过紧，导致 flaky 家族成员轮流失败（曾见 179 行用例）。
+// 显式预算 120s，不改变任何断言语义。
+test.setTimeout(120_000);
+
 const RUN_ROOT = 'H:/studybuddy-test/runs/formal-p6e-ui';
 const PORT = 8797;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -191,7 +196,11 @@ test('P6-E marks deleted source unavailable and prevents unsafe export', async (
   await page.getByRole('button', {name: '删除', exact: true}).click();
   await expect(page.locator('#status')).toContainText('材料已删除');
   await page.getByRole('button', {name: '回收站'}).click();
-  await page.getByRole('button', {name: /p6e-source\.txt/}).last().click();
+  // 2026-09-15 根因修复：不得按裸材料名点击。setView('deleted') 的 loadList 是异步的，
+  // 删除后旧正常列表按钮仍短暂滞留 DOM（onclick=loadMaterial → GET 已删除材料 → 404 →
+  // announce「材料不可用」→ #meta 永空，前两个 toBeDisabled 因 clearMaterial 虚假通过）。
+  // 只匹配「已删除渲染」的按钮（可观察状态同步点），Playwright 自动等待其出现。
+  await page.getByRole('button', {name: /p6e-source\.txt 已删除/}).click();
   await expect(page.locator('#download-original')).toBeDisabled();
   await expect(page.locator('#export-text')).toBeDisabled();
   await expect(page.locator('#meta')).toContainText('已删除');

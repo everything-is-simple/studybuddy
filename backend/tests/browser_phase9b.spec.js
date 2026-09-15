@@ -7,14 +7,17 @@ const PORT = 8811;
 const RUN_SUFFIX = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 const BASE = `http://127.0.0.1:${PORT}`;
 let server;
+let serverLogFd = null;
 
 function startServer(provider = 'fake') {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: runRoot};
   if (provider === 'fake') env.STUDYBUDDY_AI_PROVIDER = 'fake';
   else delete env.STUDYBUDDY_AI_PROVIDER;
   delete env.STUDYBUDDY_AI_MODEL; delete env.STUDYBUDDY_AI_BASE_URL; delete env.STUDYBUDDY_AI_API_KEY;
+  fs.mkdirSync(runRoot, {recursive: true});
+  serverLogFd = fs.openSync(`${runRoot}/server-log.txt`, 'a');
   return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {
-    cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true,
+    cwd: 'H:/studybuddy/backend', env, stdio: ['ignore', serverLogFd, serverLogFd], windowsHide: true,
   });
 }
 async function ready() {
@@ -24,7 +27,12 @@ async function ready() {
   }
   throw new Error('server_not_ready');
 }
-async function stop() { if (!server || server.killed) { server = null; return; } await new Promise(resolve => { const finish = () => resolve(); server.once('exit', finish); server.kill(); setTimeout(finish, 5000); }); server = null; }
+async function stop() { if (!server || server.killed) { server = null; if (serverLogFd !== null) { fs.closeSync(serverLogFd); serverLogFd = null; } return; } await new Promise(resolve => { const finish = () => resolve(); server.once('exit', finish); server.kill(); setTimeout(finish, 5000); }); server = null; if (serverLogFd !== null) { fs.closeSync(serverLogFd); serverLogFd = null; } }
+// This spec starts and stops a real server per test; the 30s default test
+// timeout is too tight when the host is loaded (2026-09-15 g3 run: test 3
+// hit the 30s cap and its in-flight requests then wedged teardown). The
+// assertions below stay strict; only the harness budget is raised.
+test.setTimeout(120000);
 async function uploadAndIndex(page, name = 'rhythm-notes.txt') {
   await page.locator('#file').setInputFiles({name, mimeType: 'text/plain', buffer: Buffer.from('A controlled source establishes a stable rhythm and a cited note.')});
   await page.locator('#file-import').click();
@@ -124,10 +132,23 @@ test('Phase 9B workspace keeps failure, stale citation, malformed response, dupl
   await page.locator('#notes-refresh').click(); await expect(page.locator('#notes-status')).toHaveText('笔记来源状态刷新失败，可重试');
   await page.unroute(refreshRoute);
   let creates = 0;
+  // Diagnostics (no assertion change): record every duplicate-create POST
+  // outcome so a failure names the real transport/HTTP/server reason instead
+  // of the page's generic fallback message.
+  const createAttempts = [];
+  page.on('response', response => { if (response.url().endsWith('/api/study/notes') && response.request().method() === 'POST') { createAttempts.push(`status:${response.status()}`); response.text().then(body => createAttempts.push(`body:${body.slice(0, 300)}`)).catch(() => {}); } });
+  page.on('requestfailed', request => { if (request.url().endsWith('/api/study/notes') && request.method() === 'POST') createAttempts.push(`requestfailed:${request.failure() && request.failure().errorText || 'unknown'}`); });
   await page.route('**/api/study/notes', async route => { if (route.request().method() === 'POST') { creates += 1; await new Promise(resolve => setTimeout(resolve, 100)); } await route.continue(); });
   await page.locator('#note-title').fill('重复点击'); await page.locator('#note-content').fill('内容');
   await Promise.all([page.locator('#note-create').click(), page.locator('#note-create').click()]);
-  await expect(page.locator('#notes-status')).toHaveText('用户笔记已创建'); expect(creates).toBe(1); await page.unroute('**/api/study/notes');
+  try {
+    await expect(page.locator('#notes-status')).toHaveText('用户笔记已创建');
+    expect(creates).toBe(1);
+  } catch (error) {
+    throw new Error(`duplicate-create POST /api/study/notes attempts=[${createAttempts.join(' | ') || 'none observed'}] :: ${error.message.split('\n')[0]}`);
+  } finally {
+    await page.unroute('**/api/study/notes');
+  }
   await page.setViewportSize({width: 390, height: 844});
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.getByRole('link', {name: '资料笔记'}).focus(); await page.keyboard.press('Enter'); await expect(page.locator('#notes')).toBeVisible();

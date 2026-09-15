@@ -227,69 +227,105 @@ test('B-SET-4 Email connection-test 契约与渠道隔离', async ({ request }) 
 
 test('B-SET-5 capability 加载竞态：旧成功/旧失败不得覆盖新状态', async ({ page }) => {
   let call = 0;
+  // Deterministic completion signals for the two delayed stale responses.
+  // Root-cause fix for the B-SET-5 flake: the old code guessed the 2500ms route
+  // delay with a fixed waitForTimeout(2600) (100ms margin) and asserted a
+  // single-shot snapshot; under load the stale response could land after the
+  // wait expired. Awaiting the actual fulfill event removes the timing guess.
+  let resolveStaleSuccess, resolveStaleFailure;
+  const staleSuccessFulfilled = new Promise(res => { resolveStaleSuccess = res; });
+  const staleFailureFulfilled = new Promise(res => { resolveStaleFailure = res; });
   const staleCaps = { capabilities: Object.fromEntries(CAP_KEYS.map(k => [k, { status: 'not_configured', reason: '<img src=x onerror=window.__settingsXss=1>' }])), delivery_mode: 'off', ready_count: 0, degraded_count: 0, total_count: 7 };
   await page.route('**/api/system/capabilities', async r => {
     call++;
-    if (call === 1) { await new Promise(res => setTimeout(res, 2500)); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staleCaps) }); }
-    if (call === 3) { await new Promise(res => setTimeout(res, 2500)); return r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'late_failure' }) }); }
+    if (call === 1) { await new Promise(res => setTimeout(res, 2500)); await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staleCaps) }); resolveStaleSuccess(); return; }
+    if (call === 3) { await new Promise(res => setTimeout(res, 2500)); await r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'late_failure' }) }); resolveStaleFailure(); return; }
     return r.continue();
   });
   await page.goto(`${BASE}/app/settings.html`);
+  await expect.poll(() => call).toBe(1);
   await page.locator('#capability-refresh').click();
+  await expect.poll(() => call).toBe(2);
   await expect(page.locator('#capability-summary')).not.toContainText(/正在探测/);
   const realSummary = await page.locator('#capability-summary').innerText();
   expect(realSummary).not.toBe('状态未知');
   // The stale (older) success arrives last and must be discarded.
-  await page.waitForTimeout(2600);
-  expect(await page.locator('#capability-summary').innerText()).toBe(realSummary);
+  await staleSuccessFulfilled;
+  await expect.poll(() => page.locator('#capability-summary').innerText()).toBe(realSummary);
   expect(await page.evaluate(() => window.__settingsXss)).toBeUndefined();
-  // A late failure after a newer success must not flip the region into an error.
+  // A late failure from a previous page load must not flip the newer success
+  // into an error. Reload starts call 3 (delayed failure); one refresh starts
+  // call 4 (real success). The page's sbSubmit.once intentionally coalesces
+  // concurrent refreshes, so this test uses two generations rather than
+  // bypassing the duplicate-dispatch guard.
+  await page.reload({ waitUntil: 'commit' });
+  await expect.poll(() => call).toBe(3);
   await page.locator('#capability-refresh').click();
-  await expect(page.locator('#capability-summary')).not.toContainText(/正在探测/);
-  await page.locator('#capability-refresh').click();
+  await expect.poll(() => call).toBe(4);
   await expect(page.locator('#capability-summary')).not.toContainText(/正在探测/);
   const summary2 = await page.locator('#capability-summary').innerText();
-  await page.waitForTimeout(2600);
-  expect(await page.locator('#capability-summary').innerText()).toBe(summary2);
+  await staleFailureFulfilled;
+  await expect.poll(() => page.locator('#capability-summary').innerText()).toBe(summary2);
   await expect(page.locator('#capability-error')).toBeHidden();
+  expect(await page.evaluate(() => window.__settingsXss)).toBeUndefined();
 });
 
 test('B-SET-6 settings 加载与保存竞态：旧 GET 不得覆盖新保存值', async ({ page }) => {
+  // Root-cause rewrite (Prompt 1 任务 A): the old version targeted
+  // settings-provider.html, but that page never issues a GET
+  // /api/system/settings (it only PUTs on save). The old test therefore never
+  // entered the delayed route branch at all: getCall stayed 0 and the
+  // waitForTimeout(4200) was dead time — a test that could not fail. The race
+  // it claims to cover lives on settings.html, whose loadSettings() GETs
+  // settings at page load under a settingsGeneration guard while save() PUTs
+  // and re-applies via applySettings(). This version exercises that real path
+  // and awaits the actual fulfill event instead of a fixed-timeout guess.
   let getCall = 0;
+  let resolveStaleGet;
+  const staleGetFulfilled = new Promise(res => { resolveStaleGet = res; });
   await page.route('**/api/system/settings', async r => {
     if (r.request().method() !== 'GET') return r.continue();
     getCall++;
-    if (getCall === 1) { await new Promise(res => setTimeout(res, 4000)); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ settings: {} }) }); }
+    if (getCall === 1) { await new Promise(res => setTimeout(res, 4000)); await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ settings: {} }) }); resolveStaleGet(); return; }
     return r.continue();
   });
-  await page.goto(`${BASE}/app/settings-provider.html`);
-  await page.locator('#provider-id').fill('race-p');
-  await page.locator('#provider-model').fill('race-m');
-  await page.locator('#provider-url').fill(FAKE_BASE);
-  await page.locator('#provider-key').fill(KEY);
-  await page.locator('#provider-test').click();
-  await expect(page.locator('#provider-result')).toContainText('连接测试通过');
-  await page.locator('#provider-save').click();
-  await expect(page.locator('#provider-result')).toContainText('已保存');
-  // The stale empty GET (started at page load) resolves after the PUT.
-  await page.waitForTimeout(4200);
-  await expect(page.locator('#provider-id')).toHaveValue('race-p');
-  await expect(page.locator('#provider-model')).toHaveValue('race-m');
-  await expect(page.locator('#provider-result')).toContainText('已保存');
+  await page.goto(`${BASE}/app/settings.html`);
+  await expect.poll(() => getCall).toBe(1);
+  // The delayed stale GET (gen 1) is now in flight from page load. Save a real
+  // configuration before it lands; applySettings() bumps the generation and
+  // the stale empty response must be discarded when it finally arrives.
+  await page.locator('#ai-provider').fill('race-p');
+  await page.locator('#ai-model').fill('race-m');
+  await page.locator('#ai-url').fill(FAKE_BASE);
+  await page.locator('#ai-key').fill(KEY);
+  await page.locator('#ai-save').click();
+  await expect(page.locator('#ai-result')).toContainText('已保存并立即生效');
+  // The stale empty GET resolves after the PUT; the guard must keep the saved values.
+  await staleGetFulfilled;
+  await expect(page.locator('#ai-provider')).toHaveValue('race-p');
+  await expect(page.locator('#ai-model')).toHaveValue('race-m');
+  await expect(page.locator('#ai-url')).toHaveValue(FAKE_BASE);
+  await expect(page.locator('#ai-result')).toContainText('已保存并立即生效');
+  await expect(page.locator('#settings-retry')).toBeHidden();
   const state = await pageState(page);
   expect(leaked(state, KEY)).toBe(false);
 });
 
 test('B-SET-7 provider/email 验证生命周期竞态', async ({ page }) => {
   let providerCall = 0, emailCall = 0;
+  // Same root-cause fix as B-SET-5: deterministic fulfill-event signals
+  // instead of waitForTimeout(1100) guessing a 900ms route delay.
+  let resolveProviderFail, resolveEmailOk;
+  const providerFailFulfilled = new Promise(res => { resolveProviderFail = res; });
+  const emailOkFulfilled = new Promise(res => { resolveEmailOk = res; });
   await page.route('**/api/system/provider-connection-test', async r => {
     providerCall++;
-    if (providerCall === 1 || providerCall === 3) { await new Promise(res => setTimeout(res, 900)); return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: 'provider_timeout' }) }); }
+    if (providerCall === 1) { await new Promise(res => setTimeout(res, 900)); await r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: 'provider_timeout' }) }); resolveProviderFail(); return; }
     return r.continue();
   });
   await page.route('**/api/system/email-connection-test', async r => {
     emailCall++;
-    if (emailCall === 1) { await new Promise(res => setTimeout(res, 900)); return r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"ok"}' }); }
+    if (emailCall === 1) { await new Promise(res => setTimeout(res, 900)); await r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"ok"}' }); resolveEmailOk(); return; }
     return r.continue();
   });
   await page.goto(`${BASE}/app/settings-provider.html`);
@@ -297,13 +333,18 @@ test('B-SET-7 provider/email 验证生命周期竞态', async ({ page }) => {
   await page.locator('#provider-model').fill('race-m');
   await page.locator('#provider-url').fill(FAKE_BASE);
   await page.locator('#provider-key').fill(KEY);
-  // Test in flight; editing the form must invalidate the pending result.
+  // Test in flight; the busy guard disables the button, so test attempts are
+  // serialized within a page session and an older response can never overlap a
+  // newer one through real user paths. Editing the form must still invalidate
+  // the pending result via the form-version guard.
   await page.locator('#provider-test').click();
+  await expect(page.locator('#provider-test')).toBeDisabled();
   await page.locator('#provider-model').fill('race-m2');
-  await page.waitForTimeout(1100);
+  await providerFailFulfilled;
   await expect(page.locator('#provider-save')).toBeHidden();
-  // A passing test re-enables save; an older failure arriving later must not hide it again.
-  // (Secrets are cleared after every test attempt by design; the user retypes them.)
+  // After the invalidated failure is discarded, a fresh successful test
+  // re-enables save. (Secrets are cleared after every attempt by design; the
+  // user retypes them.)
   await page.locator('#provider-key').fill(KEY);
   await page.locator('#provider-test').click();
   await expect(page.locator('#provider-result')).toContainText('连接测试通过');
@@ -321,7 +362,7 @@ test('B-SET-7 provider/email 验证生命周期竞态', async ({ page }) => {
   await page.locator('#smtp-recipient').fill('recipient@example.test');
   await page.locator('#email-test').click();
   await page.locator('#email-channel').selectOption('feishu');
-  await page.waitForTimeout(1100);
+  await emailOkFulfilled;
   await expect(page.locator('#email-save')).toBeHidden();
   await expect(page.locator('#email-result')).not.toContainText('连接测试通过');
   // Reload: verification state never survives a fresh page.
