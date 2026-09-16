@@ -44,3 +44,13 @@ first-run-studybuddy.local.ps1
 
 # local runtime data root (databases, uploaded originals, generated artifacts)
 data/
+
+# E2E 检测运行产物与本机运行日志（不提交）
+server.log
+server_err.log
+server_out.log
+.codebuddy/
+
+# 已被运行时复检推翻的静态误报报告，保留在本地不入库
+E2E_TEST_REPORT.md
+test_e2e_report.md
