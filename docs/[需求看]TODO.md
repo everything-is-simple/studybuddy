@@ -542,3 +542,10 @@ revision → chunks → retrieval → citations → Q&A
 - [x] `review.html` A 类纯用户路径审查：新增 `browser_review_userpath.spec.js` 的 RV-1~RV-12，所有业务数据经正式页面 UI 创建；覆盖空态、错题详情/反馈/来源链接、再次练习、掌握/归档、薄弱点、失败恢复、详情竞态、响应式/键盘、真重启和跨页状态恢复。修复详情/来源深链、归档筛选与持久化、独立详情重试、`detailGeneration` 守卫、busy 禁用、再次练习跳转和 review 错误码映射。验证：A 类 12 passed，关联 Chromium 47 passed，完整后端 630 passed、3 skipped，source-size/diff-check 通过。
 - [x] `review.html` B 类独立契约/故障审查：新增 `browser_review_b_class.spec.js` 5 项，覆盖 `limit/offset/has_more` 分页与加载更多只追加、迟到详情、XSS 纯文本、反馈 busy 防重复、标记/归档失败安全映射和真实重试。修复无界错题列表，API 现返回 `{items,total,limit,offset,has_more}`，页面按 20 条追加；修复 390px 长 exercise_id 横向溢出。B 类 5 passed，A 类复跑 12 passed，关联 Chromium 41 passed，后端全量 631 passed、3 skipped，source-size/diff-check 通过。`review.html` 升级为限定范围 `e2e-real-pass`；完整 Chromium 本轮在非 review QA fixture 目录删除 `EPERM` 后超时中断，不伪称全量通过。
 - [ ] 下一步：`settings* → classroom.html → capture.html → index.html` 的 A/B 类审查；tasks.html 已完成本轮 A/B 二审，但完整 Chromium 全套件仍需独立取得可审计的完整退出汇总后，才能考虑升级状态。
+
+## 2026-09-16 全站交互控件综合验证套件（200+ 控件遍历）
+
+- [x] 新增 `backend/tests/browser_ui_complete_verification.spec.js`（16 用例，Playwright Chromium、独立端口/data root/fake provider），系统性点击/输入/勾选/选择各页面全部交互控件：Materials、Q&A、Cards、Exercises、Plans、Practice(Phase9c)、Capture(Phase9d)、Reports、Notes、导航（7 链接 + back/forward）、移动端 nav-toggle、键盘可达性（Tab/Enter/Space）、表单约束（maxlength/required/min/max）、端到端工作流（导入→勾选→前往问答→学习页）。
+- [x] 动态控件验证：文件上传后真实材料行、`.material-select` 复选框、批量工具栏启用与「已选择 1 份」计数、详情/重命名按钮均遍历。
+- [x] 全部 16 用例通过（1.1 分钟）；`check-source-size.py` 通过；无生产代码变更（所有失败均为测试与 DOM 事实不符，修正测试而非产品）。
+- [ ] `not_verified` 保持：真实 Provider 响应、跨浏览器、屏幕阅读器、极端内容与长时稳定性；本套件与各页既有 A/B 类专项测试互补，不替代其限定范围结论。
