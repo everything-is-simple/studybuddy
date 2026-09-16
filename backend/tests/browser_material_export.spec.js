@@ -4,15 +4,40 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const RUN_ROOT = 'H:/studybuddy-test/runs/formal-material-export';
-const ARTIFACT = 'H:/studybuddy-test/artifacts/formal-material-export/latest.json';
+const RUN_ROOT = process.env.STUDYBUDDY_E2E_RUN_ROOT || 'H:/studybuddy-test/runs/formal-material-export';
+const ARTIFACT = process.env.STUDYBUDDY_E2E_ARTIFACT || 'H:/studybuddy-test/artifacts/formal-material-export/latest.json';
 const FIXTURES = 'H:/studybuddy-test/fixtures/kaobuddy-foundation';
-const PORT = 8791;
+const PORT = Number(process.env.STUDYBUDDY_E2E_PORT || 8791);
 const BASE = `http://127.0.0.1:${PORT}`;
 function startServer() { const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT}; return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true}); }
 async function waitReady() { for (let i = 0; i < 100; i++) { try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch (_) {} await new Promise(resolve => setTimeout(resolve, 100)); } throw new Error('server_not_ready'); }
-function stopServer(server) { if (server && !server.killed) server.kill(); }
+async function stopServer(server) {
+  if (!server || server.killed) return;
+  await new Promise(resolve => {
+    let settled = false;
+    const finish = () => { if (!settled) { settled = true; resolve(); } };
+    server.once('exit', finish);
+    server.kill();
+    setTimeout(finish, 5000);
+  });
+}
 function hashBuffer(buffer) { return crypto.createHash('sha256').update(buffer).digest('hex'); }
+function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function materialLocator(page, name, view = 'active') {
+  const selector = view === 'deleted' ? '#materials .deleted-item' : '#materials .item:not(.deleted-item)';
+  const item = page.locator(selector).filter({has: page.locator('span').filter({hasText: new RegExp(`^${escapeRegExp(name)}$`)})});
+  return view === 'deleted' ? item.filter({hasText: '已删除'}) : item;
+}
+async function selectMaterial(page, name, view = 'active', expectedId = null) {
+  const item = materialLocator(page, name, view);
+  await expect(item).toHaveCount(1);
+  await expect(item).toBeVisible();
+  if (expectedId !== null) await expect(item).toHaveAttribute('data-id', String(expectedId));
+  await item.click();
+  await expect(page.locator('#title')).toContainText(name);
+  return item;
+}
+
 function originalCount() { const root = path.join(RUN_ROOT, 'originals'); return fs.existsSync(root) ? fs.readdirSync(root, {recursive: true}).filter(name => path.basename(name) === 'original').length : 0; }
 function dbCounts() { const db = path.join(RUN_ROOT, 'studybuddy.sqlite3'); const code = `import json,sqlite3;c=sqlite3.connect(r'${db}');print(json.dumps({"materials":c.execute('SELECT COUNT(*) FROM materials').fetchone()[0],"extractions":c.execute('SELECT COUNT(*) FROM extractions').fetchone()[0],"spans":c.execute('SELECT COUNT(*) FROM text_spans').fetchone()[0]}));c.close()`; return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout); }
 
@@ -23,44 +48,46 @@ test('formal material export browser acceptance', async ({page}) => {
   const one = path.join(RUN_ROOT, 'same-one.txt'); const two = path.join(RUN_ROOT, 'same-two.txt'); fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), one); fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), two);
   const inputPaths = [path.join(FIXTURES, 'sample.txt'), path.join(FIXTURES, 'empty.txt'), one, two];
   const sourceBytes = fs.readFileSync(path.join(FIXTURES, 'sample.txt')); const sourceHash = hashBuffer(sourceBytes); const consoleErrors = []; const externalRequests = [];
-  page.on('console', message => { 
-    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource')) 
-      consoleErrors.push(message.text()); 
-  }); 
+  page.on('console', message => {
+    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource'))
+      consoleErrors.push(message.text());
+  });
   page.on('pageerror', error => {
     if (!error.message.includes('Failed to fetch'))
       consoleErrors.push(`pageerror: ${error.message}`);
-  }); 
+  });
   page.on('request', request => { if (!request.url().startsWith(BASE)) externalRequests.push(request.url()); });
   let server = startServer();
   try {
     await waitReady(); await page.goto(`${BASE}/legacy`); await page.locator('#file').setInputFiles(inputPaths); await page.locator('#file-import').click(); await expect(page.locator('#status')).toContainText('批量导入完成：4', {timeout: 30000});
-    await page.getByRole('button', {name: /sample\.txt/}).last().click(); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
+    await expect(page.locator('#materials .item:not(.deleted-item)')).toHaveCount(4);
+    const detail = await (await page.request.get(`${BASE}/api/materials`)).json(); const selected = detail.find(item => item.original_name === 'sample.txt'); expect(selected).toBeTruthy();
+    await selectMaterial(page, 'sample.txt', 'active', selected.id); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
     const originalBefore = await downloadFromButton(page, '#download-original', 'sample.txt'); expect(hashBuffer(originalBefore)).toBe(sourceHash);
-    const textBefore = await downloadFromButton(page, '#export-text', 'sample.txt.extracted.txt'); const detail = await (await page.request.get(`${BASE}/api/materials`)).json(); const selected = detail.find(item => item.original_name === 'sample.txt'); const fullDetail = await (await page.request.get(`${BASE}/api/materials/${selected.id}`)).json(); expect(hashBuffer(textBefore)).toBe(hashBuffer(Buffer.from(fullDetail.text, 'utf8')));
+    const textBefore = await downloadFromButton(page, '#export-text', 'sample.txt.extracted.txt'); const fullDetail = await (await page.request.get(`${BASE}/api/materials/${selected.id}`)).json(); expect(fullDetail.original_name).toBe('sample.txt'); expect(hashBuffer(textBefore)).toBe(hashBuffer(Buffer.from(fullDetail.text, 'utf8')));
 
-    page.once('dialog', dialog => { expect(dialog.type()).toBe('prompt'); dialog.accept('renamed-sample.txt'); }); await page.getByRole('button', {name: '重命名'}).click(); await expect(page.locator('#status')).toContainText('重命名成功');
+    page.once('dialog', dialog => { expect(dialog.type()).toBe('prompt'); dialog.accept('renamed-sample.txt'); }); await page.getByRole('button', {name: '重命名'}).click(); await expect(page.locator('#status')).toContainText('重命名成功'); await expect(materialLocator(page, 'sample.txt')).toHaveCount(0); await expect(materialLocator(page, 'renamed-sample.txt')).toHaveCount(1); await expect(page.locator('#title')).toContainText('renamed-sample.txt');
     const renamedOriginal = await downloadFromButton(page, '#download-original', 'renamed-sample.txt'); expect(hashBuffer(renamedOriginal)).toBe(sourceHash); const renamedText = await downloadFromButton(page, '#export-text', 'renamed-sample.txt.extracted.txt'); expect(hashBuffer(renamedText)).toBe(hashBuffer(Buffer.from(fullDetail.text, 'utf8')));
 
-    page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click(); await expect(page.locator('#status')).toContainText('材料已删除'); await page.getByRole('button', {name: '回收站'}).click(); await page.getByRole('button', {name: /renamed-sample\.txt/}).last().click(); await expect(page.locator('#download-original')).toBeDisabled(); await expect(page.locator('#export-text')).toBeDisabled();
-    await expect(page.getByRole('button', {name: '恢复'})).toBeEnabled(); await page.locator('#restore').click(); await expect(page.locator('#status')).toContainText('材料已恢复'); await expect(page.locator('#download-original')).toBeEnabled(); await expect(page.locator('#export-text')).toBeEnabled();
+    page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click(); await expect(page.locator('#status')).toContainText('材料已删除'); await expect(materialLocator(page, 'renamed-sample.txt')).toHaveCount(0); await page.getByRole('button', {name: '回收站'}).click(); await selectMaterial(page, 'renamed-sample.txt', 'deleted', selected.id); await expect(page.locator('#download-original')).toBeDisabled(); await expect(page.locator('#export-text')).toBeDisabled();
+    await expect(page.getByRole('button', {name: '恢复'})).toBeEnabled(); await page.locator('#restore').click(); await expect(page.locator('#status')).toContainText('材料已恢复'); await expect(page.locator('#materials .deleted-item')).toHaveCount(0); await expect(materialLocator(page, 'renamed-sample.txt')).toHaveCount(1); await expect(page.locator('#download-original')).toBeEnabled(); await expect(page.locator('#export-text')).toBeEnabled();
     const restoredOriginal = await downloadFromButton(page, '#download-original', 'renamed-sample.txt'); expect(hashBuffer(restoredOriginal)).toBe(sourceHash); await downloadFromButton(page, '#export-text', 'renamed-sample.txt.extracted.txt');
 
-    await page.getByRole('button', {name: /same-one\.txt/}).last().click(); page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click(); await expect(page.locator('#status')).toContainText('材料已删除'); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); const survivorBytes = await downloadFromButton(page, '#download-original', 'same-two.txt'); expect(hashBuffer(survivorBytes)).toBe(sourceHash); expect(originalCount()).toBe(2);
-    await page.reload(); await expect(page.locator('#materials .item').filter({hasText: 'same-two.txt'})).toHaveCount(1); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); await downloadFromButton(page, '#download-original', 'same-two.txt');
-    
+    const activeAfterRestore = await (await page.request.get(`${BASE}/api/materials`)).json(); const sameOne = activeAfterRestore.find(item => item.original_name === 'same-one.txt'); const sameTwo = activeAfterRestore.find(item => item.original_name === 'same-two.txt'); expect(sameOne).toBeTruthy(); expect(sameTwo).toBeTruthy();
+    await selectMaterial(page, 'same-one.txt', 'active', sameOne.id); page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click(); await expect(page.locator('#status')).toContainText('材料已删除'); await expect(materialLocator(page, 'same-one.txt')).toHaveCount(0); await selectMaterial(page, 'same-two.txt', 'active', sameTwo.id); const survivorBytes = await downloadFromButton(page, '#download-original', 'same-two.txt'); expect(hashBuffer(survivorBytes)).toBe(sourceHash); expect(originalCount()).toBe(2);
+    await page.reload(); await expect(materialLocator(page, 'same-two.txt')).toHaveCount(1); await selectMaterial(page, 'same-two.txt', 'active', sameTwo.id); await downloadFromButton(page, '#download-original', 'same-two.txt');
+
     // Set page offline to prevent requests during server restart
     await page.context().setOffline(true);
-    stopServer(server); server = null; 
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    await stopServer(server); server = null;
     server = startServer(); await waitReady();
     await page.context().setOffline(false);
-    await page.goto(`${BASE}/legacy`); await page.getByRole('button', {name: /same-two\.txt/}).last().click(); await downloadFromButton(page, '#download-original', 'same-two.txt');
+    await page.goto(`${BASE}/legacy`); await selectMaterial(page, 'same-two.txt', 'active', sameTwo.id); await downloadFromButton(page, '#download-original', 'same-two.txt');
 
-    const empty = await (await page.request.get(`${BASE}/api/materials`)).json(); const emptyItem = empty.find(item => item.original_name === 'empty.txt'); await page.getByRole('button', {name: /empty\.txt/}).last().click(); const emptyExport = await downloadFromButton(page, '#export-text', 'empty.txt.extracted.txt'); expect(emptyExport.length).toBe(0);
-    const snapshot = dbCounts(); const payload = {component: 'formal-material-export', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass', python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(), startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8791', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_export.spec.js --workers=1 --reporter=line', original_download: {status: 200, filename_before_rename: 'sample.txt', filename_after_rename: 'renamed-sample.txt', content_sha256_before: sourceHash, content_sha256_after: hashBuffer(renamedOriginal), content_unchanged: true, media_type_verified: true}, text_export: {status: 200, filename_before_rename: 'sample.txt.extracted.txt', filename_after_rename: 'renamed-sample.txt.extracted.txt', output_text_length: textBefore.length, output_text_sha256: hashBuffer(textBefore), matches_detail_text: true, utf8_verified: true}, deleted_behavior: {original_download_status: 404, text_export_status: 404, buttons_hidden_or_disabled: true}, restored_behavior: {original_download_status: 200, text_export_status: 200, buttons_enabled: true}, same_hash: {material_count: 2, original_file_count: 1, survivor_download_readable: true, source_sha256_same: true, stored_path_same: true}, empty_material: {text_export_status: 200, output_text_length: emptyExport.length}, database: {material_count_before: 0, material_count_after: snapshot.materials, extraction_count_after: snapshot.extractions, text_span_count_after: snapshot.spans}, temporary_file_count_after: fs.readdirSync(RUN_ROOT).filter(name => name.startsWith('.incoming-')).length, new_original_count: 0, parser_called_by_export: false, browser_console_error_count: consoleErrors.length, network: {required: false, called: externalRequests.length > 0, external_requests: externalRequests}, real_provider_called: false, original_files_saved_by_parser: false, limitations: ['no batch download, ZIP, folder export, export queue, generated PDF/DOCX, AI, provider, OCR, ASR or S1-S7']}; fs.mkdirSync(path.dirname(ARTIFACT), {recursive: true}); fs.writeFileSync(ARTIFACT, JSON.stringify(payload, null, 2), 'utf8'); expect(consoleErrors).toEqual([]); expect(externalRequests).toEqual([]);
-  } finally { stopServer(server); }
+    const empty = await (await page.request.get(`${BASE}/api/materials`)).json(); const emptyItem = empty.find(item => item.original_name === 'empty.txt'); expect(emptyItem).toBeTruthy(); await selectMaterial(page, 'empty.txt', 'active', emptyItem.id); const emptyExport = await downloadFromButton(page, '#export-text', 'empty.txt.extracted.txt'); expect(emptyExport.length).toBe(0);
+    const snapshot = dbCounts(); const payload = {component: 'formal-material-export', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass', python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(), startup_command: `C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port ${PORT}`, browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_export.spec.js --workers=1 --reporter=line', original_download: {status: 200, filename_before_rename: 'sample.txt', filename_after_rename: 'renamed-sample.txt', content_sha256_before: sourceHash, content_sha256_after: hashBuffer(renamedOriginal), content_unchanged: true, media_type_verified: true}, text_export: {status: 200, filename_before_rename: 'sample.txt.extracted.txt', filename_after_rename: 'renamed-sample.txt.extracted.txt', output_text_length: textBefore.length, output_text_sha256: hashBuffer(textBefore), matches_detail_text: true, utf8_verified: true}, deleted_behavior: {original_download_status: 404, text_export_status: 404, buttons_hidden_or_disabled: true}, restored_behavior: {original_download_status: 200, text_export_status: 200, buttons_enabled: true}, same_hash: {material_count: 2, original_file_count: 1, survivor_download_readable: true, source_sha256_same: true, stored_path_same: true}, empty_material: {text_export_status: 200, output_text_length: emptyExport.length}, database: {material_count_before: 0, material_count_after: snapshot.materials, extraction_count_after: snapshot.extractions, text_span_count_after: snapshot.spans}, temporary_file_count_after: fs.readdirSync(RUN_ROOT).filter(name => name.startsWith('.incoming-')).length, new_original_count: 0, parser_called_by_export: false, browser_console_error_count: consoleErrors.length, network: {required: false, called: externalRequests.length > 0, external_requests: externalRequests}, real_provider_called: false, original_files_saved_by_parser: false, limitations: ['no batch download, ZIP, folder export, export queue, generated PDF/DOCX, AI, provider, OCR, ASR or S1-S7']}; fs.mkdirSync(path.dirname(ARTIFACT), {recursive: true}); fs.writeFileSync(ARTIFACT, JSON.stringify(payload, null, 2), 'utf8'); expect(consoleErrors).toEqual([]); expect(externalRequests).toEqual([]);
+  } finally { await stopServer(server); }
 });
 
 test('formal batch ZIP export browser acceptance', async ({page}) => {
-  fs.rmSync(RUN_ROOT,{recursive:true,force:true});fs.mkdirSync(RUN_ROOT,{recursive:true});let server=startServer();const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles([path.join(FIXTURES,'sample.txt'),path.join(FIXTURES,'sample.md')]);await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('批量导入完成：2',{timeout:30000});await expect(page.locator('.material-select')).toHaveCount(2);await page.locator('.material-select').nth(0).check();await page.locator('.material-select').nth(1).check();const downloadPromise=page.waitForEvent('download');await page.locator('#export-selected-bundle').click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('studybuddy-materials.zip');const zipPath=await download.path();const code=`import json,zipfile;z=zipfile.ZipFile(r'${zipPath}');print(json.dumps(z.namelist()))`;const names=JSON.parse(spawnSync('C:/miniconda/py310/python.exe',['-c',code],{encoding:'utf8'}).stdout);expect(names.sort()).toEqual(['originals/sample.txt','text/sample.txt.extracted.txt','originals/sample.md','text/sample.md.extracted.txt'].sort());await page.route(`${BASE}/api/materials/export`,route=>route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'}));await page.locator('#export-selected-bundle').click();await expect(page.locator('#status')).toHaveText('批量导出失败');await expect(page.locator('#export-selected-bundle')).toBeEnabled();expect(errors).toEqual([])}finally{await page.unroute(`${BASE}/api/materials/export`).catch(()=>{});stopServer(server)}});
+  fs.rmSync(RUN_ROOT,{recursive:true,force:true});fs.mkdirSync(RUN_ROOT,{recursive:true});let server=startServer();const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles([path.join(FIXTURES,'sample.txt'),path.join(FIXTURES,'sample.md')]);await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('批量导入完成：2',{timeout:30000});await expect(page.locator('.material-select')).toHaveCount(2);await page.locator('.material-select').nth(0).check();await page.locator('.material-select').nth(1).check();const downloadPromise=page.waitForEvent('download');await page.locator('#export-selected-bundle').click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('studybuddy-materials.zip');const zipPath=await download.path();const code=`import json,zipfile;z=zipfile.ZipFile(r'${zipPath}');print(json.dumps(z.namelist()))`;const names=JSON.parse(spawnSync('C:/miniconda/py310/python.exe',['-c',code],{encoding:'utf8'}).stdout);expect(names.sort()).toEqual(['originals/sample.txt','text/sample.txt.extracted.txt','originals/sample.md','text/sample.md.extracted.txt'].sort());await page.route(`${BASE}/api/materials/export`,route=>route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'}));await page.locator('#export-selected-bundle').click();await expect(page.locator('#status')).toHaveText('批量导出失败');await expect(page.locator('#export-selected-bundle')).toBeEnabled();expect(errors).toEqual([])}finally{await page.unroute(`${BASE}/api/materials/export`).catch(()=>{});await stopServer(server)}});

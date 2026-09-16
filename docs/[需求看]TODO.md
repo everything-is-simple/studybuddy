@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-15（**浏览器 E2E 时序复验完成**：回收站与材料导出 spec 已用可观察 UI 状态、当前视图限定和 `data-id` 身份断言替换裸文件名/`.last()` 定位；不修改产品代码、不用固定等待掩盖竞态。隔离复现回收站 `3 passed`、导出 `2 passed`、当前 B-PLAN-2 `1 passed`；三次重复为 `9 passed`、`6 passed`、`3 passed`。完整串行 Chromium `89 spec / 436 tests` 的最新结果为 **432 passed / 4 skipped / 0 failed**（27.5m）；skip 仅为默认关闭的真实 Provider/ASR smoke。`check-source-size.py` 与 `git diff --check` 均通过。真实 Provider/OCR/ASR、live delivery、跨浏览器与系统级屏幕阅读器继续保持 `not_verified`。）
+
 > 更新：2026-09-15（**结项尾项修复完成 · flaky 家族根因清零**：① p6e:184 根因=点击滞留 DOM 的旧正常列表按钮（loadMaterial 404 静默路径），改为只匹配「已删除渲染」按钮 + 显式 120s 用例预算，隔离连跑 2 次 4 passed；② 同族扫除 10 个 spec：fire-and-forget `stop()` → await-exit（≤5s）+ `ready()` 预算 100→300 次；③ 终局验证 g3 全清单 67 项负载重跑 **65 passed / 2 skipped / 0 failed，EXIT_CODE=0**（`g3-load-verify2-1789467796.log`）；④ index_redirect 6 passed / reports 14 passed 用例数落盘；⑤ 门禁三件套全过，`backend/app/` 零 diff。21 页 A/B 审查结项结论不变。）
 
 > 更新：2026-09-15（**A/B 审查收尾 Prompt 3 · 独立复核结项完成（新上下文，独立于 Prompt 1/2）**：独立读代码/实测/日志复核通过。21 个正式页面精确 21，全部具备 A+B 覆盖，无遗漏；完整 Chromium 分组串行 g1–g4 = 431 passed / 4 skipped / 1 failed（唯一失败 `browser_phase9b.spec.js` 为 /legacy 集成 spec，非 21 正式页面，已如实标注、偏差可接受）；后端全量 631/3、focused `-k task` 24 passed 均独立复跑通过；门禁 source-size/audit-frontend-contract(0 findings)/diff-check 通过且 `backend/app/` 零 diff；B-SET-5 根因真修、双标签清零（tasks= e2e-real-pass、index= 兼容跳转页边界通过）。**结论：21/21 页面 A/B 审查完成，进行中 0，未开始 0。** 权威 21 行总表见 `docs/roles/[需求+测试看]UI_AB_REVIEW_MATRIX.md`。剩余 not_verified（真实 Provider/OCR/ASR、live delivery、跨浏览器、系统级屏幕阅读器）与 `browser_phase9b.spec.js:105` 失败均另立专项，不阻塞本页 A/B 收口。）
