@@ -109,6 +109,21 @@ const sbForm = {
   },
 
   /**
+   * 拆分逗号分隔输入：符合材料 ID 形态的归为 ids，其余归为 keywords（用于名称筛选，不提交）
+   * @param {string} value - 逗号分隔的字符串
+   * @returns {{ids: string[], keywords: string[]}}
+   */
+  splitIdInput(value) {
+    const tokens = (value || '').split(',').map(t => t.trim()).filter(Boolean);
+    const ids = [], keywords = [];
+    tokens.forEach(token => {
+      if (/^material_[0-9a-f]{32}$/.test(token)) ids.push(token);
+      else keywords.push(token);
+    });
+    return { ids, keywords };
+  },
+
+  /**
    * 显示字段错误（通过设置aria-invalid和添加错误类）
    * @param {string|HTMLElement} field - 字段选择器或元素
    * @param {boolean} isError - 是否有错误
