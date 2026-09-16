@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const RUN_ROOT = 'H:/studybuddy-test/runs/formal-material-recycle-bin';
-const ARTIFACT = 'H:/studybuddy-test/artifacts/formal-material-recycle-bin/latest.json';
+const RUN_ROOT = process.env.STUDYBUDDY_E2E_RUN_ROOT || 'H:/studybuddy-test/runs/formal-material-recycle-bin';
+const ARTIFACT = process.env.STUDYBUDDY_E2E_ARTIFACT || 'H:/studybuddy-test/artifacts/formal-material-recycle-bin/latest.json';
 const FIXTURES = 'H:/studybuddy-test/fixtures/kaobuddy-foundation';
-const PORT = 8790;
+const PORT = Number(process.env.STUDYBUDDY_E2E_PORT || 8790);
 const BASE = `http://127.0.0.1:${PORT}`;
 
 function startServer() {
@@ -26,6 +26,22 @@ async function stopServer(server) {
   });
 }
 function hashFile(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
+function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function materialLocator(page, name, view = 'active') {
+  const selector = view === 'deleted' ? '#materials .deleted-item' : '#materials .item:not(.deleted-item)';
+  const item = page.locator(selector).filter({has: page.locator('span').filter({hasText: new RegExp(`^${escapeRegExp(name)}$`)})});
+  return view === 'deleted' ? item.filter({hasText: '已删除'}) : item;
+}
+async function selectMaterial(page, name, view = 'active', expectedId = null) {
+  const item = materialLocator(page, name, view);
+  await expect(item).toHaveCount(1);
+  await expect(item).toBeVisible();
+  if (expectedId !== null) await expect(item).toHaveAttribute('data-id', String(expectedId));
+  await item.click();
+  await expect(page.locator('#title')).toContainText(name);
+  return item;
+}
+
 function originalCountForHash(sourceHash) { return fs.existsSync(path.join(RUN_ROOT, 'originals', sourceHash.slice(0, 2), sourceHash.slice(2), 'original')) ? 1 : 0; }
 function snapshot() { const db = path.join(RUN_ROOT, 'studybuddy.sqlite3'); const code = `import json,sqlite3;c=sqlite3.connect(r'${db}');print(json.dumps({"materials":c.execute('SELECT COUNT(*) FROM materials').fetchone()[0],"active":c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NULL').fetchone()[0],"deleted":c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL').fetchone()[0],"extractions":c.execute('SELECT COUNT(*) FROM extractions').fetchone()[0],"spans":c.execute('SELECT COUNT(*) FROM text_spans').fetchone()[0]}));c.close()`; return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout); }
 
@@ -35,9 +51,9 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
   fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), one); fs.copyFileSync(path.join(FIXTURES, 'sample.txt'), two);
   const inputs = [one, two, path.join(FIXTURES, 'sample.md')];
   const consoleErrors = []; const externalRequests = [];
-  page.on('console', message => { 
-    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource')) 
-      consoleErrors.push(message.text()); 
+  page.on('console', message => {
+    if (message.type() === 'error' && !message.text().includes('ERR_CONNECTION_REFUSED') && !message.text().includes('Failed to load resource'))
+      consoleErrors.push(message.text());
   });
   page.on('pageerror', error => {
     if (!error.message.includes('Failed to fetch'))
@@ -56,45 +72,44 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
     expect(oneDetail.source_sha256).toBe(twoDetail.source_sha256); expect(oneDetail.stored_path).toBeUndefined(); expect(twoDetail.stored_path).toBeUndefined();
     const hash = oneDetail.source_sha256; expect(originalCountForHash(hash)).toBe(1);
 
-    await page.getByRole('button', {name: /same-one\.txt/}).last().click(); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
+    await selectMaterial(page, 'same-one.txt'); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
     page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click();
-    await expect(page.locator('#status')).toContainText('材料已删除'); await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(0);
-    await expect(page.locator('#materials .item')).toHaveCount(2); await expect(page.getByRole('button', {name: /same-two\.txt/}).last()).toHaveCount(1);
+    await expect(page.locator('#status')).toContainText('材料已删除'); await expect(materialLocator(page, 'same-one.txt')).toHaveCount(0);
+    await expect(page.locator('#materials .item:not(.deleted-item)')).toHaveCount(2); await expect(materialLocator(page, 'same-two.txt')).toHaveCount(1);
     expect((await page.request.get(`${BASE}/api/materials/${oneItem.id}`)).status()).toBe(404);
 
     await page.getByRole('button', {name: '回收站'}).click(); await expect(page.locator('#materials .deleted-item')).toHaveCount(1);
     await expect(page.locator('#materials .deleted-item')).toContainText('same-one.txt');
-    await page.getByRole('button', {name: /same-one\.txt/}).last().click(); await expect(page.locator('#meta')).toContainText('已删除'); await expect(page.locator('#content')).toHaveText('');
+    await selectMaterial(page, 'same-one.txt', 'deleted'); await expect(page.locator('#meta')).toContainText('已删除'); await expect(page.locator('#content')).toHaveText('');
     await expect(page.locator('#restore')).toBeEnabled(); await expect(page.locator('#rename')).toBeDisabled(); await expect(page.locator('#delete')).toBeDisabled();
     await page.locator('#restore').click(); await expect(page.locator('#status')).toContainText('材料已恢复');
-    await expect(page.locator('#materials .item')).toHaveCount(3); await expect(page.getByRole('button', {name: /same-one\.txt/}).last()).toHaveCount(1);
-    await page.getByRole('button', {name: /same-one\.txt/}).last().click(); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
+    await expect(page.locator('#materials .deleted-item')).toHaveCount(0); await expect(page.locator('#materials .item:not(.deleted-item)')).toHaveCount(3); await expect(materialLocator(page, 'same-one.txt')).toHaveCount(1);
+    await selectMaterial(page, 'same-one.txt'); await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
     const restored = await (await page.request.get(`${BASE}/api/materials/${oneItem.id}`)).json(); expect(restored.source_sha256).toBe(oneDetail.source_sha256); expect(restored.stored_path).toBeUndefined(); expect(originalCountForHash(hash)).toBe(1);
 
-    await page.reload(); await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(1);
-    
+    await page.reload(); await expect(materialLocator(page, 'same-one.txt')).toHaveCount(1);
+
     // Set page offline to prevent requests during server restart
     await page.context().setOffline(true);
     await stopServer(server); server = null;
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
     server = startServer(); await waitReady();
     await page.context().setOffline(false);
     await page.goto(`${BASE}/legacy`);
-    
+
     // Wait for materials list to fully load
-    await expect(page.locator('#materials .item').filter({hasText: 'same-one.txt'})).toHaveCount(1);
+    await expect(materialLocator(page, 'same-one.txt')).toHaveCount(1);
     await page.waitForLoadState('networkidle');
-    
-    await page.getByRole('button', {name: /same-one\.txt/}).last().click(); 
+
+    await selectMaterial(page, 'same-one.txt');
     await expect(page.locator('#content')).toContainText('StudyBuddy synthetic TXT fixture.');
 
-    await page.getByRole('button', {name: /same-two\.txt/}).last().click(); page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click();
-    await page.getByRole('button', {name: '成功'}).click(); await expect(page.locator('#materials .item').filter({hasText: 'same-two.txt'})).toHaveCount(0);
-    await page.getByRole('button', {name: '回收站'}).click(); await expect(page.locator('#materials .deleted-item').filter({hasText: 'same-two.txt'})).toHaveCount(1);
+    await selectMaterial(page, 'same-two.txt', 'active', twoItem.id); page.once('dialog', dialog => { expect(dialog.type()).toBe('confirm'); dialog.accept(); }); await page.getByRole('button', {name: '删除', exact: true}).click();
+    await expect(page.locator('#status')).toContainText('材料已删除'); await page.getByRole('button', {name: '成功'}).click(); await expect(materialLocator(page, 'same-two.txt')).toHaveCount(0);
+    await page.getByRole('button', {name: '回收站'}).click(); await expect(materialLocator(page, 'same-two.txt', 'deleted')).toHaveCount(1);
 
     const finalSnapshot = snapshot(); const payload = {
       component: 'formal-material-recycle-bin', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass', python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
-      startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8790', browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_recycle_bin.spec.js --workers=1 --reporter=line',
+      startup_command: `C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port ${PORT}`, browser_test_command: 'npx playwright test H:/studybuddy/backend/tests/browser_material_recycle_bin.spec.js --workers=1 --reporter=line',
       delete_to_recycle_bin: {status: 'success', deleted_at_present: true, hidden_from_active_list: true, visible_in_recycle_bin: true, detail_returns_404_while_deleted: true},
       restore: {status: 'success', deleted_at_null: true, removed_from_recycle_bin: true, visible_in_active_list: true, detail_readable: true, source_sha256_unchanged: true, internal_path_not_exposed: true, refresh_readback: true, restart_readback: true},
       same_hash: {material_count: 2, original_file_count_before_delete: 1, original_file_count_after_delete: 1, original_file_count_after_restore: 1, active_survivor_readable: true, restored_material_readable: true, source_sha256_same: true, internal_path_not_exposed: true},
@@ -106,7 +121,7 @@ test('formal material recycle bin browser acceptance', async ({page}) => {
 });
 
 test('formal material purge success, error, and duplicate protection acceptance', async ({page}) => {
-  fs.rmSync(RUN_ROOT,{recursive:true,force:true});fs.mkdirSync(RUN_ROOT,{recursive:true});let server=startServer();let release;const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await page.getByRole('button',{name:/sample\.txt/}).last().click();page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除',exact:true}).click();await page.getByRole('button',{name:'回收站'}).click();await page.getByRole('button',{name:/sample\.txt/}).last().click();await expect(page.locator('#purge')).toBeEnabled();await page.route(`${BASE}/api/materials/*/purge`,route=>route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'}));page.once('dialog',d=>d.accept());await page.locator('#purge').click();await expect(page.locator('#status')).toHaveText('永久删除失败');await expect(page.locator('#purge')).toBeEnabled();await expect(page.locator('#materials .deleted-item')).toHaveCount(1);await page.unroute(`${BASE}/api/materials/*/purge`);let count=0;await page.route(`${BASE}/api/materials/*/purge`,async route=>{count++;await new Promise(resolve=>{release=resolve});return route.continue()});page.once('dialog',d=>d.accept());await page.locator('#purge').click();await page.locator('#purge').dispatchEvent('click');await expect(page.locator('#purge')).toBeDisabled();expect(count).toBe(1);release();await expect(page.locator('#status')).toHaveText('材料已永久删除');await expect(page.locator('#materials .deleted-item')).toHaveCount(0);expect(errors).toEqual([])}finally{await page.unroute(`${BASE}/api/materials/*/purge`).catch(()=>{});if(release)release();await stopServer(server)}});
+  fs.rmSync(RUN_ROOT,{recursive:true,force:true});fs.mkdirSync(RUN_ROOT,{recursive:true});let server=startServer();let release;const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await selectMaterial(page, 'sample.txt');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除',exact:true}).click();await expect(page.locator('#status')).toContainText('材料已删除');await expect(materialLocator(page, 'sample.txt')).toHaveCount(0);await page.getByRole('button',{name:'回收站'}).click();await selectMaterial(page, 'sample.txt', 'deleted');await expect(page.locator('#purge')).toBeEnabled();await page.route(`${BASE}/api/materials/*/purge`,route=>route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'}));page.once('dialog',d=>d.accept());await page.locator('#purge').click();await expect(page.locator('#status')).toHaveText('永久删除失败');await expect(page.locator('#purge')).toBeEnabled();await expect(page.locator('#materials .deleted-item')).toHaveCount(1);await page.unroute(`${BASE}/api/materials/*/purge`);let count=0;await page.route(`${BASE}/api/materials/*/purge`,async route=>{count++;await new Promise(resolve=>{release=resolve});return route.continue()});page.once('dialog',d=>d.accept());await page.locator('#purge').click();await page.locator('#purge').dispatchEvent('click');await expect(page.locator('#purge')).toBeDisabled();expect(count).toBe(1);release();await expect(page.locator('#status')).toHaveText('材料已永久删除');await expect(page.locator('#materials .deleted-item')).toHaveCount(0);expect(errors).toEqual([])}finally{await page.unroute(`${BASE}/api/materials/*/purge`).catch(()=>{});if(release)release();await stopServer(server)}});
 
 test('formal restore mutation error acceptance', async ({page}) => {
-  fs.rmSync(RUN_ROOT,{recursive:true,force:true});fs.rmSync(path.dirname(ARTIFACT),{recursive:true,force:true});fs.mkdirSync(RUN_ROOT,{recursive:true});let server=startServer();const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await page.getByRole('button',{name:/sample\.txt/}).last().click();page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除',exact:true}).click();await page.getByRole('button',{name:'回收站'}).click();await page.getByRole('button',{name:/sample\.txt/}).last().click();await expect(page.locator('#meta')).toContainText('已删除');await expect(page.locator('#restore')).toBeEnabled();await page.route(`${BASE}/api/materials/*/restore`,route=>route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'}));await page.locator('#restore').click();await expect(page.locator('#status')).toHaveText('恢复失败');await expect(page.locator('#search-form')).toBeHidden();await expect(page.locator('#restore')).toBeEnabled();expect(errors).toEqual([])}finally{await page.unroute(`${BASE}/api/materials/*`).catch(()=>{});await stopServer(server)}});
+  fs.rmSync(RUN_ROOT,{recursive:true,force:true});fs.rmSync(path.dirname(ARTIFACT),{recursive:true,force:true});fs.mkdirSync(RUN_ROOT,{recursive:true});let server=startServer();const errors=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));try{await waitReady();await page.goto(`${BASE}/legacy`);await page.locator('#file').setInputFiles(path.join(FIXTURES,'sample.txt'));await page.locator('#file-import').click();await expect(page.locator('#status')).toContainText('导入完成',{timeout:30000});await selectMaterial(page, 'sample.txt');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'删除',exact:true}).click();await expect(page.locator('#status')).toContainText('材料已删除');await expect(materialLocator(page, 'sample.txt')).toHaveCount(0);await page.getByRole('button',{name:'回收站'}).click();await selectMaterial(page, 'sample.txt', 'deleted');await expect(page.locator('#meta')).toContainText('已删除');await expect(page.locator('#restore')).toBeEnabled();await page.route(`${BASE}/api/materials/*/restore`,route=>route.fulfill({status:500,contentType:'application/json',body:'{"detail":"synthetic"}'}));await page.locator('#restore').click();await expect(page.locator('#status')).toHaveText('恢复失败');await expect(page.locator('#search-form')).toBeHidden();await expect(page.locator('#restore')).toBeEnabled();expect(errors).toEqual([])}finally{await page.unroute(`${BASE}/api/materials/*`).catch(()=>{});await stopServer(server)}});
