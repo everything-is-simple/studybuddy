@@ -549,3 +549,13 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 动态控件验证：文件上传后真实材料行、`.material-select` 复选框、批量工具栏启用与「已选择 1 份」计数、详情/重命名按钮均遍历。
 - [x] 全部 16 用例通过（1.1 分钟）；`check-source-size.py` 通过；无生产代码变更（所有失败均为测试与 DOM 事实不符，修正测试而非产品）。
 - [ ] `not_verified` 保持：真实 Provider 响应、跨浏览器、屏幕阅读器、极端内容与长时稳定性；本套件与各页既有 A/B 类专项测试互补，不替代其限定范围结论。
+## 2026-09-16 全页面逐控件矩阵与 Python 夹具复测
+
+- [x] 新增 `backend/tests/browser_ui_control_matrix.spec.js` 逐控件矩阵：21 页 / 549 条运行时控件记录 / 479 通过 / 70 条件阻塞 / **0 失败**。
+- [x] 修正矩阵测试器 dialog 自锁（先注册 handler 再点击），`plans.html` 4 个 prompt/confirm 控件由超时转为通过。
+- [x] 新增 `backend/tests/browser_python_fixture_userpath.spec.js`（Python HTTP/SMTP 夹具），复测设置页 Provider LLM/Embedding/SMTP 成功与保存、失败安全文案与失败后恢复、密钥清理、任务失败→重试→成功：**3 passed**。
+- [x] 复核并归类既有 8 个失败：Node 夹具回环不可达、SMTP 夹具协议错误、测试步骤漏填被安全清理的密钥、旧文案断言不一致 —— 均非产品缺陷；后端连接测试 focused **30 passed**。
+- [x] 通用控件套件 15/16（唯一失败为 Windows 临时目录 EPERM，单独重跑通过）；报告页专项 14 passed；其余用户路径 53 passed。
+- [x] 新增报告 `docs/UI_CONTROL_E2E_REPORT.md`；`check-source-size.py` 与 `git diff --check` 通过；无生产代码变更。
+- [ ] `not_verified` 保持：真实外部 Provider、真实 SMTP/飞书投递、OCR/ASR 实机、跨浏览器、屏幕阅读器、极端内容与长时稳定性。
+- [ ] 建议后续：`browser_tasks_userpath.spec.js` TK-6 依赖 TK-5 生成的成功任务，应改为自建前置数据以消除用例间顺序依赖；设置页旧 spec 的 Node 夹具可迁移到 Python 夹具，避免再次误报。
