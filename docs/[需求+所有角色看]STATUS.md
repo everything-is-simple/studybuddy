@@ -343,3 +343,15 @@ For the authoritative project status, task order, and governing decisions, see [
 - 过程中修正了测试与实际 DOM 的偏差：nav 链接无 `#nav-*` ID（改用 href 选择器）；QA 页无 `#allow-fallback`/`#set-scope-to-current` 控件（scout 清单过时，已在测试中移除）；deck/set 列表项为 `<li onclick>` 而非按钮；Exercises 手工建题控件在选中练习集后才显示；reports 选项为 `daily/weekly/monthly/exam_alert`；notes 生成控件 ID 为 `#topic`/`#generate`；材料列表项为无类名 `<li>` + `.material-select` 复选框。
 - 验证：**16 passed（1.1 分钟）**，`check-source-size.py` 通过。无生产代码变更——本轮全部失败均为测试与 DOM 事实不符，未发现需要修复的产品缺陷。
 - `not_verified`：真实 Provider 响应、多浏览器（仅 Chromium）、屏幕阅读器、极端长内容与长时稳定性。
+## 2026-09-16 全页面逐控件矩阵与 Python 夹具复测（用户视角端到端复核）
+
+- 新增 `backend/tests/browser_ui_control_matrix.spec.js`：21 个页面 × 运行时 DOM 控件逐项动作矩阵，每项操作后重载页面以隔离状态，逐项记录 ✅ 通过 / ⏸️ 初始隐藏或禁用 / ❌ 失败。结果：控件记录 **549** 条（源码静态标签 208 个，其余为共享导航、动态列表与条件渲染控件），**479 通过 / 70 条件阻塞 / 0 失败**，运行约 3.1 分钟。
+- 修正矩阵测试器自锁：`plans.html`「重命名目标/归档目标/重命名模块/归档模块」会弹出 prompt/confirm，测试器原先先等待 `click()` 返回再处理 dialog，形成自锁（4 项超时）。改为点击前注册 dialog handler 后全部通过 —— 属测试器缺陷，不是产品缺陷。
+- 新增 `backend/tests/browser_python_fixture_userpath.spec.js`：改用 Python 本地 HTTP Provider（固定成功端口 + 固定失败端口）与 Python SMTP 夹具，复测设置页与任务页真实用户链路。
+- 复核既有失败根因：`browser_settings_userpath.spec.js` 的 SET-3/4/6/7/8/10/11 失败来自 Node 本地夹具端口在 Python 后端侧不可达（请求悬停，按钮停在「处理中…」）与 SMTP 夹具换行协议错误；`browser_tasks_userpath.spec.js` TK-5 为旧断言文案（索引服务暂不可用）与当前用户文案（索引服务连接失败，请重试）不一致。Python 夹具复测后 Provider LLM/Embedding/SMTP 成功与保存、Provider 失败安全文案与失败后恢复、密钥输入清理、任务失败→重试→成功全部通过（**3 passed**）。
+- 后端连接测试 focused：`test_p1_5_2_0_connection_test.py` + `test_p1_5_2_1_api.py` **30 passed**，确认 Provider/Email 连接测试逻辑本身无缺陷。
+- 其他批次：`browser_ui_complete_verification.spec.js` 15/16（唯一失败为报告用例 Windows 临时目录 EPERM 清理失败，单独重跑 1/1 通过）；`browser_reports_userpath.spec.js` **14 passed**；材料详情/笔记/卡片/练习/计划/QA 用户路径 **53 passed**。
+- 新增用户视角报告 `docs/UI_CONTROL_E2E_REPORT.md`：逐页 ✅/⏸️ 计数、控件动作规则、失败项复核结论与可关闭判定。
+- 70 项 ⏸️ 为按设计在空数据/未配置能力/未索引/缺 ID 状态下隐藏或禁用，不是失败；其有效数据状态下的行为由对应页面用户路径测试覆盖。
+- `check-source-size.py` 与 `git diff --check` 通过；**本轮无 `backend/app/` 生产代码变更**，未发现需修复的产品缺陷。
+- `not_verified`：真实外部 Provider、真实 SMTP/飞书投递、OCR/ASR 实机组件、跨浏览器（仅 Chromium）、屏幕阅读器、极端内容与长时稳定性。
