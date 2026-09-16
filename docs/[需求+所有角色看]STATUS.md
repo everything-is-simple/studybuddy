@@ -335,3 +335,11 @@ For the authoritative project status, task order, and governing decisions, see [
 - 验证：B 类 **5 passed**；A 类复跑 **12 passed**；review/practice/weak-points/static 关联 Chromium **41 passed**；Phase9C API/domain focused **20 passed**；完整后端 **631 passed, 3 skipped**（仅 opt-in real ASR/Provider smoke）；source-size 与 diff-check 通过。完整 Chromium 在第 186/360 项因非 review 的 QA fixture 目录删除 `EPERM` 后继续运行至总时限而中断，未将其宣称为全量通过。
 - 二审结论：`review.html` = **限定范围 `e2e-real-pass`**，仅限确定性 fake、单进程 SQLite、Chromium 的 A/B 页面路径及已执行 API 契约；不扩大为全局 production `real-pass`。
 - `not_verified`：真实 Provider、真实 OCR/ASR 进入复盘链路、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端长内容、长时稳定性，以及因本次非 review `EPERM` 中断而未取得的完整 Chromium 串行结论。
+
+## 2026-09-16 全站交互控件综合验证套件
+
+- 新增 `backend/tests/browser_ui_complete_verification.spec.js`（16 用例，Playwright Chromium，独立 8830 端口 + 隔离 data root + `STUDYBUDDY_AI_PROVIDER=fake`），系统性遍历各页面全部交互控件：按钮、输入框、下拉、复选框、动态生成的列表项与表单。
+- 覆盖范围：Materials（导入、搜索、筛选、回收站切换、批量导出工具栏、动态材料行/复选框/详情/重命名）；Q&A（提问表单、检索模式下拉、索引按钮、材料范围勾选、新对话、无范围提问的安全警告）；Cards（卡片组创建/刷新/选中、状态筛选、手工建卡、AI 生成表单）；Exercises（练习集创建/选中、手工建题、AI 生成表单）；Plans（目标/模块/计划创建链路含目标下拉等待、来源关联、refresh-all）；Practice（冲刺目标表单、推荐数量下拉、会话/错题刷新）；Capture（能力状态、归档筛选、新建会话对话框全部控件含 6 个媒体类型选项与取消）；Reports（类型下拉全部 4 个选项、日期输入）；Notes（创建、模块关联、AI 生成、材料下拉重载、归档筛选）；导航（全部 7 个主导航链接 + 系统状态显示 + back/forward）；移动端 nav-toggle（含键盘 Enter 激活）；键盘可达性（Tab/Enter/Space）；表单约束（maxlength/required/min/max）；端到端工作流（导入→勾选→前往问答→跳转学习页）。
+- 过程中修正了测试与实际 DOM 的偏差：nav 链接无 `#nav-*` ID（改用 href 选择器）；QA 页无 `#allow-fallback`/`#set-scope-to-current` 控件（scout 清单过时，已在测试中移除）；deck/set 列表项为 `<li onclick>` 而非按钮；Exercises 手工建题控件在选中练习集后才显示；reports 选项为 `daily/weekly/monthly/exam_alert`；notes 生成控件 ID 为 `#topic`/`#generate`；材料列表项为无类名 `<li>` + `.material-select` 复选框。
+- 验证：**16 passed（1.1 分钟）**，`check-source-size.py` 通过。无生产代码变更——本轮全部失败均为测试与 DOM 事实不符，未发现需要修复的产品缺陷。
+- `not_verified`：真实 Provider 响应、多浏览器（仅 Chromium）、屏幕阅读器、极端长内容与长时稳定性。
