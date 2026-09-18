@@ -103,6 +103,11 @@
 - 修复：`backend/app/providers/_helpers.py` 对 gzip 魔数（`1f 8b`）响应透明解压；新增 `backend/tests/test_provider_gzip_response.py`（本地 gzip HTTP 服务，2 用例）；`pyproject.toml` 显式 `pythonpath=["backend"]` 固化测试导入路径。
 [REDACTED_STUDY_CONTENT]
 
+**2026-09-19 补充：报告外发通道配置与验证（观察 #3）**：
+- QQ SMTP + 飞书 Webhook 已持久化到 data_root（`delivery_configured=true`）；凭证文件中 SMTP 用户名错配（163 用户名 + QQ 授权码）已修正为 [REDACTED_EMAIL]。
+- **飞书 ✅ 真实验证通过**（应用内连接测试 ok + 真实消息送达飞书群，code 0）。
+- **SMTP ⚠️ not_verified**：smtp.qq.com 465/587 在本机 TLS 层仍被拦截（SSL record layer failure，与凭证无关；ark/agnes/feishu 已恢复但 SMTP 未恢复），属环境事实，网络恢复后复测，不得宣称 real-pass。
+
 ---
 
 ## 治理锚点（governance anchors，历史验收与能力边界，勿删）
