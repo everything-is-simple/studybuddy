@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-18（**P0 两项收口完成**：① live 库测试残留清理——purge 回收站 7 条重复导入 + 测试材料"光合作用.txt"，清除 QA/检索/报告快照测试痕迹（含 9 线程/14 消息/5 回答/10 引用/18 检索 run/1 快照），保留 6 本正式教材与 ai_operations 审计历史；清理前备份 `studybuddy-test/backups/pre-p0-cleanup-20260918` verify 通过，清理后一致性校验全 PASS（无孤儿行、FTS 一致、integrity ok、user_version=15）；稳态基线 6 教材/807 段/499 ready 分块/499 真实火山向量。② 文档治理基线恢复——两份报告移入 `docs/roles/` 满足 docs 顶层 14 文件白名单，STATUS 补回 29 个治理锚点（新增"治理锚点"章节），ARCHITECTURE 补 v9 表述；治理测试 24 用例全过，后端全量恢复 **632 passed / 3 skipped / 0 failed**。）
+
 > 更新：2026-09-15（**浏览器 E2E 时序复验完成**：回收站与材料导出 spec 已用可观察 UI 状态、当前视图限定和 `data-id` 身份断言替换裸文件名/`.last()` 定位；不修改产品代码、不用固定等待掩盖竞态。隔离复现回收站 `3 passed`、导出 `2 passed`、当前 B-PLAN-2 `1 passed`；三次重复为 `9 passed`、`6 passed`、`3 passed`。完整串行 Chromium `89 spec / 436 tests` 的最新结果为 **432 passed / 4 skipped / 0 failed**（27.5m）；skip 仅为默认关闭的真实 Provider/ASR smoke。`check-source-size.py` 与 `git diff --check` 均通过。真实 Provider/OCR/ASR、live delivery、跨浏览器与系统级屏幕阅读器继续保持 `not_verified`。）
 
 > 更新：2026-09-15（**结项尾项修复完成 · flaky 家族根因清零**：① p6e:184 根因=点击滞留 DOM 的旧正常列表按钮（loadMaterial 404 静默路径），改为只匹配「已删除渲染」按钮 + 显式 120s 用例预算，隔离连跑 2 次 4 passed；② 同族扫除 10 个 spec：fire-and-forget `stop()` → await-exit（≤5s）+ `ready()` 预算 100→300 次；③ 终局验证 g3 全清单 67 项负载重跑 **65 passed / 2 skipped / 0 failed，EXIT_CODE=0**（`g3-load-verify2-1789467796.log`）；④ index_redirect 6 passed / reports 14 passed 用例数落盘；⑤ 门禁三件套全过，`backend/app/` 零 diff。21 页 A/B 审查结项结论不变。）
@@ -556,6 +558,6 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 新增 `backend/tests/browser_python_fixture_userpath.spec.js`（Python HTTP/SMTP 夹具），复测设置页 Provider LLM/Embedding/SMTP 成功与保存、失败安全文案与失败后恢复、密钥清理、任务失败→重试→成功：**3 passed**。
 - [x] 复核并归类既有 8 个失败：Node 夹具回环不可达、SMTP 夹具协议错误、测试步骤漏填被安全清理的密钥、旧文案断言不一致 —— 均非产品缺陷；后端连接测试 focused **30 passed**。
 - [x] 通用控件套件 15/16（唯一失败为 Windows 临时目录 EPERM，单独重跑通过）；报告页专项 14 passed；其余用户路径 53 passed。
-- [x] 新增报告 `docs/UI_CONTROL_E2E_REPORT.md`；`check-source-size.py` 与 `git diff --check` 通过；无生产代码变更。
+- [x] 新增报告 `docs/roles/UI_CONTROL_E2E_REPORT.md`；`check-source-size.py` 与 `git diff --check` 通过；无生产代码变更。
 - [ ] `not_verified` 保持：真实外部 Provider、真实 SMTP/飞书投递、OCR/ASR 实机、跨浏览器、屏幕阅读器、极端内容与长时稳定性。
 - [ ] 建议后续：`browser_tasks_userpath.spec.js` TK-6 依赖 TK-5 生成的成功任务，应改为自建前置数据以消除用例间顺序依赖；设置页旧 spec 的 Node 夹具可迁移到 Python 夹具，避免再次误报。
