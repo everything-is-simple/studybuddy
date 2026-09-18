@@ -20,7 +20,7 @@
 <div id="capability-error" class="notice warn" role="alert" hidden></div>
 <div id="capability-loading" aria-hidden="true"><div class="capability-card skeleton"><div class="skeleton-text skeleton-40"></div><div class="skeleton-text skeleton-60"></div><div class="skeleton-text skeleton-80"></div></div></div>
 <div id="capability-grid" class="capability-grid" hidden></div>
-<div class="stack-actions mt-16"><button class="btn btn-primary" type="button" id="capability-recheck">重新自检</button><button class="btn" type="button" id="capability-refresh">刷新状态</button><span class="muted">自检只读探测本机组件，不下载模型、不访问网络。</span></div>
+<div class="stack-actions mt-16"><button class="btn btn-primary" type="button" id="capability-recheck" title="[1] 重新自检 - 重新检测所有组件能力状态">重新自检</button><button class="btn" type="button" id="capability-refresh" title="[2] 刷新状态 - 刷新能力状态显示">刷新状态</button><span class="muted">自检只读探测本机组件，不下载模型、不访问网络。</span></div>
 </section>
 
 <section class="card mt-24" data-od-id="ai-provider-settings">
@@ -36,8 +36,8 @@
 <div class="field"><label for="ai-key">API Key</label><input id="ai-key" name="ai_api_key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示不修改已保存的密钥"></div>
 </div>
 <div id="ai-result" class="notice" role="status" aria-live="polite" hidden></div>
-<button class="btn" type="button" id="settings-retry" hidden>重试读取配置</button>
-<div class="stack-actions"><button class="btn btn-primary" type="submit" id="ai-save">保存并生效</button><button class="btn" type="button" id="ai-clear">清除已保存配置</button><a class="btn" href="/app/settings-provider.html">先测试连接</a></div>
+<button class="btn" type="button" id="settings-retry" hidden title="[重试] 重新加载系统设置">重试读取配置</button>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="ai-save" title="[3] 保存AI配置 - 保存并生效Chat模型配置">保存并生效</button><button class="btn" type="button" id="ai-clear" title="[4] 清除AI配置 - 清除已保存的Chat配置">清除已保存配置</button><a class="btn" href="/app/settings-provider.html">先测试连接</a></div>
 </form>
 </section>
 
@@ -53,7 +53,7 @@
 <div class="field"><label for="embedding-key">API Key</label><input id="embedding-key" name="embedding_api_key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示不修改已保存的密钥"></div>
 </div>
 <div id="embedding-result" class="notice" role="status" aria-live="polite" hidden></div>
-<div class="stack-actions"><button class="btn btn-primary" type="submit" id="embedding-save">保存并生效</button><button class="btn" type="button" id="embedding-clear">清除已保存配置</button></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="embedding-save" title="[5] 保存Embedding配置 - 保存并生效Embedding模型配置">保存并生效</button><button class="btn" type="button" id="embedding-clear" title="[6] 清除Embedding配置 - 清除已保存的Embedding配置">清除已保存配置</button></div>
 </form>
 </section>
 
@@ -67,7 +67,7 @@
 <div class="field"><label for="asr-model">转写模型文件（可选）</label><input id="asr-model" name="asr_model_path" autocomplete="off" spellcheck="false" placeholder="仅当自动探测失败时填写"></div>
 </div>
 <div id="local-result" class="notice" role="status" aria-live="polite" hidden></div>
-<div class="stack-actions"><button class="btn btn-primary" type="submit" id="local-save">保存并生效</button><button class="btn" type="button" id="local-clear">清除本机组件覆盖</button><span class="muted">已保存的路径不会被回显，只显示“已设置”。</span></div>
+<div class="stack-actions"><button class="btn btn-primary" type="submit" id="local-save" title="[7] 保存本机组件 - 保存并生效本机OCR/ASR配置">保存并生效</button><button class="btn" type="button" id="local-clear" title="[8] 清除本机组件 - 清除本机组件配置覆盖">清除本机组件覆盖</button><span class="muted">已保存的路径不会被回显，只显示“已设置”。</span></div>
 </form>
 </section>
 

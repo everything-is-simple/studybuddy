@@ -26,6 +26,24 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
 
+## 目录使用规范 (2026-09-18 新增)
+
+项目使用以下目录结构，各目录用途固定，不得混用：
+
+- **H:\studybuddy**：正式源码仓库，包含生产代码、正式测试和必要文档
+- **H:\studybuddy-data**：正式运行数据根目录（data_root），存放SQLite数据库、hash-derived原文件、配置文件
+- **H:\studybuddy-composer**：组件独立测试目录，组件必须先在此完成独立测试
+- **H:\studybuddy-integration**：组件组合测试目录，通过Composer测试的组件在此完成组合测试
+- **H:\studybuddy-test**：测试artifacts和fixtures目录，存放合成fixture、测试运行结果和脱敏artifact
+- **H:\studybuddy-ChinaTextbook**：真实教材文件目录（例如：五年级上下、四年级上下课程教材）
+
+**重要原则**：
+- 不得从Composer或Integration项目直接复制源码到正式系统
+- 测试使用studybuddy-test下的数据，不写入正式仓库的运行数据
+- 正式运行使用studybuddy-data作为data_root
+- 不要将data_root放在OneDrive/网盘同步目录、网络盘或Git仓库内
+- 不要让多个StudyBuddy实例共用同一个data_root
+
 本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/[需求+架构看]ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立。已选 C0 路径为 `H:\WhisperCli`/whisper.cpp `large-v3-turbo`（ASR）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS 候选）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；B1 ASR 与 B2 PaddleOCR 已分别在各自精确 scope 内完成 scoped closeout，RapidOCR、TTS、PPTX 图片页 OCR 仍未完成对应 Formal 门禁。真实 OCR/ASR/TTS 不得据此视为通用能力或全局 real-pass。B2 脱敏证据见 [`docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`](.archive/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md)。详见 [`docs/contracts/MEDIA_CAPABILITY_DECISION.md`](.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
 
 ## 当前正式实现

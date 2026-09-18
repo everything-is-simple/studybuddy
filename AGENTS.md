@@ -40,6 +40,24 @@ This revision exists because the previous mode produced audit and evidence docum
 - Keep important project documentation in the `docs/` directory.
 - Keep the repository root limited to the primary entry documents and project metadata.
 - Do not copy implementation code from Composer or Integration projects into the formal system. Re-implement against verified contracts.
+
+## Directory usage规范 (2026-09-18 新增)
+
+项目使用以下目录结构，各目录用途固定，不得混用：
+
+- **H:\studybuddy**：正式源码仓库，包含生产代码、正式测试和必要文档
+- **H:\studybuddy-data**：正式运行数据根目录（data_root），存放SQLite数据库、hash-derived原文件、配置文件
+- **H:\studybuddy-composer**：组件独立测试目录，组件必须先在此完成独立测试
+- **H:\studybuddy-integration**：组件组合测试目录，通过Composer测试的组件在此完成组合测试
+- **H:\studybuddy-test**：测试artifacts和fixtures目录，存放合成fixture、测试运行结果和脱敏artifact
+- **H:\studybuddy-ChinaTextbook**：真实教材文件目录（例如：五年级上下、四年级上下课程教材）
+
+**重要原则**：
+- 不得从Composer或Integration项目直接复制源码到正式系统
+- 测试使用studybuddy-test下的数据，不写入正式仓库的运行数据
+- 正式运行使用studybuddy-data作为data_root
+- 不要将data_root放在OneDrive/网盘同步目录、网络盘或Git仓库内
+- 不要让多个StudyBuddy实例共用同一个data_root
 - Do not commit databases, uploaded originals, generated artifacts, secrets, provider keys, paths containing private data, or test-run output.
 - New or substantially rewritten code files (`.py`, `.js`, `.css`, `.html`, `.ps1`, `.json`) must not exceed 100 KB; target a reasonable, maintainable size. A larger file requires explicit user approval before creation. Documentation files (`.md`) are exempt from this size limit. (2026-09-13 revision: the former 32 KiB limit was relaxed to 100 KB by user decision; it repeatedly blocked legitimate A/B review spec files.)
 - Do not create or relocate a large compatibility, legacy, static, or inline-content file to bypass this limit. `backend/app/main.py` is the temporary oversized legacy exception while it retains the existing inline UI until the separately approved A3 migration. Existing oversized legacy files are grandfathered; the source-size script does not impose a no-growth comparison on them.

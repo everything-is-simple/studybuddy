@@ -34,7 +34,7 @@
 <div class="mt-12">
 <label>
 <input type="file" id="folder-input" webkitdirectory class="file-input-hidden">
-<button class="btn" type="button" id="folder-btn">选择文件夹导入</button>
+<button class="btn" type="button" id="folder-btn" title="[1] 导入文件夹 - 批量导入整个文件夹中的所有文件">选择文件夹导入</button>
 </label>
 </div>
 <div id="upload-status" class="notice mt-16" hidden role="status" aria-live="polite"></div>
@@ -50,9 +50,9 @@
 <option value="rejected">已拒绝</option>
 <option value="failed">失败</option>
 </select>
-<input type="search" id="search-input" placeholder="搜索材料名称..." aria-label="搜索材料">
-<button class="btn" id="apply-filters" type="button">应用筛选</button>
-<button class="btn" id="view-deleted" type="button">查看回收站</button>
+<input type="search" id="search-input" placeholder="搜索材料名称..." aria-label="搜索材料" title="[4] 搜索材料 - 输入关键词搜索材料名称或内容">
+<button class="btn" id="apply-filters" type="button" title="[2] 应用筛选 - 按状态筛选材料（成功、空文件、失败等）">应用筛选</button>
+<button class="btn" id="view-deleted" type="button" title="[3] 查看回收站 - 查看已删除的材料，可以恢复">查看回收站</button>
 </div>
 </section>
 
@@ -62,16 +62,16 @@
 <span id="state" class="muted" role="status" aria-live="polite">加载中…</span>
 </div>
 <div id="error" class="error" role="alert" hidden></div>
-<button class="btn mt-12" id="retry-materials" type="button" hidden>重新加载材料</button>
+<button class="btn mt-12" id="retry-materials" type="button" hidden title="[重试] 重新加载资料列表">重新加载材料</button>
 <div id="mutation-status" class="notice mt-12" hidden role="status" aria-live="polite"></div>
 <div id="batch-export" class="batch-toolbar" hidden>
 <label class="batch-select-all"><input id="select-page" type="checkbox"> 选择当前页</label>
 <span id="selection-status" class="muted" role="status" aria-live="polite">已选择 0 份</span>
 <div class="action-group">
-<button class="btn btn-primary" id="goto-qa" type="button" disabled>前往问答</button>
-<button class="btn" id="export-originals" type="button" disabled>导出原件 ZIP</button>
-<button class="btn" id="export-texts" type="button" disabled>导出文本 ZIP</button>
-<button class="btn" id="export-all" type="button" disabled>导出全部 ZIP</button>
+<button class="btn btn-primary" id="goto-qa" type="button" disabled title="[问答] 去提问 - 前往该材料的问答页">前往问答</button>
+<button class="btn" id="export-originals" type="button" disabled title="[批量] 导出选中原文件">导出原件 ZIP</button>
+<button class="btn" id="export-texts" type="button" disabled title="[批量] 导出选中文本">导出文本 ZIP</button>
+<button class="btn" id="export-all" type="button" disabled title="[批量] 导出选中全部（ZIP）">导出全部 ZIP</button>
 </div>
 </div>
 <div id="export-status" class="notice mt-16" hidden role="status" aria-live="polite"></div>
