@@ -108,6 +108,12 @@
 - **飞书 ✅ 真实验证通过**（应用内连接测试 ok + 真实消息送达飞书群，code 0）。
 - **SMTP ⚠️ not_verified**：smtp.qq.com 465/587 在本机 TLS 层仍被拦截（SSL record layer failure，与凭证无关；ark/agnes/feishu 已恢复但 SMTP 未恢复），属环境事实，网络恢复后复测，不得宣称 real-pass。
 
+**2026-09-19：P1/P2 清零推进（观察 #4 已修复）**：
+- **向量检索质量基线建立**：14 个五年级真实问答场景（6 本教材覆盖语文/数学 + 1 个范围外问题）**14/14 通过、全部带引用、平均 9.9s**；范围外问题（光合作用）诚实声明资料无此内容、仅引用最近相关课文，无幻觉。基线数据：`H:\studybuddy-test\artifacts\vector-quality-baseline-20260919.json`。
+- **观察 #4（思考型模型预算耗尽缺陷，已修复）**：glm-5.3-flash 思考/非思考双模式会把推理放入 `reasoning_content`；当推理耗尽 `max_tokens`（原默认 800）时 `content` 为空 → 误报 `provider_malformed_response`（琥珀问题稳定复现）。修复：`DEFAULT_AI_MAX_OUTPUT_TOKENS` 800→2048；`_parse_openai_response` 对 content 为 None/空 + `finish_reason=length` 准确报 `provider_output_too_large`；新增 `test_provider_reasoning_empty_content.py`（3 用例）。修复后 #12 真实作答带 3 处引用。
+- **TLS 复查结论（P1 收口）**：api.deepseek.com 已放行（401=握手成功）且 DeepSeek `deepseek-chat` **真实连接测试通过**；QQ SMTP 465/587 仍被拦（环境事实）。`config.py` 启动告警日志检查：无 misnamed 告警记录。
+- 回归：provider/embedding/治理相关 21+ passed；源码体积门禁通过。
+
 ---
 
 ## 治理锚点（governance anchors，历史验收与能力边界，勿删）

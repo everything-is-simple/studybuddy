@@ -199,13 +199,19 @@ def _parse_openai_response(payload: dict[str, object], provider_id: str, model_i
     if not isinstance(message, dict):
         raise ProviderError("provider_schema_mismatch")
     content = message.get("content")
-    if not isinstance(content, str):
+    if content is not None and not isinstance(content, str):
         raise ProviderError("provider_schema_mismatch")
-    if not content.strip():
-        raise ProviderError("provider_malformed_response")
+    finish_reason = choices[0].get("finish_reason")
+    if content is None or not content.strip():
+        # 思考型模型（如 glm-5.3-flash）可能把 max_tokens 全部花在
+        # reasoning_content 上导致 content 为空且 finish_reason=length；
+        # 这属于输出预算耗尽，不是响应格式错误。
+        if finish_reason == "length":
+            raise ProviderError("provider_output_too_large") from None
+        raise ProviderError("provider_malformed_response") from None
     if len(content) > max_answer_chars:
         raise ProviderError("provider_output_too_large")
-    finish_reason = choices[0].get("finish_reason")
+
     if finish_reason in {"content_filter", "refusal"}:
         raise ProviderError("provider_refusal")
     usage = payload.get("usage")
