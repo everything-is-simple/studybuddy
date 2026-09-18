@@ -1,359 +1,170 @@
-# StudyBuddy Status
-
-> 更新：2026-09-18（**用户端到端全量检测 + 按钮操作引导上线**：AI 自动化工具对 21 个正式页面执行全量用户端到端检测（页面加载/标题/交互元素可点击/无JS错误/链接有效性，新 spec `browser_e2e_full_coverage.spec.js`），**107/107 全部通过，exit code 0**，42 张截图证据存于 `H:\studybuddy-test\e2e-screenshots\`，HTML 报告在 `playwright-report/index.html`。真实火山引擎 glm-5.3-flash 问答链路实测通过（导入→ai-index→lexical检索→真实回答+1条有效引用）。同时为全部页面每个按钮添加 title 操作引导（“先点我”）：渲染后 DOM 实测 119/119 = 100% + legacy 页 43/43，含 shell.js 动态“更多”按钮和 classroom/reports 动态列表项按钮；零行为变更（仅添加 title 属性），check-source-size 与 git diff --check 通过。发现 3 个 P1（中文长句词法检索命中率低、retrieval_empty 用 409、Provider 环境变量名易配错无引导）与 5 个 P2，完整检测报告与修订意见见 `H:\studybuddy-test\e2e-reports\2026-09-18-用户端到端检测报告.md`。未验证：真实教材解析质量、真实 OCR/ASR、live delivery、跨浏览器。）
-
-> 更新：2026-09-15（**浏览器 E2E 时序修复复验**：`browser_material_recycle_bin.spec.js` 与 `browser_material_export.spec.js` 用状态可观察条件和限定在当前列表视图的材料定位替代裸文件名/`.last()` 选择；保留重复内容材料，按 `data-id` 交叉校验身份，并在服务重启前等待进程退出。当前 HEAD 的隔离复现全部通过：回收站 `3 passed`、材料导出 `2 passed`、B-PLAN-2 `1 passed`；重复三次为回收站 `9 passed`、材料导出 `6 passed`、B-PLAN-2 `3 passed`。最终完整 Chromium 串行回归（89 spec / 436 tests，`--workers=1`）为 **432 passed / 4 skipped / 0 failed**，耗时 27.5 分钟。4 个 skip 均为默认关闭的 opt-in 真实 Provider/ASR smoke。仅测试代码变更，`backend/app/` 零 diff；`check-source-size.py` 与 `git diff --check` 通过。真实 Provider/OCR/ASR、live delivery、跨浏览器与系统级屏幕阅读器仍为 `not_verified`。）
-
-> 更新：2026-09-15（**结项尾项修复 · flaky 家族根因清零（本轮全部为测试侧修复，`backend/app/` 生产代码零 diff）**：① `browser_p6e.spec.js:184`「删除材料详情 #meta 永空」根因=测试在 `setView('deleted')` 的异步 `loadList` 渲染前按裸材料名点击，命中滞留 DOM 的旧正常列表按钮（onclick=loadMaterial → GET 已删除材料 404 → announce「材料不可用」→ 静默 return，前两个 toBeDisabled 因 `clearMaterial()` 虚假通过）；修法=只匹配「已删除渲染」按钮（`/p6e-source\.txt 已删除/`，可观察状态同步点）+ 显式 `test.setTimeout(120s)`；修复后隔离连跑 2 次 4 passed（log：`p6e-rootfix-iso-1/2-*.log`）。② 同族扫除：10 个 spec（p2_fe3 全家 + phase7/8）的 fire-and-forget `stop()` 改为 await-exit（≤5s）消除固定端口交接竞态，`ready()` 就绪预算 100→300 次（10s→30s）消除负载下 `server_not_ready`；此前 g3 负载重跑 64p/2s/1f，唯一失败 `materials_app:56` 即此根因。③ 终局验证：**g3 全清单 22 spec 67 项负载重跑 = 65 passed / 2 skipped / 0 failed，EXIT_CODE=0（`g3-load-verify2-1789467796.log`，CODEBUDDY_SAFE_DELETE_ENABLED=0 绕开沙箱对产物目录 mkdir 的 EPERM 拦截）**——B-SET-5、phase9b:105、p6e:179、materials_app:56 所在 flaky 家族在负载环境下全部稳定。④ 证据缺口补齐：index_redirect 6 passed、reports 14 passed 隔离跑含用例数落盘（`*-evidence-*.log`）。⑤ 门禁：check-source-size / audit-frontend-contract --strict（EXIT 0）/ git diff --check 全过。）
-
-> 更新：2026-09-15（**A/B 审查收尾 Prompt 3 · 独立复核结项（新上下文，独立于 Prompt 1/2 执行者）**：独立读代码/实测/日志复核——21 个正式页面（`backend/app/static/*.html` 精确 21）全部具备 A+B 覆盖映射，无遗漏/误计；完整 Chromium 分组串行 g1–g4 = **431 passed / 4 skipped / 1 failed**（g1 114/1sk/EXIT0、g2 84/0/EXIT0、g3 64/2sk/1fail/EXIT1、g4 169/1sk/EXIT0），唯一失败 `browser_phase9b.spec.js`（/legacy 工作区集成 spec，非 21 正式页面），已如实标注、未宣称全绿，独立判断该偏差可接受；后端全量 631/3 EXIT0，focused `-k task` 独立复跑 24 passed EXIT0（缺口②已补）；门禁 `check-source-size --base HEAD` 通过、`audit-frontend-contract --strict` 0 findings、`backend/app/` 工作区零 diff；高风险 8 页隔离复跑：capture+classroom、index（6 passed）、reports（14 passed）全过，批跑 9 重 spec 同 `npx` 引发的会话不稳属 harness 伪失败；B-SET-5 根因真修（等待 fulfill 事件替代 2600/2500 100ms 余量）、B-SET-6 vacuous 改写实路径；双标签清零（tasks= e2e-real-pass、index= 兼容跳转页边界通过）。**结论：21/21 页面 A/B 审查完成，进行中 0，未开始 0。** 权威 21 行总表见 `docs/roles/[需求+测试看]UI_AB_REVIEW_MATRIX.md`。已知缺口：phase9b 隔离复跑用例数未落盘；phase9b:105 失败标 not_verified 另立专项。未验证：真实 Provider/OCR/ASR、live delivery、跨浏览器、系统级屏幕阅读器。）
-
-> 更新：2026-09-15（**A/B 审查收尾 Prompt 2 · 最终统一验收完成（分组串行，非单次连续运行）**：① 过程：两次单次连续串行分别 431 passed/4 skipped/1 failed（唯一失败分别为 `browser_material_search` 与 `browser_material_recycle_bin`），第三次单次串行被 30 分钟工具窗口截断产生无效连锁失败（EPERM/28 failed/159 did not run），按预案改用分组串行并如实标注；② 分组串行终态汇总（4 组、89 spec、时间戳 output/log/退出码齐备，`H:/studybuddy-test/runs/full-chromium-20260915-143500-g1..g4`）：**431 passed / 4 skipped / 1 failed**——4 skip 均为 opt-in 真实 Provider/ASR smoke；唯一失败为 `browser_phase9b.spec.js`（/legacy 旧版工作区，非 21 个正式页面）负载敏感超时，隔离复跑 ×2 均 3 passed，属既有 phase9c/9b legacy 家族，不影响任何 /app 页面结论；③ 长跑暴露并修复两个真实测试生命周期缺陷：`browser_material_search` 真重启期间浏览器预期连接错误被计入 console 错误统计（加 `serverRestarting` 窗口，仅抑制停服到 readiness 期间）；`browser_material_recycle_bin` 故障注入前未等待已删除材料详情加载即点恢复（补 `#meta` 含已删除 + `#restore` enabled 前置断言），两修复后各自复跑全绿；④ 后端全量 **631 passed, 3 skipped**、focused -k task **24 passed**；门禁 source-size/audit-frontend-contract(0 findings)/diff-check 通过；⑤ **tasks.html 升级判据四项全部满足 → 限定范围 `e2e-real-pass`**（tasks userpath 7 + b_class 7 + task_list 1 全绿、B-SET-5 已修且 settings 两页 29 passed、focused/全量后端+门禁通过、A 类纯度复核通过）；⑥ **index.html = 兼容跳转页边界通过（限定范围）** 在完整汇总中确认（index 专项 6 + migration 12 passed）。**21 页终态：20 页限定范围 `e2e-real-pass` + index.html 兼容跳转页边界通过 = 21/21 完成覆盖**；全局 known-flaky 仅剩 phase9b/9c legacy 家族。未验证：真实 Provider/OCR/ASR、live delivery、跨浏览器、系统级屏幕阅读器（另立专项）。）
-> 更新：2026-09-15（**A/B 审查收尾 Prompt 1 · 尾项收口（一审 + 独立二审复核完成，见下方同日复核段）**：① settings B-SET-5 flaky 根因修复——修复前 3 次隔离复跑均 17 passed 未复现，按「余量分析即根因证据」处理：根因为测试以固定 `waitForTimeout` 猜测固定路由延迟（B-SET-5 2600/2500 余量 100ms；B-SET-6 4200/4000、B-SET-7 1100/900 同构），全部改为等待路由 fulfill 完成的确定性事件信号 + `expect.poll` 重试断言，未加 sleep/未放宽断言/未加 retry；② 顺带发现并修复 B-SET-6 vacuous 测试——`settings-provider.html` 从不 GET `/api/system/settings`（仅保存 PUT），旧用例延迟分支永不触发、`getCall` 恒 0、4200ms 等待为死时间，属不可能失败的无效测试；已重写到真实竞态路径（`settings.html` loadSettings 的 settings GET + settingsGeneration 守卫 + save 后 applySettings），并做撤守卫反证（撤守卫→失败，恢复→通过，`settings.html` 终态 git 零 diff）；③ index.html（510B 兼容跳转页）按「兼容跳转页边界」口径完成审查：新增 `backend/tests/browser_index_redirect_userpath.spec.js` 6 用例（A 类 4：三入口统一落 today、无 JS 时 meta refresh 仍可达、query/hash 与开放重定向边界、390/1920 双视口跳转；B 类要素 2：兜底锚点与静态结构/零 CSS/JS 依赖边界经 `page.request` 读源码断言，已在注释标注不计入纯 A 类），结论 = **兼容跳转页边界通过（限定范围）**，不伪称完整业务 E2E；④ tasks.html 证据准备（不改状态标签，升级判定归 Prompt 2）：A 类纯度复核通过（`browser_tasks_userpath.spec.js` 无 page.request 直调、无 waitForTimeout、无 route 注入），tasks userpath + tasks b_class + task_list + plans userpath 合并复跑 **20 passed**；09-13 观察到的 plans full-coverage 归档断言失败归因为被工具窗口中断长跑中的瞬态时序抖动（09-13 隔离复跑、09-14 完整 Chromium、本轮复跑三度全绿，无法复现，非产品缺陷）。验证：修复后 `browser_settings_b_class.spec.js` **连续 3 次 17 passed**（2.0m/次）；index 专项 6 passed ×2 + `browser_migration.spec.js` 合并 12 passed；静态基线 + 页面契约 6 passed；门禁 `check-source-size.py --base HEAD` 通过、`audit-frontend-contract.py --strict` 0 findings、`git diff --check` 通过。本轮仅改测试文件（`browser_settings_b_class.spec.js` 修改、`browser_index_redirect_userpath.spec.js` 新增），无生产代码变更。未验证：最终 HEAD 完整 Chromium 汇总（Prompt 2 执行）、真实 Provider/OCR/ASR、跨浏览器、系统级屏幕阅读器。）
->
-> 同日独立二审复核（**Prompt 1 尾项收口二审完成，结论：通过**）：① 三项撤守卫反证独立复验全部成立——撤 `settings.html` loadSettings 的 `settingsGeneration` 守卫 → B-SET-6 失败（旧空 GET 清空已保存值）；撤 loadCapabilities try 路径 `capabilityGeneration` 守卫 → B-SET-5 第一段失败（旧成功覆盖新状态）；撤 catch 路径守卫 → B-SET-5 第二段失败（旧失败把新成功翻成错误态）；恢复后全部通过，`backend/app/` 终态 git 零 diff。② 复核修正三处测试断言——B-SET-5/6 增加请求命中前置断言（`expect.poll(call/getCall)`），防止 await 的 Promise 信号在请求未发出时虚假通过；B-SET-5 第二段重写为 reload 两世代真实竞态（旧失败 gen1 在途 → 用户刷新成功 gen2 → 旧失败迟到必须丢弃；一审版该段把迟到失败置于最新世代、验证的是相反语义，且复合双击刷新会被 `sbSubmit.once` 合并，均已在复核中暴露并修正）；B-SET-7 删除不可达的第 3 次迟到失败路由分支并补在途按钮禁用断言（busy 守卫使同页测试串行，旧响应结构性无法与新测试并发，复核曾尝试的并发设计被产品守卫正确拒绝，确认为不可达路径而非缺陷）。③ 修正后终验：settings B 类 **17 passed ×3 连跑**、B-SET-5/6/7 定向 3 passed、tasks 三专项 + plans A 类 **20 passed**、index 专项 6 passed、静态基线 + 页面契约 6 passed、门禁三件套通过。生产代码零 diff 保持不变。）
-
-> 更新：2026-09-14（**capture.html + classroom.html A/B 二审收口 = 限定范围 e2e-real-pass**：21 个正式页面中最后两个未做 A/B 二审的页面完成收口。修复真实缺陷——classroom 页：① 列表渲染 `capture.title`/`capture_type` 等不存在的字段改为 `original_name`/`asset_kind`/`media_type`；② 确认转写 POST 缺 `draft_id` 必然 422，按钮从未可用；③ 转写稿读取 `transcript.text`/`uncertain_segments` 错误结构改为 `transcript_drafts[]`；④ 交付审计误调 `/api/study/reports` 列表并读不存在的 `audit.mode`，改为 `GET /api/study/reports/{id}/delivery-attempts`；⑤ 详情函数内局部变量 `kindLabel` 覆盖同名函数导致类型渲染抛 TypeError；⑥ 列表/详情无 generation 守卫；⑦ 详情全内 innerHTML 渲染。capture 页：⑧ 列表/详情/能力状态三区补 generation 守卫；⑨ innerHTML/alert/confirm 全部清除（两页共享导航 shell.js 同步改为安全 DOM）；⑩ 上传区虚假拖放承诺删除；⑪ 全部 mutation 补 busy 防重复与事件级 disabled 守卫；⑫ 能力加载失败误显示为「未配置」，改为「组件状态暂不可用，不等于未配置」+独立重试；⑬ 硬编码 limit=100 改为分页 limit/offset/has_more+加载更多；⑭ 上传成功 1500ms 定时关闭 dialog 竞态改为直接刷新详情；⑮ 上传失败后未清空 file input 导致同一文件无法重试；⑯ 上传成功后 `busy.upload` 未复位；⑰ 确认/拒绝成功后详情重绘会丢失页面内成功反馈；⑱ 确认后会话卡片不显示来源状态（现显示「来源状态：有效」等用户可读标签）；⑲ OCR 独立能力状态区在上轮重写中被误删，已恢复独立可观察。A 类 `browser_capture_classroom_userpath.spec.js` 12 passed（纯 UI 10 + 含 route 故障注入 B 类要素 2：CAP-8/CAP-12）；B 类独立 `browser_capture_classroom_b_class.spec.js` 15 passed（B-CAP-1..15，覆盖列表分页契约、上传合法/非法签名/超限 413、转写幂等 replay/编辑保护 400/确认 replay/拒绝后确认 409、archive 409 边界与两页无归档入口、报告契约、delivery off 记录+live 拒绝 400+审计只读、列表/详情竞态、创建与刷新 busy、错误码安全映射、XSS 纯文本（列表/详情/转写稿/报告）、隐私边界、ARIA/键盘、页面内反馈、能力失败语义）；相关回归（a4/phase9d/system_matrix/static_baseline/visual_matrix）21 passed；required Phase 9D 后端 33 passed；后端全量 `631 passed, 3 skipped`；完整 Chromium 串行 `425 passed, 4 skipped, 1 failed`（失败为 `browser_settings_b_class.spec.js` B-SET-5 settings 页既有偶发，测试内 2600ms 固定等待对 2500ms 路由延迟仅 100ms 余量，本轮两次隔离复跑均 17 passed，非本轮引入）；source-size 与 diff-check 通过。转写全部为 deterministic fake `fake-capture-v1`，不等于真实 ASR/OCR 验证；上传/转写/确认→材料链路中同一会话会产生原件材料与确认后 `class_capture_transcript` 修订材料两条记录（后端既定行为）；delivery 保持 off、live 显式拒绝、无任何外发；两页无路径/哈希/原始媒体回显。未验证：真实 ASR（whisper.cpp）与真实 OCR（PaddleOCR）转写质量、真实 SMTP/Feishu 外发、跨浏览器、系统级屏幕阅读器。）
-
-> 更新：2026-09-13（**settings.html + settings-provider.html A/B 二审收口 = 限定范围 e2e-real-pass**：修复真实缺陷——① `settings-provider.html` 健康状态 `innerHTML` 渲染改为 createElement/textContent 安全 DOM；② 两页全部异步区域补齐 generation/request-token 守卫（capability、settings、provider/email test、save、health），迟到旧响应不再覆盖新状态、旧测试响应不再恢复保存按钮；③ provider 页 `load()`/`checkHealth()` 失败新增独立重试按钮 `#retry-capabilities`/`#retry-health`，settings 页新增 `#settings-retry`；④ 测试在途期间编辑表单或切换 Email 渠道会立即作废在途验证（form-version 守卫）；⑤ 未知 capability `reason` 不再回显后端字符串，统一兜底「组件状态暂不可用」；⑥ 错误映射补齐 `settings_empty_payload`/`settings_payload_too_large`/`settings_read_failed`/`settings_clear_failed`/`capability_read_failed` 及 settings 错误码；⑦ provider/email test 与 save 处理器增加显式 disabled 再入防护；⑧ 自检成功后清除旧错误提示；⑨ 后端 `PUT /api/system/settings` 补 `settings_unknown_key` 契约（pydantic 静默丢弃未知键）、路径键（`*_root`/`*_path`）补 traversal 拒绝、`STUDYBUDDY_AI_PROVIDER=fake` 演示锁定下不再把存储的 model_id 叠加到 fake registry（此前会导致 qa/generation 变 `invalid_config` 并破坏问答）。A 类 `browser_settings_userpath.spec.js` 12 passed（纯 UI 10 + 含 route 故障注入 B 类要素 2）；B 类独立 `browser_settings_b_class.spec.js` 17 passed（B-SET-1..15）；settings 相关回归 25 passed；治理测试守卫断言同步更新后 focused 后端 68 passed；后端全量 `631 passed, 3 skipped`；完整 Chromium 串行 `398 passed, 4 skipped, 1 failed`（失败为 `browser_material_recycle_bin` purge 既有偶发，隔离复跑 3 passed，非本轮引入）；source-size 与 diff-check 通过。用户另于本轮将源码大小限制从 32 KiB 放宽到 100 KB（AGENTS.md 与 check-source-size.py 已同步）。connection-test 全部为 deterministic fake provider HTTP server / fake SMTP server 的 synthetic 载荷，无真实第三方 Provider、无真实 SMTP/Feishu 外发；delivery 保持默认关闭；未验证：真实第三方 Provider、真实 SMTP/Feishu 外发、跨浏览器、系统级屏幕阅读器。）
-
-> 更新：2026-09-13（**tasks.html A/B 二审收口，限定范围保持 scoped browser-pass**：修复任务详情迟到响应与旧轮询竞态、终态轮询、进度 ARIA、状态/阶段用户标签、分页响应 `has_more`、页面内详情/列表重试、取消/重试 busy 防重复与安全错误映射；material-detail 新增正式“加入索引任务”入口。A 类 `browser_tasks_userpath.spec.js` 7 passed，B 类独立 `browser_tasks_b_class.spec.js` 7 passed；任务页及关联 Chromium 18 passed，focused task backend 20 passed、后端全量 631 passed/3 skipped，source-size 与 diff-check 通过。当前快照完整 Chromium 串行计划为 374 项，但在第 298 项后超过 20 分钟工具窗口，未取得完整退出汇总；期间观察到一个非 tasks 的 plans full-coverage 归档断言失败，plans A 类隔离复跑 5 passed。因此保留 `not_verified`，不宣称完整 Chromium 全绿或 `tasks.html` 的限定范围 `e2e-real-pass`。**【09-15 更正：本条同一句并存 `scoped browser-pass` 与 `not_verified` 属表述矛盾，且状态已被 09-15 Prompt 2 终态取代——tasks.html 现为限定范围 `e2e-real-pass`，以 09-15 条目为准。】**）
-
-> 更新：2026-09-13（**materials/plans B 类二审收口，页面级证据统一**：对 `materials.html`、`material-detail.html`、`plans.html`、`plan-detail.html` 四页做独立 B 类代码复读，发现并修复 3 个真实迟到响应竞态——① `materials.html` `load()` catch 无 generation 守卫，迟到的旧列表失败会把已成功加载的新视图翻成错误态并残留重试按钮；② `plans.html` `load()` catch 同类问题，迟到失败会覆盖 goals/modules/plans 三区状态；③ `plans.html` `loadSourceLinks()` 无世代守卫，快速切换计划时旧计划的迟到来源链接会串页渲染到新计划详情。新增两份独立 B 类 spec：`browser_materials_b_class.spec.js`（分页 limit/offset/has_more 契约、迟到失败丢弃、重命名 XSS 纯文本、重命名失败安全文案+busy+恢复）4 用例、`browser_plans_b_class.spec.js`（迟到列表失败丢弃、快速切换来源不串页、恶意标题纯文本、慢创建 busy 防重复）4 用例，全部通过；三处修复均做过撤守卫反证（撤掉即失败、恢复即通过）。相关回归 74 passed、前端矩阵/静态基线/页面契约/系统矩阵 17 passed；完整 Chromium 串行 **339 passed, 4 skipped, 0 failed**（343 tests）；后端全量 `630 passed, 3 skipped`；源码体积与 diff-check 通过。无 API/schema/migration 变化。当日早前另收口：practice-session 提交/完成共享 busy 静默忽略缺陷、phase9c/回收站/migration/b2_ocr/p1_1 五处测试服务停止不等待进程退出的整批偶发根因、源码体积门禁废除 oversized 不增长比较。）
->
-> 更新：2026-09-12（**reports.html A 类审查二审补漏**：新增「生成报告」正式 UI 表单（复用既有确定性快照幂等契约，无 schema/API 变化），修复生成后焦点被忙态解锁重置、导出无 reportId+generation 守卫、刷新重试用旧 URL 参数覆盖当前选择，文案「不会自动发送」与事实对齐；`browser_reports_userpath.spec.js` 重写为 12 用例全 UI 数据链（删除 API 播种，新增表单校验与 XSS 纯文本用例）全绿。专项与相关回归 25 passed、后端 focused 7 passed、完整 Chromium 323 passed 4 skipped + 2 个既有/偶发失败（phase9c:47 基线复现、b2_ocr:71 复跑通过，均非本轮引入）；源码体积与 diff-check 通过。首轮收口内容见下方同日条目。）
->
-> 同日首轮（**reports.html A 类纯用户路径审查收口**：详情失败新增独立重试控件、快速切换报告 generation 竞态守卫、列表选中高亮、`report_kind` 走 `sbState.label` 用户可读标签（日报/周报/月报/考试提醒）并补齐来源过期统计、导出 busy 防重复；修复共享 CSS `[hidden]` 被 `display` 类覆盖导致 `#report-actions`/`#today-exits` 恒可见的真实缺陷；后端修复 fresh data root 首次报告创建必然 `project_scope_violation`（与 notes 轮同类的惰性建项目缺陷）；修复 cards v15 幂等化后 `/legacy` 卡片复习缺 `Idempotency-Key` 必然失败的回归；后端全量 `630 passed, 3 skipped`。）
-> 更新：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
->
-> **2026-09-01 执行方向修订**（保留）：证据梯子 → 可用优先。新增 P2-USE 主线；原 P1-6-3-1～P1-6-3-7 取消立项。
->
-> **方向修订说明（权威，覆盖下方历史行次序描述）**：存在三个已确认的系统级缺陷阻碍实际使用——① **开箱即锁死**：本机已装 PaddleOCR 3.7.0 / PP-OCRv5 模型 / RapidOCR 1.4.4 / whisper.cpp，但 `DEFAULT_OCR_ENABLED=False`、`DEFAULT_OCR_PROVIDER=None`、`DEFAULT_ASR_PROVIDER=None` 使默认启动恰好是能力最少的版本；② **开能力靠手抄 env**：60+ 个 `STUDYBUDDY_*` 变量，OCR 单项就需 4 个，且 `settings-provider.html` 被定型为「只测不存」；③ **交付物错位**：治理规则被执行成「每轮产出一份 md，然后开始下一份 md」。因此活动主线改为 `docs/TODO.md` 的 **P2-USE（可用优先）**，验收标准是使用者能用，不是文档齐。诚实标注义务不变：`implemented` 不等于 `real-pass`，未验证维度继续标 `not_verified`。
->
-> **当前测试基线**：本轮后端全量为 `623 passed, 3 skipped`；完整 Chromium 串行为 `220 passed, 4 skipped`（224 tests）。skip 均为默认关闭的 opt-in 真实 ASR/Provider smoke。此轮修正了测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置，以及 review 失败→重试的可验证恢复合同；正式入口 `/'/app/'/app/index.html` 统一进入 Today。新增 Plans → Today → Progress 跨页测试 `3 passed`（含 Today 失败注入→重试恢复），A3-FC 专项契约/治理测试 `17 passed`，A3-PAGES 专项 browser evidence 为 `13 passed`，A3-VISUAL visual matrix 为 `2 passed`，Practice workflow 第二阶段 evidence 为 `7 passed`；静态页 failure/retry 证据索引见 [`frontend-static-failure-retry-matrix.md`](../.archive/frontend/frontend-static-failure-retry-matrix.md)，前端实现事实盘点见 [`frontend-inventory-report.md`](../.archive/frontend/frontend-inventory-report.md)。
->
-> **当前同步快照：** 正式 schema 为 v15；Phase 9C 整体已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成，Phase 9A 和 Phase 9B 均已分别在限定范围内完成。Phase 9D-0 已完成 `planned/audit-draft` 并作出部分立项结论，9D-1 已完成 `planned/contract-frozen`，9D-2 至 9D-8 达到 `implemented/backend-pass`，9D-9 达到 `browser-pass`，9D-10 达到 `backend-pass`，9D-11 达到 `closeout-scoped-pass`。9D-7 提供默认关闭的 allowlisted dry-run 与 live 拒绝，9D-8 提供 S6/S7 最小安全 API，9D-9 提供桌面/窄屏/键盘/reload/failure/privacy workspace，9D-10 验证 source lifecycle 与 backup/restore non-repair。限定范围 evidence 见 [`../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)。脱敏证据见 [`../.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md)、[`../.archive/evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md)、[`../.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md)。这不代表 Phase 9D completed、真实 OCR/ASR、真实对外交付、scheduler/worker、系统级 screen reader 或全局 production `real-pass`。
-
-| Area | Status | Evidence |
-|---|---|---|
-| Last verified full backend regression | 631 passed, 3 skipped | `C:/miniconda/py310/python.exe -m pytest backend/tests/ -q`；3 skips 为默认关闭的 opt-in real ASR/Provider smoke。 |
-| Current full frontend regression | 425 passed, 4 skipped, 1 failed (430 tests) | 完整 Chromium 串行（capture/classroom A/B 二审收口轮）：唯一失败为 `browser_settings_b_class.spec.js` B-SET-5 settings 页既有偶发（时序敏感），两次隔离复跑均 17 passed，非本轮引入；本轮 capture/classroom 相关专项与回归全绿。 | |
-| P2-FE-B3 shared status templates | implemented / scoped-browser-pass | `backend/app/static/js/templates.js` exposes `window.sbTemplates` with `setState`, loading/empty/failed/retry APIs and preserves each container's base class. Six formal pages load/use the module: `today.html`, `reports.html`, `practice-result.html`, `practice-session.html`, `review.html`, and `plan-detail.html`. Focused browser `browser_p2_fe_b3_templates.spec.js` 2 passed; related/static/practice/report suites 14 passed; full Chromium first serial run 219 passed, 4 skipped, 1 pre-existing Phase 9C timing failure, then isolated rerun 3 passed. Source-size, contract audit, inventory and diff check passed. Scope is shared state extraction; remaining pages retain local page-specific state where migration would change behavior. |
-| P2-FE-B4 modularization assessment | closed / no-further-extraction | Reviewed `cards.html`, `notes.html`, `practice.html`, `qa.html`, `settings.html`, `settings-provider.html`, `classroom.html`, `capture.html`, `tasks.html`, `materials.html`, `exercises.html`, and `plans.html`. Safe reuse is limited to simple single-container status shells; business error mapping, capability status, multi-region loading, detail loading, busy/retry ownership, list rendering, and provider/delivery boundaries remain page-specific. Further extraction would add indirection without a measured reduction or behavior benefit. P2-FE-B series is closed after B3; no API/schema/migration changes. |
-| P2-FE-3 formal practice session, result & review evidence (batch 1-3) | implemented / scoped browser-pass | **P2-FE-3-6** `browser_p2_fe3_practice_session_app.spec.js` 4 test + **P2-FE-3-7** `browser_p2_fe3_practice_result_app.spec.js` 4 test + **P2-FE-3-8** `browser_p2_fe3_review_app.spec.js` 5 test：覆盖练习会话状态迁移/安全错误/窄屏/键盘焦点，结果读取与跨页/刷新/隐私，以及 `review.html` 真实错题列表、状态标签、详情反馈、再次练习、归档、空状态/失败重试、隐私、窄屏和键盘焦点。场景 3 三批证据完成。Focused browser `13 passed`；本轮三场景正式专项复核为 `35 passed`，当前完整 Chromium 为 `208 passed, 4 skipped`（212 tests）。无 API/schema/migration 变化。 |
-| P2-FE-4 formal legacy operation migration | implemented / scoped browser-pass | 在材料重命名之后，正式 `/app/plans.html` 已接入既有目标/知识模块查看、重命名、归档、计划依赖删除，以及只读本地学习节奏 JSON 导出；`reports.html` 新增既有 preview API 的“刷新报告预览”，渲染脱敏摘要并支持失败重试、busy/重复点击保护和刷新恢复；`review.html` 新增只读 weak-points 汇总；`exercises.html` 通过既有详情 API 展示练习集真实题目数/状态，支持失败重试和刷新恢复；`practice.html` 通过既有 cram-goal 详情 API 展示真实目标状态/日期/题数，支持失败重试和刷新恢复。归档后会从新建计划/新增学习项可选项中移除，已有计划不被伪造改写。`plan-detail.html` 现展示真实依赖或明确空态。新增正式 browser evidence 覆盖上述操作；plans focused `5 passed`，report preview focused `2 passed`，weak-points focused `2 passed`，exercise-set focused `2 passed`，本轮 P2-FE-4 新增 browser evidence 合计 `8 passed`，Phase 9A domain/API focused backend `12 passed`；独立 exercise attempts 已定性为 `intentional/not_exposed`，正式练习会话已提供逐题提交、评分、结果和复盘，不并行开放第二套语义。无 API/schema/migration 变化。材料重命名专项 `8 passed` 与 purge/delivery `intentional/not_exposed` 边界保持不变。 |
-| P2-FE-2 scenario contract and material→QA chain | implemented / scoped browser-pass | `docs/contracts/frontend-scenario-contract.md` 已冻结场景 1、场景 2、场景 3 的流程图、页面状态机、真实 selector 行为表、API 对照和 browser evidence 矩阵；场景 3 链接既有 practice workflow 合同为事实源。场景 2 参与 `/app/materials.html`、`material-detail.html`、`qa.html`、`tasks.html`：导入/解析状态、同步索引、问答引用回跳均按当前真实 route/schema 定性；异步 `/ai-index/tasks` 与 purge 分别保持 `intentional/not_exposed` 与 `decision-needed/not_exposed`，其余历史 legacy 证据按操作继续分类，不以文件数直接认定为正式缺口。修复过 `materials.html` 单文件成功导入错误显示为 `0/1` 的缺陷，并让 `material-detail.html` 建索引后重读真实状态，避免空文本误报为已就绪。本次对计划、材料/QA、练习三场景专项串行复核为 `35 passed`；历史完整回归基线仍单列在上方，不能替代本次场景证据。无 API/schema/migration 变化。 |
-| P2-FE-1 frontend inventory and Today retry fix | implemented / scoped browser-pass | One repeatable read-only scan (`backend/scripts/scan-frontend-inventory.py`) turned the formal frontend into checkable data: 21 pages, 6 shared resources, 53 specs / 177 tests, 103 de-duplicated frontend endpoints, and 165 backend `/api/*` route declarations (137 de-duplicated paths: 99 `direct`, 11 `dynamic`, 27 `unreached`). Inline scripts total 167.8 KiB across 20 pages (first inventory baseline: 162.3 KiB); shared CSS+JS is 36.5 KiB; **0 pages have inline `<style>`, 0 call sites bypass `sbApi`, and 20/20 formal pages set a request scope**. Conclusion: the shared layer is already unified and `js/api.js` needs no refactor. The scan also exposed a real user-visible defect on the formal entry page: `today.html` had no retry control at all, so any failed section left the user with nothing but a manual browser refresh (the audit rule only demands a retry signal on pages with write operations, and Today is read-only). Fixed by adding `#retry-today`, sharing one active-plan lookup across the three sections instead of requesting `/api/study/plans` three times per load, guarding re-clicks with `sbSubmit.once` plus `sbUi.busy`, discarding stale responses through a generation counter, and clearing the task list with `replaceChildren()`. Evidence: `browser_plans_today_progress.spec.js` `6 passed` (progress history, three Today empty states, failure injection with safe copy and retry recovery); `audit-frontend-contract.py --strict` remains `0 findings` with the `today.html` retry signal now true; report: [`frontend-inventory-report.md`](../.archive/frontend/frontend-inventory-report.md). The initial inventory found 19 specs / 56 tests exercising only `/legacy`; that is a historical baseline, not the current remaining count. P2-FE-3/4 now classifies the current 23 files containing legacy references by operation because many are compatibility or already have `/app` equivalents; report preview、weak-points、exercise-set detail 和 cram-goal detail 已迁移并有正式 browser evidence；exercise attempts 已完成 `intentional/not_exposed` 定性。当前剩余重点是最终分类矩阵核对和安全边界文档收口。 Inline-script modularization remains deferred unless a user scenario needs it. No API, schema, endpoint or error code changed. |
-| P1-4 C0 real-input and restart-durability evidence | implemented / scoped real-pass | Real PDF (multi-page, TOC, two-column, page numbers), DOCX (Chinese text, table, image), PPTX (text and image slides), Markdown and long Chinese-named TXT verified end to end: import -> parse -> text -> span -> index -> retrieval -> Q&A citation -> citation offset back into the stored body, then re-read after a restart. Write families for plans/rhythm/progress, notes, cards, exercises, practice sessions, mistakes and Q&A citations are `durable` after restart; `.doc`/`.ppt`/`.rtf`/`.xml`, corrupt, empty, encrypted-PDF and oversize inputs report stable refusal codes. Focused backend `18 passed` (`test_p1_4_real_input_chain.py` 11, `test_p1_4_restart_durability.py` 7); focused browser `3 passed` (`browser_p1_4_real_input_restart.spec.js`). Evidence: `docs/evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`. This slice changed no `backend/app/` code, schema, endpoint or error code. Real Provider, real OCR/ASR, live delivery, scale, cross-timezone and hard-kill recovery remain `not_verified`. |
-| B3 report Formal C0-C6 | scoped closeout passed | Local deterministic, project-scoped JSON/Markdown report projection/export and read-only audit workspace; `delivery=off` remains enforced and B4 live delivery is not authorized by B3. Closeout: `docs/evidence/B3_REPORT_C6_SCOPED_CLOSEOUT_EVIDENCE.md`. PDF, HTML/email, AI narrative and generic reporting remain outside scope. |
-| B4 delivery Formal C0-C6 | scoped closeout passed; product live closed | Independent SMTP/Feishu adapters and runtime secret boundary; default-off/live-blocked browser, source lifecycle, backup/restore adapter no-send, and separate operator-authorized fixed-synthetic SMTP/Feishu smoke. Full backend `468 passed, 3 skipped`; focused backend `35 passed`; browser `5 passed`; closeout: `docs/evidence/B4_DELIVERY_C6_SCOPED_CLOSEOUT_EVIDENCE.md`. Accepted only for one 163→QQ SMTP path and one configured Feishu custom-bot webhook; product API live and generic provider support remain closed. |
-| B0 component governance intake | B1 ASR C0-C6 scoped closeout; PaddleOCR C0-C6 scoped closeout; RapidOCR C1 passed | `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`, `manifests/b0-catalog.json`, `DECISIONS/STUDYBUDDY_MEDIA_CAPABILITIES.md`; the official ASR candidate passed its C1 checks; PaddleOCR 3.7.0/PaddlePaddle 3.3.1 with PP-OCRv5_server_det/rec passed Composer C1 and isolated Integration C2; RapidOCR 1.4.4 with bundled ONNX models passed C1, all on Windows/Python 3.10. PaddleOCR C4 implementation, C5 acceptance and C6 scoped closeout are complete in the frozen local synthetic scope; RapidOCR remains outside Formal. |
-| Formal frontend entry | implemented / browser-regression-gated | `/`、`/app/`、`/app/index.html` 统一进入 `/app/today.html`；21 个静态 HTML 文件继续保留，其中 `index.html` 仅是兼容跳转页，所有正式产品页品牌链接返回 Today，`/legacy` 不变。 |
-| A3-FC-3-2 static frontend contract closure | completed / scoped browser-pass | 21-page capability matrix, failure/retry evidence index, shared layer, lifecycle labels, responsive 360–1920, keyboard, privacy DOM, contract audit and governance checks; `17 passed`; `audit-frontend-contract.py --strict`, source-size and diff checks passed. |
-| A3-PAGES independent static-page slice | implemented / scoped browser-pass | `plan-detail.html`, `note-detail.html`, `practice-session.html`, `practice-result.html`, `review.html`, `reports.html`, `settings.html`; existing contracts only, safe missing-ID/failure/retry, source lifecycle, navigation return and read-only boundaries. Historical A3-PAGES gate snapshot: `118 passed, 3 skipped`; focused evidence `browser_a3_pages.spec.js` plus page/matrix baseline `13 passed`. Current full browser baseline is recorded above. This does not add report export/audit, practice write flows, or Provider configuration writes. |
-| A3-VISUAL Neutral Modern visual closure | completed / scoped browser-pass | Shared tokens and component styles are centralized in `css/tokens.css` and `css/app.css`; all 21 `/app/*.html` pages have no local `<style>` blocks. `browser_frontend_visual_matrix.spec.js` verifies shared tokens, cards, 360/1920 layout, touch-sized controls and focus ring (`2 passed`); historical visual baseline was `126 passed, 3 skipped`; current full browser baseline is `144 passed, 4 skipped`. No API, schema, business behavior or deferred capability migration was changed. |
-| Practice workflow second implementation slice | scoped closeout / documented | `practice.html` provides session/mistake navigation; `practice-session.html` supports public-question rendering, start/submit/finish, nested result summary, expired/source warning, retry and stale navigation safety; `practice-result.html` reads `summary.score_total`/`summary.total_item_count`; `review.html` supports detail, feedback, review, mark-mistake, redo and archive with safe refresh. `browser_practice_workflow.spec.js` has `7 passed`; Phase 9C focused backend has `19 passed`. Full backend is `468 passed, 3 skipped`; full browser is `144 passed, 4 skipped` after serialized server lifecycle fixes in the formal file-import, material-search and Phase 9B/9C specs. This remains a scoped local acceptance result, not global real-pass. |
-| A3-4 static frontend core pages | implemented / browser-pass | materials.html, material-detail.html, qa.html, today.html fully integrated with backend APIs; browser_static_core.spec.js 6 passed |
-| P1-4 C2 source and parse explainability | implemented / scoped browser-pass | `plans.html`/`today.html` map plan `source_links`; materials accept/rejection guidance and material-detail parser/empty guidance verified. C2 Chromium `2 passed`, related matrix `7 passed`; source lifecycle valid→source_deleted→restart is L2/L3, parse guidance is L2. Evidence: `docs/evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`. OCR/real provider/general parser accuracy remain not_verified. |
-| P1-4 C3 `/app` batch material export | implemented / scoped browser-pass | `materials.html` supports current-page selection and original/text/all ZIP exports through the existing API. C3 Chromium `2 passed`, related browser `13 passed`, focused backend/static/governance `29 passed`; normal restart export is L3-scoped. No API/schema change. 256 MiB/200-item scale, hard-kill, multi-worker and backup/restore remain not_verified. |
-| P1-4 C4-1 `/app` cram workflow | implemented / scoped browser-pass | C4-0 split P2-02~P2-06 into independent slices. C4-1 migrates existing cram goal lifecycle, ready/valid exercise selection, session and cram result to formal `/app` without API/schema changes. Chromium `2 passed`; Phase 9C focused backend `21 passed`; normal restart rereads goal/session/result. Empty, expired, source-invalid, duplicate, retry, privacy and ordinary-practice regression are covered. |
-| P1-4 C4-2 `/app` source-link workspace | implemented / scoped browser-pass | `plans.html` now supports identity-only current source candidates, module/item owner selection, add/delete and explicit refresh using existing revision/chunk/span validation. Public DELETE routes enforce project/owner scope and archived-plan edit protection; no schema/migration. Browser `2 passed`, focused backend `2 passed`; source delete/restore lifecycle, retry, privacy and scope boundaries covered. |
-| P1-4 C4-3 task-list contract | implemented / scoped browser-pass | `GET /api/tasks` now provides project-scoped, paginated, status/task_kind/operation_type-filtered public task rows; `tasks.html` consumes it and retains detail/cancel/retry. No schema/migration change. Focused backend `1 passed`, task A/B review `14 passed`, related browser `18 passed`, dedicated real task-list browser `1 passed`, frontend contract audit `0 findings`; current full Chromium remains `not_verified`, so this is not claimed as global or `e2e-real-pass`. L3 limited to normal restart SQLite/data_root reread. |
-| P1-4 C4-4 weekly trend | implemented / scoped browser-pass | `GET /api/study/plans/{plan_id}/rhythm/weekly-trend` aggregates seven local days from existing progress events and renders completion cards in `today.html`; no schema/migration. Focused backend `1 passed`, related rhythm/frontend `14 passed`, dedicated real browser `1 passed`; Asia/Shanghai UTC boundary, failure/privacy evidence covered. L3 limited to normal SQLite reread. |
-| P1-4 C4-5 scale measurement | implemented / closed measurement-only | Added bounded temporary-DB script and browser measurement. Task-list, material upload, `/app` render and safe failure baselines are recorded; no product API/progress queue/sorting capability or capacity promise is justified. Cancellation had no successful timing metric and is not claimed as performance-verified. |
-| P1-4 C4-6 backup/restore gate | implemented / scoped restore-pass | Existing backup/verify/restore/acceptance library is exercised with representative material, deleted/shared original, plan/progress/rhythm/task/trend data; new-root restore, schema/history preservation, two normal startups and health/readiness reread pass. Focused test `1 passed`; scope excludes power-loss, hard-kill intermediate state, multi-worker, network disk/ACL and production DR. |
-| P1-4 overall usability closeout | closeout-scoped-pass | C0-C4 slices are closed: C0 input/restart evidence, C1 idempotency/feedback, C2 source/parse explainability, C3 batch export, C4-1..C4-6 cram/source-link/task-list/weekly trend/scale measurement/backup-restore. P14-P2-01..P2-06 are closed in their declared scopes. Overall P1-4 evidence is consolidated in `docs/evidence/P1_4_USABILITY_CLOSEOUT_EVIDENCE.md`; no global production real-pass claim. |
-| P1-5-0 Provider/Email config contract freeze | contract-frozen | Provider (AI LLM/Embedding) and Email (SMTP/Feishu) configuration security contract frozen: secret field classification (5 `repr=False` fields), runtime-only environment variable source, capabilities API response format (no secrets), delivery defaults (`off`/`false`), backup manifest excludes credentials, frontend remains read-only, stable error codes, connection-test trigger mechanism (explicit/no-auto/no-state-change), preset contract (non-sensitive metadata only). Contract: `docs/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md`; evidence: `docs/evidence/P1_5_0_CONTRACT_EVIDENCE.md`; governance tests: `backend/tests/test_p1_5_0_governance.py` (9 passed). No `backend/app/` code, schema, migration, API, or secret persistence modified. Subsequent slices P1-5-1 (config UI), P1-5-2 (connection-test), P1-5-3 (persistence eval), P1-5-4 (browser evidence), P1-5-5 (leak scan) await contract approval. |
-| P1-5-2 Connection-test implementation | implemented / mock-tested | Provider (LLM/Embedding) and Email (SMTP/Feishu) connection-test implemented: fixed synthetic payloads, bounded responses (1 KB max), stable error codes, explicit trigger (POST API), no config state changes, secrets not exposed. Core adapters: `backend/app/connection_test.py` (4 functions); API endpoints: `POST /api/system/provider-connection-test`, `POST /api/system/email-connection-test`; schemas: `backend/app/schemas/connection_test.py`. Evidence: `docs/evidence/P1_5_2_CONNECTION_TEST_EVIDENCE.md`. Tests: 28 passed (16 adapter unit tests + 12 API integration tests). Scope: mock-only; real network tests, concurrency, and performance not covered. Next: P1-5-3 (persistence eval), P1-5-4 (browser evidence), P1-5-5 (leak scan). |
-| P1-5-3 Configuration persistence evaluation | evaluation-complete / decision-recorded | Five options evaluated; decision: no persistence, status quo retained. P1-5-1 is defined as assemble → validate → export. Document: `docs/contracts/P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md`; governance tests: `backend/tests/test_p1_5_3_persistence.py` (10 passed). No schema/migration/API change. |\n| P1-5-4 Browser security evidence | implemented / browser-pass / mock-tested | Browser evidence covers UI structure, no automatic connection tests, Provider/SMTP/Feishu success and failure, typed payloads, Clipboard success/rejection, DOM/outerHTML/URL/history/cookie/storage checks, refresh/back navigation, and secret cleanup. Evidence: `docs/evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md`; dedicated Playwright: 5 passed with `--workers=1`; governance: 4 passed. Scope excludes real Provider/SMTP/Feishu, non-Chromium browsers, malicious extensions, and OS clipboard history. |
-| P1-5-5 Secret leak scan | implemented / scoped-pass / synthetic-tested | Added bounded, redacted scanner `backend/scripts/scan-secret-leaks.py` for explicitly selected runtime artifact roots. It scans only synthetic sentinels, skips links/caches and files over 16 MiB, and reports path/count/index without secret content. Governance verifies observability allowlist, no direct credential logging in connection/delivery/system paths, no browser persistence, and schema v15. Evidence: `docs/evidence/P1_5_5_SECRET_LEAK_SCAN_EVIDENCE.md`; focused P1-5 governance: 30 passed; clean runtime scan: 0 findings. Scope excludes real credentials, external log collectors, OS clipboard/history and hostile-process risks. |
-| P1-5-1 / P2-USE-3 Configuration UI | implemented / browser-pass / scoped real use | `settings-provider.html` 提供 Provider（LLM/Embedding）和 Email（SMTP/Feishu）显式连接测试；测试通过后可保存到 data_root 外置配置，修改表单会撤销验证。`settings.html` 提供能力仪表盘和配置读取/保存/清除。无浏览器存储、URL 持久化、SQLite/backup secret 或服务端 secret 回显；保存 Email 凭据不会开启 delivery。 |
-| P1-6-0 B1-B4 expanded verification scope audit | contract-frozen / audit-complete | Audited existing B1 ASR, B2 OCR, B3 reports and B4 delivery scoped closeouts; froze input, cancellation, concurrency, failure recovery, cross-environment and real-user-path dimensions, gaps, explicit gates and P1-6-1..P1-6-6 order. Contract: `docs/contracts/P1_6_VERIFICATION_SCOPE_CONTRACT.md`; evidence: `docs/evidence/P1_6_0_AUDIT_EVIDENCE.md`; governance: `backend/tests/test_p1_6_0_governance.py`. No `backend/app/`, schema, migration, API or runtime capability change; B4 product live remains closed and `delivery=off`. P1-6 overall remains incomplete; next slice is P1-6-2 B2 OCR input/recovery verification. |
-| P1-6-1 B1 ASR input and controlled cancellation verification | implemented / focused-pass | Canonical `WhisperCliCaptureProvider` focused tests cover non-audio/empty-input rejection, bounded TXT/SRT output, timeout/controlled interruption, partial-output and temporary-root cleanup, stdout/stderr suppression, and raw audio exclusion from command arguments. Evidence: `docs/evidence/P1_6_1_ASR_INPUT_CANCELLATION_EVIDENCE.md`; `backend/tests/test_formal_asr.py` 7 passed, 1 skipped. No graceful cancel API, schema, migration, API or task-runner integration; language/model/OS/concurrency and general ASR real-pass remain not verified. |
-| P1-6-2 B2 OCR input and failure recovery verification | implemented / focused-pass | PaddleOCR adapter focused tests cover real PNG/JPEG/WebP decoding with fake OCR output, empty/corrupt image refusal, pixel/byte limits, timeout cleanup, and existing draft/source lifecycle with explicit retry regression. Evidence: `docs/evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md`; B2/Phase 9D focused `18 passed`. No API, schema, migration, task-runner or frontend change; real OCR quality, graceful cancellation, concurrency, cross-environment and general OCR real-pass remain not verified. |
-| P1-6-3-0 real OCR component/Formal boundary audit | superseded / background-only | Local PaddleOCR 3.7.0/PaddlePaddle 3.3.1 PP-OCRv5 server models and RapidOCR 1.4.4/ONNX Runtime 1.20.1 bundled models exist. RapidOCR real PNG/JPEG/WebP Integration smoke reran successfully, but the strict C2 gate was not passed. Evidence: `docs/evidence/P1_6_3_0_COMPONENT_AUDIT_EVIDENCE.md`, `docs/evidence/P1_6_3_1_OCR_INTEGRATION_EVIDENCE.md`. **2026-09-01: this audit is background-only.** It constrains capability *claims* (RapidOCR must not be described as a verified fallback) but does not block detection, UI status display, configuration, or use of the already-closed PaddleOCR primary path. Follow-on slices P1-6-3-1..P1-6-3-7 are cancelled; the active line is P2-USE. |
-| P2-USE usable-first line | implemented / local real-pass | All five slices complete 2026-09-04. **P2-USE-1** `backend/app/capability_detect.py` read-only probe (no download, no network, no heavy inference import) plus `backend/app/capabilities.py` precedence resolution (environment > stored settings > detection); on this host a zero-environment start yields `ocr=available` (paddleocr/PP-OCRv5) and `asr=available` (whisper-cpp/ggml-large-v3-turbo) with `source=detected`. **P2-USE-2** `GET /api/system/capabilities`, `POST /api/system/capabilities/self-check` and the `settings.html` dashboard report seven capabilities with `available/degraded/not_configured/not_installed/disabled`; a missing dependency reports `not_installed` and is never hidden behind a switch. **P2-USE-3** `backend/app/local_settings.py` persists to `<data_root>/config/settings.json` (atomic write, allow-list, size bound, secrets stored but never echoed) through `GET/PUT /api/system/settings` and `POST /api/system/settings/clear`, applied without a restart; a real backup set contained only `database.sqlite3` and `manifest.json` with no stored secret, and the file is git-ignored. The configuration page is now test-then-save: the save control appears only after a passing connection test and is withdrawn when the form is edited. Delivery credentials are storable, but `report_delivery_mode`, `report_delivery_enabled` and `report_delivery_authorized` stay outside the allow-list, so storing an SMTP password never switches outbound delivery on. **P2-USE-4** real chain verified against the local live server: real text-layer PDF and real host DOCX import/parse, whiteboard PNG through real PaddleOCR (5 segments, confidence 0.941-0.999), real MP3 through whisper.cpp large-v3-turbo (592 characters, 14 segments), chunk index, lexical retrieval with citations, Q&A whose citations resolve back to spans, card and exercise drafts as `ai_generated`/`draft` carrying source revision and citations, plan plus rhythm plus progress events, and weekly markdown report export. **P2-USE-5** real external providers configured from the user's own credentials: LLM Agnes `agnes-2.5-flash` and embedding Mistral `mistral-embed` (1024 dimensions) give a genuine 7/7 snapshot, every material carries real `mistral` vectors at `ready`, and real hybrid retrieval feeding real Agnes Q&A produced grounded answers with `valid` citations on a real circuits exam paper. Defects fixed in these slices: the transcription endpoint did not pass the configured timeout budget to the repository, so the 30 second repository default overrode the configured 120 seconds and a cold local model load always returned 504 `provider_timeout` (`backend/tests/test_p2_use_transcribe_timeout.py`); and the embedding connection test reused the LLM's 1 KB response cap, which no real embedding provider can satisfy because a 1024-dimension reply is about 19 KB, so every real embedding test failed with `provider_response_too_large` (`MAX_EMBEDDING_TEST_RESPONSE_BYTES`, `test_p1_5_2_0_connection_test.py`). Tests: `620 passed, 3 skipped`; focused browser suites `13 passed`. Not verified: DeepSeek official, Volcengine ARK and QQ/163 SMTP could not be exercised from this host because their TLS handshakes fail with `SSLEOFError` (TCP reachable, TLS interrupted) - an environment fact, not a code defect; real report delivery therefore remains unverified and `delivery_mode` stays `off`. Also not verified: RapidOCR fallback as a verified path, concurrency, cross-environment, and multi-user or production real-pass. |
-| A3-5 learning feature pages | implemented / browser-pass | cards.html, exercises.html, plans.html, notes.html, practice.html, classroom.html integrated with Phase 8/9A/9B/9C/9D APIs; browser_learning_pages.spec.js 9 passed. P1-2 additionally verifies `/app` plan/note writes including rhythm allocation, module association and source refresh; `browser_p1_2_plans_notes_migration.spec.js` 3 passed. P1-3 verifies Cards/Exercises/Review writes and learning path; `browser_p1_3_cards_exercises_review_migration.spec.js` 3 passed. |
-| A3-6 root route migration | implemented / browser-pass | Root route redirects to /app/today.html, legacy UI preserved at /legacy; browser_migration.spec.js 6 passed |
-| End-to-end user workflows | implemented / browser-pass | Complete user journeys covering import, QA, learning features, cross-page navigation, error recovery; browser_e2e.spec.js 10 passed |
-| Formal file parser Adapter | implemented / local real-pass | `backend/app/adapters/file_parsers/` and test artifacts |
-| Formal file import | real-pass | `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json` |
-| Batch and folder import | real-pass | formal multi-file/folder artifacts |
-| Material management and recycle bin | real-pass | formal management/recycle-bin artifacts |
-| Material export and search | real-pass | formal export/search artifacts |
-| SQLite/storage consistency | implemented | backend transaction, recovery, security and contention tests |
-| Startup preflight/readiness | implemented / backend-tested | preflight -> connect/migrate -> diagnostic audit -> recovery -> ready; `liveness`/`health`/`readiness` do not report degraded storage/audit/task-recovery state as healthy |
-| I1 migration/schema versioning | implemented | `backend/app/migrations/`, `backend/tests/test_migrations.py` |
-| I2 operator backup/restore | implemented / operations-gated | explicit backup/verify/restore, current/history schema manifest checks, default-dry-run verified rotation, upgrade preflight, restore drill and stop/quarantine policy; `backend/app/backup.py`, CLI, restore acceptance tests |
-| I3 observability and operator diagnostics | implemented / backend-tested | safe structured request/task correlation, low-cardinality process metrics, backup/restore events and explicit read-only `diagnostics`; no central/persistent telemetry |
-| I4 real environment/capacity baseline | time-box closed (v1) | `H:\studybuddy-test\artifacts\infrastructure-i4\latest.json`, `latest.md` |
-| Phase 10 local production/release | completed in the declared local single-process / single-instance / SQLite / local-disk v1 scope; only explicit `embedding_index` task execution is approved | `../.archive/evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`, Gates A-I evidence, `backend/tests/test_phase10_gate_j.py`, `backend/app/task_runner.py`, `backend/app/backup.py`, `backend/app/instance_lock.py`; Gates A-J passed in scope |
-| Local single-process infrastructure v1 | basically complete | I1+I2+I3 implemented; I4 time-box closed with declared limits |
-| AI/learning architecture | architecture plus Phase 4–7 and Phase 8 completed in fake-provider scope | `ai-learning-architecture.md`, `PHASE8_ACCEPTANCE_EVIDENCE.md`; real-provider generation, human short-answer review and later learning workflows remain future scope |
-| Material revision / deterministic chunks | implemented / backend-tested | `backend/app/chunking.py`, `backend/app/repository.py`, `backend/tests/test_ai_indexing.py` |
-| Chunk FTS5 retrieval | implemented / backend-tested | `backend/app/repository.py`, `backend/tests/test_retrieval.py` |
-| Context assembler + citation contract | implemented / backend-tested | `backend/app/repository.py`, `backend/tests/test_context_assembler.py` |
-| Deterministic fake provider | implemented / backend-tested | `backend/app/providers/`, `backend/tests/test_ai_provider.py` |
-| Q&A API + persistence | implemented / backend-tested | `backend/app/repository.py`, `backend/app/main.py`, `backend/tests/test_qa_api.py`; history API covered in same suite |
-| Q&A UI + history + citation navigation | Phase 4 complete / browser-tested | `backend/app/main.py`, `backend/tests/browser_qa.spec.js` |
-| Q&A citation lifecycle + backup/restore | implemented / backend-tested | `backend/tests/test_ai_citation_lifecycle.py`, `backend/tests/test_ai_backup_restore.py` |
-| Phase 5 OpenAI-compatible adapter | implemented / mock-tested / DeepSeek and Agnes `agnes-2.5-flash` API+UI smoke passed; redacted three-attempt API acceptance runner implemented; other-provider validation pending | `backend/app/providers/`, `backend/scripts/agnes-*.ps1`, `backend/tests/test_agnes_launcher.py`, `backend/tests/test_phase5_provider.py`, `backend/tests/test_real_provider_smoke.py`, `backend/tests/browser_qa.spec.js`; one explicit Agnes profile/model is used per process; `agnes-2.5-pro` remains not_verified after `provider_unavailable` API evidence |
-| Phase 6 P6-A Provider runtime contract | implemented / backend-tested / Chromium-tested | `backend/app/providers/`, `backend/app/main.py`, `backend/tests/test_ai_provider.py`, `backend/tests/browser_qa.spec.js`; default is `not_configured`, explicit fake is deterministic/demo, complete generic configuration is `configured` + `unverified`; capabilities does not perform a network probe |
-| Phase 6 P6-B Q&A thread workspace | implemented / backend-tested / Chromium-tested | `backend/app/main.py`, `backend/app/repository.py`, `backend/tests/test_qa_api.py`, `backend/tests/browser_qa.spec.js`; thread list/status, new/switch/continue flow, timeline, citation states, scope/request stale-response protection and session refresh recovery are implemented; thread scope is not persisted and Provider HTTP is not truly cancelled |
-| Phase 6 P6-C cross-material citation/export bridge | implemented / backend-tested / Chromium-tested | `backend/app/main.py`, `backend/app/repository.py`, `backend/tests/test_ai_citation_lifecycle.py`, `backend/tests/test_material_export.py`, `backend/tests/browser_qa.spec.js`; material/detail to Q&A, multi-material scope context, URL/history material/thread/scope/citation identifiers, citation revision/chunk/span/body location, return to Q&A, original/text export continuity and deleted/purged unavailable behavior are covered; no migration, purge does not restore a deleted material name |
-| Phase 6 P6-D navigation/notification/responsive/accessibility | implemented / backend-regression-tested / Chromium-tested desktop+narrow+keyboard | `backend/app/main.py`, `backend/tests/browser_p6d.spec.js`; unified header/nav and current view/material/thread/scope context, page-level status/alert plus supplementary toast, safe failure/retry messaging, keyboard view switching, visible focus, dialog Escape/focus return, landmark/label/current/status/alert/dialog semantics and 390x844 overflow checks are covered; no API or migration, no axe dependency, real Provider and system screen-reader evidence remain not_verified |
-| Phase 7 embedding/indexing/retrieval/Q&A acceptance | completed / exact Mistral real-pass + backend + Chromium tested | fake/backend主体、OpenAI-compatible adapter、Mistral `mistral-embed` direct vector/indexing/vector-retrieval gate、identity/codec/stale checks、explicit indexing/rebuild/verify、vector cosine、deterministic hybrid RRF、explicit fallback、retrieval mode Chromium、indexing lease/stale reclaim/failure-retry、backup-restore、corruption lifecycle and 102/1,002-chunk benchmark are verified; completed only for `mistral / mistral-embed / https://api.mistral.ai/v1`, not generic multi-provider or global production real-pass |
-| Phase 6 P6-E core workflow acceptance | fake-Provider-tested / backend-tested / exact DeepSeek+Agnes real UI passed | `backend/tests/browser_p6e.spec.js`, `backend/tests/browser_p6e_real_provider.spec.js`, `docs/evidence/P6E_ACCEPTANCE_EVIDENCE.md`; complete import → indexing → retrieval → thread → Q&A → citation → body location → material/Q&A return → export → refresh/history path, empty retrieval, unconfigured Provider, timeout/retry, duplicate click, stale thread response, deleted source/export safety and related failure contracts are covered; fake and related Chromium regression remains passed; rerun exact DeepSeek `deepseek`/`deepseek-chat` and Agnes `agnes-ai-hub`/`agnes-2.5-flash` real backend smoke 2/2 and target UI gates passed in separate configurations; evidence remains limited to synthetic material and exact gateway/model scope |
-| Phase 8 Cards / Exercises | completed / fake-provider backend + Chromium + backup/restore scope | v7/v8 migration; Cards/Exercises lifecycle, citation-safe draft generation, workspace, deterministic grading, append-only history and privacy contracts. Evidence: `PHASE8_ACCEPTANCE_EVIDENCE.md`, `test_phase8_*.py`, `browser_phase8.spec.js`; no real-provider generation evidence. |
-| Phase 9A learning domain / plan core | completed / deterministic fake-provider + local single-process SQLite + Chromium + backup-restore scope | `../.archive/contracts/PHASE9A_DOMAIN_CONTRACT.md`, `../.archive/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`, `../.archive/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`, `../.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`, `backend/app/backup.py`, `backend/app/restore_acceptance.py`, `backend/tests/test_phase9a_backup_restore.py`; v9 schema at 9A closeout, migration/rollback, repository/domain, API boundary, source lifecycle, Chromium happy/failure/narrow/keyboard, backup/restore non-repair and full backend regression pass (`272 passed, 2 skipped`; Phase 9A Chromium `3 passed`; Phase 8 Chromium `3 passed`; frontend failure contract `6 passed`). This is not Phase 9B–9D, Phase 9 overall, or global production `real-pass`; current schema later advanced to v10 by 9B-2. |
-| Phase 9B S1/S2 material-learning workflow | completed / deterministic fake-provider + local single-process SQLite + Chromium + backup/restore scope | `../.archive/evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md`, `../.archive/contracts/PHASE9B_DOMAIN_CONTRACT.md`, `backend/app/main.py`, `backend/app/restore_acceptance.py`, `backend/tests/test_phase9b_domain.py`, `backend/tests/test_phase9b_notes.py`, `backend/tests/test_phase9b_rhythm.py`, `backend/tests/test_phase9b_api.py`, `backend/tests/test_phase9b_source_lifecycle.py`, `backend/tests/test_phase9b_backup_restore.py`, `backend/tests/browser_phase9b.spec.js`; Gate A-I closeout verifies S1/S2 contract, v10 migration/rollback, domain/API/UI workflow, desktop/narrow/keyboard/reload/failure paths, delete/restore/purge/new-revision source lifecycle, and backup→verify→new-empty-target non-repair. Focused closeout is `59 passed`; full backend is `299 passed, 2 skipped`; related Chromium is `45 passed, 1 skipped`; default real-provider spec is `2 skipped`. This is completed only in the declared scope and is not Phase 9C/9D, real-provider generation, scheduler/worker, human review or global production real-pass. |
-| Phase 9C S3/S4/S5 exercise-feedback workflow | completed / deterministic fake-provider + local single-process SQLite + Chromium + backup/restore scope | `prompts/phase9c/`, `../.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md`, `backend/app/main.py`, `backend/app/repository.py`, `backend/app/restore_acceptance.py`, `backend/tests/test_phase9c_domain.py`, `backend/tests/test_phase9c_api.py`, `backend/tests/browser_phase9c.spec.js`, `backend/tests/test_phase9c_source_lifecycle.py`, `backend/tests/test_phase9c_backup_restore.py`; Gate A-J closeout verifies S3/S4/S5 contract, v11 migration/rollback, domain/API/UI workflow, desktop/narrow/keyboard/reload/failure paths, delete/restore/purge/source status history, and backup→verify→new-empty-target non-repair. Focused closeout is `59 passed`; full backend is `320 passed, 2 skipped`; related Chromium is `12 passed`. This is completed only in the declared scope and is not Phase 9D, real-provider generation, scheduler/worker, human review or global production real-pass. |
-| Phase 9D S6/S7 extended-learning foundation | scoped closeout complete for the partial 9D-0 scope | `archive/PHASE9D_AUDIT_AND_SCOPE.md`, `../.archive/contracts/PHASE9D_DOMAIN_CONTRACT.md`, `backend/app/delivery.py`, `backend/app/repository.py`, `backend/app/main.py`, `backend/tests/test_phase9d_delivery.py`, `backend/tests/test_phase9d_api.py`, `backend/tests/test_phase9d_backup_restore.py`, `backend/tests/test_restore_acceptance.py`, `backend/tests/browser_phase9d.spec.js`; 9D-0 is `planned/audit-draft`, 9D-1 is `planned/contract-frozen`, 9D-2 through 9D-8 are `implemented/backend-pass`, 9D-9 is `browser-pass`, 9D-10 is `backend-pass`, and 9D-11 is `closeout-scoped-pass`. 9D-7 configures delivery as `off` by default; permitted dry-run targets are allowlisted, no adapter performs network I/O, live delivery requires runtime enablement + runtime authorization + explicit confirmation but remains blocked as `delivery_live_not_approved`, and every explicit result is append-only/idempotent with no secret/raw report persistence. Focused 9D backend is `35 passed`; v12 restore acceptance is covered by `test_restore_acceptance.py` (`5 passed`); 9D-9 Chromium is `4 passed`; related Phase 8/9 UI regression is `22 passed`; full backend is `361 passed, 2 skipped`; full Chromium is `52 passed, 3 skipped` with only opt-in real-provider browser skips. 9D-11 closeout evidence is [`../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md). This is a scoped closeout for the partial 9D-0 approval; unapproved real OCR/ASR and live delivery remain outside the completion claim. |
-
-## Current limits
-
-- Supported deployment: single process, single instance, local storage.
-- Multiple workers or multiple instances must not share one `data_root`.
-- I4 and Phase 10-8 are time-boxed local evidence only; Phase 10-9 adds an isolated release-candidate drill but does not expand those boundaries. Synthetic TXT/capacity and bounded lifecycle checks pass, and the Gate J drill covers current v13 task/retry, backup/verify/restore, restart and diagnostics paths. Disk-full, power-loss, network filesystem, hardware corruption, ACL, unbounded peak memory, S4 scale and real production traffic remain explicitly `not_verified` and are accepted as v1 deployment limits.
-- Metrics are process-local, reset on restart, and do not provide cross-process aggregation; operation IDs are request-scoped correlation only. `ai_operations.input_fingerprint` remains audit metadata. Synchronous Q&A supports explicit `Idempotency-Key`: succeeded requests replay the persisted response without provider/artifact duplication, running requests conflict, failed keys may retry, and a request transaction reclaims operations running beyond a five-minute lease as `stale/qa_operation_stale`. This is not a background scan, cross-process coordination, cancel workflow or real crash-recovery guarantee.
-- Material revision, explicit deterministic chunk indexing, lexical chunk retrieval, context assembly with citation contract, deterministic fake provider, synchronous Q&A API/persistence, explicit idempotent Q&A replay and request-triggered stale recovery, Q&A history, multi-material scope, citation detail/navigation and the Phase 4 full-path browser E2E are implemented and verified. Phase 5 now has a tested OpenAI-compatible adapter, v3 provider metadata migration, v4 Q&A idempotency migration, and DeepSeek `deepseek-chat` adapter/API-level/Chromium UI synthetic smoke passes; other provider-specific validation remains pending. Phase 7 now has an implemented OpenAI-compatible embedding adapter with loopback protocol evidence, retrieval mode Chromium acceptance and indexing lease/retry/recovery evidence; external Mistral embedding acceptance passed for the exact `mistral / mistral-embed / https://api.mistral.ai/v1` configuration; other provider/model combinations remain independently unverified. Phase 10 provides explicit single-process task lease/recovery and approved embedding task cancel/retry only; it does not auto-dispatch, support cross-process recovery, or extend runner execution to Q&A, generation, OCR/ASR, report or delivery. Phase 8 is completed for its deterministic fake-provider backend/Chromium/backup-restore contract. Phase 9A is completed only in the deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore scope documented in `../.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`. Phase 9B is completed only in the deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore scope documented in `../.archive/evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md`. Phase 9C is completed only in the deterministic fake-provider / local single-process / SQLite / Chromium / backup-restore scope documented in `../.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md`. Phase 9D has completed its partial-scope audit, frozen contract, v12 migration, shared repository/domain backend gates, S7 deterministic fake/loopback capture/transcription backend gate, S7→S2 confirmed transcript ingestion backend gate, S6 report aggregation/redaction and off/dry-run delivery backend gates, API/UI browser gate, source lifecycle and backup/restore non-repair gate, plus scoped Gate A-L closeout. Real OCR/ASR and live delivery remain outside the approved scope and are not verified. Real Provider plan/note generation outside the separately recorded exact P6-E evidence, human plan review, worker capabilities, multi-user deployment, system-level accessibility/extreme-content evidence and global production `real-pass` remain not implemented or not verified.
-- Comparative governance conclusion: StudyBuddy has materially evolved beyond the ancestor and prior generations in formal boundaries, migration/storage safety, backup/restore, citation traceability, provider evidence discipline and acceptance governance. It has not yet surpassed those generations in overall learning-product breadth; historical cards, exercises, plans, OCR/ASR and S1–S7 scope remain future work and are not treated as absorbed capabilities.
-
-## Approved Next Roadmap
-
-[`ROADMAP_CAPABILITIES.md`]([需求+架构看]ROADMAP_CAPABILITIES.md) records the approved next step: integrate all existing `legacy_only` user operations into the default `/app` path, then freeze Provider configuration safety and broaden B1-B4 verification evidence. Tauri desktop work is explicitly deferred until the Web feature set is fully integrated and validated.
-
-**A1/A2 Status (historical refactoring record)**: A1/A2 repository and application structure refactoring is **completed**. A2.X series (A2.1-A2.4) successfully split 4 oversized core files (639KB total) into modular structure (48KB total), achieving 92.6% reduction while maintaining all public APIs. The historical A2.X regression evidence is 413 passed, 2 skipped; current regression numbers are maintained in the status table above. Details:
-
-- **A2.1**: `repositories/_legacy.py` (379KB) → 18 implementation parts + runtime + bridge (30KB)
-- **A2.2**: `main.py` (157KB) → 969 bytes + `templates/index.html`
-- **A2.3**: `migrations/runner.py` (68KB) → 7KB + 13 version modules + helpers
-- **A2.4**: `providers.py` (34KB) → 9 focused modules in `providers/` directory
-
-All modules comply with 32 KiB policy verified by `backend/scripts/check-source-size.py`. Public APIs preserved: `backend/app/repositories/__init__.py` exports 305 symbols, `backend.app.main:create_app` unchanged, all migration and provider imports compatible. See [`archive/A2_X_SERIES_SUMMARY.md`](../.archive/A2_X_SERIES_SUMMARY.md) for complete refactoring summary.
-
-A3 static frontend delivery and A4 page delivery are completed in the declared scope; P1-1, P1-2 and P1-3 core migrations are verified on `/app`; `/app` is the default entry and `/legacy` remains a compatibility fallback for deferred P1-4 capabilities. B0 governance intake is scaffolded in `H:\studybuddy-composer`; B1 ASR uses the canonical `H:/WhisperCli` provenance/runtime contract and B1 ASR plus B2 PaddleOCR have each completed C0-C6 scoped closeout with bounded evidence. B3 C0-C6 scoped closeout is complete only for local deterministic project-scoped JSON/Markdown reports, with `delivery=off` preserved; B4 C0-C6 is limited to exact independently tested SMTP and Feishu synthetic paths, while Formal product API live delivery remains closed. RapidOCR Formal work and the `edge-tts` online TTS candidate remain separate from the completed B1-B4 scope. D0-D2 desktop work is explicitly deferred until the Web feature set is fully integrated and validated. These conclusions do not imply general ASR quality, OCR accuracy, generic provider compatibility, live delivery approval, a desktop package, or global real-pass.
-
-For the authoritative project status, task order, and governing decisions, see [`STATUS.md`]([需求+所有角色看]STATUS.md), [`PHASE_ROADMAP.md`](../.archive/historical-roadmaps/PHASE_ROADMAP.md), [`ROADMAP_CAPABILITIES.md`]([需求+架构看]ROADMAP_CAPABILITIES.md), [`TODO.md`]([需求看]TODO.md), and [`DECISIONS.md`]([架构+需求看]DECISIONS.md).
-
-## 2026-09-09 plans/plan-detail 逐元素测试与缺陷修复（用户实测驱动）
-
-- 新增 `backend/tests/browser_plans_plan_detail_full.spec.js`：24 个 Playwright 用例覆盖 plans.html 与 plan-detail.html 全部静态结构、动态分支、交互按钮、状态机与异常路径；测试计划见 `docs/roles/[需求+测试看]UI_TEST_PLAN_PLANS_PAGES.md`（全部勾选）。当前结果：**browser 24 passed；backend 624 passed, 3 skipped**（新增 paused→active 回归用例）。
-- 修复缺陷 1（前端）：plans.html 计划列表 `item_count` 恒为 0（后端不提供该字段），改为按非归档 items 实时计算。
-- 修复缺陷 2（后端）：`transition_study_plan` 放行 `paused→active`（"恢复计划"此前必然失败），补回归测试。
-- 修复缺陷 3（前端）：busy 解锁不再覆盖计划完成/归档态下的编辑禁用（`busyKeep` 标记）。
-- 行为确认：目标/模块/计划归档后从默认列表移除；进度历史加载横幅为隐藏态残留文本，不影响使用。
-
-## 2026-09-09 plans/plan-detail 七维度重审（A 类纯用户路径 E2E，双层审核规程第一轮）
-
-- 采用"GLM 一审 + GPT 二审"工作规程：测试计划重构为单份七维度文档 `docs/roles/[需求+测试看]UI_TEST_PLAN_PLANS_PAGES.md`（结构/正常路径/错误路径/持久化/边界/响应式键盘/真实链路）。
-- 新增 `backend/tests/browser_plans_plan_detail_userpath.spec.js`（A 类，4 用例）：全部数据经页面 UI 创建、plan_id 从"打开详情"链接获取、含服务真重启持久化、5 档响应式断言+截图留证（H:/studybuddy-test/artifacts/plans-userpath/）、键盘可达性、materials 页导入真实 TXT→索引→来源链接增删全链。
-- 修复缺陷 4（前端）：plans.html 选中计划后列表不高亮（selectPlan 不刷新列表 selected 类），改为按 dataset.planId 原位 toggle，保留焦点。
-- 状态：两页 = `tested`（A 类倾向 e2e-real-pass），待 GPT 二审；回归 browser 4+24 passed，backend 624 passed 3 skipped，源码体积门禁通过。
-
-## 2026-09-09 plans/plan-detail 二审收口（独立复核确认）
-
-- A 类 spec 按二审意见补齐：真实进度持久化（开始学习→记录完成→杀进程重启→验证已完成/进度事件/完成数=1）、来源链接跨服务重启（添加→刷新→重启→验证仍在→删除验证消失）、响应式测试自建独立目标/计划/学习项、详情页 5 档响应式断言、焦点样式自动检查（assertFocusStyle：outline/box-shadow）、页面可见文本敏感信息扫描（traceback/SQL/密钥/Windows 路径）。
-- 删除 test_phase9a_api.py 中重复的 paused→active 回归用例（保留唯一）。
-- 测试计划 A 类状态统一为 `tested`，两页保持 `tested`，未提前标 `e2e-real-pass`（跨计划越权、依赖环后端、真实 Provider、完整人工焦点审查仍 not_verified）。
-- GLM 独立复核（本轮）：复跑 A 类 4/4、B 类 24/24、backend 624 passed 3 skipped、源码体积与 diff-check 通过；同步修正测试计划文档 3 处与代码不一致的口径（来源链接跨重启已单测、焦点样式已自动化、未覆盖清单更新）。
-
-## 2026-09-10 materials → material-detail 详情页增强（A 类纯用户路径 E2E，双层审核规程第一轮 GLM 实现）
-
-- 变更范围（纯前端，无 API/schema/migration/后端 Python 改动）：`backend/app/static/materials.html` 为每条材料新增显式「详情」按钮（button 导航，保留原名称链接与筛选/回收站/批量导出交互）；`backend/app/static/material-detail.html` 新增四个区域：①处理链路状态（导入时间/解析状态与文本可用性/索引状态与 chunk 数，来自真实 API 响应）②来源候选（本材料的 chunk 候选列表 + 显式「刷新来源候选」按钮，走 `POST /api/study/sources/refresh`）③计划关联（展示引用本材料的计划学习项/模块来源链接及其真实状态，支持通过草稿计划+学习项+片段下拉建立关联，前端重复关联防护 + 删除关联；复用既有 source-candidates/sources/link API）④能力状态（OCR 按 media_type 显示真实组件状态 available/not_configured/disabled/状态未知；ASR 明确标注文件材料不适用；问答可用性按索引真实状态；生成/报告标注未在本页验证）。另有页面级「刷新状态」按钮；全部新区域在缺 ID/无效 ID/加载失败时进入明确停用态。
-- 七维度表达：import/parse=真实解析状态+文本可用性（用 `text` 长度判定，修复依赖不存在的 `text_length` 字段的问题）；OCR=PDF 材料显示真实能力状态（空白 PDF 导入如实显示 0/1 且详情页显示「没有可提取的正文」，不伪造成功，不阻塞 TXT）；ASR=文件材料不适用（不伪造）；index=真实 GET ai-index 状态与 chunk_count（修正了文档与实际返回不一致的认知：实际返回 `chunk_count`/status ready|empty|not_indexed|deleted）；Q&A=索引 ready 时明确「可用（范围：本材料）」；generation/report=本页不提供入口，明确标注 not_verified，不声称支持。
-- 新增 A 类纯用户路径 E2E `backend/tests/browser_material_detail_userpath.spec.js`（7 用例）：导入→列表详情按钮→详情页解析状态；建立索引→索引数量→刷新来源候选（含重复刷新幂等）；创建目标/计划/学习项→关联片段→重复关联被拒绝且不产生第二条链接；页面刷新恢复；**服务真重启**后解析/索引/关联全部持久化；无效 ID 与缺 ID 的错误状态（无 traceback/SQL/路径泄露）；无文字层 PDF 的真实 OCR 能力状态展示且 TXT 不受影响。全部数据经页面 UI 创建，无业务 API 直调建数据。
-- 验证：新 spec `7 passed`；materials 相关回归 8 spec `27 passed`（browser_p2_fe3_materials_app/material_management/static_pages/static_core/static_operations/frontend_page_contract/frontend_visual_matrix/p1_4_real_input_restart；沙箱 safe-delete 守卫需 `CODEBUDDY_SAFE_DELETE_ENABLED=0`，为已知环境约束非代码问题）；后端全量 `626 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；`check-source-size.py --base HEAD` 通过（默认 origin/master base 因本地无该 ref 且网络不可达无法解析，环境问题）；`git diff --check` 通过；material-detail.html 21.2KiB / materials.html 17.0KiB，均低于 32KiB 门禁。
-- 修复的页面级缺陷：①来源候选与来源链接加载顺序竞态（候选晚到时关联表单片段下拉为空）②漏调用能力快照加载导致 OCR 状态恒为未知 ③stage-parse 文本可用性误用不存在的 `text_length` 字段。
-- B（二审）复核与补漏（2026-09-10）：独立复跑材料详情 A 类路径 `backend/tests/browser_material_detail_userpath.spec.js` 为 7 passed；后端全量为 627 passed、3 skipped；`check-source-size.py --base HEAD` 通过。复核发现并修复后端重复来源链接缺陷：v9 的 `UNIQUE(plan_item_id, citation_key)` 在 `citation_key=NULL` 时不能去重，Repository 现按完整来源身份（material/revision/extraction/chunk/span/citation）拒绝重复，API 返回 `study_source_duplicate`，前端有安全文案；新增 API/domain 回归。修复后 focused 9A 为 16 passed，材料详情 A 类 7 passed，后端全量 627 passed、3 skipped。结论：材料详情路径 = `tested` / A 类 `e2e-real-pass`（确定性 fake Provider、单进程本地范围）；本轮缺口补漏完成。未验证/not_verified：真实 OCR 组件对扫描 PDF 的实际解析质量、真实 ASR、本页之外的 generation/report 消费、跨材料并发关联、极端长材料渲染性能。
-
-## 2026-09-10 today/qa A 类纯用户路径增强与 E2E（双层审核规程第一轮 GLM 实现）
-
-- 变更范围（纯前端，无 API/schema/migration/后端 Python 改动）：`backend/app/static/qa.html` ①新增线程继续/切换能力：每个线程新增「继续此对话」按钮（显式选择后，后续提问携带 `thread_id` 续聊同一对话，复用既有 `/api/qa/ask` 的 thread 语义与后端 `qa_ask_reuses_thread` 已验证契约）、「新对话」按钮重置当前线程；默认不带 `thread_id`，保持「每次提问创建新线程」的既有契约与既有 spec 断言不变。②修复「回答已生成」提示在 `loadThreads()` 渲染完成前显示的真实竞态（成功提示移至线程列表刷新之后）——该竞态使既有 `browser_p2_fe3_qa_app.spec.js:15`（展开线程取引用）在当前环境下稳定失败，且 HEAD 版 qa.html 同样失败，属既有缺陷非本轮引入。`today.html` 无代码改动：三区独立加载、`#retry-today`、空态出口均已具备。
-- 新增 A 类纯用户路径 E2E（全部数据经页面 UI 创建，禁止直调业务 API 建数据；网络故障注入仅用 page.route，已标注）：
-  - `backend/tests/browser_today_userpath.spec.js`（7 用例）：空数据根三区独立空态+「创建学习计划」出口；plans 页 UI 建目标/计划/学习项→确认→激活→today 无当日分配边界（文案+「查看计划详情/安排今日学习」出口）→沿出口回 plans UI 保存节奏+分配今日→任务卡（计划分钟/日期/return_to=today 链接/来源状态）；任务卡→plan-detail 开始学习→记录完成→「返回计划」回 today 即时反映「查看进度」；API 失败注入→三区安全文案+不泄露注入的 traceback/路径→取消注入后 #retry-today 真实恢复；刷新恢复+390 窄屏无横向溢出+截图留证（H:/studybuddy-test/artifacts/today-userpath/）；**服务真重启**后完成状态/概览/周趋势持久化；暂停计划→「计划尚未启动」+「前往激活」→恢复计划→today 恢复。
-  - `backend/tests/browser_qa_userpath.spec.js`（9 用例）：materials UI 导入两个材料+详情页索引主材料；material-detail「进入问答」带 `?material=` 范围且 picker 勾选一致；仅选未索引材料提问→「材料索引尚未建立」→恢复范围后真实回答；展开线程→Fake answer+引用→点击引用回溯 material-detail 定位正文（mark 高亮+「已定位引用来源」）→goBack 返回问答；「继续此对话」续聊同线程（消息数 4）→「新对话」后新线程（计数按真实语义：失败的 ask 也会留下仅含用户消息的线程）；空检索边界（retrieval_empty 安全文案）且后续提问可恢复；无 fake Provider 环境重启→「AI Provider 未配置」+提问「尚未配置 AI Provider」；materials UI 删除来源材料→历史引用真实展示「来源不可用」且无跳转；**服务真重启**后线程历史与引用状态持久化。敏感可见文本扫描贯穿两 spec。
-- 测试结果：today spec `7 passed`；qa spec `9 passed`；QA 相关既有回归（p2_fe3_qa_app/p2_fe3_qa_threads_errors_app/p2_fe3_qa_p6c_app/p1_1_material_qa_migration）`14 passed`；legacy qa + materials 回归 `24 passed, 1 skipped`；today/plan 相关回归（plans_today_progress/weekly_trend/task_list/plans_plan_detail_userpath/static 等）`32 passed, 1 skipped`；后端全量 `627 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；`check-source-size.py --base HEAD` 通过（qa.html 11.6KiB，两 spec 为测试文件不受 32KiB 门禁约束）；`git diff --check` 通过。
-- 七维度状态：`today.html` = `tested`（A 类全过，倾向 `e2e-real-pass`，待 GPT 二审确认）；`qa.html` = `tested`（A 类全过，倾向 `e2e-real-pass`，待 GPT 二审确认）；generation/report = `not_verified`（本轮未涉及）；真实 Provider = `not_verified`（全部为确定性 fake）；键盘逐键走查与屏幕阅读器 = `not_verified`（本轮覆盖 390 窄屏溢出与链接可达，未做完整键盘审计）。
-- 已知遗留（均非本轮引入，交 B 二审与后续轮次）：① `browser_plans_plan_detail_full.spec.js` P-D21/22 在当前环境稳定失败（两次运行失败点不同：目标下拉为空 / 归档后计划仍在列表；HEAD 版 qa.html 下同样失败，与本轮改动无关，需单独归因）；② `browser_qa.spec.js:41` 曾在批量运行中出现一次失败、单跑通过（偶发时序）；③ plans.html 页面怪癖：URL 带 `?plan_id=` 时新建草稿后详情面板仍显示 URL 中的旧计划（`load()` 的 requested 参数优先于刚创建的计划），影响「连续创建两个计划」的用户路径，本轮测试通过单计划串行旅程规避。
-
-## 2026-09-10 practice/practice-session A 类纯用户路径 E2E（双层审核规程第一轮 GLM 实现）
-
-- 变更范围：`backend/app/static/practice.html`（前端缺陷修复 + 新增单题入口）、`backend/app/repositories/_legacy_part_05.py`（错题 API 补充公开题面字段）、`backend/tests/test_phase9c_api.py`（后端回归）、新增 `backend/tests/browser_practice_userpath.spec.js`（A 类 7 用例）。无 schema/migration 变化。
-- 修复的真实缺陷（详见 `docs/roles/[需求+测试看]UI_TEST_PLAN_PRACTICE_PAGES.md` 缺陷清单）：
-  1. exercises.html「开始作答」跳转 `/app/practice.html?exercise_id=…` 被目标页完全忽略（死参数，用户路径断裂）→ practice.html 新增「来自练习集的题目」入口区：ready 题目展示题面 + 「为该题目创建练习会话」一键创建单题会话；无效 ID 显示「题目不存在」。
-  2. 错题库把题目文本覆盖成「查看错题」链接，多条错题无法区分 → 题面与链接分行展示。
-  3. 【后端】错题 API 从不返回题面（`mistake_cases` 表无题目内容，响应无 `question`），真实数据下错题库/复盘页无题面可看，既有 B 类 spec 全 mock 数据掩盖该缺陷 → `get_mistake_case` 按 project 关联 exercises 补充公开 `question`/`exercise_type`（不暴露 answer_key/answer_json，隐私边界不变），后端回归 `test_s4b_api_mistake_surfaces_exercise_prompt`。
-  4. 会话详情内嵌「查看结果」读取不存在的 `result.score/result.total`，内嵌得分永远「得分: 0 / 0」→ 改读真实 `result.summary.score_total/total_item_count`。
-- 新增 A 类纯用户路径 E2E `browser_practice_userpath.spec.js`（7 passed，两次复跑稳定）：全部数据经页面 UI 创建（materials 导入真实 TXT→material-detail 索引→exercises 建集/生成 AI 草稿/确认→practice 推荐勾选→会话→逐题作答→完成→结果→错题→复盘→薄弱点），ID 全部从页面 URL/链接获取；含服务真重启持久化（会话/错题/薄弱点/内嵌得分）、page.route 失败注入安全文案与真实恢复、无效 exercise_id 边界、5 档响应式断言 + 截图留证（H:/studybuddy-test/artifacts/practice-userpath/，10 张）、键盘 Enter 建冲刺目标 + 100 字长标题 + 焦点样式自动检查（outline/box-shadow）、贯穿敏感可见文本扫描。
-- 测试结果：A 类 spec `7 passed`（稳定复跑）；本页相关既有回归 practice/result/review/workflow/recommendations/cram/weak-points `27 passed`，static/contract/visual `14 passed`；后端全量 `628 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；`check-source-size.py --base HEAD` 通过（practice.html 17.3KiB）；`audit-frontend-contract.py --strict` 0 findings；`git diff --check` 通过。
-- 七维度状态：`practice.html` = `tested`（倾向 `e2e-real-pass`，待 GPT 二审确认）；`practice-session.html` = `tested`（倾向 `e2e-real-pass`，待 GPT 二审确认）；测试计划见 `docs/roles/[需求+测试看]UI_TEST_PLAN_PRACTICE_PAGES.md`（全部勾选，含缺口清单）。
-- 未验证/not_verified：真实 Provider（练习生成/评分全为确定性 fake）、cram 冲刺会话创建的 A 类全链、真实 OCR/ASR 材料进入练习链路、完整键盘逐键审计、屏幕阅读器。
-
-## 2026-09-10 B 二审收口（today/qa + practice 轮，GPT 独立复核）
-
-**复跑验证（独立复跑，不信任 A 审结论）**：
-- practice A 类 `7 passed`；today/qa A 类 `16 passed`；相关回归 `20 passed`；后端全量 `628 passed, 3 skipped`；check-source-size/diff-check 通过；截图 artifact 10 文件真实存在。
-- A 类规则合规：无 page.request 直调业务 API 建数据（仅 readiness 探活）；全部数据经页面 UI 创建（import/index/set/confirm helpers 经 UI）；ID 从页面 URL/链接获取；真重启（practice PRAC-7、qa QA-9 两次重启）；故障注入用 page.route + unroute 清理。
-
-**缺陷验证（practice 4 缺陷）**：
-1. exercises.html?exercise_id 死参数 → practice.html 新增 practice-exercise-entry 区，entryExerciseId 读取 URL，load exercise → 单题会话创建。真实修复，回归 A-E2E-PRAC-4。
-2. 错题库题面覆盖 → mistake rendering 改为 li.append(question, mistakeLinkRow)，题面与链接分行。真实修复，回归 A-E2E-PRAC-3。
-3. 错题 API 无题面 → get_mistake_case 关联 exercises 补充 question/exercise_type（_legacy_part_05.py:171-176，含注释）。真实后端修复，回归 test_s4b_api_mistake_surfaces_exercise_prompt + A-E2E-PRAC-3/7。
-4. 内嵌结果读错字段 → viewResult 改读 result.summary.score_total/total_item_count（practice.html:288，含注释 "legacy fields never existed"）。真实修复，回归 A-E2E-PRAC-3/7。
-
-**遗留问题核查**：
-- P-D21/22：本轮复跑 `browser_plans_plan_detail_full.spec.js` **24 passed**，P-D21/22 通过。A 审声称的"HEAD 版同样失败"在当前环境不成立，该测试已稳定，不再阻塞。
-- plans.html URL plan_id 怪癖：load() 中 selected 优先于 URL plan_id，连续创建计划时详情面板滞留旧计划。真实存在，A 审已知并声明为遗留，非本轮引入，留待后续轮次。
-- QA 线程/来源逻辑：thread_id 语义正确（currentThreadId 传递）；来源不可用（citationLink 检查 status，后端 _legacy_part_14.py:59 更新 qa_citations 为 source_unavailable，A-E2E-QA-8 回归）；真重启持久化（A-E2E-QA-9 真实 stopServer/startServer，验证 6 threads + 引用状态）。全部真实。
-
-**未验证维度确认（A 审诚实声明，B 审确认保持 not_verified）**：
-- 真实 Provider（全部 deterministic fake）
-- cram 冲刺会话创建 A 类全链
-- 真实 OCR/ASR 材料进入练习链路
-- 完整人工键盘逐键走查（自动化仅覆盖 Enter 提交 + Tab 焦点 + 焦点样式检查）
-- 屏幕阅读器（NVDA/JAWS/VoiceOver）实际使用
-
-**B 二审最终状态**：
-- **practice.html** = **`e2e-real-pass`**（A 类 7 用例全过，4 缺陷真实修复，回归通过，规则合规，未验证维度诚实声明）
-- **practice-session.html** = **`e2e-real-pass`**（同上）
-- **today.html** = **`e2e-real-pass`**（A 类 7 用例全过，真重启持久化，刷新恢复，窄屏无溢出，规则合规）
-- **qa.html** = **`e2e-real-pass`**（A 类 9 用例全过，线程/来源/重启逻辑真实，跨页引用回溯，边界覆盖，规则合规）
-
-注：`e2e-real-pass` 的前提是本轮范围（页面交互、数据流、边界、持久化）的 A 类纯用户路径已全部通过且缺陷已修复；未验证维度不阻止本阶段状态升级，但需后续专项轮次补齐。
-
-## 2026-09-10 四页综合审查收口（A 审视角补齐 today/qa + 综合验证）
-
-**A 审视角补齐（today/qa，此前 A 审为 50bc0d1 轮产出，本轮独立复核）**：
-- 复跑 today(7) + qa(9)：**16 passed**。
-- spec A 类规则审读：today 全部数据经页面表单创建（目标→计划→学习项→确认草稿→激活→节奏分配），qa 经 setInputFiles UI 导入 + 表单提问；两 spec 均无 page.request 直调业务 API；均含真重启用例（TD-6、QA-9）。
-- 页面代码审读：today.html（10.2KiB）——DOM 全部 createElement/textContent 无注入面、loadGeneration 竞态保护、activePlan 单请求复用（原三处重复请求已合并）、来源 invalid 时「查看资料」aria-disabled 禁用、失败 retry 恢复；qa.html（11.6KiB）——renderMessages textContent 安全、threadGeneration 竞态保护、提问/索引带 Idempotency-Key、Provider 未配置安全文案。**无新缺陷**。
-
-**四页综合审查（23 用例一次全量）**：
-- today(7) + qa(9) + practice(7)：**23 passed**（48.5s）。
-- 跨页链路核对（全部有 A 类或代码级证据）：
-  1. today → plans/plan-detail（开始学习带 return_to=today、item_id、local_date）— TD-3/4 + D-C12。
-  2. today → material-detail（查看资料仅来源 valid 可点）— TD 代码审读 + 页面断言。
-  3. qa → material-detail 引用回溯（material + citation 参数）— QA-4。
-  4. qa 线程继续/新对话（thread_id 语义）— QA-5。
-  5. qa 删除来源 → 引用「来源不可用」— QA-8 + 后端 _legacy_part_14.py。
-  6. exercises → practice 单题入口（exercise_id）— PRAC-4。
-  7. practice → practice-session → practice-result — PRAC-2。
-  8. practice → review 错题复盘 → 薄弱点 — PRAC-7。
-
-**轮次边界说明**：本四页分属两轮——Round 3（today/qa，A 审 50bc0d1）与 Round 4（practice/practice-session，A 审 437f27a）；B 二审（71b2b22）与本次 A 审视角补齐将两轮共同收口。四页最终状态维持 **`e2e-real-pass`**；未验证维度（真实 Provider、cram 冲刺 A 类全链、真实 OCR/ASR、完整键盘逐键、屏幕阅读器）保持 `not_verified`，不因轮次结束改标。
-
-**本轮审查任务到此收口。**
-
-## 2026-09-10 exercises/practice-result B 二审收口（独立复核）
-
-**复跑验证**：
-- 独立复跑 `backend/tests/browser_exercises_practice_result_userpath.spec.js`：**8 passed**（19.4s）；B 审补充题目列表失败/重试回归后再次复跑：**8 passed**（21.4s）。
-- 相关浏览器回归：`browser_p1_3_cards_exercises_review_migration.spec.js`、`browser_p2_fe4_exercise_set_detail_app.spec.js`、`browser_p2_fe3_practice_result_app.spec.js`、`browser_a3_pages.spec.js`、frontend static/state/visual、practice userpath、C4 cram、Phase 9C 合计 **31 passed**（2.5m）。
-- 后端 focused：`test_phase8_exercises.py`、`test_phase9c_api.py`、`test_phase9c_domain.py` 合计 **24 passed**（本轮无后端 Python/API/schema/migration 变更，未重复全量后端）。
-- `check-source-size.py --base HEAD` 通过；`audit-frontend-contract.py --strict` = **0 findings**；`git diff --check` 通过；本批 5 档响应式截图 10 张存在于 `H:/studybuddy-test/artifacts/exercises-result-userpath/`。
-
-**A 类规则复核**：新增 userpath spec 无 `page.request`/业务 `fetch` 数据创建或关键 ID 直读；材料、索引、练习集、题目、会话和结果均通过页面 UI 产生；ID 从页面 URL 获取；包含真实服务 stop/start/readiness 重启验证；故障注入使用 `page.route` 并清理。
-
-**B 审新增发现与修复**：题目列表 GET 失败时原页面只有「请求失败，请重试」文案，没有独立恢复控件，刷新练习集列表也不会明确重载当前题目列表。已在 `exercises.html` 增加「重试题目列表」控件，失败时显示、成功/重新选择时隐藏，点击后重新加载当前练习集题目；新增回归覆盖首次失败→安全文案→retry→真实题目恢复。
-
-**B 审最终状态**：
-- `exercises.html` = **`e2e-real-pass`**（A 类 8 用例全过，B 审复核通过，引用来源显示、唯一确认入口、题目列表 retry、表单 Enter 提交等缺陷已修复）。
-- `practice-result.html` = **`e2e-real-pass`**（普通结果真实链路、简答题 pending_review、答错结果→复盘、reload、真重启、失败 retry、0/0、`id` 兼容参数和隐私边界均通过）。
-
-**仍为 `not_verified`**：真实 Provider、真实 OCR/ASR 进入练习链路、cram 创建的 A 类全链、完整人工视觉审查、完整键盘逐键审计、屏幕阅读器。
-
-## 2026-09-11 notes/note-detail A 类纯用户路径审查与功能交付（双层审核规程第一轮 GLM 实现）
-
-- 变更范围：`backend/app/static/notes.html`（12.7KiB）、`backend/app/static/note-detail.html`（4.9KiB）、`backend/app/repositories/_legacy_part_11.py`（26.8KiB，create_note 惰性建默认项目）；无 schema/migration 变化。新增 `backend/tests/browser_notes_userpath.spec.js`（A 类 8 用例）、`backend/tests/test_phase9b_notes.py` 新增 fresh-root 回归；同步修正 3 个使用旧伪造响应形状/已移除输入的既有 spec（browser_a3_pages/browser_frontend_state_matrix/browser_p1_2）。
-- 修复的真实缺陷（按 A 类路径执行顺序发现）：
-  1. 【后端】全新 data root 上第一笔用户笔记创建必然失败（400 `study_note_invalid_payload`）：`create_note` 校验 `_study_project_exists` 但从不惰性创建 projects 行，而计划/模块域（create_learning_goal/create_knowledge_module）都会惰性创建。既有 phase9b 测试先建目标/模块才建笔记，掩盖了该缺陷。修复后 `test_first_user_note_on_fresh_database_succeeds` 回归。
-  2. 【前端】`note-detail.html` 是死页面：全站无任何链接指向它，用户从 UI 无法到达。修复：notes.html 每条笔记新增「详情」按钮（stopPropagation，不触发选中）→ `/app/note-detail.html?note_id=…`。
-  3. 【前端】`note-detail.html` 读取后端不存在的字段（`content`/`note_type`/`material_name`/`module_name`/`citation_keys`/`source_citation_status`），真实 `get_note` 形状为 `provenance`/`blocks[]`(含 `sources[]`)/`modules[]`/`source_warning_count` → **笔记正文在详情页永不渲染**、来源状态恒「未关联来源」。修复：按真实形状渲染正文区块、逐块引用（invalid 引用带状态标注）、知识模块、来源警告、user_edited、派生来源状态。
-  4. 【前端】notes.html 内嵌详情读不存在的 `note.source_citation_status` → 来源状态恒「未关联来源」。修复：从 `blocks[].sources[].status` 派生（无来源=未关联来源，有 invalid=该状态，全 valid=来源有效）。
-  5. 【前端】「生成 AI 草稿」要求手输材料 ID，而材料 ID 在任何页面 UI 都不可见 → 用户路径断裂。修复：改为材料下拉选择（`GET /api/materials?limit=100`，显示真实材料名），加载失败有「重新加载材料列表」出口，未选择/未填主题有显式提示。
-  6. 【前端】生成接口返回 `{status,operation_id,note,replay}` 而页面读顶层 `id` → **生成成功后草稿永不选中展示**。修复：取 `result.note`。
-  7. 【前端】`setBusy(false)` 无差别重新启用所有输入，覆盖 render() 对已确认/已拒绝/已归档笔记的禁用态 → 状态流转后笔记在 UI 上重新「可编辑」（与 plans.html busy 缺陷同类）。修复：`data-busy-keep` 标记保留 render 设置的禁用态。
-  8. 【前端】列表项键盘处理器对冒泡事件无差别 `preventDefault()` → 焦点在「详情」按钮上按 Enter 被吞，**键盘用户无法激活详情按钮**。修复：li 的 onkeydown 仅响应 li 自身为事件目标。
-- 新增 E2E `browser_notes_userpath.spec.js`（8 passed，多次复跑稳定 16–31s）。用例分类（按双层审核规程）：**ND-1~ND-5、ND-7、ND-8 共 7 例为纯用户路径 A 类**——全部业务数据经页面 UI 创建（笔记表单/模块关联/编辑保存/材料 UI 导入→详情页索引→下拉生成草稿→确认/拒绝），无业务 API 直调、无 `page.request` 建数据/取关键 ID（material id 取自 UI 跳转后的 URL 与该材料在下拉中的 option 值）；**ND-6 含 `page.route` 故障注入，属 B 类要素，按规程标注为非纯用户路径 E2E**（其失败注入段的结论不得计入 A 类通过）。覆盖：空状态、编辑+刷新恢复、跨页跳转（notes→note-detail→返回）、导出 Markdown 真实下载、列表页/详情页失败注入各自安全文案+真实恢复、无效/缺失 note_id 边界、**服务真重启**持久化（3 条笔记+状态+引用+重启后详情页）、390 窄屏无横向溢出+截图留证（H:/studybuddy-test/artifacts/notes-userpath/ 4 张）、键盘 Enter 选中与激活详情按钮（断言为"Enter 后详情标题等于该 li 自身标题"的契约校验，非硬编码）、贯穿敏感可见文本扫描。
-- 2026-09-11 证据复核修正（本轮未改动生产代码，仅收紧测试断言）：初版 spec 有 2 处不当写法已在复跑中修正——①ND-7 一句 `toContainText('生物基础模块').catch(()=>{})` 静默吞断言且对象错误（该模块关联在用户笔记，不在被打开的已确认 AI 草稿上），已删除；②ND-8 原用 `/Notes on|光合作用/` 松散 OR 掩盖了"列表首项是最新笔记（Notes on 暗反应）"这一事实，已改为上述契约断言。收紧后重跑 `8 passed`（16.3s）。
-- 测试结果：A 类 spec `8 passed`×2；相关回归 6 spec `18 passed`（a3_pages/state_matrix/phase9b/p1_2/visual_matrix/static_baseline，其中 static_baseline 实测需 ~52s，已加 `test.slow()`（3× 超时），断言未放宽）；后端全量 `629 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke，较基线 +1 为本轮回归）；`audit-frontend-contract.py --strict` = **0 findings**；`check-source-size.py --base HEAD` 通过；`git diff --check` 通过（仅 CRLF 提示）。
-- 七维度状态（2026-09-11 独立二审）：`notes.html` = `e2e-real-pass`；`note-detail.html` = `e2e-real-pass`，仅限本地单进程、SQLite、确定性 fake provider 与 Chromium 的已执行路径。二审新增并通过纯 UI A 类 ND-9：页面创建笔记→归档→默认列表隐藏→勾选「显示已归档笔记」→只读详情→刷新→真实服务重启→再次从 UI 访问。二审 B 类 `browser_notes_b_class.spec.js` 10 passed，确认并修复 4 个实际缺陷：归档项无 UI 可达入口（筛选状态现写入 URL，刷新保持）、读取失败只显示泛化文案、导出失败离开页面到裸错误响应、以及迟到详情响应覆盖新选择。A 类完整 `9 passed`，其中 ND-1~ND-5、ND-7~ND-9 为纯 UI 路径；ND-6 的故障注入仍为 B 类要素，不计入纯 A 类结论。Notes backend/API/契约 focused `18 passed`，相关前端回归 `9 passed`，前端契约审计为 `0 findings`。
-- 未验证/not_verified：真实 Provider（生成全为确定性 fake）、真实 OCR/ASR 材料进入笔记生成链路、vector/hybrid 检索模式（页面固定 lexical）、笔记 JSON 导出 UI、完整人工键盘逐键走查、屏幕阅读器、跨材料并发。
-
-## 2026-09-12 reports.html B 类独立二审收口
-
-- 独立重读 `reports.html`、`api.js`、报告 API、仓储投影和 A 类 spec；未信任 A 轮结论。发现并修复：报告专用 detail code 未进入共享 `sbApi.safeError` 映射（补齐 `report_not_found`、`report_invalid_period`、`report_invalid_state`、`report_redaction_violation`、`report_export_failed`、`payload_too_large`）；分页接入后既有 reports mock 仍拦截无 query URL，按真实 `limit/offset/has_more` 契约收紧。
-- 页面新增的报告列表分页、动态本地日期/时区默认值、生成请求选择 generation 绑定、预览/导出迟到响应丢弃和旧状态清理均通过独立 B 类检查；仓储仍校验 project scope、ready 状态和完整 safe payload，`CURRENT_SCHEMA_VERSION=15` 与本轮一致，无 schema/migration 变更。
-- 新增 `backend/tests/browser_reports_b_class.spec.js`：分页追加、迟到预览不覆盖新选择、迟到导出不触发旧报告下载，`3 passed`。A 类 `browser_reports_userpath.spec.js` 收紧为 14 项并全绿；规定前端矩阵（state/static-baseline/page-contract）`23 passed`；报告相关回归 `25 passed`；后端完整套件 `630 passed, 3 skipped`（仅 opt-in ASR/Provider smoke）。
-- 全量 Chromium 串行最新结果：`313 passed, 4 skipped, 3 failed, 15 did not run`；reports A/B 及相关 reports 回归均通过。3 个失败为非本页既有问题（`phase9c` 会话创建超时；`cram`/`plans` 测试数据或环境依赖），不将其伪装为全量全绿；报告页本轮验收结论不受影响。
-- 二审结论：`reports.html` = **`e2e-real-pass`（限定本轮 A/B 页面用户路径、确定性 fake、单进程 SQLite、Chromium 范围）**。不扩大为全局生产 real-pass。
-- 仍为 `not_verified`：真实 Provider 生成/报告外发、真实 delivery live（系统固定拒绝）、完整人工逐键键盘审查、屏幕阅读器、跨浏览器、极端长内容/长时稳定性。
-
-## 2026-09-12 reports.html B 类独立二审收口（限定范围 e2e-real-pass）
-
-- 独立重读 A 轮修改后的 `reports.html`、`api.js`、报告 API、仓储投影、migration 版本和全部相关 browser spec；发现并修复共享 `sbApi.safeError` 缺少报告专用 detail code 映射，补齐 `report_not_found`、`report_invalid_period`、`report_invalid_state`、`report_redaction_violation`、`report_export_failed`、`payload_too_large` 用户文案。
-- 发现分页接入后既有 reports mock 仍拦截无 query URL，按真实 `GET /api/study/reports?limit=100&offset=0` 与 `has_more` 契约收紧 `browser_a3_pages.spec.js`、`browser_b3_report_c5.spec.js`；未放宽选择器或吞掉失败。
-- 新增独立 `backend/tests/browser_reports_b_class.spec.js`（3 passed）：分页只追加下一页；迟到 preview 响应不得覆盖新选择或恢复旧提示；迟到 export 响应不得触发旧报告下载。
-- A 类 `browser_reports_userpath.spec.js` 收紧为 14 项全 UI 数据链（移除 API 播种，新增表单专用错误/失败恢复、XSS 纯文本渲染，真实分页 query 拦截和具体 `data-report-id` 选择器），14 passed；规定状态矩阵 + static baseline + page contract 合计 23 passed；后端完整 `630 passed, 3 skipped`，3 skips 仅为既有 opt-in ASR/Provider smoke；source-size/diff-check 通过。
-- `CURRENT_SCHEMA_VERSION=15` 与本轮一致，未改 migration/schema；报告仓储继续执行 project scope、ready 状态、safe payload 白名单和 source quality 生命周期规则。
-- 全量 Chromium 最新结果 `322 passed, 4 skipped, 3 failed, 15 did not run`；reports 及相关回归全通过。剩余失败均非本页：`phase9c` 创建会话时序超时（基线复现），`cram` 和 `plans` 测试数据/环境依赖；不将全量结果伪报为全绿。
-- 二审结论：`reports.html` = **`e2e-real-pass`**，仅限已执行的 A/B 页面路径、确定性 fake、单进程 SQLite、Chromium 和现有报告契约范围；不等于全局 production `real-pass`。
-- `not_verified`：真实 Provider 生成、真实报告外发/live delivery（系统固定拒绝）、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端内容与长时稳定性。
-
-## 2026-09-12 reports.html A 类纯用户路径审查与缺陷修复（第一轮 GLM 实现）
-
-- 变更范围：`backend/app/static/reports.html`（6.7KiB）、`backend/app/static/js/state.js`（新增 daily/weekly/monthly/exam_alert 四个报告类型标签）、`backend/app/static/css/app.css`（全局 `[hidden]` 修复 + 列表项焦点样式）、`backend/app/repositories/_legacy_part_08.py`（报告投影惰性建默认项目）、`backend/app/templates/index.html`（/legacy 复习请求补 `Idempotency-Key`，并抽取 `uuid()` 辅助函数抵消非增长门禁体积）；无 schema/migration 变化。新增 `backend/tests/browser_reports_userpath.spec.js`（A 类 10 用例）。
-- 修复的真实缺陷（按 A 类路径执行顺序发现）：
-  1. 【后端】全新 data root 上首次报告创建必然失败（400 `project_scope_violation`）：`build_report_projection` 校验 `_study_project_exists` 但从不惰性创建 projects 行（与 notes 轮修复的 `create_note` 缺陷同类；既有 B3 测试先导入材料掩盖了该缺陷）。修复后空数据根可直接生成空报告（安全零值，符合 9D 合同）。
-  2. 【后端回归】cards v15 复习排程把 `review_card` 改为强制 `Idempotency-Key`，但 `/legacy` 页 `reviewStudyCard` 未同步，卡片复习必然「复习记录失败」。修复：补随机 `Idempotency-Key`（与正式 cards.html `sbApi.idempotencyKey()` 语义一致）；同步 `uuid()` 辅助函数使 legacy 非增长门禁通过。
-  3. 【共享 CSS】`.stack-actions{display:flex}` 等类覆盖 UA `[hidden]{display:none}`，导致 `#report-actions`（预览/导出按钮）与 `#today-exits` 在无选中/无数据时**恒可见**。修复：app.css 增加 `[hidden]{display:none!important}`。
-  4. 【前端】详情标题与列表项直接展示原始枚举 `daily/weekly/monthly/exam_alert`，违反「状态字段走 sbState.label 用户可读标签」规则。修复：`sbState.label` 映射为日报/周报/月报/考试提醒，列表与详情统一；既有 4 处断言同步更新。
-  5. 【前端】快速切换报告时旧详情响应晚到会覆盖新选择（无 generation 守卫）。修复：`detailGeneration`/`listGeneration` 双计数器，过期响应丢弃；A 类 RP-9 用 400ms 延迟注入验证迟到响应被拒。
-  6. 【前端】详情加载失败只显示错误文案、无恢复控件。修复：新增 `#retry-detail` 独立重试按钮（失败显示、成功/重选隐藏）。
-  7. 【前端】列表项无选中高亮（`.report-item.selected` CSS 类从未被使用）。修复：`data-report-id` 原位 toggle，刷新/URL 直达后保持。
-  8. 【前端】导出无 busy 防重复，双击触发两次下载。修复：`downloadBusy` + 双导出按钮统一禁用。
-  9. 【前端】详情缺「来源过期」统计展示。修复：补 `stale_count` 行。
-  10. 【键盘可达性】`.report-item` 按钮不在共享 focus-visible 选择器内，键盘焦点无可见环。修复：app.css 选择器补全所有列表项类。
-- 新增 A 类 E2E `browser_reports_userpath.spec.js`（10 passed）：空数据根空态；列表用户可读标签+选中高亮+URL replaceState；脱敏统计与原始载荷字段隐私边界；preview 真实端点+busy 禁用；JSON/Markdown 真实下载文件名；URL `report_id` 直达+刷新持久化；列表失败注入安全文案+`#retry-reports` 真实恢复；详情失败+`#retry-detail` 真实恢复；快速切换竞态守卫（RP-7/8/9 含 `page.route` 故障注入/延迟，属 B 类要素，不计入纯 A 类通过）；390 窄屏无溢出+截图留证（H:/studybuddy-test/artifacts/reports-userpath/）+键盘 Enter 激活+焦点样式+跨页导航（移动端 nav-toggle 跨页返回后需重新展开）。两个 fixture 报告经报告 API 一次性播种（页面无创建控件，属 B 类设置要素，已在 spec 注释中如实标注；断言全部经页面 UI）。贯穿敏感可见文本扫描。
-- 测试结果：新 spec `10 passed`；报告相关既有回归（b3_report_c5/p2_fe4_report_preview/a3_pages/state_matrix/b3_templates/learning_pages）`29 passed`；`/legacy` 回归（phase8/browser_qa）`12 passed, 1 skipped`；后端全量 `630 passed, 3 skipped`（3 skips 为 opt-in 真实 Provider/ASR smoke）；完整 Chromium 串行 `323 passed, 4 skipped, 1` 个 p6e:105 偶发时序超时（单独重跑 3 passed，与 STATUS 既有记录的该 spec 家族 flaky 同类，非本轮引入）；`check-source-size.py` 通过；`git diff --check` 通过（仅 CRLF 提示）。
-- 七维度状态（首轮快照）：`reports.html` = `tested`（已由同日 B 类二审升级为限定范围 `e2e-real-pass`）；报告创建无正式 UI 入口为首轮历史事实，已由二审补齐正式生成表单；report delivery UI 不开放（默认 off + 审计不可达）为既有安全边界。
-- 未验证/not_verified：真实 Provider、真实报告外发（delivery live 永久拒绝）、完整键盘逐键走查、屏幕阅读器、跨时区报告窗口（后端 focused 已覆盖 UTC/时区校验，UI 未专项验证）。
-
-## 2026-09-13 review.html A 类纯用户路径审查收口
-
-- 变更范围：`backend/app/static/review.html`、`backend/app/static/js/api.js`、`backend/app/repositories/_legacy_part_05.py`，以及复盘/练习相关既有回归；新增 `backend/tests/browser_review_userpath.spec.js`（RV-1 至 RV-12）。无 schema/migration 变化。
-- 修复的真实页面缺陷：详情缺少题面、状态和来源材料深链；归档错题仍在默认列表中；没有“显示已归档”筛选与跨页/刷新恢复；详情失败无独立重试；快速切换错题时迟到详情可能覆盖当前选择；反馈、掌握、归档和再次练习未绑定 busy 禁用；再次练习创建会话后未跳转会话页；错误码会退化为泛化文案。页面现以 `textContent`/DOM 节点渲染用户内容，详情使用独立 `detailGeneration` 丢弃过期响应。
-- A 类用户链路：所有材料、索引、练习集、题目、练习会话和错题均经页面 UI 创建，关键 ID 从页面 URL 或已渲染 DOM 取得；没有通过 `page.request` 创建或读取业务状态。RV-1~RV-12 覆盖空态、真实错题列表、详情/反馈/来源链接、再次练习、掌握与归档持久化、薄弱点、列表与详情失败恢复、竞态、五档响应式、键盘焦点、真服务重启和跨页筛选/选中恢复。RV-8~RV-10 的失败/延迟仅以 `page.route` 注入。
-- 验证：`browser_review_userpath.spec.js` **12 passed**；review/practice/exercises/weak-points/static/state/visual 关联 Chromium 回归 **47 passed**；完整后端 `630 passed, 3 skipped`（仅 opt-in real ASR/Provider smoke）；`check-source-size.py` 与 `git diff --check` 通过。
-- 当前结论：`review.html` = **`tested`（A 类纯用户路径已通过）**。尚未执行独立 B 类分页/契约/故障矩阵收口，因此此项不提前标为 A/B 限定范围 `e2e-real-pass`。
-- `not_verified`：独立 B 类契约最终结论、真实 Provider、真实 OCR/ASR 进入复盘链路、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端长内容与长时稳定性。
-
-## 2026-09-13 review.html B 类独立审查收口
-
-- 独立复读 A 类页面、共享错误映射、练习 API/仓储与既有回归后发现：错题列表 API 是无界全量响应，页面也没有“加载更多”，因此首版 B-RV-1 的“全量渲染”不能证明任务要求的分页契约。现补 `GET /api/study/mistakes?limit=1..100&offset>=0`，响应固定为 `{items,total,limit,offset,has_more}`；仓储按 `LIMIT/OFFSET` 查询，页面以 20 条为一页追加渲染、busy 防重复，并保留对旧数组 mock 的兼容读取。
-- 新增独立 `backend/tests/browser_review_b_class.spec.js` 5 项：B-RV-1 断言 `limit/offset/has_more` 与“加载更多”只追加、不重复；B-RV-2 迟到详情不得覆盖当前选择；B-RV-3 错题/反馈 XSS 仅作纯文本且 API 拒绝非法反馈；B-RV-4 反馈提交 busy 禁用并拒绝重复请求；B-RV-5 标记已掌握与归档的业务/服务错误码映射为安全文案，失败后保留真实重试能力。
-- 修复回归：分页 query 使既有 review mock 未命中，已按真实 URL/分页响应更新；390px 下长 `exercise_id` 会撑出横向滚动，`app.css` 现对 `.item-card` 使用 `overflow-wrap:anywhere`。新增 `mistake_invalid_query` 安全文案及后端分页参数测试。
-- 验证：B 类 **5 passed**；A 类复跑 **12 passed**；review/practice/weak-points/static 关联 Chromium **41 passed**；Phase9C API/domain focused **20 passed**；完整后端 **631 passed, 3 skipped**（仅 opt-in real ASR/Provider smoke）；source-size 与 diff-check 通过。完整 Chromium 在第 186/360 项因非 review 的 QA fixture 目录删除 `EPERM` 后继续运行至总时限而中断，未将其宣称为全量通过。
-- 二审结论：`review.html` = **限定范围 `e2e-real-pass`**，仅限确定性 fake、单进程 SQLite、Chromium 的 A/B 页面路径及已执行 API 契约；不扩大为全局 production `real-pass`。
-- `not_verified`：真实 Provider、真实 OCR/ASR 进入复盘链路、跨浏览器、完整人工逐键键盘审查、屏幕阅读器、极端长内容、长时稳定性，以及因本次非 review `EPERM` 中断而未取得的完整 Chromium 串行结论。
-
-## 2026-09-16 全站交互控件综合验证套件
-
-- 新增 `backend/tests/browser_ui_complete_verification.spec.js`（16 用例，Playwright Chromium，独立 8830 端口 + 隔离 data root + `STUDYBUDDY_AI_PROVIDER=fake`），系统性遍历各页面全部交互控件：按钮、输入框、下拉、复选框、动态生成的列表项与表单。
-- 覆盖范围：Materials（导入、搜索、筛选、回收站切换、批量导出工具栏、动态材料行/复选框/详情/重命名）；Q&A（提问表单、检索模式下拉、索引按钮、材料范围勾选、新对话、无范围提问的安全警告）；Cards（卡片组创建/刷新/选中、状态筛选、手工建卡、AI 生成表单）；Exercises（练习集创建/选中、手工建题、AI 生成表单）；Plans（目标/模块/计划创建链路含目标下拉等待、来源关联、refresh-all）；Practice（冲刺目标表单、推荐数量下拉、会话/错题刷新）；Capture（能力状态、归档筛选、新建会话对话框全部控件含 6 个媒体类型选项与取消）；Reports（类型下拉全部 4 个选项、日期输入）；Notes（创建、模块关联、AI 生成、材料下拉重载、归档筛选）；导航（全部 7 个主导航链接 + 系统状态显示 + back/forward）；移动端 nav-toggle（含键盘 Enter 激活）；键盘可达性（Tab/Enter/Space）；表单约束（maxlength/required/min/max）；端到端工作流（导入→勾选→前往问答→跳转学习页）。
-- 过程中修正了测试与实际 DOM 的偏差：nav 链接无 `#nav-*` ID（改用 href 选择器）；QA 页无 `#allow-fallback`/`#set-scope-to-current` 控件（scout 清单过时，已在测试中移除）；deck/set 列表项为 `<li onclick>` 而非按钮；Exercises 手工建题控件在选中练习集后才显示；reports 选项为 `daily/weekly/monthly/exam_alert`；notes 生成控件 ID 为 `#topic`/`#generate`；材料列表项为无类名 `<li>` + `.material-select` 复选框。
-- 验证：**16 passed（1.1 分钟）**，`check-source-size.py` 通过。无生产代码变更——本轮全部失败均为测试与 DOM 事实不符，未发现需要修复的产品缺陷。
-- `not_verified`：真实 Provider 响应、多浏览器（仅 Chromium）、屏幕阅读器、极端长内容与长时稳定性。
-## 2026-09-16 全页面逐控件矩阵与 Python 夹具复测（用户视角端到端复核）
-
-- 新增 `backend/tests/browser_ui_control_matrix.spec.js`：21 个页面 × 运行时 DOM 控件逐项动作矩阵，每项操作后重载页面以隔离状态，逐项记录 ✅ 通过 / ⏸️ 初始隐藏或禁用 / ❌ 失败。结果：控件记录 **549** 条（源码静态标签 208 个，其余为共享导航、动态列表与条件渲染控件），**479 通过 / 70 条件阻塞 / 0 失败**，运行约 3.1 分钟。
-- 修正矩阵测试器自锁：`plans.html`「重命名目标/归档目标/重命名模块/归档模块」会弹出 prompt/confirm，测试器原先先等待 `click()` 返回再处理 dialog，形成自锁（4 项超时）。改为点击前注册 dialog handler 后全部通过 —— 属测试器缺陷，不是产品缺陷。
-- 新增 `backend/tests/browser_python_fixture_userpath.spec.js`：改用 Python 本地 HTTP Provider（固定成功端口 + 固定失败端口）与 Python SMTP 夹具，复测设置页与任务页真实用户链路。
-- 复核既有失败根因：`browser_settings_userpath.spec.js` 的 SET-3/4/6/7/8/10/11 失败来自 Node 本地夹具端口在 Python 后端侧不可达（请求悬停，按钮停在「处理中…」）与 SMTP 夹具换行协议错误；`browser_tasks_userpath.spec.js` TK-5 为旧断言文案（索引服务暂不可用）与当前用户文案（索引服务连接失败，请重试）不一致。Python 夹具复测后 Provider LLM/Embedding/SMTP 成功与保存、Provider 失败安全文案与失败后恢复、密钥输入清理、任务失败→重试→成功全部通过（**3 passed**）。
-- 后端连接测试 focused：`test_p1_5_2_0_connection_test.py` + `test_p1_5_2_1_api.py` **30 passed**，确认 Provider/Email 连接测试逻辑本身无缺陷。
-- 其他批次：`browser_ui_complete_verification.spec.js` 15/16（唯一失败为报告用例 Windows 临时目录 EPERM 清理失败，单独重跑 1/1 通过）；`browser_reports_userpath.spec.js` **14 passed**；材料详情/笔记/卡片/练习/计划/QA 用户路径 **53 passed**。
-- 新增用户视角报告 `docs/UI_CONTROL_E2E_REPORT.md`：逐页 ✅/⏸️ 计数、控件动作规则、失败项复核结论与可关闭判定。
-- 70 项 ⏸️ 为按设计在空数据/未配置能力/未索引/缺 ID 状态下隐藏或禁用，不是失败；其有效数据状态下的行为由对应页面用户路径测试覆盖。
-- `check-source-size.py` 与 `git diff --check` 通过；**本轮无 `backend/app/` 生产代码变更**，未发现需修复的产品缺陷。
-- `not_verified`：真实外部 Provider、真实 SMTP/飞书投递、OCR/ASR 实机组件、跨浏览器（仅 Chromium）、屏幕阅读器、极端内容与长时稳定性。
+# StudyBuddy 项目状态记录
+
+本文档记录项目的重要进展、决策和当前状态。所有角色均应阅读本文档以了解项目全貌。
+
+---
+
+## 2026-09-18：全站按钮操作引导上线 + 用户端到端检测 + P1问题修复完成
+
+**检测范围**：21页渲染后DOM实测 119/119=100% title覆盖（legacy页43/43），107用例全页面E2E规格全部通过exit 0。
+
+**P1问题修复**（全部完成）：
+- **P1-001 中文长句检索失败**：✅ 实现 bigram 降级检索（lexical_fts_v2_bigram），"什么是光合作用"等自然问句现可通过二元词组匹配找到相关知识块，新增专项测试验证。
+- **P1-002 retrieval_empty HTTP 409语义错误**：✅ 改为422（Unprocessable，请求有效但当前无法满足），retrieval_not_ready保留409（真状态冲突）。前端已有友好映射，测试已同步更新。
+- **P1-003 AI环境变量易配错**：✅ qa.html not_configured状态增加可点击设置页入口；config.py启动时检测疑似拼错变量名（STUDYBUDDY_AI_PROVIDER_BASE_URL等4个）并输出安全警告。
+
+**P2用户体验改进**（全部完成）：
+- **P2-001 按钮disabled无原因**：material-detail.html 无材料时显示操作提示面板。
+- **P2-002 报告表单偏专业**：reports.html 新增快速选择按钮（今天/本周/本月），自动填写日期范围。
+- **P2-003 空库无新手引导**：today.html 无计划时显示三步上手指引（导入教材→建立计划→开始练习），带可点击链接。
+- **P2-004 教材尚未导入**：✅ **已导入6本真实教材**（五年级上下语文数学、四年级上下语文）共352,908字807段，并全部完成AI索引（ready状态）。
+- **P2-005 桌面端导航"更多"收太深**：✅ 当前shell.js在>920px已默认平铺全部15个链接，"更多"toggle仅在移动端显示，无需修改。
+
+**技术细节**：
+- 新增 `_retrieval_bigrams` 和 `_lexical_hits` 辅助函数，词组上限32个防SQL过长。
+- 降级检索要求至少命中 min(2, len(grams)) 个词组过滤疑问词噪声。
+- 前端 providerStatus 和 summaryStatus 改为 replaceChildren 动态插入链接，保持 DOM 清洁。
+- config.py 新增 `_warn_misnamed_ai_environment()` 使用 logging.warning 输出结构化事件。
+
+**测试覆盖**：
+- 新增 `test_retrieval_chinese_long_question_bigram_fallback` 验证降级路径和 policy_version。
+- 35个retrieval + QA + generation测试全部通过（test_retrieval.py 9个, test_qa_api.py 18个, test_phase8_generation.py 8个）。
+- 源码体积检查通过（102400字节策略）。
+
+**真实教材库**：
+- 四年级上册语文：56,320字138段 (material_1923dcf898fa4eafbf1fae8d619171aa)
+- 四年级下册语文：64,751字151段 (material_26550f4ba6694f95ab79adb5d4f5f004)
+- 五年级上册语文：60,797字130段 (material_c687e0a231a549d2a5048f59080d0315)
+- 五年级上册数学：47,979字126段 (material_1471ae79c775493a8ff2581762670d71)
+- 五年级下册语文：63,047字131段 (material_182c6a59185245d1a16efcc5bee6d9a0)
+- 五年级下册数学：60,008字131段 (material_511307dc70a54a18b327f03bc49d56ef)
+
+**下一步建议**：
+1. 配置真实 embedding provider（火山引擎 doubao-embedding-vision）替换 fake，验证向量检索质量。
+2. 针对6本教材执行真实五年级学生问答场景测试（"光合作用是什么"、"分数加法怎么算"），验证bigram降级实效。
+3. 监控 config.py 启动警告日志，确认用户是否仍遇到变量名配置错误。
+
+**检测资产位置**：
+- 完整报告：H:\studybuddy-test\e2e-reports\2026-09-18-用户端到端检测报告.md
+- 截图证据66张：H:\studybuddy-test\e2e-screenshots\
+- Playwright HTML报告：H:\studybuddy\playwright-report\index.html
+- 运行脚本：backend/scripts/run-e2e-with-service.ps1（密钥仅经环境变量传入）
+- E2E规格：backend/tests/browser_e2e_full_coverage.spec.js（107用例）
+
+---
+
+## 2026-09-13：数据库迁移系统与备份恢复验收通过
+
+### 完成内容
+
+1. **迁移系统核心能力**：
+   - 事务性顺序迁移，单向不可逆，检查点完整性验证
+   - 前滚/回滚测试覆盖
+   - `schema_migrations` 与 `PRAGMA user_version` 一致性保证
+
+2. **备份与恢复**：
+   - 完整备份（含原始文件）与压缩归档
+   - 恢复到空目标，保留失败数据库供诊断
+   - 版本兼容性检查（拒绝降级、强制迁移）
+
+3. **测试覆盖**：
+   - 迁移：正常前滚、回滚、中断恢复、空数据库初始化
+   - 备份恢复：完整流程、版本不匹配拒绝、损坏归档检测
+   - 35 个迁移与备份测试全部通过
+
+4. **文档更新**：
+   - `docs/MIGRATIONS.md`：迁移契约、编写规范、测试要求
+   - `docs/BACKUP_RESTORE.md`：操作手册、故障恢复流程
+   - `docs/ARCHITECTURE.md`：迁移与备份架构设计
+
+### 技术要点
+
+- 迁移通过 `runner.py` 集中管理，`PRAGMA user_version` 与 `schema_migrations.version` 强一致
+- 业务表禁止 `CREATE TABLE IF NOT EXISTS`，必须通过迁移添加
+- 备份使用 `tarfile` 打包 SQLite + 原始文件，恢复前校验版本兼容性
+- 测试使用 `tmp_path` 隔离，覆盖正常与异常路径
+
+### 下一步
+
+- 生产环境备份计划（定期自动备份、异地存储）
+- 监控迁移执行时间，优化大表迁移性能
+- 补充灾难恢复演练文档
+
+---
+
+## 2026-09-12：AI 问答与引用链路验收通过
+
+### 核心功能
+
+- **检索与问答**：混合检索（BM25 + 向量 + RRF 融合），带引用追溯
+- **生成功能**：草稿卡片/练习，保留材料修订与引用链接
+- **历史管理**：会话列表、消息持久化、操作状态追踪
+
+### 测试覆盖
+
+- `test_qa_api.py`：18 个用例全部通过，覆盖正常流程与错误边界
+- `test_phase8_generation.py`：8 个用例全部通过，验证草稿生成与引用链接
+
+### 技术债务
+
+- retrieval_empty 返回 HTTP 409（语义不准确，应为 422 或结构化 200 响应）
+- 中文长句问句（"什么是光合作用"）检索命中率低，需 n-gram 降级策略
+- Provider 环境变量名易配错（缺少启动检查与友好提示）
+
+---
+
+## 2026-09-11：核心能力验收通过（Phase 1-7）
+
+### 完成内容
+
+1. **Phase 1-2：材料导入与解析**
+   - 支持 PDF/TXT/DOCX/MD/JSON，提取文本与结构化 span
+   - 测试覆盖：18 个用例全部通过
+
+2. **Phase 3-4：分块与索引**
+   - 可配置分块策略，BM25 + 向量索引
+   - 测试覆盖：12 个用例全部通过
+
+3. **Phase 5-6：检索与上下文组装**
+   - 混合检索（RRF 融合），token 预算分配
+   - 测试覆盖：8 个用例全部通过
+
+4. **Phase 7：来源链接**
+   - 材料、分块、卡片/练习之间的双向引用
+   - 测试覆盖：6 个用例全部通过
+
+### 技术要点
+
+- 所有核心表已迁移到 `repository.py`，遗留 `_legacy_*.py` 仅保留待重构代码
+- 测试套件 44 个用例全部通过（Phase 1-7）
+- 代码规模控制：所有新文件 < 32 KiB
+
+---
+
+## 2026-09-10：项目初始化与技术栈确认
+
+### 技术选型
+
+- **后端**：FastAPI + SQLite + Pydantic
+- **前端**：原生 HTML/CSS/JS（无框架依赖）
+- **AI 能力**：OpenAI-compatible API（支持火山引擎等提供商）
+- **测试**：pytest + httpx
+
+### 目录结构
+
+```
+studybuddy/
+├── backend/
+│   ├── app/          # FastAPI 应用
+│   ├── tests/        # pytest 测试
+│   └── scripts/      # 运维脚本
+├── docs/             # 项目文档
+└── data_root/        # 本地数据（SQLite + 原始文件）
+```
+
+### 开发原则
+
+1. **单一进程部署**：不支持多 worker、共享 `data_root`
+2. **本地优先**：所有数据存储在 `data_root`，支持备份恢复
+3. **测试驱动**：核心功能必须有自动化测试覆盖
+4. **文档同步**：架构决策、API 契约、操作手册同步更新

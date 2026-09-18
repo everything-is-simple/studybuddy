@@ -63,10 +63,13 @@
 """
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
+
+logger = logging.getLogger("studybuddy.config")
 
 DEFAULT_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 DEFAULT_AI_TIMEOUT_SECONDS = 30.0
@@ -348,6 +351,23 @@ def _env_delivery_targets() -> tuple[str, ...]:
     return values
 
 
+def _warn_misnamed_ai_environment() -> None:
+    """Warn safely when common, unsupported AI variable names are present."""
+    suspicious = {
+        "STUDYBUDDY_AI_PROVIDER_BASE_URL": "STUDYBUDDY_AI_BASE_URL",
+        "STUDYBUDDY_AI_PROVIDER_API_KEY": "STUDYBUDDY_AI_API_KEY",
+        "STUDYBUDDY_AI_PROVIDER_CHAT_MODEL": "STUDYBUDDY_AI_MODEL",
+        "STUDYBUDDY_AI_PROVIDER_EMBEDDING_MODEL": "STUDYBUDDY_EMBEDDING_MODEL",
+    }
+    found = [name for name in suspicious if os.environ.get(name)]
+    if found:
+        logger.warning(
+            "ai_configuration_suspect_variable_names",
+            extra={"event": "ai_configuration_suspect_variable_names", "variables": found,
+                   "use_names": [suspicious[name] for name in found]},
+        )
+
+
 def config_from_environment() -> AppConfig:
     """从环境变量构造应用配置。
     
@@ -384,6 +404,7 @@ def config_from_environment() -> AppConfig:
         - demo_mode=True 时强制使用 fake provider，忽略其他 AI 配置
         - 报告交付功能默认关闭，需显式启用并授权
     """
+    _warn_misnamed_ai_environment()
     configured_root = os.environ.get("STUDYBUDDY_DATA_ROOT")
     if not configured_root:
         configured_root = str(Path.home() / ".studybuddy" / "data")

@@ -31,7 +31,7 @@
 <section class="card" data-od-id="today-summary">
 <h2>今日概览</h2>
 <div id="summary-status" class="notice" role="status" aria-live="polite">正在加载今日概览...</div>
-<div id="summary" class="rhythm-summary" hidden></div>
+<div id="summary" class="rhythm-summary" hidden></div><div id="today-onboarding" class="notice muted" hidden><strong>开始学习只需三步</strong><ol><li><a href="/app/materials.html">导入教材</a>：先导入五年级上册当前课程。</li><li><a href="/app/plans.html">建立学习计划</a>：安排当前学习、预习和复习内容。</li><li><a href="/app/practice.html">开始练习</a>：完成今天的任务并查看进度。</li></ol></div>
 <div id="weekly-status" class="notice mt-16" role="status" aria-live="polite">正在加载近七天趋势…</div><div id="weekly-trend" class="rhythm-summary" hidden></div>
 </section>
 
@@ -49,6 +49,7 @@
 (async function(){
 const pageRequest=sbApi.setPageScope('today');
 const summaryStatus=document.querySelector('#summary-status');
+const onboarding=document.querySelector('#today-onboarding');
 const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
 const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
@@ -107,7 +108,7 @@ div.append(value,label);
 summary.append(div)
 })
 }else{
-settled(summaryStatus,context.plans.length?'计划尚未启动':'还没有学习计划')
+const noPlan=!context.plans.length;settled(summaryStatus,noPlan?'还没有学习计划':'计划尚未启动');onboarding.hidden=!noPlan
 }
 }catch(e){
 if(generation!==loadGeneration)return;

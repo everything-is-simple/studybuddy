@@ -245,14 +245,17 @@ def register_routes(app, context: dict[str, object]) -> None:
                     (retrieval["policy_version"], retrieval["run_id"], operation["operation_id"]),
                 )
                 if retrieval["status"] != "succeeded":
-                    fail_qa_operation(connection, str(operation["operation_id"]), str(retrieval["error_code"]))
-                    raise HTTPException(status_code=409, detail=str(retrieval["error_code"]))
+                    error_code = str(retrieval["error_code"])
+                    fail_qa_operation(connection, str(operation["operation_id"]), error_code)
+                    raise HTTPException(status_code=422 if error_code == "retrieval_empty" else 409, detail=error_code)
                 context = assemble_context(
                     connection, project_id=app.state.config.project_id, hits=list(retrieval["hits"]),
                 )
                 if not context["context_blocks"]:
                     fail_qa_operation(connection, str(operation["operation_id"]), "retrieval_empty")
-                    raise HTTPException(status_code=409, detail="retrieval_empty")
+                    # 422：请求本身有效但当前无法满足（无相关内容）；409 留给真正的状态冲突
+                    # （如 retrieval_not_ready：建立索引后可解决）。前端按 detail 错误码映射文案。
+                    raise HTTPException(status_code=422, detail="retrieval_empty")
                 try:
                     if app.state.config.ai_provider_id == "fake":
                         provider = provider_registry(

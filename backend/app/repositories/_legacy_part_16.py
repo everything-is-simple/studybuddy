@@ -246,6 +246,34 @@ def run_chunk_retrieval(connection: sqlite3.Connection, *, project_id: str, quer
                    "1.0 AS lexical_score" + common + filters + " "
                    "ORDER BY lexical_score DESC, c.start_offset ASC, c.id ASC LIMIT ?")
             rows = connection.execute(sql, [*params, *tokens, top_k]).fetchall()
+            if not rows:
+                # lexical_fts_v2: 中文长句降级。整句 substring AND 无命中时，提取非 ASCII token
+                # 的二元词组（bigram），按命中词组数排序；要求至少命中 min(2, len(grams)) 个
+                # 词组以过滤疑问词噪声（如“什么是”）。降级运行的 policy_version 标记为
+                # lexical_fts_v2_bigram，与主路径 lexical_fts_v1 区分。
+                grams = _retrieval_bigrams(tokens)
+                if grams:
+                    min_score = min(2, len(grams))
+                    or_filters = " OR ".join("instr(lower(c.text), lower(?)) > 0" for _ in grams)
+                    score_terms = " + ".join(
+                        f"(CASE WHEN instr(lower(c.text), lower(?)) > 0 THEN 1 ELSE 0 END)" for _ in grams
+                    )
+                    bigram_sql = (
+                        "SELECT * FROM (SELECT c.id, c.material_id, c.revision_id, c.start_offset, "
+                        "c.end_offset, c.text, (" + score_terms + ") AS lexical_score" + common
+                        + " AND (" + or_filters + ")) WHERE lexical_score >= ? "
+                        "ORDER BY lexical_score DESC, start_offset ASC, id ASC LIMIT ?"
+                    )
+                    rows = connection.execute(
+                        bigram_sql, [*grams, *params, *grams, min_score, top_k]
+                    ).fetchall()
+                    if rows:
+                        run_id = _create_retrieval_run(
+                            connection, query=query, normalized_query=normalized,
+                            project_id=project_id, status="succeeded", error_code=None,
+                            policy_version="lexical_fts_v2_bigram",
+                        )
+                        return _lexical_hits(connection, run_id, rows, normalized, tokens, bigram=True)
         if not rows:
             run_id = _create_retrieval_run(connection, query=query, normalized_query=normalized,
                                            project_id=project_id, status="empty", error_code="retrieval_empty")
@@ -253,23 +281,50 @@ def run_chunk_retrieval(connection: sqlite3.Connection, *, project_id: str, quer
                     "policy_version": RETRIEVAL_POLICY_VERSION, "hits": []}
         run_id = _create_retrieval_run(connection, query=query, normalized_query=normalized,
                                        project_id=project_id, status="succeeded", error_code=None)
-        hits: list[dict[str, object]] = []
-        for rank, row in enumerate(rows, 1):
-            score = float(row["lexical_score"])
-            connection.execute(
-                "INSERT INTO retrieval_hits (run_id, chunk_id, rank, score, lexical_score, vector_score, "
-                "rerank_score, selected, citation_label) VALUES (?, ?, ?, ?, ?, NULL, NULL, 1, ?)",
-                (run_id, row["id"], rank, score, score, f"chunk-{rank}"),
-            )
-            span_ids = [str(value[0]) for value in connection.execute(
-                "SELECT span_id FROM chunk_spans WHERE chunk_id = ? ORDER BY span_id", (row["id"],)
-            ).fetchall()]
-            hits.append({"chunk_id": row["id"], "material_id": row["material_id"], "revision_id": row["revision_id"],
-                         "rank": rank, "score": score, "lexical_score": score, "citation_label": f"chunk-{rank}",
-                         "text_preview": _retrieval_preview(str(row["text"]), tokens),
-                         "start_offset": row["start_offset"], "end_offset": row["end_offset"], "span_ids": span_ids})
-        return {"run_id": run_id, "status": "succeeded", "error_code": None, "query": normalized,
-                "policy_version": RETRIEVAL_POLICY_VERSION, "hits": hits}
+        return _lexical_hits(connection, run_id, rows, normalized, tokens, bigram=False)
+
+def _retrieval_bigrams(tokens: list[str], limit: int = 32) -> list[str]:
+    """从非 ASCII token 提取二元词组（bigram）用于中文降级检索。
+
+    中文没有空格分词：整句 substring 无命中时，用滑动 2 字词组按命中数排序。
+    单字 token 直接作为词组；去重保序；上限 limit 个防止 SQL 过长。
+    """
+    grams: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        if token.isascii():
+            continue
+        if len(token) <= 2:
+            candidates = [token]
+        else:
+            candidates = [token[i:i + 2] for i in range(len(token) - 1)]
+        for gram in candidates:
+            if gram not in seen:
+                seen.add(gram)
+                grams.append(gram)
+                if len(grams) >= limit:
+                    return grams
+    return grams
+
+def _lexical_hits(connection: sqlite3.Connection, run_id: str, rows: list, normalized: str,
+                  tokens: list[str], *, bigram: bool) -> dict[str, object]:
+    hits: list[dict[str, object]] = []
+    for rank, row in enumerate(rows, 1):
+        score = float(row["lexical_score"])
+        connection.execute(
+            "INSERT INTO retrieval_hits (run_id, chunk_id, rank, score, lexical_score, vector_score, "
+            "rerank_score, selected, citation_label) VALUES (?, ?, ?, ?, ?, NULL, NULL, 1, ?)",
+            (run_id, row["id"], rank, score, score, f"chunk-{rank}"),
+        )
+        span_ids = [str(value[0]) for value in connection.execute(
+            "SELECT span_id FROM chunk_spans WHERE chunk_id = ? ORDER BY span_id", (row["id"],)
+        ).fetchall()]
+        hits.append({"chunk_id": row["id"], "material_id": row["material_id"], "revision_id": row["revision_id"],
+                     "rank": rank, "score": score, "lexical_score": score, "citation_label": f"chunk-{rank}",
+                     "text_preview": _retrieval_preview(str(row["text"]), tokens),
+                     "start_offset": row["start_offset"], "end_offset": row["end_offset"], "span_ids": span_ids})
+    return {"run_id": run_id, "status": "succeeded", "error_code": None, "query": normalized,
+            "policy_version": "lexical_fts_v2_bigram" if bigram else RETRIEVAL_POLICY_VERSION, "hits": hits}
 
 def get_material_index_status(connection: sqlite3.Connection, material_id: str) -> dict[str, object] | None:
     material = connection.execute(
