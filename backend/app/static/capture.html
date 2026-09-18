@@ -23,7 +23,7 @@
 <p class="lead">上传音频/图片，查看转写草稿，确认或编辑后转为学习材料。</p>
 </div>
 <div class="hero-action">
-<button class="btn btn-primary" id="new-session-btn" type="button">新建采集会话</button>
+<button class="btn btn-primary" id="new-session-btn" type="button" title="[1] 新建采集会话 - 开始课堂音频/图片采集">新建采集会话</button>
 </div>
 </div>
 
@@ -31,7 +31,7 @@
 <h2>转写能力状态</h2>
 <div id="asr-notice" class="notice" role="status" aria-live="polite">正在加载转写能力状态…</div>
 <div id="ocr-notice" class="notice mt-12" role="status" aria-live="polite">正在加载 OCR 能力状态…</div>
-<div class="mt-12"><button id="retry-asr" class="btn" type="button" hidden>重试加载能力状态</button></div>
+<div class="mt-12"><button id="retry-asr" class="btn" type="button" hidden title="[重试] 重新加载ASR能力状态">重试加载能力状态</button></div>
 </section>
 
 <section class="card mt-24" data-od-id="capture-sessions">
@@ -41,12 +41,12 @@
 </div>
 <div class="filters">
 <label><input type="checkbox" id="include-archived"><span>显示已归档</span></label>
-<button class="btn" id="refresh-btn" type="button">刷新</button>
+<button class="btn" id="refresh-btn" type="button" title="[2] 刷新 - 重新加载采集会话列表">刷新</button>
 </div>
 <div id="error" class="error" role="alert" aria-live="polite" hidden></div>
-<div class="mt-12"><button id="retry-list" class="btn" type="button" hidden>重试加载列表</button></div>
+<div class="mt-12"><button id="retry-list" class="btn" type="button" hidden title="[重试] 重新加载采集列表">重试加载列表</button></div>
 <div id="sessions" class="session-grid"></div>
-<button id="load-more" class="btn mt-12" type="button" hidden>加载更多会话</button>
+<button id="load-more" class="btn mt-12" type="button" hidden title="[翻页] 加载更多采集记录">加载更多会话</button>
 <div id="empty" class="empty" hidden>还没有采集会话</div>
 </section>
 </main>
@@ -80,8 +80,8 @@
 </div>
 <div id="new-session-status" class="notice warn" role="alert" hidden></div>
 <div class="stack-actions">
-<button type="submit" class="btn btn-primary" id="submit-new-session">创建</button>
-<button type="button" class="btn" id="cancel-dialog-btn">取消</button>
+<button type="submit" class="btn btn-primary" id="submit-new-session" title="[采集1] 创建采集会话 - 上传音频/图片开始课堂采集">创建</button>
+<button type="button" class="btn" id="cancel-dialog-btn" title="[取消] 关闭对话框">取消</button>
 </div>
 </form>
 </dialog>
@@ -91,7 +91,7 @@
 <div id="session-detail-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="session-detail-content"></div>
 <div class="mt-24">
-<button type="button" class="btn" id="close-detail-btn">关闭</button>
+<button type="button" class="btn" id="close-detail-btn" title="[关闭] 关闭详情">关闭</button>
 </div>
 </dialog>
 

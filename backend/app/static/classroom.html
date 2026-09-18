@@ -28,15 +28,15 @@
 <section class="card span-6" data-od-id="classroom-captures">
 <h2>采集会话</h2>
 <div id="capture-status" class="notice" role="status" aria-live="polite">正在加载采集会话…</div>
-<button id="refresh-captures" class="btn mt-12" type="button">刷新采集列表</button>
-<button id="load-more-captures" class="btn mt-12" type="button" hidden>加载更多会话</button>
+<button id="refresh-captures" class="btn mt-12" type="button" title="[1] 刷新采集列表 - 重新加载当前会话的采集记录">刷新采集列表</button>
+<button id="load-more-captures" class="btn mt-12" type="button" hidden title="[翻页] 加载更多采集记录">加载更多会话</button>
 <div id="captures"></div>
 </section>
 
 <section class="card span-6" data-od-id="classroom-reports">
 <h2>学习报告</h2>
 <div id="report-status" class="notice" role="status" aria-live="polite">正在加载报告列表…</div>
-<button id="refresh-reports" class="btn mt-12" type="button">刷新报告列表</button>
+<button id="refresh-reports" class="btn mt-12" type="button" title="[报告] 刷新报告列表">刷新报告列表</button>
 <div id="reports"></div>
 </section>
 </div>
@@ -44,7 +44,7 @@
 <section class="card" data-od-id="classroom-detail">
 <h2>详情区</h2>
 <div id="detail-status" class="notice" role="status" aria-live="polite" hidden></div>
-<button id="retry-detail" class="btn mt-12" type="button" hidden>重试加载详情</button>
+<button id="retry-detail" class="btn mt-12" type="button" hidden title="[重试] 重新加载详情">重试加载详情</button>
 <div id="detail-content"></div>
 </section>
 
@@ -145,7 +145,7 @@ actions.className='action-group';
 const viewBtn=document.createElement('button');
 viewBtn.className='btn btn-sm';
 viewBtn.type='button';
-viewBtn.textContent='查看详情';
+viewBtn.textContent='查看详情';viewBtn.title='[查看] 查看详情 - 打开这条记录的详细信息';
 viewBtn.onclick=()=>viewCapture(capture.id);
 actions.append(viewBtn);
 item.append(actions);
@@ -199,7 +199,7 @@ item.append(title);
 const viewBtn=document.createElement('button');
 viewBtn.className='btn btn-sm';
 viewBtn.type='button';
-viewBtn.textContent='查看详情';
+viewBtn.textContent='查看详情';viewBtn.title='[查看] 查看详情 - 打开这条记录的详细信息';
 viewBtn.onclick=()=>viewReport(report.id);
 item.append(viewBtn);
 list.append(item);

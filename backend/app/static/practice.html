@@ -33,28 +33,28 @@
 </section>
 
 <section class="card span-12" data-od-id="cram-workspace">
-<div class="section-heading"><div><h2>冲刺目标</h2><p class="muted">创建明确的考试目标，并从已确认且来源有效的题目中组建限时练习。</p></div><button class="btn" id="refresh-cram" type="button">刷新冲刺</button></div>
+<div class="section-heading"><div><h2>冲刺目标</h2><p class="muted">创建明确的考试目标，并从已确认且来源有效的题目中组建限时练习。</p></div><button class="btn" id="refresh-cram" type="button" title="[1] 刷新冲刺 - 重新加载冲刺目标">刷新冲刺</button></div>
 <div id="cram-status" class="notice" role="status" aria-live="polite">正在加载冲刺目标...</div>
 <form id="cram-goal-form" class="stack mt-12">
 <label for="cram-title">目标名称</label><input id="cram-title" maxlength="200" required placeholder="例如：期末考试冲刺">
 <div class="form-row"><div><label for="cram-date">目标日期</label><input id="cram-date" type="date" required></div><div><label for="cram-count">目标题数</label><input id="cram-count" type="number" min="1" max="200" value="10" required></div></div>
-<button class="btn btn-primary" id="create-cram-goal" type="submit">创建冲刺目标</button>
+<button class="btn btn-primary" id="create-cram-goal" type="submit" title="[3] 创建冲刺目标 - 开始新的期末冲刺计划">创建冲刺目标</button>
 </form>
 <div class="grid mt-16"><div class="span-5"><h3>目标列表</h3><ul id="cram-goals" class="session-list"></ul></div><div class="span-7"><h3>目标详情</h3><div id="cram-detail" class="notice muted">选择一个目标查看操作。</div></div></div>
 </section>
-<section class="card span-12" data-od-id="practice-recommendations"><h2>推荐练习</h2><div id="recommendation-status" class="notice" role="status" aria-live="polite">正在加载推荐...</div><div id="recommendations" class="stack"></div><div class="stack-actions mt-12"><label for="recommendation-limit">推荐数量</label><select id="recommendation-limit"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select><button class="btn btn-primary" id="create-recommended-session" type="button" disabled>创建练习会话</button><button class="btn" id="refresh-recommendations" type="button">刷新推荐</button></div></section>
+<section class="card span-12" data-od-id="practice-recommendations"><h2>推荐练习</h2><div id="recommendation-status" class="notice" role="status" aria-live="polite">正在加载推荐...</div><div id="recommendations" class="stack"></div><div class="stack-actions mt-12"><label for="recommendation-limit">推荐数量</label><select id="recommendation-limit"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select><button class="btn btn-primary" id="create-recommended-session" type="button" disabled title="[练习] 开始推荐练习 - 用推荐题库开始一次限时练习">创建练习会话</button><button class="btn" id="refresh-recommendations" type="button" title="[4] 刷新推荐 - 重新获取练习推荐">刷新推荐</button></div></section>
 <section class="card span-6" data-od-id="practice-sessions">
 <h2>练习会话</h2>
 <div id="session-status" class="notice" role="status" aria-live="polite">正在加载练习会话...</div>
 <ul id="sessions" class="session-list"></ul>
-<button class="btn mt-12" id="refresh-sessions" type="button">刷新列表</button>
+<button class="btn mt-12" id="refresh-sessions" type="button" title="[练习] 刷新练习记录">刷新列表</button>
 </section>
 
 <section class="card span-6" data-od-id="practice-mistakes">
 <h2>错题库</h2>
 <div id="mistake-status" class="notice" role="status" aria-live="polite">正在加载错题...</div>
 <ul id="mistakes" class="mistake-list"></ul>
-<button class="btn mt-12" id="refresh-mistakes" type="button">刷新</button>
+<button class="btn mt-12" id="refresh-mistakes" type="button" title="[错题] 刷新错题列表">刷新</button>
 </section>
 
 <section class="card span-12" data-od-id="practice-detail" hidden>

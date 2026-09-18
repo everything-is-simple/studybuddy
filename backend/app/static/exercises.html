@@ -27,19 +27,19 @@
 <div class="grid">
 <section class="card span-4" data-od-id="exercises-sets">
 <h2>练习集</h2>
-<form id="set-create-form" class="stack"><input id="new-set-title" placeholder="新练习集名称" required><button class="btn btn-primary" type="submit">创建练习集</button></form>
+<form id="set-create-form" class="stack"><input id="new-set-title" placeholder="新练习集名称" required><button class="btn btn-primary" type="submit" title="[练习1] 创建练习集">创建练习集</button></form>
 <div id="set-status" class="notice" role="status" aria-live="polite">正在加载练习集...</div>
 <ul id="sets" class="set-list"></ul>
-<button class="btn mt-12" id="refresh-sets" type="button">刷新列表</button>
+<button class="btn mt-12" id="refresh-sets" type="button" title="[1] 刷新列表 - 重新加载练习集">刷新列表</button>
 </section>
 
 <section class="card span-8" data-od-id="exercises-detail">
 <h2 id="set-title">选择练习集</h2>
 <div id="set-summary" class="muted" hidden></div>
-<button id="retry-set-detail" class="btn mt-12" type="button" hidden>重试练习集详情</button>
-<div id="set-actions" class="stack" hidden><form id="exercise-create-form" class="stack"><select id="new-exercise-type"><option value="short_answer">简答题</option><option value="multiple_choice">选择题</option><option value="true_false">判断题</option></select><input id="new-exercise-prompt" placeholder="题目" required><input id="new-exercise-answer" placeholder="答案" required><button class="btn" type="submit">创建题目</button></form><form id="exercise-generate-form" class="stack"><input id="exercise-topic" placeholder="AI 草稿主题" required><input id="exercise-material-ids" placeholder="材料 ID（逗号分隔，可从资料详情页复制）" required><button class="btn" type="submit">生成题目草稿</button></form></div>
+<button id="retry-set-detail" class="btn mt-12" type="button" hidden title="[重试] 重新加载练习集详情">重试练习集详情</button>
+<div id="set-actions" class="stack" hidden><form id="exercise-create-form" class="stack"><select id="new-exercise-type"><option value="short_answer">简答题</option><option value="multiple_choice">选择题</option><option value="true_false">判断题</option></select><input id="new-exercise-prompt" placeholder="题目" required><input id="new-exercise-answer" placeholder="答案" required><button class="btn" type="submit" title="[练习2] 创建题目 - 加入当前练习集">创建题目</button></form><form id="exercise-generate-form" class="stack"><input id="exercise-topic" placeholder="AI 草稿主题" required><input id="exercise-material-ids" placeholder="材料 ID（逗号分隔，可从资料详情页复制）" required><button class="btn" type="submit" title="[练习3] 生成题目草稿 - AI生成草稿（需确认后生效）">生成题目草稿</button></form></div>
 <div id="exercise-status" class="notice" role="status" aria-live="polite" hidden></div>
-<button id="retry-exercises" class="btn mt-12" type="button" hidden>重试题目列表</button>
+<button id="retry-exercises" class="btn mt-12" type="button" hidden title="[重试] 重新加载题目列表">重试题目列表</button>
 <div id="exercise-detail" class="stack"></div>
 <ul id="exercises" class="exercise-list" hidden></ul>
 </section>

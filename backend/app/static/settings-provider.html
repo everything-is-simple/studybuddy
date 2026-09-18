@@ -37,12 +37,12 @@
 </div>
 <div class="form-row">
 <div class="field"><label for="provider-timeout">Timeout（秒）</label><input id="provider-timeout" name="timeout_seconds" type="number" min="0.1" max="120" step="0.1" value="30"></div>
-<div class="field"><label for="provider-env">环境变量片段</label><button class="btn" type="button" id="provider-copy">复制到剪贴板（仅内存生成）</button></div>
+<div class="field"><label for="provider-env">环境变量片段</label><button class="btn" type="button" id="provider-copy" title="[1] 复制Provider环境变量 - 复制到剪贴板（仅内存生成）">复制到剪贴板（仅内存生成）</button></div>
 </div>
 <div id="provider-result" class="notice" role="status" aria-live="polite" hidden></div>
 <div class="stack-actions">
-<button class="btn btn-primary" type="submit" id="provider-test">测试 Provider 连接</button>
-<button class="btn btn-success" type="button" id="provider-save" hidden>保存此配置</button>
+<button class="btn btn-primary" type="submit" id="provider-test" title="[2] 测试Provider连接 - 测试与AI服务的连接">测试 Provider 连接</button>
+<button class="btn btn-success" type="button" id="provider-save" hidden title="[保存] 保存Provider配置 - 通过连接测试后可保存">保存此配置</button>
 <span class="muted">测试使用固定 synthetic payload，不发送学习材料。</span>
 </div>
 </form>
@@ -61,18 +61,18 @@
 <div id="feishu-fields" class="stack" hidden>
 <div class="field"><label for="feishu-webhook">Feishu Webhook</label><input id="feishu-webhook" name="feishu_webhook" type="password" autocomplete="off" spellcheck="false" pattern="https://open\.feishu\.cn/.*"></div>
 </div>
-<div class="form-row"><div class="field"><label for="email-timeout">Timeout（秒）</label><input id="email-timeout" name="timeout_seconds" type="number" min="0.1" max="120" step="0.1" value="10"></div><div class="field"><label>环境变量片段</label><button class="btn" type="button" id="email-copy">复制 Email 环境变量（仅内存生成）</button></div></div>
+<div class="form-row"><div class="field"><label for="email-timeout">Timeout（秒）</label><input id="email-timeout" name="timeout_seconds" type="number" min="0.1" max="120" step="0.1" value="10"></div><div class="field"><label>环境变量片段</label><button class="btn" type="button" id="email-copy" title="[3] 复制Email环境变量 - 复制到剪贴板（仅内存生成）">复制 Email 环境变量（仅内存生成）</button></div></div>
 <div id="email-result" class="notice" role="status" aria-live="polite" hidden></div>
 <div class="stack-actions">
-<button class="btn btn-primary" type="submit" id="email-test">测试 Email 连接</button>
-<button class="btn btn-success" type="button" id="email-save" hidden>保存此配置</button>
+<button class="btn btn-primary" type="submit" id="email-test" title="[4] 测试Email连接 - 测试SMTP邮件发送">测试 Email 连接</button>
+<button class="btn btn-success" type="button" id="email-save" hidden title="[保存] 保存Email配置 - 通过连接测试后可保存">保存此配置</button>
 <span class="muted">测试正文不含学习材料。</span>
 </div>
 </form>
 </section>
 
-<section class="card mt-24" data-od-id="provider-capabilities"><div class="section-label"><h2>当前能力状态</h2><span id="state" class="muted" role="status" aria-live="polite">加载中…</span></div><div id="error" class="error" role="alert" hidden></div><button class="btn" type="button" id="retry-capabilities" hidden>重试加载</button><div id="loading" aria-hidden="true"><div class="capability-card skeleton"><div class="skeleton-text skeleton-40"></div><div class="skeleton-text skeleton-60"></div><div class="skeleton-text skeleton-80"></div></div></div><div id="capabilities" class="capability-grid" hidden></div></section>
-<section class="card mt-24" data-od-id="provider-health"><h2>系统健康状态</h2><div id="health-status" role="status" aria-live="polite"><p class="muted">检查中…</p></div><button class="btn mt-8" type="button" id="retry-health" hidden>重试检查</button></section>
+<section class="card mt-24" data-od-id="provider-capabilities"><div class="section-label"><h2>当前能力状态</h2><span id="state" class="muted" role="status" aria-live="polite">加载中…</span></div><div id="error" class="error" role="alert" hidden></div><button class="btn" type="button" id="retry-capabilities" hidden title="[重试] 重新加载能力状态">重试加载</button><div id="loading" aria-hidden="true"><div class="capability-card skeleton"><div class="skeleton-text skeleton-40"></div><div class="skeleton-text skeleton-60"></div><div class="skeleton-text skeleton-80"></div></div></div><div id="capabilities" class="capability-grid" hidden></div></section>
+<section class="card mt-24" data-od-id="provider-health"><h2>系统健康状态</h2><div id="health-status" role="status" aria-live="polite"><p class="muted">检查中…</p></div><button class="btn mt-8" type="button" id="retry-health" hidden title="[重试] 重新检查健康状态">重试检查</button></section>
 </main></div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script><script src="/app/js/shell.js"></script>
 <script>
