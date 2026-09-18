@@ -330,7 +330,7 @@ def test_qa_unindexed_and_empty_retrieval_fail_without_answer(tmp_path: Path):
         assert response.json()["detail"] == "retrieval_not_ready"
         index(client, unindexed["material_id"])
         empty = ask(client, "completely absent token", unindexed["material_id"])
-        assert empty.status_code == 409
+        assert empty.status_code == 422  # P1-002: retrieval_empty 无相关内容，非状态冲突
         assert empty.json()["detail"] == "retrieval_empty"
         with connect(tmp_path / "studybuddy.sqlite3") as db:
             assert db.execute("SELECT COUNT(*) FROM qa_answers").fetchone()[0] == 0

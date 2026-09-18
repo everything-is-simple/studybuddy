@@ -95,6 +95,45 @@ def test_retrieval_unicode_fallback_empty_and_filters(tmp_path: Path):
         assert client.post("/api/retrieval", json={"query": "中文"}).json()["status"] == "succeeded"
 
 
+def test_retrieval_chinese_long_question_bigram_fallback(tmp_path: Path):
+    """P1-001：中文长句（无空格、整句 substring 无命中）降级 bigram 检索。
+
+    “什么是光合作用”作为单一 token 做 instr 匹配必然失败；降级后应按
+    二元词组命中数找到光合作相关知识块，且 policy_version 标记
+    lexical_fts_v2_bigram。完全无关的长句仍应返回 retrieval_empty。
+    """
+    with make_client(tmp_path) as client:
+        material = upload(
+            client, "光合作用.txt",
+            "植物的光合作用是利用阳光、水和二氧化碳制造养分并释放氧气的过程。"
+            "叶绿体是进行光合作用的场所。",
+        )
+        index(client, material["material_id"])
+        # 主路径：短查询 substring 直接命中，policy 保持 lexical_fts_v1
+        direct = client.post("/api/retrieval", json={"query": "光合作用"})
+        assert direct.status_code == 200
+        assert direct.json()["status"] == "succeeded"
+        assert direct.json()["policy_version"] == "lexical_fts_v1"
+        # 降级路径：长句整串不在正文中，bigram 命中“光合/合作/作用”等词组
+        fallback = client.post("/api/retrieval", json={"query": "什么是光合作用"})
+        assert fallback.status_code == 200
+        payload = fallback.json()
+        assert payload["status"] == "succeeded"
+        assert payload["policy_version"] == "lexical_fts_v2_bigram"
+        assert payload["hits"], "bigram 降级应找到光合作相关块"
+        assert all(hit["lexical_score"] >= 2 for hit in payload["hits"])
+        # 无关长句（疑问词以外无任何命中）仍为 empty，不会伪造命中
+        unrelated = client.post("/api/retrieval", json={"query": "今天天气怎么样呀"})
+        assert unrelated.status_code == 200
+        assert unrelated.json()["status"] == "empty"
+        assert unrelated.json()["error_code"] == "retrieval_empty"
+        with connect(tmp_path / "studybuddy.sqlite3") as db:
+            row = db.execute(
+                "SELECT policy_version FROM retrieval_runs WHERE id = ?", (payload["run_id"],)
+            ).fetchone()
+            assert row[0] == "lexical_fts_v2_bigram"
+
+
 def test_retrieval_input_boundaries_and_material_scope(tmp_path: Path):
     with make_client(tmp_path) as client:
         one = upload(client, "one.txt", "scope-one")
