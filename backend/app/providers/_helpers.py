@@ -32,6 +32,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import re
 from urllib.error import HTTPError, URLError
@@ -135,6 +136,10 @@ def _request_json(endpoint: str, payload: bytes, headers: dict[str, str], timeou
                 if total > MAX_PROVIDER_RESPONSE_BYTES:
                     raise ProviderError("provider_output_too_large")
             raw = b"".join(chunks)
+        if raw[:2] == b"\x1f\x8b":
+            # 部分 Provider（如火山引擎 plan API）无论 Accept-Encoding 如何
+            # 都会返回 gzip 压缩的响应体，需透明解压后再解析 JSON。
+            raw = gzip.decompress(raw)
     except ProviderError:
         raise
     except HTTPError as error:
@@ -257,6 +262,9 @@ def _request_json_with_limit(endpoint: str, payload: bytes, headers: dict[str, s
             raw = response.read(limit + 1)
             if len(raw) > limit:
                 raise ProviderError("embedding_provider_response_too_large")
+        if raw[:2] == b"\x1f\x8b":
+            # gzip 解压在 limit 校验之后：压缩后的响应体通常远小于解压结果上限。
+            raw = gzip.decompress(raw)
     except ProviderError:
         raise
     except HTTPError as error:

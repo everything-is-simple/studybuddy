@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-18 夜（**P1-7 真实自用观察期启动**（~09-25，日志 `H:\studybuddy-data\p1-7-observation-log-2026-09-18.md`）：服务以监控进程拉起（data_root=H:\studybuddy-data:8787）；活跃根库 Provider 配置经设置 API 补齐（glm-5.3-flash + doubao-embedding-vision，plan API）；TLS 复查恢复可达。启动即修真实缺陷：火山 plan API 强制 gzip 响应导致 `embedding_provider_malformed_response`——`_helpers.py` 两个 HTTP 函数增加 gzip 魔数透明解压 + 新增 `test_provider_gzip_response.py`（2 用例）+ pyproject 显式 `pythonpath=["backend"]`；真实 QA 冒烟通过（白鹭带 3 引用），回归 55 passed。）
+
 > 更新：2026-09-18 深夜（**P0 复核遗留 2 项清理完成**：① 活跃根库 499 条 fake 32 维旧向量全部清除，现仅存 499 条 doubao 2048 维真实向量，零孤儿、integrity ok、user_version=15；② 旧数据根 `H:\studybuddy-data\live\` 经备份验证（`studybuddy-test/backups/pre-legacy-cleanup-20260918`，verify-backup 通过）后原地清空——生产代码 `purge_material` 清理 51 条合成测试材料并清扫 QA/检索/报告等全部测试痕迹，业务表与 FTS 全部归零、schema 完整保留，处置记录见 `H:\studybuddy-data\ARCHIVE_NOTES.md`。活跃 data_root 仍为 `H:\studybuddy-data` 根目录。）
 
 > 更新：2026-09-18（**P0 两项收口完成**：① live 库测试残留清理——purge 回收站 7 条重复导入 + 测试材料"光合作用.txt"，清除 QA/检索/报告快照测试痕迹（含 9 线程/14 消息/5 回答/10 引用/18 检索 run/1 快照），保留 6 本正式教材与 ai_operations 审计历史；清理前备份 `studybuddy-test/backups/pre-p0-cleanup-20260918` verify 通过，清理后一致性校验全 PASS（无孤儿行、FTS 一致、integrity ok、user_version=15）；稳态基线 6 教材/807 段/499 ready 分块/499 真实火山向量。② 文档治理基线恢复——两份报告移入 `docs/roles/` 满足 docs 顶层 14 文件白名单，STATUS 补回 29 个治理锚点（新增"治理锚点"章节），ARCHITECTURE 补 v9 表述；治理测试 24 用例全过，后端全量恢复 **632 passed / 3 skipped / 0 failed**。）
