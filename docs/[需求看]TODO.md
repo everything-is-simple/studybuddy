@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-18 深夜（**P0 复核遗留 2 项清理完成**：① 活跃根库 499 条 fake 32 维旧向量全部清除，现仅存 499 条 doubao 2048 维真实向量，零孤儿、integrity ok、user_version=15；② 旧数据根 `H:\studybuddy-data\live\` 经备份验证（`studybuddy-test/backups/pre-legacy-cleanup-20260918`，verify-backup 通过）后原地清空——生产代码 `purge_material` 清理 51 条合成测试材料并清扫 QA/检索/报告等全部测试痕迹，业务表与 FTS 全部归零、schema 完整保留，处置记录见 `H:\studybuddy-data\ARCHIVE_NOTES.md`。活跃 data_root 仍为 `H:\studybuddy-data` 根目录。）
+
 > 更新：2026-09-18（**P0 两项收口完成**：① live 库测试残留清理——purge 回收站 7 条重复导入 + 测试材料"光合作用.txt"，清除 QA/检索/报告快照测试痕迹（含 9 线程/14 消息/5 回答/10 引用/18 检索 run/1 快照），保留 6 本正式教材与 ai_operations 审计历史；清理前备份 `studybuddy-test/backups/pre-p0-cleanup-20260918` verify 通过，清理后一致性校验全 PASS（无孤儿行、FTS 一致、integrity ok、user_version=15）；稳态基线 6 教材/807 段/499 ready 分块/499 真实火山向量。② 文档治理基线恢复——两份报告移入 `docs/roles/` 满足 docs 顶层 14 文件白名单，STATUS 补回 29 个治理锚点（新增"治理锚点"章节），ARCHITECTURE 补 v9 表述；治理测试 24 用例全过，后端全量恢复 **632 passed / 3 skipped / 0 failed**。）
 
 > 更新：2026-09-15（**浏览器 E2E 时序复验完成**：回收站与材料导出 spec 已用可观察 UI 状态、当前视图限定和 `data-id` 身份断言替换裸文件名/`.last()` 定位；不修改产品代码、不用固定等待掩盖竞态。隔离复现回收站 `3 passed`、导出 `2 passed`、当前 B-PLAN-2 `1 passed`；三次重复为 `9 passed`、`6 passed`、`3 passed`。完整串行 Chromium `89 spec / 436 tests` 的最新结果为 **432 passed / 4 skipped / 0 failed**（27.5m）；skip 仅为默认关闭的真实 Provider/ASR smoke。`check-source-size.py` 与 `git diff --check` 均通过。真实 Provider/OCR/ASR、live delivery、跨浏览器与系统级屏幕阅读器继续保持 `not_verified`。）
