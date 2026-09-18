@@ -174,8 +174,11 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
         # completed provider batch commits its idempotent rows before the next call.
         connection.commit()
         embedded = skipped = 0
-        for start in range(0, len(rows), 32):
-            batch = rows[start:start + 32]
+        # P1 修复：批次上限跟随 provider.max_batch_size（火山 plan API 上限 10，
+        # OpenAI 兼容端点各有不同）；默认回退 32。provider.embed 自身也会拒收超限批次。
+        batch_size = getattr(provider, "max_batch_size", 32) or 32
+        for start in range(0, len(rows), batch_size):
+            batch = rows[start:start + batch_size]
             todo = []
             for row in batch:
                 content_hash = embedding_content_hash(str(row["text"]))
@@ -233,7 +236,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                     connection.execute("""INSERT INTO embeddings
                         (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
                          content_hash,source_revision,status,error_code,created_at,updated_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?)
                         ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
                         DO UPDATE SET vector_payload=NULL,status='failed',error_code=excluded.error_code,updated_at=excluded.updated_at""",
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
@@ -250,7 +253,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                     connection.execute("""INSERT INTO embeddings
                         (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
                          content_hash,source_revision,status,error_code,created_at,updated_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?)
                         ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
                         DO UPDATE SET vector_payload=NULL,status='failed',error_code=excluded.error_code,updated_at=excluded.updated_at""",
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
@@ -265,7 +268,7 @@ def index_embeddings_for_material(connection: sqlite3.Connection, *, material_id
                     connection.execute("""INSERT INTO embeddings
                         (id,chunk_id,provider_id,model_id,model_revision,dimensions,vector_encoding,vector_payload,
                          content_hash,source_revision,status,error_code,created_at,updated_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?,?)
+                        VALUES (?,?,?,?,?,?,?,?,?,?, 'failed',?,?,?)
                         ON CONFLICT(chunk_id,source_revision,content_hash,provider_id,model_id,model_revision,dimensions,vector_encoding)
                         DO UPDATE SET vector_payload=NULL,status='failed',error_code=excluded.error_code,updated_at=excluded.updated_at""",
                         (f"embedding_{uuid.uuid4().hex}", row["id"], provider.provider_id, provider.model_id,
