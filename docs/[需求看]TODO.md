@@ -1,5 +1,7 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-19（**P1/P2 清零推进**：① ~~P1 积累向量检索质量基线~~ ✅ 完成——14 个五年级真实问答场景（6 本教材 + 1 个范围外问题）全部通过并带引用，平均 9.9s，基线数据 `studybuddy-test/artifacts/vector-quality-baseline-20260919.json`；过程中发现并修复思考型模型 max_tokens 预算耗尽缺陷（content 空 → 误报 malformed；现默认 max_output_tokens 800→2048，预算耗尽准确报 provider_output_too_large，新增 3 用例）。② ~~P1 复查 TLS 阻断~~ ✅ 结论：HTTPS 类（DeepSeek/ark/agnes/feishu）全部恢复放行；SMTP（qq 465/587）仍被拦，属环境事实持续跟进。③ ~~P2 DeepSeek 验证~~ ✅ 连接测试通过（[REDACTED_KEY]… 密钥真实调用成功）。④ ~~P2 监控启动告警日志~~ ✅ 已查（无 misnamed/警告记录），转为长期运行观察。⑤ P1-7 观察期进行中（D1-D7 场景待使用者执行）。）
+
 [REDACTED_STUDY_CONTENT]
 
 > 更新：2026-09-18 深夜（**P0 复核遗留 2 项清理完成**：① 活跃根库 499 条 fake 32 维旧向量全部清除，现仅存 499 条 doubao 2048 维真实向量，零孤儿、integrity ok、user_version=15；② 旧数据根 `H:\studybuddy-data\live\` 经备份验证（`studybuddy-test/backups/pre-legacy-cleanup-20260918`，verify-backup 通过）后原地清空——生产代码 `purge_material` 清理 51 条合成测试材料并清扫 QA/检索/报告等全部测试痕迹，业务表与 FTS 全部归零、schema 完整保留，处置记录见 `H:\studybuddy-data\ARCHIVE_NOTES.md`。活跃 data_root 仍为 `H:\studybuddy-data` 根目录。）
