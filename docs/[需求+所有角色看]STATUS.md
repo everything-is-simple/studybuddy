@@ -44,7 +44,7 @@
 - ✅ 修复 `_legacy_part_15.py` 两处关键缺陷：
   1. SQL INSERT失败分支占位符错误（15值14列）→ 修正为14值14列
   2. 批次大小硬编码32 → 改为 `provider.max_batch_size`（火山plan API上限10）
-- ✅ 修复 `_legacy_part_15.py` 两处关键缺陷后，6本教材全部完成真实向量索引（清理测试残留后的稳态为 499 个 ready 分块、499 条 2048 维真实火山向量 + 499 条 fake 向量并存）
+- ✅ 修复 `_legacy_part_15.py` 两处关键缺陷后，6本教材全部完成真实向量索引（清理测试残留后的稳态为 499 个 ready 分块、499 条 2048 维真实火山向量；复核发现的 499 条 fake 旧向量已于 2026-09-18 深夜清除，现库内仅存真实向量）
 - ✅ 向量检索质量验证通过：
 [REDACTED_STUDY_CONTENT]
   - "落花生告诉我们什么道理" → 正确引用3处相关段落
@@ -73,11 +73,22 @@
 - 清除 QA 测试痕迹：qa_threads 9 / qa_messages 14 / qa_answers 5 / qa_citations 10；检索测试痕迹：retrieval_runs 18 / retrieval_hits 33；report_snapshots 1。
 - 保留 ai_operations（操作审计历史）与 6 本正式教材全链数据。
 - 清理后一致性校验全部 PASS：materials=6（全部 active）、无孤儿 chunks/embeddings、material_search 与 chunks_search FTS 行数与有效集合一致（6、499）、PRAGMA integrity_check ok、user_version=15。
-- 稳态基线：**6 本教材 / 807 段 / 499 ready 分块 / 499 真实 2048 维火山向量（+499 fake）**。
+- 稳态基线：**6 本教材 / 807 段 / 499 ready 分块 / 499 真实 2048 维火山向量**（复核发现的 499 条 fake 旧向量已随后清除，见下节）。
 
 **P0-2 文档治理测试基线恢复**（622/632 → 632/632）：
 - 10 个失败均为文档锚点断言：STATUS 曾被整体重写导致 29 个治理锚点丢失；ARCHITECTURE 缺 v9 表述；新增 `docs/roles/PHASE_WORK_SUMMARY_2026-09-18.md` 与 `docs/roles/UI_CONTROL_E2E_REPORT.md`（已移入 roles 子目录）曾违反 docs 顶层 14 文件白名单。
 - 修复：两份报告移入 `docs/roles/`（既有角色文档子目录）；ARCHITECTURE 补 Phase 9A v9 persistence baseline 表述；STATUS 文末新增"治理锚点"章节完整恢复历史验收与能力边界锚点句（均为仍为真的声明，详见文末）。
+
+---
+
+## 2026-09-18（深夜）：遗留问题清理——fake 旧向量清除 + 旧 live 数据根归档清空
+
+**P0 复核发现的 2 项遗留全部解决**（清理前双库备份 `H:\studybuddy-test\backups\pre-legacy-cleanup-20260918`，verify-backup 均通过）：
+
+1. **fake 旧向量清除**：活跃根库 `H:\studybuddy-data\studybuddy.sqlite3` 中每分块曾并存 fake 32 维旧向量（499 条）与 doubao 2048 维真实向量；已删除全部 `provider_id='fake'` 行（499 条），现库内仅存 499 条真实向量。校验：embeddings=499 全部 doubao 2048 维、零孤儿、`foreign_key_check` 零违规、`integrity_check ok`、user_version=15。
+2. **旧 live 数据根处置**：`H:\studybuddy-data\live\`（历史 data_root，含 51 条合成测试材料、22 qa_threads、55 retrieval_runs 等）经备份验证后原地清空——通过生产代码 `purge_material` 仓储函数清理全部 51 条材料（含 FTS 同步），并清扫关联 chunks/embeddings/spans/revisions/extractions 与 QA/检索/报告/练习/笔记/计划等测试痕迹。终态校验：全部业务表 0 行、FTS 0 行、schema 与迁移历史完整（v15）、integrity ok、零外键违规，仅保留 default 项目行。目录因系统安全删除策略保留（已空），`H:\studybuddy-data\ARCHIVE_NOTES.md` 记录处置过程与恢复方式；活跃 data_root 仍为 `H:\studybuddy-data` 根目录。
+
+**验证方式**：临时核查脚本（位于 `H:\studybuddy-test\runs\`，不入正式仓库）+ 项目 CLI 备份校验 + SQLite PRAGMA 校验。
 
 ---
 
