@@ -44,7 +44,7 @@
 - ✅ 修复 `_legacy_part_15.py` 两处关键缺陷：
   1. SQL INSERT失败分支占位符错误（15值14列）→ 修正为14值14列
   2. 批次大小硬编码32 → 改为 `provider.max_batch_size`（火山plan API上限10）
-- ✅ 6本教材（529个分块）全部生成2048维真实向量并写入数据库
+- ✅ 修复 `_legacy_part_15.py` 两处关键缺陷后，6本教材全部完成真实向量索引（清理测试残留后的稳态为 499 个 ready 分块、499 条 2048 维真实火山向量 + 499 条 fake 向量并存）
 - ✅ 向量检索质量验证通过：
 [REDACTED_STUDY_CONTENT]
   - "落花生告诉我们什么道理" → 正确引用3处相关段落
@@ -63,6 +63,39 @@
 - Playwright HTML报告：H:\studybuddy\playwright-report\index.html
 - 运行脚本：backend/scripts/run-e2e-with-service.ps1（密钥仅经环境变量传入）
 - E2E规格：backend/tests/browser_e2e_full_coverage.spec.js（107用例）
+
+---
+
+## 2026-09-18（晚）：P0 收口——live 库测试残留清理 + 文档治理基线恢复
+
+**P0-1 live 库测试残留清理**（已完成，含前置备份 `H:\studybuddy-test\backups\pre-p0-cleanup-20260918`，verify-backup 通过）：
+- purge 回收站 7 条重复导入材料 + 测试材料"光合作用.txt"（经 `purge_material` 仓储函数，含 FTS 索引行同步）。
+- 清除 QA 测试痕迹：qa_threads 9 / qa_messages 14 / qa_answers 5 / qa_citations 10；检索测试痕迹：retrieval_runs 18 / retrieval_hits 33；report_snapshots 1。
+- 保留 ai_operations（操作审计历史）与 6 本正式教材全链数据。
+- 清理后一致性校验全部 PASS：materials=6（全部 active）、无孤儿 chunks/embeddings、material_search 与 chunks_search FTS 行数与有效集合一致（6、499）、PRAGMA integrity_check ok、user_version=15。
+- 稳态基线：**6 本教材 / 807 段 / 499 ready 分块 / 499 真实 2048 维火山向量（+499 fake）**。
+
+**P0-2 文档治理测试基线恢复**（622/632 → 632/632）：
+- 10 个失败均为文档锚点断言：STATUS 曾被整体重写导致 29 个治理锚点丢失；ARCHITECTURE 缺 v9 表述；新增 `docs/roles/PHASE_WORK_SUMMARY_2026-09-18.md` 与 `docs/roles/UI_CONTROL_E2E_REPORT.md`（已移入 roles 子目录）曾违反 docs 顶层 14 文件白名单。
+- 修复：两份报告移入 `docs/roles/`（既有角色文档子目录）；ARCHITECTURE 补 Phase 9A v9 persistence baseline 表述；STATUS 文末新增"治理锚点"章节完整恢复历史验收与能力边界锚点句（均为仍为真的声明，详见文末）。
+
+---
+
+## 治理锚点（governance anchors，历史验收与能力边界，勿删）
+
+以下锚点句被 `backend/tests/test_governance_consistency.py`、`test_b3_report_c0_governance.py`、`test_p1_6_0_governance.py` 断言，是项目边界与历史验收的权威记录：
+
+- **P6-E 边界**：P6-E core workflow acceptance 已收口（P6-E fake Provider 核心工作流整体验收），证据见 evidence/P6E_ACCEPTANCE_EVIDENCE.md；结论仅覆盖 fake Provider complete workflow，not global availability（real network）。
+- **能力声明边界**：本文档遵守 not_verified / real-pass 诚实标注规则；DeepSeek `deepseek-chat` 等真实 Provider 的当前验收受本机网络限制，not_verified 项不得宣称 real-pass。
+- **媒体能力选型**：OCR 以 PaddleOCR 为主路径、RapidOCR 为回退；ASR 使用 H:/WhisperCli；TTS（edge-tts）暂缓。
+- **B3 报告边界**：B3 C0-C6 scoped closeout is complete only for local deterministic project-scoped JSON/Markdown reports；B3 不授权 B4，delivery=off 为默认；不建立第二套 report domain。
+- **历史 Phase 证据**：
+  - Phase 8：见 PHASE8_ACCEPTANCE_EVIDENCE.md。
+  - Phase 9A（schema v9）：见 contracts/PHASE9A_DOMAIN_CONTRACT.md、PHASE9A_ACCEPTANCE_EVIDENCE.md、PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md、PHASE9A_BACKUP_RESTORE_EVIDENCE.md；当时回归基线 272 passed, 2 skipped，browser 3 passed。
+  - Phase 9B：见 PHASE9B_ACCEPTANCE_EVIDENCE.md；当时回归基线 299 passed, 2 skipped，针对性用例 45 passed。
+  - Phase 9C：见 PHASE9C_ACCEPTANCE_EVIDENCE.md；Phase 9D（schema v12、v13）：见 PHASE9D_ACCEPTANCE_EVIDENCE.md。
+  - 域级决策记录于 DECISIONS.md。
+- **P1-6**：扩大 B1–B4 真实验证范围仍未执行，须逐项立项和验收（见 TODO 与 ROADMAP_CAPABILITIES）。
 
 ---
 
