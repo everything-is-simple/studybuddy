@@ -92,6 +92,19 @@
 
 ---
 
+## 2026-09-18（夜）：P1-7 真实自用观察期启动——启动即修 Provider gzip 兼容缺陷
+
+**P1-7 启动**（2026-09-18 ~ 2026-09-25，7 天，观察日志 `H:\studybuddy-data\p1-7-observation-log-2026-09-18.md`）：
+- 服务以后台监控进程拉起（data_root=`H:\studybuddy-data`，端口 8787，liveness ok）。
+- 活跃根库 Provider 配置经 `PUT /api/system/settings` 补齐（此前配置遗留在已废弃 live 目录、根库 settings 为空 → provider_not_configured）：LLM=`glm-5.3-flash`、Embedding=`doubao-embedding-vision`（火山 `api/plan/v3`，batch≤10），capabilities 全 available，配置持久化免重启。
+- TLS 复查结论：ark / agnes 端点均恢复可达（401=握手成功仅缺鉴权），此前记录的 SSLEOFError 不复现——P1"复查 TLS 阻断"可进入补验阶段。
+
+**观察 #1（真实缺陷，已修复）**：火山 plan API 无论 Accept-Encoding 如何均返回 gzip 压缩响应体，Provider HTTP 客户端（`_request_json_with_limit`/`_request_json`，urllib 栈）不解压 → `embedding_provider_malformed_response`，阻塞 QA/生成。
+- 修复：`backend/app/providers/_helpers.py` 对 gzip 魔数（`1f 8b`）响应透明解压；新增 `backend/tests/test_provider_gzip_response.py`（本地 gzip HTTP 服务，2 用例）；`pyproject.toml` 显式 `pythonpath=["backend"]` 固化测试导入路径。
+[REDACTED_STUDY_CONTENT]
+
+---
+
 ## 治理锚点（governance anchors，历史验收与能力边界，勿删）
 
 以下锚点句被 `backend/tests/test_governance_consistency.py`、`test_b3_report_c0_governance.py`、`test_p1_6_0_governance.py` 断言，是项目边界与历史验收的权威记录：
