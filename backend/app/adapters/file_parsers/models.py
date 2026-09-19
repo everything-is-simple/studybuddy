@@ -22,16 +22,16 @@ from pydantic import BaseModel, ConfigDict, Field
 
 Status = Literal["success", "empty", "rejected", "failed"]
 SpanKind = Literal["document", "page", "slide"]
-DEFAULT_MAX_FILE_BYTES = 50 * 1024 * 1024
+DEFAULT_MAX_FILE_BYTES = 200 * 1024 * 1024
 
 
 class ParseOptions(BaseModel):
     """解析选项配置。
     
     Attributes:
-        max_bytes: 文件最大字节数（默认 50 MiB）
+        max_bytes: 文件最大字节数（默认 200 MiB）
         max_zip_members: ZIP 文件最大成员数（默认 256）
-        max_uncompressed_bytes: 解压后最大字节数（默认 50 MiB）
+        max_uncompressed_bytes: 解压后最大字节数（默认 200 MiB）
         max_compression_ratio: 最大压缩比（默认 1000.0）
     
     Note:
@@ -40,7 +40,7 @@ class ParseOptions(BaseModel):
     model_config = ConfigDict(frozen=True)
     max_bytes: int = Field(default=DEFAULT_MAX_FILE_BYTES, ge=1)
     max_zip_members: int = Field(default=256, ge=1)
-    max_uncompressed_bytes: int = Field(default=50 * 1024 * 1024, ge=1)
+    max_uncompressed_bytes: int = Field(default=200 * 1024 * 1024, ge=1)
     max_compression_ratio: float = Field(default=1000.0, gt=0)
 
 

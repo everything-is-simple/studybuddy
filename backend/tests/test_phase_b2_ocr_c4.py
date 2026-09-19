@@ -129,7 +129,7 @@ def test_p1_6_2_pixel_and_byte_limits_fail_before_ocr(tmp_path: Path, monkeypatc
     with pytest.raises(CaptureProviderError, match="capture_asset_too_large"):
         provider.recognize(_request(content))
 
-    oversized = b"x" * (50 * 1024 * 1024 + 1)
+    oversized = b"x" * (200 * 1024 * 1024 + 1)
     with pytest.raises(CaptureProviderError, match="capture_asset_too_large"):
         provider.recognize(_request(oversized))
 
