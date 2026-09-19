@@ -53,6 +53,10 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
       try {
         await page.getByRole('button', { name: label }).click({ timeout: 3000 });
         await expect(notice).toContainText(expectedStatus, { timeout: 3000 });
+        // The success status is set only after the full reload + detail
+        // re-render finishes and the page busy guard is cleared. Without this
+        // wait, the next mutation click can be silently dropped (by design).
+        await expect(status(page)).toHaveText(`${label}成功`, { timeout: 5000 });
         return;
       } catch (_) { }
     }
