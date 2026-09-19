@@ -26,7 +26,7 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 
 远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
 
-## 目录使用规范 (2026-09-18 新增)
+## 目录使用规范 (2026-09-18 新增，2026-09-19 修订)
 
 项目使用以下目录结构，各目录用途固定，不得混用：
 
@@ -38,6 +38,11 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 - **H:\studybuddy-ChinaTextbook**：真实教材与学习资料目录（`小学教材\<年级>\<科目>\`、`基础性作业\`、下载脚本、`教材清单.md`；`智慧教育token.txt` 为密钥，永不清扫）
 
 各目录定位、"必须保留 / 可清理"边界与清扫日志见 [`docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md`](docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md)。
+
+**目录内部结构补充（2026-09-19）**：
+
+- `H:\studybuddy-data` 的**根目录**才是活跃 data_root；其下的 `live/` 是已废弃的历史 data_root 残留（业务表已归零），**禁止**把 `STUDYBUDDY_DATA_ROOT` 指向它。
+- `H:\studybuddy-e2e-test`、`H:\studybuddy-e2e-test-<时间戳>` 属一次性临时 data_root，不属于这六个正式目录，确认无进程占用后可整目录删除。
 
 **重要原则**：
 - 不得从Composer或Integration项目直接复制源码到正式系统

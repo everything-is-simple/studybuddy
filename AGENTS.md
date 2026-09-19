@@ -41,7 +41,7 @@ This revision exists because the previous mode produced audit and evidence docum
 - Keep the repository root limited to the primary entry documents and project metadata.
 - Do not copy implementation code from Composer or Integration projects into the formal system. Re-implement against verified contracts.
 
-## Directory usage规范 (2026-09-18 新增)
+## Directory usage规范 (2026-09-18 新增，2026-09-19 修订)
 
 项目使用以下目录结构，各目录用途固定，不得混用：
 
@@ -53,6 +53,11 @@ This revision exists because the previous mode produced audit and evidence docum
 - **H:\studybuddy-ChinaTextbook**：真实教材与学习资料目录（`小学教材\<年级>\<科目>\`、`基础性作业\`、下载脚本、`教材清单.md`；`智慧教育token.txt` 为密钥，永不清扫）
 
 各目录"必须保留 / 可清理"边界与清扫操作规范见 [`docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md`](docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md)（权威来源），本文与其冲突时以该文档为准。
+
+**目录内部结构补充（2026-09-19）**：
+
+- `H:\studybuddy-data` 的**根目录**才是当前活跃 data_root（`studybuddy.sqlite3`、`config/settings.json`、`originals/`、`logs/`）。其下的 `live/` 是**已废弃的历史 data_root 残留**（业务表已归零，仅剩孤立 original 与 FTS 碎片）；**禁止**把 `STUDYBUDDY_DATA_ROOT` 指向 `H:\studybuddy-data\live`。`config/settings.json` 含明文 Provider / SMTP 凭据，不得复制、提交或纳入备份证据。
+- `H:\studybuddy-e2e-test`、`H:\studybuddy-e2e-test-<时间戳>` 这类**一次性临时 data_root** 不属于上述六个正式目录；确认无进程占用、无文档引用后可整目录删除，无需备份。
 
 **重要原则**：
 - 不得从Composer或Integration项目直接复制源码到正式系统
