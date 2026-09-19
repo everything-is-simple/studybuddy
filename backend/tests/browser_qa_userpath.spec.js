@@ -207,7 +207,9 @@ test.describe.serial('material-detail -> qa.html pure user path (A-class)', () =
     server = startServer(false);
     await ready();
     await page.goto(`${BASE}/app/qa.html?material=${mainId}`);
-    await expect(page.locator('#provider-status')).toHaveText('AI Provider 未配置，问答功能不可用', { timeout: 10000 });
+    // The notice ends with a settings link ("打开设置页配置"); toHaveText
+    // asserts the full accessible text including that link label.
+    await expect(page.locator('#provider-status')).toHaveText('AI Provider 未配置，问答功能不可用。打开设置页配置', { timeout: 10000 });
     await page.locator('#question').fill('蓝鲸潮汐');
     await page.locator('#retrieval-mode').selectOption('lexical');
     await page.locator('#submit-btn').click();

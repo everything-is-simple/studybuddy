@@ -38,9 +38,14 @@ function stopServer() {
   });
 }
 
+// The page silently drops mutations while a previous mutation is still
+// in flight (busy guard, by design). Every helper therefore waits for the
+// explicit success status message, which the page sets only after the full
+// reload + detail re-render completes and busy is cleared again.
 async function createGoal(page, title) {
   await page.fill('#goal-title', title);
   await page.click('#goal-form button[type="submit"]');
+  await expect(page.locator('#plan-status')).toHaveText('目标已创建', { timeout: 10000 });
   await expect(page.locator('#goals li').filter({ hasText: title }).first()).toBeVisible({ timeout: 10000 });
 }
 
@@ -48,12 +53,14 @@ async function createPlan(page, title) {
   await page.fill('#plan-title', title);
   await page.selectOption('#plan-goal', { index: 0 });
   await page.click('#plan-form button[type="submit"]');
+  await expect(page.locator('#plan-status')).toHaveText('计划草稿已创建', { timeout: 10000 });
   await expect(page.locator('#plans li').filter({ hasText: title }).first()).toBeVisible({ timeout: 10000 });
 }
 
 async function addPlanItem(page, title) {
   await page.fill('#plan-item-title', title);
   await page.click('#plan-item-add');
+  await expect(page.locator('#plan-status')).toHaveText('学习项已添加', { timeout: 10000 });
   // Item titles are rendered as input values, not text content.
   await expect(page.locator('.plan-item-entry input').first()).toHaveValue(title, { timeout: 10000 });
 }
@@ -103,13 +110,21 @@ test.describe.serial('plans.html B-class independent review', () => {
     await addPlanItem(page, '甲的学习项');
     await createPlan(page, '计划乙');
     await addPlanItem(page, '乙的学习项');
-    // The first sources query after route install belongs to 计划甲: delay it
-    // and return a distinctive late row. 计划乙's query passes through.
+    // Current page behavior (post b39bba8): 计划甲's selection is discarded
+    // BEFORE it issues any sources request, so the first sources query after
+    // route install would belong to 计划乙 itself. To still exercise the
+    // late-response guard, capture 计划甲's query and HOLD it in flight, then
+    // switch to 计划乙, let 乙's own query pass through, and only release the
+    // stale 甲 response afterwards.
     let captured = false;
+    let releaseHold = () => {};
+    const holdCaptured = new Promise(resolve => { releaseHold = resolve; });
+    let releaseResponse = () => {};
     await page.route('**/api/study/sources?*', async route => {
       if (!captured) {
         captured = true;
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        releaseHold();
+        await new Promise(resolve => { releaseResponse = resolve; });
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
           { id: 's-late', material_id: 'LATE-PLAN-JIA', chunk_id: 'c-late', status: 'valid' },
         ]) });
@@ -117,11 +132,15 @@ test.describe.serial('plans.html B-class independent review', () => {
       return route.fallback();
     });
     await page.locator('#plans li').filter({ hasText: '计划甲' }).first().click();
-    // Switch to 计划乙 before 计划甲's source response arrives.
+    // 计划甲's sources query is now held in flight with no response yet.
+    await holdCaptured;
+    // Switch to 计划乙 while 计划甲's query is still pending.
     await page.locator('#plans li').filter({ hasText: '计划乙' }).first().click();
     await expect(page.locator('#plan-detail h3').first()).toHaveText('计划乙', { timeout: 5000 });
     await expect(page.locator('#source-status')).toContainText('暂无来源链接', { timeout: 5000 });
-    await page.waitForTimeout(1500);
+    // Only now release 计划甲's stale response.
+    releaseResponse();
+    await page.waitForTimeout(300);
     // The late 计划甲 response must be discarded: the visible plan stays 乙.
     await expect(page.locator('#plan-detail h3').first()).toHaveText('计划乙');
     await expect(page.locator('#source-links')).not.toContainText('LATE-PLAN-JIA');

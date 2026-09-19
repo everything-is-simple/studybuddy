@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-09-19：第二轮大扫除后全量回归 + 3 个过时 spec 修复 + 全量基线刷新
+
+**大扫除（第二轮收尾核查）**：按 `WORKSPACE_DIRECTORIES.md` 边界对六目录只读扫描——主仓库无 `__pycache__`/`.pytest_cache`/`test-results`/`probe-*`/`tmp-*` 残留；test 目录 `runs/`、`e2e-screenshots/`、`backups/` 均为空；data 根为唯一活跃 data_root（`live/` 已于本轮早前删除）；composer 无可清 `.venv`/压缩包（09-19 已清 376MB）；integration 无可清项；ChinaTextbook 密钥与教材按规永久保留。**无可清项，本轮零删除**，扫描确认前两轮清扫已到位。
+
+**3 个过时 spec 修复（只改测试，产品代码零 diff）**：
+1. **A-E2E-QA-7（qa_userpath）**：P1-003 修复（f9252ad）给 qa.html not_configured 提示加了"打开设置页配置"链接，spec 仍断言旧文案 → 更新断言为完整可访问文本 `AI Provider 未配置，问答功能不可用。打开设置页配置`。
+2. **B-PLAN-2（plans_b_class）**：b39bba8 计划选择优先级修复后，计划甲的 selectPlan 在发出 sources 请求前即被世代守卫丢弃，spec 原假设"第一个 sources 请求属于计划甲"失效——实际捕获到的是计划乙自己的合法请求并被 spec 假数据毒化。改为确定性事件时序：捕获计划甲请求挂起 → 切到计划乙并等乙视图加载完 → 再放行迟到响应，真正检验页面世代守卫。独立诊断脚本（请求级时序日志）证实页面行为正确。
+3. **P-D21/22（plan_detail_full）**：页面 busy 守卫设计为 mutation 进行中静默丢弃后续 mutate；spec 在 transition 中间态 DOM（详情 notice 先渲染、busy 未清）出现后立即点归档，点击被丢。transition() 辅助函数增加等待 `#plan-status` 出现 `label+成功`（该状态仅在 load+重渲染完成、busy 清除后写入）。
+
+**全量测试基线（2026-09-19）**：
+- 后端全量：**637 passed / 3 skipped**（313.5s；skip 均为 opt-in 真实 smoke），0 failed。
+- 浏览器 Chromium 全量（workers=1，59.6m）：**551 passed / 4 skipped / 3 failed / 5 did not run**。3 个失败（full_coverage materials「页面有标题元素」耗时 10.3m 异常、frontend_failure_contract:27、notes B-ND-5）隔离复跑**全部通过**（16 passed 含原 did-not-run 的 B-ND-6~10；full_coverage 隔离整跑 107 passed），定性为瞬态环境问题，非确定性缺陷。修复后 3 spec 隔离验证：plans_b_class 4 passed（B-PLAN-2 另连跑 1 次 4 passed）、plan_detail_full+qa_userpath 34 passed。
+- 证据落盘：`H:\studybuddy-test\runs\e2e-full-final2-20260919`、`e2e-3repro-20260919`、`e2e-fc-final-20260919`、`three-fix-verify-output.txt` 等。
+- `check-source-size.py` 通过（102400 字节策略）。
+
+**未验证边界（如实标注）**：真实 Provider/OCR/ASR、live delivery、跨浏览器、系统级屏幕阅读器继续 `not_verified`；本轮 3 个全量瞬态失败未做多次重复全量验证（成本原因，以隔离复验为准）。
+
+---
+
 ## 2026-09-18：全站按钮操作引导上线 + 用户端到端检测 + P1问题修复完成
 
 **检测范围**：21页渲染后DOM实测 119/119=100% title覆盖（legacy页43/43），107用例全页面E2E规格全部通过exit 0。
