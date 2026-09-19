@@ -74,6 +74,7 @@
 | 文档 | 说明 | 是否可写 |
 |------|------|---------|
 | [`[UI设计+用户看]LOCAL_V1_USER_GUIDE.md`]([UI设计+用户看]LOCAL_V1_USER_GUIDE.md) | **本地 v1 用户指南** | ✅ 可写 |
+| [`[用户看]StudyBuddy使用手册.html`]([用户看]StudyBuddy使用手册.html) | **人工使用手册（图示版）**：每页一段落 + 操作示意图，面向最终使用者 | ✅ 可写 |
 | [`frontend-contract-fixtures.json`](frontend-contract-fixtures.json) | 前端契约测试 fixtures | ✅ 可写 |
 | [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | 查看当前功能状态（只读） | ❌ 只读 |
 

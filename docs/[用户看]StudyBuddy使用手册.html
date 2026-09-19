@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy 人工使用手册（图示版）</title>
+<style>
+  :root{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#2563eb;--bg:#f5f7fa;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.75}
+  header.hero{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:36px 24px 28px}
+  header.hero h1{margin:0 0 8px;font-size:26px}
+  header.hero p{margin:4px 0;opacity:.92;max-width:860px}
+  main{max-width:900px;margin:0 auto;padding:8px 20px 60px}
+  nav.toc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:20px 0 32px}
+  nav.toc b{font-size:15px}
+  nav.toc ol{margin:8px 0 0 20px;padding:0;columns:2;column-gap:32px}
+  nav.toc li{font-size:13.5px;margin:2px 0}
+  nav.toc a{color:var(--accent);text-decoration:none}
+  nav.toc a:hover{text-decoration:underline}
+  section.page{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px 18px;margin:26px 0;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  section.page h2{margin:0 0 6px;font-size:20px;border-bottom:2px solid #dbeafe;padding-bottom:8px}
+  section.page h2 .path{font-size:12px;font-weight:400;color:var(--muted);background:#f1f5f9;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle;font-family:Consolas,monospace}
+  section.page p{margin:10px 0 12px;font-size:14.5px}
+  figure{margin:6px 0 10px}
+  figure svg{width:100%;height:auto;display:block;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
+  figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:4px}
+  ol.steps{margin:6px 0 2px;padding-left:22px;font-size:14px}
+  ol.steps li{margin:3px 0}
+  ol.steps li b{color:var(--accent)}
+  .tip{background:#eff6ff;border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 14px;font-size:13.5px;margin:10px 0}
+  .flowtext{font-size:13px;color:var(--muted)}
+  @media print{section.page{break-inside:avoid;box-shadow:none}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>StudyBuddy 人工使用手册</h1>
+  <p>一个页面一个段落，配一幅操作示意图。图中的蓝色数字圆点对应段落下方"操作步骤"的编号。</p>
+  <p>启动方式：在本机运行 <code>python -m backend.app serve</code>，浏览器打开 <code>http://localhost:8787/app/today.html</code>。</p>
+</header>
+<main>
+
+<nav class="toc">
+  <b>目录 · 按使用主流程排序</b>
+  <ol>
+    <li><a href="#start">开始使用</a></li>
+    <li><a href="#today">今天（首页）</a></li>
+    <li><a href="#materials">资料（导入与管理）</a></li>
+    <li><a href="#material-detail">材料详情</a></li>
+    <li><a href="#qa">问答</a></li>
+    <li><a href="#notes">学习笔记</a></li>
+    <li><a href="#note-detail">笔记详情</a></li>
+    <li><a href="#plans">学习计划</a></li>
+    <li><a href="#plan-detail">计划详情</a></li>
+    <li><a href="#cards">卡片</a></li>
+    <li><a href="#exercises">题目（练习集）</a></li>
+    <li><a href="#practice">练习</a></li>
+    <li><a href="#practice-session">答题会话</a></li>
+    <li><a href="#practice-result">练习结果</a></li>
+    <li><a href="#review">复盘（错题与薄弱点）</a></li>
+    <li><a href="#reports">报告</a></li>
+    <li><a href="#classroom">课堂采集与报告</a></li>
+    <li><a href="#tasks">任务状态</a></li>
+    <li><a href="#settings-provider">Provider 设置</a></li>
+    <li><a href="#settings">系统设置</a></li>
+  </ol>
+</nav>
+
+<!-- ============ 0 开始使用 ============ -->
+<section class="page" id="start">
+  <h2>0. 开始使用 <span class="path">启动与入口</span></h2>
+  <p>StudyBuddy 是一个本地单进程系统：启动服务后，全部功能都在浏览器里完成，数据只存在你自己的电脑上。启动只需一条命令——在项目目录执行 <code>python -m backend.app serve</code>，看到服务就绪提示后，用浏览器打开 <code>http://localhost:8787/app/today.html</code> 即可进入"今天"首页。页顶导航条固定在所有页面上，"更多"按钮可展开全部页面入口；关闭命令行窗口（或 Ctrl+C）服务即停止，数据不会丢失。</p>
+  <figure>
+  <svg viewBox="0 0 680 190" role="img" aria-label="启动与入口示意">
+    <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/today.html</text>
+    <rect x="60" y="52" width="330" height="30" rx="6" fill="#0f172a"/>
+    <text x="76" y="71" font-size="12" fill="#7dd3fc" font-family="Consolas,monospace">python -m backend.app serve</text>
+    <circle cx="40" cy="67" r="10" fill="#2563eb"/><text x="40" y="71" font-size="11" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <path d="M 405 67 L 455 67" stroke="#94a3b8" stroke-width="2" marker-end="url(#ar0)"/>
+    <defs><marker id="ar0" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#94a3b8" stroke-width="1.5"/></marker></defs>
+    <rect x="462" y="52" width="180" height="30" rx="6" fill="#eff6ff" stroke="#2563eb"/>
+    <text x="552" y="71" font-size="11.5" fill="#2563eb" text-anchor="middle">服务就绪 · 端口 8787</text>
+    <rect x="60" y="100" width="560" height="20" rx="4" fill="#f1f5f9"/>
+    <text x="72" y="114" font-size="10" fill="#475569">今天　资料　问答　笔记　计划　卡片　题目　练习　复盘　报告　课堂采集　任务　设置　[更多 ▾]</text>
+    <rect x="60" y="132" width="560" height="42" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="80" y="150" font-size="12" fill="#0f172a" font-weight="bold">今天 · 概览</text>
+    <text x="80" y="166" font-size="10.5" fill="#475569">今日任务 / 近七天趋势 / 管理计划入口</text>
+    <circle cx="46" cy="142" r="10" fill="#2563eb"/><text x="46" y="146" font-size="11" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <text x="60" y="188" font-size="10" fill="#94a3b8">关闭命令行窗口 = 停止服务（本地数据保留）</text>
+  </svg>
+  <figcaption>图 0 · 启动服务并进入首页；顶部导航条在所有页面通用</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><b>启动服务</b>：命令行执行 <code>python -m backend.app serve</code>，等待就绪。</li>
+    <li><b>打开首页</b>：浏览器访问 <code>localhost:8787/app/today.html</code>。</li>
+  </ol>
+</section>
+
+<!-- ============ 1 today ============ -->
+<section class="page" id="today">
+  <h2>1. 今天（首页） <span class="path">today.html</span></h2>
+  <p>"今天"是每天打开 StudyBuddy 的第一站：上半部分是今日概览（今日该学的任务、材料与练习状态），中部是近七天学习趋势图，下方列出今日任务清单，点任何一条任务即可直接跳到对应页面去做。"管理计划"按钮通向计划页；如果页面加载失败（例如服务刚重启），点"重新加载"即可恢复。建议每天从这里开始，先看任务、再动手。</p>
+  <figure>
+  <svg viewBox="0 0 680 200" role="img" aria-label="今天页面示意">
+    <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/today.html</text>
+    <rect x="24" y="42" width="380" height="66" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="40" y="62" font-size="12" fill="#0f172a" font-weight="bold">今日概览</text>
+    <text x="40" y="80" font-size="10.5" fill="#475569">今日任务 3 · 已索引材料 6 · 待复习卡片 12</text>
+    <text x="40" y="96" font-size="10.5" fill="#475569">练习待完成 1 次</text>
+    <circle cx="46" cy="52" r="9" fill="#2563eb"/><text x="46" y="56" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="424" y="42" width="232" height="66" rx="8" fill="#fff" stroke="#e2e8f0"/>
+    <text x="440" y="62" font-size="12" fill="#0f172a" font-weight="bold">近七天趋势</text>
+    <rect x="446" y="86" width="14" height="14" fill="#93c5fd"/><rect x="468" y="78" width="14" height="22" fill="#93c5fd"/><rect x="490" y="70" width="14" height="30" fill="#2563eb"/><rect x="512" y="82" width="14" height="18" fill="#93c5fd"/><rect x="534" y="74" width="14" height="26" fill="#93c5fd"/><rect x="556" y="68" width="14" height="32" fill="#2563eb"/><rect x="578" y="76" width="14" height="24" fill="#93c5fd"/>
+    <circle cx="446" cy="52" r="9" fill="#2563eb"/><text x="446" y="56" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="24" y="120" width="632" height="58" rx="8" fill="#fff" stroke="#e2e8f0"/>
+    <text x="40" y="140" font-size="12" fill="#0f172a" font-weight="bold">今日任务</text>
+    <rect x="40" y="148" width="200" height="20" rx="4" fill="#f1f5f9"/><text x="48" y="162" font-size="10.5" fill="#475569">① 复习卡片组「五年级语文」</text>
+    <rect x="256" y="148" width="180" height="20" rx="4" fill="#f1f5f9"/><text x="264" y="162" font-size="10.5" fill="#475569">② 完成练习会话 ×1</text>
+    <rect x="452" y="148" width="120" height="20" rx="4" fill="#2563eb"/><text x="512" y="162" font-size="10.5" fill="#fff" text-anchor="middle">管理计划 →</text>
+    <circle cx="34" cy="148" r="9" fill="#2563eb"/><text x="34" y="152" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <text x="24" y="192" font-size="10" fill="#94a3b8">加载失败时页面会出现「重新加载」按钮</text>
+  </svg>
+  <figcaption>图 1 · 今天页：概览看状态、趋势看节奏、任务点击直达</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><b>看今日概览</b>：了解今天有哪些事等着做。</li>
+    <li><b>看七天趋势</b>：确认近一周的学习节奏是否稳定。</li>
+    <li><b>点今日任务</b>：直接跳到对应页面执行；点<b>管理计划</b>可调整计划。</li>
+  </ol>
+</section>
+
+<!-- ============ 2 materials ============ -->
+<section class="page" id="materials">
+  <h2>2. 资料（导入与管理） <span class="path">materials.html</span></h2>
+  <p>"资料"是整个系统的起点：所有学习材料（教材 PDF、讲义、笔记文件等）从这里批量导入。系统会自动解析文本并显示每份材料的状态（成功 / 空文件 / 失败），选中材料后可以一键"前往问答"。导错的材料删除后会进入回收站，点"查看回收站"还能找回来。支持 TXT / MD / PDF / DOCX / PPTX；旧版 DOC、RTF、旧版 PPT 会被明确拒绝，请先另存为新格式再导入。</p>
+  <figure>
+  <svg viewBox="0 0 680 210" role="img" aria-label="资料页示意">
+    <rect x="4" y="4" width="672" height="202" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/materials.html</text>
+    <rect x="24" y="42" width="140" height="26" rx="6" fill="#2563eb"/>
+    <text x="94" y="59" font-size="11" fill="#fff" text-anchor="middle">选择文件夹导入</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="176" y="42" width="100" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/>
+    <text x="226" y="59" font-size="11" fill="#475569" text-anchor="middle">状态筛选 ▾</text>
+    <rect x="284" y="42" width="76" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/>
+    <text x="322" y="59" font-size="11" fill="#475569" text-anchor="middle">应用筛选</text>
+    <circle cx="294" cy="55" r="9" fill="#f59e0b"/><text x="294" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="372" y="42" width="100" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/>
+    <text x="422" y="59" font-size="11" fill="#475569" text-anchor="middle">查看回收站</text>
+    <rect x="484" y="42" width="100" height="26" rx="6" fill="#eff6ff" stroke="#2563eb"/>
+    <text x="534" y="59" font-size="11" fill="#2563eb" text-anchor="middle">前往问答 →</text>
+    <circle cx="494" cy="55" r="9" fill="#f59e0b"/><text x="494" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">4</text>
+    <rect x="24" y="82" width="632" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="101" font-size="10.5" fill="#0f172a">人教版语文五年级上册.pdf</text>
+    <rect x="560" y="88" width="80" height="16" rx="8" fill="#dcfce7"/><text x="600" y="100" font-size="9.5" fill="#16a34a" text-anchor="middle">解析成功</text>
+    <circle cx="34" cy="97" r="9" fill="#f59e0b"/><text x="34" y="101" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="24" y="118" width="632" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="137" font-size="10.5" fill="#0f172a">课堂笔记.docx</text>
+    <rect x="560" y="124" width="80" height="16" rx="8" fill="#dcfce7"/><text x="600" y="136" font-size="9.5" fill="#16a34a" text-anchor="middle">解析成功</text>
+    <rect x="24" y="154" width="632" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="173" font-size="10.5" fill="#0f172a">旧课件.ppt</text>
+    <rect x="560" y="160" width="80" height="16" rx="8" fill="#fee2e2"/><text x="600" y="172" font-size="9.5" fill="#dc2626" text-anchor="middle">格式拒绝</text>
+    <text x="24" y="200" font-size="10" fill="#94a3b8">点击材料行 → 进入材料详情；.ppt/.doc/.rtf 需先另存为 pptx/docx/txt</text>
+  </svg>
+  <figcaption>图 2 · 资料页：批量导入 → 看状态 → 选中材料 → 去问答</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点<b>选择文件夹导入</b>，一次选中整个文件夹批量导入。</li>
+    <li>用状态筛选 + <b>应用筛选</b>，快速找出"失败 / 空文件"的材料处理。</li>
+    <li>点击材料行进入<b>材料详情</b>查看解析结果。</li>
+    <li>选中材料后点<b>前往问答</b>，直接基于它开始提问。</li>
+  </ol>
+  <div class="tip">提示：删除材料不会立即消失，先在回收站；确认格式被拒绝时，把文件另存为 PDF / DOCX / PPTX / TXT / MD 再导入。</div>
+</section>
+
+<!-- ============ 3 material-detail ============ -->
+<section class="page" id="material-detail">
+  <h2>3. 材料详情 <span class="path">material-detail.html</span></h2>
+  <p>从资料列表点进来的单份材料工作台：上半部分显示处理状态与解析出的正文，可以"导出解析文本"带走或"下载原文件"对照。核心动作是建索引——点"建立 AI 索引"或"加入索引任务"后，系统对正文切分并生成向量，之后问答才能引用这份材料；切分进度可在"任务"页观察。页面下方的"计划关联"区还能把材料"关联到学习项"，让它在学习计划里占一个位置。</p>
+  <figure>
+  <svg viewBox="0 0 680 210" role="img" aria-label="材料详情示意">
+    <rect x="4" y="4" width="672" height="202" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/material-detail.html</text>
+    <rect x="24" y="42" width="230" height="26" rx="6" fill="#2563eb"/>
+    <text x="139" y="59" font-size="11" fill="#fff" text-anchor="middle">建立 AI 索引</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="266" y="42" width="120" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/>
+    <text x="326" y="59" font-size="11" fill="#475569" text-anchor="middle">加入索引任务</text>
+    <rect x="398" y="42" width="110" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/>
+    <text x="453" y="59" font-size="11" fill="#475569" text-anchor="middle">下载原文件</text>
+    <rect x="520" y="42" width="120" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/>
+    <text x="580" y="59" font-size="11" fill="#475569" text-anchor="middle">导出解析文本</text>
+    <rect x="24" y="82" width="400" height="88" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="102" font-size="11" fill="#0f172a" font-weight="bold">解析正文（节选）</text>
+    <text x="40" y="122" font-size="10" fill="#475569">第一单元 …… 课文正文被切分为带编号的分块，</text>
+    <text x="40" y="138" font-size="10" fill="#475569">每个分块都可被检索与引用。</text>
+    <text x="40" y="158" font-size="10" fill="#94a3b8">状态：已解析 · 分块 24 · 向量 24</text>
+    <circle cx="34" cy="97" r="9" fill="#f59e0b"/><text x="34" y="101" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="440" y="82" width="216" height="88" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="456" y="102" font-size="11" fill="#0f172a" font-weight="bold">计划关联</text>
+    <text x="456" y="122" font-size="10" fill="#475569">选择学习项：</text>
+    <rect x="456" y="130" width="150" height="20" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="464" y="144" font-size="10" fill="#475569">语文 · 第 1 课 ▾</text>
+    <rect x="616" y="130" width="32" height="20" rx="4" fill="#2563eb"/><text x="632" y="144" font-size="9.5" fill="#fff" text-anchor="middle">关联</text>
+    <circle cx="450" cy="97" r="9" fill="#f59e0b"/><text x="450" y="101" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <text x="24" y="188" font-size="10" fill="#94a3b8">建索引后 → 到「问答」页引用 · 进度在「任务」页可见</text>
+    <text x="24" y="200" font-size="10" fill="#94a3b8">索引用途：让问答能"带引用"回答这份材料的问题</text>
+  </svg>
+  <figcaption>图 3 · 材料详情：建索引是通往问答的必经一步</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点<b>建立 AI 索引</b>（或排队时选<b>加入索引任务</b>）。</li>
+    <li>查看解析正文与分块 / 向量计数，确认索引完成。</li>
+    <li>需要时在<b>计划关联</b>区把材料挂到某个学习项。</li>
+  </ol>
+</section>
+
+<!-- ============ 4 qa ============ -->
+<section class="page" id="qa">
+  <h2>4. 问答 <span class="path">qa.html</span></h2>
+  <p>"问答"是学习的主战场：针对已建索引的材料提问，回答会附带引用（能点回原文出处）。提问前先设好"材料范围"和检索模式——混合检索效果最好，词法适合精确术语，向量适合换说法的提问；如果当前材料还没索引，点"索引当前材料"先补上。然后输入问题"提交问题"即可；一轮聊完点"新对话"开新话题，历史问答都留在"问答历史"里可回看。</p>
+  <figure>
+  <svg viewBox="0 0 680 220" role="img" aria-label="问答页示意">
+    <rect x="4" y="4" width="672" height="212" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/qa.html</text>
+    <rect x="24" y="42" width="96" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="72" y="58" font-size="10.5" fill="#475569" text-anchor="middle">材料范围 ▾</text>
+    <circle cx="34" cy="54" r="9" fill="#f59e0b"/><text x="34" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="128" y="42" width="86" height="24" rx="6" fill="#eff6ff" stroke="#2563eb"/><text x="171" y="58" font-size="10.5" fill="#2563eb" text-anchor="middle">混合检索 ✓</text>
+    <rect x="222" y="42" width="70" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="257" y="58" font-size="10.5" fill="#475569" text-anchor="middle">词法</text>
+    <rect x="300" y="42" width="70" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="335" y="58" font-size="10.5" fill="#475569" text-anchor="middle">向量</text>
+    <rect x="396" y="42" width="120" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="456" y="58" font-size="10.5" fill="#475569" text-anchor="middle">索引当前材料</text>
+    <rect x="528" y="42" width="80" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="568" y="58" font-size="10.5" fill="#475569" text-anchor="middle">问答历史</text>
+    <rect x="24" y="80" width="440" height="34" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="96" font-size="10.5" fill="#0f172a">我：五年级上册第一单元的口语交际要点是什么？</text>
+    <text x="38" y="110" font-size="9.5" fill="#94a3b8">引用 [1] [2] 可点击回原文</text>
+    <rect x="476" y="80" width="180" height="34" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="490" y="96" font-size="10" fill="#0f172a">AI：要点有三……</text>
+    <text x="490" y="110" font-size="9.5" fill="#2563eb">引用 [1] 第 3 块 · [2] 第 7 块</text>
+    <circle cx="552" cy="90" r="9" fill="#f59e0b"/><text x="552" y="94" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="24" y="128" width="560" height="30" rx="8" fill="#fff" stroke="#cbd5e1"/>
+    <text x="38" y="147" font-size="10.5" fill="#94a3b8">输入你的问题……</text>
+    <rect x="596" y="128" width="60" height="30" rx="8" fill="#2563eb"/><text x="626" y="147" font-size="11" fill="#fff" text-anchor="middle">提交问题</text>
+    <circle cx="580" cy="143" r="9" fill="#f59e0b"/><text x="580" y="147" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="24" y="172" width="100" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="74" y="188" font-size="10.5" fill="#475569" text-anchor="middle">新对话</text>
+    <text x="24" y="212" font-size="10" fill="#94a3b8">推荐默认"混合"模式；提问须先有索引，否则点「索引当前材料」</text>
+  </svg>
+  <figcaption>图 4 · 问答页：定范围 → 提问 → 沿引用回原文</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>选<b>材料范围</b>与检索模式（推荐"混合"）。</li>
+    <li>输入问题后点<b>提交问题</b>，等待带引用的回答。</li>
+    <li>点回答里的<b>引用编号</b>核对原文；换话题点<b>新对话</b>。</li>
+  </ol>
+</section>
+
+<!-- ============ 5 notes ============ -->
+<section class="page" id="notes">
+  <h2>5. 学习笔记 <span class="path">notes.html</span></h2>
+  <p>"笔记"页管理学习过程中的两种笔记：你自己手写的"用户笔记"，以及 AI 根据材料生成的"AI 草稿"。AI 草稿必须经过你确认后才会转为正式笔记——AI 永远不会静默覆盖你写过的内容。新建时在表单里填好内容点"新建用户笔记"；想让 AI 起草就点"生成 AI 草稿"，确认后生效；材料、问答片段都可以"关联到当前笔记"留证据。勾选"显示已归档笔记"可以翻出归档内容。</p>
+  <figure>
+  <svg viewBox="0 0 680 190" role="img" aria-label="笔记页示意">
+    <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/notes.html</text>
+    <rect x="24" y="42" width="330" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="62" font-size="11" fill="#0f172a" font-weight="bold">新建用户笔记</text>
+    <rect x="40" y="70" width="298" height="16" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="48" y="82" font-size="9.5" fill="#94a3b8">标题 / 内容</text>
+    <rect x="40" y="90" width="90" height="14" rx="4" fill="#2563eb"/><text x="85" y="101" font-size="9.5" fill="#fff" text-anchor="middle">新建用户笔记</text>
+    <circle cx="34" cy="52" r="9" fill="#f59e0b"/><text x="34" y="56" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="374" y="42" width="282" height="66" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="390" y="62" font-size="11" fill="#0f172a" font-weight="bold">AI 草稿（待确认）</text>
+    <text x="390" y="80" font-size="10" fill="#475569">AI 生成的摘要草稿先停在这里</text>
+    <rect x="390" y="90" width="60" height="14" rx="4" fill="#2563eb"/><text x="420" y="101" font-size="9.5" fill="#fff" text-anchor="middle">确认采纳</text>
+    <rect x="458" y="90" width="60" height="14" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="488" y="101" font-size="9.5" fill="#475569" text-anchor="middle">生成 AI 草稿</text>
+    <circle cx="384" cy="52" r="9" fill="#f59e0b"/><text x="384" y="56" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="24" y="120" width="632" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="137" font-size="10.5" fill="#0f172a">我的笔记 · 第一单元要点</text>
+    <rect x="560" y="126" width="86" height="16" rx="8" fill="#e0e7ff"/><text x="603" y="138" font-size="9.5" fill="#4338ca" text-anchor="middle">关联材料 ×2</text>
+    <circle cx="34" cy="133" r="9" fill="#f59e0b"/><text x="34" y="137" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="24" y="152" width="220" height="18" rx="9" fill="#fff" stroke="#cbd5e1"/>
+    <text x="34" y="165" font-size="9.5" fill="#475569">☐ 显示已归档笔记</text>
+    <text x="300" y="165" font-size="10" fill="#94a3b8">点击笔记行 → 进入笔记详情</text>
+  </svg>
+  <figcaption>图 5 · 笔记页：手写为主、AI 起草为辅，草稿必须确认</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>表单填写后点<b>新建用户笔记</b>，立即保存。</li>
+    <li>要 AI 起草就点<b>生成 AI 草稿</b>，阅读后点<b>确认采纳</b>才转正。</li>
+    <li>在笔记列表点击进入详情，可继续<b>关联材料 / 问答片段</b>。</li>
+  </ol>
+</section>
+
+<!-- ============ 6 note-detail ============ -->
+<section class="page" id="note-detail">
+  <h2>6. 笔记详情 <span class="path">note-detail.html</span></h2>
+  <p>从笔记列表点进来的单条笔记视图：这里能看到笔记类型（用户笔记还是 AI 确认稿）、完整内容，以及最重要的"来源状态"——这条笔记关联了哪些材料、哪些问答引用，保证每条笔记都有据可查。日常用法：复习前打开笔记详情，顺着来源链接把原文重读一遍；发现内容过时就回到列表新建或修改。本页以查看为主，不需要复杂操作。</p>
+  <figure>
+  <svg viewBox="0 0 680 170" role="img" aria-label="笔记详情示意">
+    <rect x="4" y="4" width="672" height="162" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/note-detail.html</text>
+    <text x="24" y="56" font-size="13" fill="#0f172a" font-weight="bold">笔记详情：第一单元要点</text>
+    <rect x="330" y="42" width="80" height="18" rx="9" fill="#e0e7ff"/><text x="370" y="55" font-size="9.5" fill="#4338ca" text-anchor="middle">用户笔记</text>
+    <rect x="24" y="70" width="400" height="70" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="92" font-size="10.5" fill="#0f172a">1. 生字词：……　2. 课文结构：……</text>
+    <text x="40" y="110" font-size="10.5" fill="#0f172a">3. 口语交际要点：……</text>
+    <text x="40" y="128" font-size="9.5" fill="#94a3b8">更新于 2026-09-19</text>
+    <rect x="440" y="70" width="216" height="70" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="456" y="90" font-size="11" fill="#0f172a" font-weight="bold">来源状态</text>
+    <text x="456" y="108" font-size="10" fill="#2563eb">→ 材料：人教版语文五上 · 第 3 块</text>
+    <text x="456" y="124" font-size="10" fill="#2563eb">→ 问答：引用 [1]（已核对）</text>
+  </svg>
+  <figcaption>图 6 · 笔记详情：内容 + 来源，一目了然</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>从笔记列表点击进入本页，核对<b>类型与内容</b>。</li>
+    <li>顺着<b>来源状态</b>里的链接回看材料原文或问答。</li>
+  </ol>
+</section>
+
+<!-- ============ 7 plans ============ -->
+<section class="page" id="plans">
+  <h2>7. 学习计划 <span class="path">plans.html</span></h2>
+  <p>"计划"页把学习目标拆成可执行的层级：先"新建目标"（例如"期中提分"），再在目标下"新建模块"（例如"语文基础"），最后为模块"新建计划草稿"排学习项。每条计划都可以"添加来源链接"，把材料或笔记挂上去，学习时一键跳转。列表里能看到各计划草稿的进度；也可以从"今天"页的"管理计划"按钮直接进入本页。</p>
+  <figure>
+  <svg viewBox="0 0 680 200" role="img" aria-label="计划页示意">
+    <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/plans.html</text>
+    <rect x="24" y="42" width="96" height="26" rx="6" fill="#2563eb"/><text x="72" y="59" font-size="11" fill="#fff" text-anchor="middle">新建目标</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="128" y="42" width="96" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="176" y="59" font-size="11" fill="#475569" text-anchor="middle">新建模块</text>
+    <circle cx="138" cy="55" r="9" fill="#f59e0b"/><text x="138" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="232" y="42" width="110" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="287" y="59" font-size="11" fill="#475569" text-anchor="middle">新建计划草稿</text>
+    <circle cx="242" cy="55" r="9" fill="#f59e0b"/><text x="242" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="560" y="42" width="96" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="608" y="59" font-size="11" fill="#475569" text-anchor="middle">添加来源链接</text>
+    <circle cx="570" cy="55" r="9" fill="#f59e0b"/><text x="570" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">4</text>
+    <rect x="24" y="82" width="632" height="34" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="103" font-size="11" fill="#0f172a" font-weight="bold">目标：期中提分</text>
+    <rect x="300" y="90" width="120" height="16" rx="8" fill="#dcfce7"/><text x="360" y="102" font-size="9.5" fill="#16a34a" text-anchor="middle">模块：语文基础</text>
+    <rect x="24" y="124" width="632" height="34" rx="8" fill="#fff" stroke="#e2e8f0"/>
+    <text x="40" y="145" font-size="11" fill="#0f172a">计划草稿：第一单元精读（学习项 ×5）</text>
+    <rect x="540" y="132" width="100" height="16" rx="8" fill="#dbeafe"/><text x="590" y="144" font-size="9.5" fill="#1d4ed8" text-anchor="middle">进度 2 / 5</text>
+    <circle cx="34" cy="139" r="9" fill="#2563eb"/><text x="34" y="143" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">→</text>
+    <text x="24" y="182" font-size="10" fill="#94a3b8">点击计划草稿 → 进入计划详情；来源链接可挂材料 / 笔记</text>
+  </svg>
+  <figcaption>图 7 · 计划页：目标 → 模块 → 计划草稿，逐级搭建</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点<b>新建目标</b>写下大方向。</li>
+    <li>在目标下点<b>新建模块</b>划分科目或板块。</li>
+    <li>点<b>新建计划草稿</b>，把学习项排进模块。</li>
+    <li>用<b>添加来源链接</b>给学习项挂上材料或笔记。</li>
+  </ol>
+  <div class="tip">页面有防抖保护：连续快速点击按钮可能被静默忽略，等绿色成功提示出现再进行下一步。</div>
+</section>
+
+<!-- ============ 8 plan-detail ============ -->
+<section class="page" id="plan-detail">
+  <h2>8. 计划详情 <span class="path">plan-detail.html</span></h2>
+  <p>从计划列表点进来的单个计划草稿工作台：这里罗列该计划的全部学习项，每项都有来源链接（跳回材料或笔记）与完成状态。学习推进中最大的诉求是"进度准不准"——点"刷新进度"即可按最新完成情况重算，"今天"页的概览也随之更新。日常节奏：每天打开计划详情 → 看今天该做哪几项 → 去做 → 回来刷新进度。</p>
+  <figure>
+  <svg viewBox="0 0 680 180" role="img" aria-label="计划详情示意">
+    <rect x="4" y="4" width="672" height="172" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/plan-detail.html</text>
+    <text x="24" y="56" font-size="13" fill="#0f172a" font-weight="bold">计划详情：第一单元精读</text>
+    <rect x="540" y="42" width="116" height="24" rx="6" fill="#2563eb"/><text x="598" y="58" font-size="11" fill="#fff" text-anchor="middle">刷新进度</text>
+    <circle cx="530" cy="54" r="9" fill="#f59e0b"/><text x="530" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="24" y="76" width="632" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+[REDACTED_STUDY_CONTENT]
+    <rect x="400" y="82" width="60" height="14" rx="7" fill="#dcfce7"/><text x="430" y="92" font-size="9.5" fill="#16a34a" text-anchor="middle">已完成</text>
+    <rect x="470" y="82" width="170" height="14" rx="7" fill="#dbeafe"/><text x="555" y="92" font-size="9.5" fill="#1d4ed8" text-anchor="middle">来源：材料 · 人教版语文五上</text>
+    <rect x="24" y="110" width="632" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="127" font-size="10.5" fill="#0f172a">学习项 2：整理生字词卡</text>
+    <rect x="400" y="116" width="60" height="14" rx="7" fill="#fef9c3"/><text x="430" y="126" font-size="9.5" fill="#a16207" text-anchor="middle">进行中</text>
+    <text x="24" y="160" font-size="10" fill="#94a3b8">完成学习项后点「刷新进度」，今天页的概览同步更新</text>
+  </svg>
+  <figcaption>图 8 · 计划详情：学一项、勾一项、刷一次进度</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>按学习项顺序去学，顺着<b>来源链接</b>打开材料。</li>
+    <li>完成情况变化后点<b>刷新进度</b>，保持统计准确。</li>
+  </ol>
+</section>
+
+<!-- ============ 9 cards ============ -->
+<section class="page" id="cards">
+  <h2>9. 卡片 <span class="path">cards.html</span></h2>
+  <p>"卡片"页管理记忆卡片：先"创建卡片组"（按科目或单元分组），再在组内"创建卡片"（正反面问答式）。懒得手写可以点"生成卡片草稿"让 AI 从材料里起草——同样需要你确认后才会成为正式卡片。已确认的卡片进入复习队列，按遗忘规律安排重现。点"刷新"同步最新状态。建议：每学完一个单元就建一组卡片，积累成个人题库。</p>
+  <figure>
+  <svg viewBox="0 0 680 200" role="img" aria-label="卡片页示意">
+    <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/cards.html</text>
+    <rect x="24" y="42" width="96" height="26" rx="6" fill="#2563eb"/><text x="72" y="59" font-size="11" fill="#fff" text-anchor="middle">创建卡片组</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="128" y="42" width="96" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="176" y="59" font-size="11" fill="#475569" text-anchor="middle">创建卡片</text>
+    <circle cx="138" cy="55" r="9" fill="#f59e0b"/><text x="138" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="232" y="42" width="110" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="287" y="59" font-size="11" fill="#475569" text-anchor="middle">生成卡片草稿</text>
+    <rect x="354" y="42" width="70" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="389" y="59" font-size="11" fill="#475569" text-anchor="middle">刷新</text>
+    <rect x="24" y="82" width="300" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="102" font-size="11" fill="#0f172a" font-weight="bold">卡片组：五年级语文 · 第一单元</text>
+    <text x="40" y="122" font-size="10" fill="#475569">卡片 12 张 · 待复习 5 张</text>
+    <rect x="40" y="134" width="120" height="18" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="100" y="147" font-size="9.5" fill="#2563eb" text-anchor="middle">开始复习 →</text>
+    <circle cx="34" cy="97" r="9" fill="#2563eb"/><text x="34" y="101" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">→</text>
+    <rect x="344" y="82" width="312" height="80" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="360" y="102" font-size="11" fill="#0f172a" font-weight="bold">卡片草稿（待确认）</text>
+[REDACTED_STUDY_CONTENT]
+    <rect x="360" y="134" width="60" height="18" rx="4" fill="#2563eb"/><text x="390" y="147" font-size="9.5" fill="#fff" text-anchor="middle">确认</text>
+    <rect x="428" y="134" width="60" height="18" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="458" y="147" font-size="9.5" fill="#475569" text-anchor="middle">丢弃</text>
+    <text x="24" y="182" font-size="10" fill="#94a3b8">草稿确认后才进入复习队列；AI 不会自动覆盖已确认卡片</text>
+  </svg>
+  <figcaption>图 9 · 卡片页：建组 → 建卡（或 AI 起草确认）→ 开始复习</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点<b>创建卡片组</b>建立分组。</li>
+    <li>组内<b>创建卡片</b>，或用<b>生成卡片草稿</b>+确认批量起草。</li>
+    <li>点卡片组的<b>开始复习</b>进入记忆复习。</li>
+  </ol>
+</section>
+
+<!-- ============ 10 exercises ============ -->
+<section class="page" id="exercises">
+  <h2>10. 题目（练习集） <span class="path">exercises.html</span></h2>
+  <p>"题目"页是题库管理中枢：以"练习集"为单位组织题目，支持选择题、判断题、简答题三种题型。手工出题用"创建练习集"+"创建题目"；想省事就"生成题目草稿"，AI 会依据你选的材料出题，确认后入库——和卡片一样，草稿必须经你确认。题目就绪后，到"练习"页开一场限时练习来消耗这些题。点"刷新列表"同步最新数据。</p>
+  <figure>
+  <svg viewBox="0 0 680 200" role="img" aria-label="题目页示意">
+    <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/exercises.html</text>
+    <rect x="24" y="42" width="96" height="26" rx="6" fill="#2563eb"/><text x="72" y="59" font-size="11" fill="#fff" text-anchor="middle">创建练习集</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="128" y="42" width="96" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="176" y="59" font-size="11" fill="#475569" text-anchor="middle">创建题目</text>
+    <circle cx="138" cy="55" r="9" fill="#f59e0b"/><text x="138" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="232" y="42" width="110" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="287" y="59" font-size="11" fill="#475569" text-anchor="middle">生成题目草稿</text>
+    <rect x="354" y="42" width="80" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="394" y="59" font-size="11" fill="#475569" text-anchor="middle">刷新列表</text>
+    <rect x="24" y="82" width="632" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="101" font-size="10.5" fill="#0f172a">练习集：语文第一单元自测</text>
+    <rect x="540" y="90" width="100" height="16" rx="8" fill="#dbeafe"/><text x="590" y="102" font-size="9.5" fill="#1d4ed8" text-anchor="middle">题目 10（选 6 判 2 简 2）</text>
+    <rect x="24" y="120" width="632" height="30" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="38" y="133" font-size="10.5" fill="#0f172a">草稿：选择题「下列词语搭配正确的一项是……」</text>
+    <rect x="540" y="128" width="100" height="16" rx="8" fill="#fef9c3"/><text x="590" y="140" font-size="9.5" fill="#a16207" text-anchor="middle">待确认 · 来源材料</text>
+    <circle cx="34" cy="135" r="9" fill="#f59e0b"/><text x="34" y="139" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <text x="24" y="182" font-size="10" fill="#94a3b8">题型：选择 / 判断 / 简答；题库就绪后到「练习」页开练</text>
+  </svg>
+  <figcaption>图 10 · 题目页：建集 → 出题（手写或 AI 草稿确认）</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点<b>创建练习集</b>建立题库容器。</li>
+    <li><b>创建题目</b>逐题录入，或<b>生成题目草稿</b>后确认入库。</li>
+  </ol>
+</section>
+
+<!-- ============ 11 practice ============ -->
+<section class="page" id="practice">
+  <h2>11. 练习 <span class="path">practice.html</span></h2>
+  <p>"练习"页是限时训练的调度台：上方可"创建冲刺目标"（例如"本周完成 5 次练习"），中部是系统按你的弱点和题库给的"推荐练习"，点"刷新推荐"可以换一批；准备好了就"创建练习会话"进入答题。下方"错题库"汇总历次做错的题，是复习的黄金材料——错题会同时出现在"复盘"页。整个闭环：出题（题目页）→ 练习（本页）→ 结果（结果页）→ 复盘（复盘页）。</p>
+  <figure>
+  <svg viewBox="0 0 680 210" role="img" aria-label="练习页示意">
+    <rect x="4" y="4" width="672" height="202" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/practice.html</text>
+    <rect x="24" y="42" width="110" height="26" rx="6" fill="#2563eb"/><text x="79" y="59" font-size="11" fill="#fff" text-anchor="middle">创建冲刺目标</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="146" y="42" width="120" height="26" rx="6" fill="#16a34a"/><text x="206" y="59" font-size="11" fill="#fff" text-anchor="middle">创建练习会话</text>
+    <circle cx="156" cy="55" r="9" fill="#f59e0b"/><text x="156" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="278" y="42" width="90" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="323" y="59" font-size="11" fill="#475569" text-anchor="middle">刷新推荐</text>
+    <circle cx="288" cy="55" r="9" fill="#f59e0b"/><text x="288" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="24" y="82" width="400" height="56" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="40" y="102" font-size="11" fill="#0f172a" font-weight="bold">推荐练习</text>
+    <text x="40" y="122" font-size="10" fill="#475569">语文第一单元自测 · 10 题 · 建议限时 15 分钟</text>
+    <circle cx="34" cy="97" r="9" fill="#2563eb"/><text x="34" y="101" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">→</text>
+    <rect x="440" y="82" width="216" height="56" rx="8" fill="#fff" stroke="#e2e8f0"/>
+    <text x="456" y="102" font-size="11" fill="#0f172a" font-weight="bold">冲刺目标</text>
+    <text x="456" y="122" font-size="10" fill="#475569">本周 5 次 · 已完成 2 次</text>
+    <rect x="24" y="150" width="632" height="26" rx="6" fill="#fef2f2" stroke="#fecaca"/>
+    <text x="38" y="167" font-size="10.5" fill="#0f172a">错题库：近 7 天错题 8 道（点击查看 / 重练）</text>
+    <circle cx="34" cy="163" r="9" fill="#dc2626"/><text x="34" y="167" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">4</text>
+  </svg>
+  <figcaption>图 11 · 练习页：定冲刺 → 看推荐 → 开会话 → 翻错题</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>可选：先<b>创建冲刺目标</b>给一周定个量。</li>
+    <li><b>刷新推荐</b>挑选合适的题组。</li>
+    <li>点<b>创建练习会话</b>开始限时答题。</li>
+    <li>抽空翻<b>错题库</b>，把错题重练一遍。</li>
+  </ol>
+</section>
+
+<!-- ============ 12 practice-session ============ -->
+<section class="page" id="practice-session">
+  <h2>12. 答题会话 <span class="path">practice-session.html</span></h2>
+  <p>从"练习"页进入后的逐题答题页：一屏一题，顶部有剩余时间与进度（第几题 / 共几题），做完一题点"提交答案"立即记录，用"上一题""下一题"来回检查。全部答完后系统自动跳转到结果页——不需要手动收卷。限时设计的意义在于模拟考场节奏：先做完、再回头检查，不会的题也要先给出一个答案。</p>
+  <figure>
+  <svg viewBox="0 0 680 190" role="img" aria-label="答题会话示意">
+    <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/practice-session.html</text>
+    <rect x="24" y="42" width="120" height="20" rx="10" fill="#fef2f2"/><text x="84" y="56" font-size="10.5" fill="#dc2626" text-anchor="middle">剩余 12:40</text>
+    <rect x="160" y="42" width="200" height="20" rx="10" fill="#f1f5f9"/><text x="260" y="56" font-size="10.5" fill="#475569" text-anchor="middle">第 3 题 / 共 10 题</text>
+    <rect x="24" y="76" width="632" height="52" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="96" font-size="11" fill="#0f172a" font-weight="bold">3.（选择）下列词语搭配正确的一项是：</text>
+    <text x="40" y="116" font-size="10.5" fill="#475569">A. 改善态度　B. 提高质量　C. 增加速度　D. 发展水平</text>
+    <circle cx="34" cy="86" r="9" fill="#f59e0b"/><text x="34" y="90" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="24" y="140" width="90" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="69" y="157" font-size="11" fill="#475569" text-anchor="middle">← 上一题</text>
+    <rect x="126" y="140" width="110" height="26" rx="6" fill="#2563eb"/><text x="181" y="157" font-size="11" fill="#fff" text-anchor="middle">提交答案</text>
+    <circle cx="236" cy="153" r="9" fill="#f59e0b"/><text x="236" y="157" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="252" y="140" width="90" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="297" y="157" font-size="11" fill="#475569" text-anchor="middle">下一题 →</text>
+    <path d="M 480 153 h 40" stroke="#94a3b8" stroke-width="2" marker-end="url(#ar12)"/>
+    <defs><marker id="ar12" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#94a3b8" stroke-width="1.5"/></marker></defs>
+    <rect x="528" y="140" width="128" height="26" rx="6" fill="#eff6ff" stroke="#2563eb"/><text x="592" y="157" font-size="10.5" fill="#2563eb" text-anchor="middle">答完自动出结果页</text>
+    <circle cx="470" cy="153" r="9" fill="#f59e0b"/><text x="470" y="157" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+  </svg>
+  <figcaption>图 12 · 答题会话：看题 → 提交 → 翻题 → 自动收卷</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>读题并作答，点<b>提交答案</b>记录本题。</li>
+    <li>用<b>上一题 / 下一题</b>检查修改。</li>
+    <li>全部答完自动跳转<b>练习结果</b>页。</li>
+  </ol>
+</section>
+
+<!-- ============ 13 practice-result ============ -->
+<section class="page" id="practice-result">
+  <h2>13. 练习结果 <span class="path">practice-result.html</span></h2>
+  <p>每场练习结束后的结算页：上半部分是结果摘要（得分、正确率、用时、各题型表现），下半部分是 AI 生成的练习反馈——只呈现"允许公开"的反馈内容，涉及具体原文或隐私的部分不会展示。这是整条练习链路的落点：错题从这里流向"错题库"与"复盘"页，弱点数据流进"报告"页的统计。看完成绩别急着关，先扫一眼反馈里的建议，决定下一步练什么。</p>
+  <figure>
+  <svg viewBox="0 0 680 180" role="img" aria-label="练习结果示意">
+    <rect x="4" y="4" width="672" height="172" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/practice-result.html</text>
+    <text x="24" y="56" font-size="13" fill="#0f172a" font-weight="bold">练习结果</text>
+    <rect x="24" y="70" width="200" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="92" font-size="11" fill="#475569">得分</text>
+    <text x="124" y="106" font-size="22" fill="#16a34a" font-weight="bold" text-anchor="middle">82</text>
+    <text x="40" y="126" font-size="10" fill="#94a3b8">用时 11:20 · 正确率 82%</text>
+    <rect x="240" y="70" width="200" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="256" y="92" font-size="11" fill="#475569">各题型</text>
+    <text x="256" y="112" font-size="10.5" fill="#16a34a">选择 6/6 ✓</text>
+    <text x="256" y="128" font-size="10.5" fill="#dc2626">简答 1/2 ✗</text>
+    <rect x="456" y="70" width="200" height="66" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="472" y="92" font-size="11" fill="#0f172a" font-weight="bold">AI 反馈（公开部分）</text>
+    <text x="472" y="112" font-size="10" fill="#475569">简答题要点遗漏，建议重读</text>
+    <text x="472" y="128" font-size="10" fill="#475569">课文第 3 段并重练错题。</text>
+  </svg>
+  <figcaption>图 13 · 结果页：分数 → 分题型表现 → 反馈建议</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>看<b>摘要</b>：得分、正确率、用时。</li>
+    <li>读<b>AI 反馈</b>（仅公开内容），按建议安排下一步。</li>
+    <li>错题自动进入错题库，到<b>复盘</b>页集中处理。</li>
+  </ol>
+</section>
+
+<!-- ============ 14 review ============ -->
+<section class="page" id="review">
+  <h2>14. 复盘（错题与薄弱点） <span class="path">review.html</span></h2>
+  <p>"复盘"页是练习链路的收尾反思区：左边是"错题清单"——每一道做错的题都在这里排队等你重做；右边是"薄弱点汇总"——系统按知识点归纳你反复失分的区域，比单看错题更能指明方向。列表长就点"加载更多"；想立刻重练某道题，点"返回练习"回练习页开会话。建议固定节奏：每次练完当天复盘一次，周末再统一重练本周错题。</p>
+  <figure>
+  <svg viewBox="0 0 680 190" role="img" aria-label="复盘页示意">
+    <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/review.html</text>
+    <rect x="24" y="42" width="360" height="112" rx="8" fill="#fef2f2" stroke="#fecaca"/>
+    <text x="40" y="64" font-size="11.5" fill="#0f172a" font-weight="bold">错题清单</text>
+[REDACTED_STUDY_CONTENT]
+    <text x="40" y="106" font-size="10.5" fill="#0f172a">② 判断：" SHOP " 搭配题 ✗</text>
+    <text x="40" y="130" font-size="10" fill="#a16207">… 加载更多</text>
+    <circle cx="34" cy="58" r="9" fill="#dc2626"/><text x="34" y="62" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <circle cx="34" cy="124" r="9" fill="#dc2626"/><text x="34" y="128" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="400" y="42" width="256" height="112" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="416" y="64" font-size="11.5" fill="#0f172a" font-weight="bold">薄弱点汇总</text>
+    <text x="416" y="86" font-size="10.5" fill="#0f172a">· 简答题要点归纳（3 次失分）</text>
+    <text x="416" y="106" font-size="10.5" fill="#0f172a">· 词语搭配（2 次失分）</text>
+    <circle cx="410" cy="58" r="9" fill="#2563eb"/><text x="410" y="62" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="560" y="130" width="96" height="20" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="608" y="144" font-size="10" fill="#475569" text-anchor="middle">返回练习 →</text>
+    <text x="24" y="174" font-size="10" fill="#94a3b8">节奏建议：练完当天复盘 · 周末重练本周全部错题</text>
+  </svg>
+  <figcaption>图 14 · 复盘页：错题逐个清，薄弱点看趋势</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>过一遍<b>错题清单</b>，逐题弄懂错因。</li>
+    <li>看<b>薄弱点汇总</b>，优先攻克失分最多的知识点。</li>
+    <li>列表长点<b>加载更多</b>；要重练点<b>返回练习</b>。</li>
+  </ol>
+</section>
+
+<!-- ============ 15 reports ============ -->
+<section class="page" id="reports">
+  <h2>15. 报告 <span class="path">reports.html</span></h2>
+  <p>"报告"页把一段时间的学习数据汇总成可带走的文档：先选时间范围（快捷按钮"今天 / 本周 / 本月"），再选报告类型，点"生成报告"等待产出，然后"刷新报告预览"查看内容。满意后用"导出 JSON"或"导出 Markdown"保存到本地。注意两点：报告已做脱敏处理（不含原始材料全文与隐私）；报告<b>不会自动发送</b>给任何人——外发属于单独授权的功能，默认关闭。</p>
+  <figure>
+  <svg viewBox="0 0 680 200" role="img" aria-label="报告页示意">
+    <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/reports.html</text>
+    <rect x="24" y="42" width="66" height="24" rx="12" fill="#eff6ff" stroke="#2563eb"/><text x="57" y="58" font-size="10.5" fill="#2563eb" text-anchor="middle">今天</text>
+    <rect x="98" y="42" width="66" height="24" rx="12" fill="#fff" stroke="#cbd5e1"/><text x="131" y="58" font-size="10.5" fill="#475569" text-anchor="middle">本周</text>
+    <rect x="172" y="42" width="66" height="24" rx="12" fill="#fff" stroke="#cbd5e1"/><text x="205" y="58" font-size="10.5" fill="#475569" text-anchor="middle">本月</text>
+    <circle cx="34" cy="54" r="9" fill="#f59e0b"/><text x="34" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="260" y="42" width="100" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="310" y="58" font-size="10.5" fill="#475569" text-anchor="middle">报告类型 ▾</text>
+    <rect x="380" y="42" width="96" height="24" rx="6" fill="#2563eb"/><text x="428" y="58" font-size="11" fill="#fff" text-anchor="middle">生成报告</text>
+    <circle cx="390" cy="54" r="9" fill="#f59e0b"/><text x="390" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="488" y="42" width="80" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="528" y="58" font-size="10.5" fill="#475569" text-anchor="middle">刷新报告预览</text>
+    <circle cx="498" cy="54" r="9" fill="#f59e0b"/><text x="498" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="24" y="80" width="632" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="100" font-size="11" fill="#0f172a" font-weight="bold">报告预览（脱敏）</text>
+    <text x="40" y="120" font-size="10.5" fill="#475569">学习 5 天 · 练习 3 场 · 正确率 78% → 薄弱点：简答题归纳</text>
+    <text x="40" y="138" font-size="9.5" fill="#94a3b8">不含材料原文与隐私字段</text>
+    <rect x="24" y="158" width="110" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="79" y="175" font-size="11" fill="#475569" text-anchor="middle">导出 JSON</text>
+    <circle cx="34" cy="171" r="9" fill="#f59e0b"/><text x="34" y="175" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">4</text>
+    <rect x="146" y="158" width="130" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="211" y="175" font-size="11" fill="#475569" text-anchor="middle">导出 Markdown</text>
+    <text x="320" y="175" font-size="10" fill="#dc2626">✕ 报告不自动外发（默认关闭）</text>
+  </svg>
+  <figcaption>图 15 · 报告页：选范围 → 生成 → 预览 → 导出</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点快捷范围<b>今天 / 本周 / 本月</b>，选好报告类型。</li>
+    <li>点<b>生成报告</b>，完成后点<b>刷新报告预览</b>查看。</li>
+    <li>满意则点<b>导出 JSON / 导出 Markdown</b> 存档。</li>
+  </ol>
+</section>
+
+<!-- ============ 16 classroom ============ -->
+<section class="page" id="classroom">
+  <h2>16. 课堂采集与报告 <span class="path">classroom.html</span></h2>
+  <p>"课堂采集"处理课堂现场素材：上传上课录音或板书照片，系统转写成文字并生成学习报告，让课后复习有据可依。工作区里点"刷新采集列表"查看所有会话；点击某个会话可以看转写全文与对应的学习报告，转写文本之后还能像普通材料一样被引用。配合下一节的"采集会话"页（capture.html）发起新会话。适用场景：网课、补习班、家长会——凡是有录音和照片的学习现场。</p>
+  <figure>
+  <svg viewBox="0 0 680 200" role="img" aria-label="课堂采集示意">
+    <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/classroom.html</text>
+    <rect x="24" y="42" width="120" height="26" rx="6" fill="#2563eb"/><text x="84" y="59" font-size="11" fill="#fff" text-anchor="middle">刷新采集列表</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="24" y="82" width="632" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="101" font-size="10.5" fill="#0f172a">采集会话：语文第 3 讲（音频 42 分钟 · 照片 3 张）</text>
+    <rect x="540" y="90" width="100" height="16" rx="8" fill="#dcfce7"/><text x="590" y="102" font-size="9.5" fill="#16a34a" text-anchor="middle">转写完成</text>
+    <circle cx="34" cy="97" r="9" fill="#2563eb"/><text x="34" y="101" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="24" y="122" width="400" height="50" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="40" y="142" font-size="10.5" fill="#0f172a" font-weight="bold">转写文本（节选）</text>
+    <text x="40" y="160" font-size="10" fill="#475569">"今天我们讲修辞手法中的比喻和拟人……"</text>
+    <rect x="440" y="122" width="216" height="50" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="456" y="142" font-size="10.5" fill="#0f172a" font-weight="bold">学习报告</text>
+    <text x="456" y="160" font-size="10" fill="#475569">要点 5 条 · 待练习 2 项</text>
+    <text x="24" y="188" font-size="10" fill="#94a3b8">转写文本可像材料一样被问答引用</text>
+  </svg>
+  <figcaption>图 16 · 课堂采集：录音照片进来，转写和报告出去</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>点<b>刷新采集列表</b>同步所有采集会话。</li>
+    <li>点击会话查看<b>转写文本</b>与<b>学习报告</b>。</li>
+  </ol>
+</section>
+
+<!-- ============ 17 capture ============ -->
+<section class="page" id="capture">
+  <h2>17. 新建采集会话 <span class="path">capture.html</span></h2>
+  <p>"采集会话"页是课堂采集的发起点：填会话类型（网课 / 补习班等）、会话名称和媒体类型（音频 / 图片），点"创建"生成一个空会话，然后到"课堂采集与报告"页上传媒体文件并等待转写。一节课对应一个会话，命名建议带日期（如"语文第 3 讲 0919"），方便日后检索。创建后点"刷新"确认会话已出现在列表里。</p>
+  <figure>
+  <svg viewBox="0 0 680 180" role="img" aria-label="采集会话示意">
+    <rect x="4" y="4" width="672" height="172" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/capture.html</text>
+    <rect x="24" y="42" width="90" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="69" y="58" font-size="10.5" fill="#475569" text-anchor="middle">类型 ▾</text>
+    <rect x="122" y="42" width="170" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="207" y="58" font-size="10.5" fill="#94a3b8" text-anchor="middle">会话名称（语文第3讲 0919）</text>
+    <rect x="300" y="42" width="100" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="350" y="58" font-size="10.5" fill="#475569" text-anchor="middle">媒体类型 ▾</text>
+    <circle cx="34" cy="54" r="9" fill="#f59e0b"/><text x="34" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="24" y="80" width="90" height="26" rx="6" fill="#2563eb"/><text x="69" y="97" font-size="11" fill="#fff" text-anchor="middle">创建</text>
+    <circle cx="124" cy="93" r="9" fill="#f59e0b"/><text x="124" y="97" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <path d="M 130 93 h 50" stroke="#94a3b8" stroke-width="2" marker-end="url(#ar17)"/>
+    <defs><marker id="ar17" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#94a3b8" stroke-width="1.5"/></marker></defs>
+    <rect x="188" y="80" width="90" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="233" y="97" font-size="11" fill="#475569" text-anchor="middle">刷新</text>
+    <rect x="24" y="120" width="632" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="137" font-size="10.5" fill="#0f172a">会话列表：语文第 3 讲 0919 · <tspan fill="#a16207">待上传媒体</tspan></text>
+    <text x="24" y="164" font-size="10" fill="#94a3b8">创建后 → 去「课堂采集与报告」页上传音频/照片并等转写</text>
+  </svg>
+  <figcaption>图 17 · 采集会话：填三要素 → 创建 → 回工作区传媒体</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>填<b>类型 / 名称 / 媒体类型</b>三项。</li>
+    <li>点<b>创建</b>，随后点<b>刷新</b>确认会话出现。</li>
+  </ol>
+</section>
+
+<!-- ============ 18 tasks ============ -->
+<section class="page" id="tasks">
+  <h2>18. 任务状态 <span class="path">tasks.html</span></h2>
+  <p>"任务"页监控所有后台任务，最常见的是索引任务（材料建索引、课堂转写都在这里排队）。用"应用筛选"按状态过滤（排队 / 进行中 / 成功 / 失败），点"刷新"获取最新进度。卡住的任务可以在详情区"取消"；失败的任务可以"重试"——这两个动作都会弹确认框，防止误触。经验法则：批量导入材料后先来这里看一眼队列，全部成功再去问答。</p>
+  <figure>
+  <svg viewBox="0 0 680 190" role="img" aria-label="任务页示意">
+    <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/tasks.html</text>
+    <rect x="24" y="42" width="90" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="69" y="58" font-size="10.5" fill="#475569" text-anchor="middle">状态筛选 ▾</text>
+    <rect x="122" y="42" width="80" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="162" y="58" font-size="10.5" fill="#475569" text-anchor="middle">应用筛选</text>
+    <circle cx="34" cy="54" r="9" fill="#f59e0b"/><text x="34" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="214" y="42" width="70" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="249" y="58" font-size="10.5" fill="#475569" text-anchor="middle">刷新</text>
+    <circle cx="224" cy="54" r="9" fill="#f59e0b"/><text x="224" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="24" y="80" width="632" height="28" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="98" font-size="10.5" fill="#0f172a">索引：人教版语文五年级上册.pdf</text>
+    <rect x="520" y="86" width="120" height="16" rx="8" fill="#dbeafe"/><text x="580" y="98" font-size="9.5" fill="#1d4ed8" text-anchor="middle">进行中 12/24 块</text>
+    <rect x="24" y="116" width="632" height="28" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="134" font-size="10.5" fill="#0f172a">索引：课堂笔记.docx</text>
+    <rect x="430" y="122" width="60" height="16" rx="8" fill="#fee2e2"/><text x="460" y="134" font-size="9.5" fill="#dc2626" text-anchor="middle">失败</text>
+    <rect x="498" y="122" width="56" height="16" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="526" y="134" font-size="9.5" fill="#475569" text-anchor="middle">重试</text>
+    <rect x="562" y="122" width="56" height="16" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="590" y="134" font-size="9.5" fill="#475569" text-anchor="middle">取消</text>
+    <circle cx="34" cy="130" r="9" fill="#f59e0b"/><text x="34" y="134" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <text x="24" y="170" font-size="10" fill="#94a3b8">取消 / 重试均有确认弹窗 · 队列清空后再去问答最稳妥</text>
+  </svg>
+  <figcaption>图 18 · 任务页：筛 → 刷 → 对失败任务重试</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><b>应用筛选</b>聚焦某个状态的任务。</li>
+    <li>点<b>刷新</b>看实时进度（如分块 12/24）。</li>
+    <li>失败任务在详情区点<b>重试</b>；不再需要的点<b>取消</b>（均有确认弹窗）。</li>
+  </ol>
+</section>
+
+<!-- ============ 19 settings-provider ============ -->
+<section class="page" id="settings-provider">
+  <h2>19. Provider 设置 <span class="path">settings-provider.html</span></h2>
+  <p>"Provider 设置"配置 StudyBuddy 背后的 AI 与 Email 连接：填好 API 地址、密钥、模型名后，务必先点"测试 Provider 连接"验证可用，再点"保存此配置"落盘——顺序别反，免得存了一份连不通的配置。配置串较长时可用"复制到剪贴板"（内容仅在内存中生成，不落盘）。保存的凭据存在本地 data_root 的配置文件里、被排除在 Git 与备份之外；Email（报告外发）默认关闭，用一次授权一次。</p>
+  <figure>
+  <svg viewBox="0 0 680 190" role="img" aria-label="Provider 设置示意">
+    <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/settings-provider.html</text>
+    <rect x="24" y="42" width="90" height="22" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="69" y="57" font-size="10.5" fill="#94a3b8" text-anchor="middle">API 地址</text>
+    <rect x="24" y="72" width="90" height="22" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="69" y="87" font-size="10.5" fill="#94a3b8" text-anchor="middle">API 密钥</text>
+    <rect x="24" y="102" width="90" height="22" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="69" y="117" font-size="10.5" fill="#94a3b8" text-anchor="middle">模型名</text>
+    <rect x="124" y="42" width="290" height="22" rx="6" fill="#f8fafc" stroke="#e2e8f0"/><text x="134" y="57" font-size="10" fill="#475569">https://api.example.com/v1</text>
+    <rect x="124" y="72" width="290" height="22" rx="6" fill="#f8fafc" stroke="#e2e8f0"/><text x="134" y="87" font-size="10" fill="#475569">sk-••••••••••••（仅存本地）</text>
+    <rect x="124" y="102" width="290" height="22" rx="6" fill="#f8fafc" stroke="#e2e8f0"/><text x="134" y="117" font-size="10" fill="#475569">deepseek-chat</text>
+    <circle cx="34" cy="53" r="9" fill="#f59e0b"/><text x="34" y="57" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="430" y="42" width="140" height="26" rx="6" fill="#fff" stroke="#2563eb"/><text x="500" y="59" font-size="11" fill="#2563eb" text-anchor="middle">测试 Provider 连接</text>
+    <circle cx="440" cy="55" r="9" fill="#f59e0b"/><text x="440" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="430" y="82" width="140" height="26" rx="6" fill="#2563eb"/><text x="500" y="99" font-size="11" fill="#fff" text-anchor="middle">保存此配置</text>
+    <circle cx="440" cy="95" r="9" fill="#f59e0b"/><text x="440" y="99" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <rect x="430" y="122" width="140" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="500" y="139" font-size="10.5" fill="#475569" text-anchor="middle">复制到剪贴板</text>
+    <rect x="24" y="142" width="380" height="24" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="158" font-size="10" fill="#475569">连接测试：<tspan fill="#16a34a">✓ 成功（延迟 320ms）</tspan>　Email 外发：默认关闭</text>
+    <text x="24" y="182" font-size="10" fill="#94a3b8">顺序：先测试 → 再保存；密钥只存本地 data_root，不入 Git / 备份</text>
+  </svg>
+  <figcaption>图 19 · Provider 设置：填 → 测 → 存，三步走</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>填<b>API 地址 / 密钥 / 模型名</b>。</li>
+    <li>点<b>测试 Provider 连接</b>，等"成功"提示。</li>
+    <li>再点<b>保存此配置</b>生效；配置串可<b>复制到剪贴板</b>流转。</li>
+  </ol>
+</section>
+
+<!-- ============ 20 settings ============ -->
+<section class="page" id="settings">
+  <h2>20. 系统设置 <span class="path">settings.html</span></h2>
+  <p>"系统设置"是整台机器的体检中心：页面列出七项能力（导入解析、OCR、ASR、索引、问答、生成、报告）的自检状态——已安装 / 未安装 / 未配置一目了然，缺什么会明确告诉你，不会悄悄禁用。状态可疑就点"重新自检"或"刷新状态"。这里也能集中保存或清除 AI 与 Embedding 配置（"保存并生效"无需重启服务）。排障口诀：问答答不了 → 先来这里看自检，再去 Provider 设置查连接。</p>
+  <figure>
+  <svg viewBox="0 0 680 210" role="img" aria-label="系统设置示意">
+    <rect x="4" y="4" width="672" height="202" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <rect x="4" y="4" width="672" height="26" rx="10" fill="#eef2f7"/>
+    <rect x="4" y="20" width="672" height="10" fill="#eef2f7"/>
+    <circle cx="20" cy="17" r="4" fill="#f87171"/><circle cx="34" cy="17" r="4" fill="#fbbf24"/><circle cx="48" cy="17" r="4" fill="#34d399"/>
+    <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/settings.html</text>
+    <rect x="24" y="42" width="100" height="26" rx="6" fill="#2563eb"/><text x="74" y="59" font-size="11" fill="#fff" text-anchor="middle">重新自检</text>
+    <circle cx="34" cy="55" r="9" fill="#f59e0b"/><text x="34" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <rect x="136" y="42" width="96" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="184" y="59" font-size="11" fill="#475569" text-anchor="middle">刷新状态</text>
+    <circle cx="146" cy="55" r="9" fill="#f59e0b"/><text x="146" y="59" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <rect x="440" y="42" width="120" height="26" rx="6" fill="#16a34a"/><text x="500" y="59" font-size="11" fill="#fff" text-anchor="middle">保存并生效</text>
+    <rect x="572" y="42" width="84" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="614" y="59" font-size="11" fill="#475569" text-anchor="middle">清除配置</text>
+    <rect x="24" y="82" width="196" height="52" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="40" y="102" font-size="10.5" fill="#0f172a">导入解析</text><rect x="150" y="90" width="58" height="15" rx="7" fill="#dcfce7"/><text x="179" y="101" font-size="9.5" fill="#16a34a" text-anchor="middle">已安装</text><text x="40" y="122" font-size="9.5" fill="#94a3b8">TXT/MD/PDF/DOCX/PPTX</text>
+    <rect x="236" y="82" width="196" height="52" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="252" y="102" font-size="10.5" fill="#0f172a">索引 / 问答</text><rect x="362" y="90" width="58" height="15" rx="7" fill="#dcfce7"/><text x="391" y="101" font-size="9.5" fill="#16a34a" text-anchor="middle">已安装</text><text x="252" y="122" font-size="9.5" fill="#94a3b8">分块 · 向量 · 引用</text>
+    <rect x="448" y="82" width="208" height="52" rx="8" fill="#fffbeb" stroke="#fde68a"/><text x="464" y="102" font-size="10.5" fill="#0f172a">ASR / OCR</text><rect x="590" y="90" width="58" height="15" rx="7" fill="#fef9c3"/><text x="619" y="101" font-size="9.5" fill="#a16207" text-anchor="middle">未配置</text><text x="464" y="122" font-size="9.5" fill="#94a3b8">缺组件时会明确提示，不静默禁用</text>
+    <rect x="24" y="146" width="632" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="163" font-size="10.5" fill="#0f172a">生成 / 报告：<tspan fill="#16a34a">正常</tspan>　　AI 配置：<tspan fill="#16a34a">已保存</tspan>　　Embedding：<tspan fill="#16a34a">已保存</tspan></text>
+    <circle cx="34" cy="159" r="9" fill="#f59e0b"/><text x="34" y="163" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <text x="24" y="192" font-size="10" fill="#94a3b8">排障口诀：功能失灵 → 先自检 → 再去 Provider 设置查连接</text>
+  </svg>
+  <figcaption>图 20 · 系统设置：七项能力自检，缺什么明说什么</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>进页面先看<b>七项能力自检</b>面板。</li>
+    <li>状态可疑点<b>重新自检</b> / <b>刷新状态</b>。</li>
+    <li>改完 AI / Embedding 配置点<b>保存并生效</b>（免重启）。</li>
+  </ol>
+</section>
+
+<div class="tip" style="margin-top:32px">
+  <b>主流程一图记牢</b>：启动服务 → <b>资料</b>导入材料 → <b>材料详情</b>建索引 → <b>问答</b>带引用提问 → <b>笔记 / 卡片 / 题目</b>沉淀 → <b>练习</b>限时答题 → <b>结果 / 复盘</b>找薄弱 → <b>报告</b>导出存档。卡在任何一步，去<b>任务</b>页和<b>系统设置</b>页找原因。
+</div>
+
+</main>
+</body>
+</html>
