@@ -89,7 +89,7 @@ class RapidImageOcrProvider:
     def recognize(self, request: ImageOcrRequest) -> CaptureTranscriptionResult:
         if request.media_type not in SUPPORTED_IMAGE_TYPES or not request.content:
             raise CaptureProviderError("capture_asset_type_not_supported")
-        if len(request.content) > 50 * 1024 * 1024:
+        if len(request.content) > 200 * 1024 * 1024:
             raise CaptureProviderError("capture_asset_too_large")
         if hashlib.sha256(request.content).hexdigest() != request.content_sha256:
             raise CaptureProviderError("transcription_failed")
@@ -244,7 +244,7 @@ class PaddleImageOcrProvider:
     def recognize(self, request: ImageOcrRequest) -> CaptureTranscriptionResult:
         if request.media_type not in SUPPORTED_IMAGE_TYPES or not request.content:
             raise CaptureProviderError("capture_asset_type_not_supported")
-        if len(request.content) > 50 * 1024 * 1024:
+        if len(request.content) > 200 * 1024 * 1024:
             raise CaptureProviderError("capture_asset_too_large")
         if hashlib.sha256(request.content).hexdigest() != request.content_sha256:
             raise CaptureProviderError("transcription_failed")

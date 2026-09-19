@@ -72,8 +72,8 @@ def test_duplicate_hash_reuses_original_path(tmp_path: Path):
         assert len(list((tmp_path / "originals").rglob("original"))) == 1
 
 
-def test_default_upload_limit_is_50_mib():
-    assert DEFAULT_MAX_UPLOAD_BYTES == 50 * 1024 * 1024
+def test_default_upload_limit_is_200_mib():
+    assert DEFAULT_MAX_UPLOAD_BYTES == 200 * 1024 * 1024
 
 
 def test_upload_rejects_path_traversal_filename(tmp_path: Path):
