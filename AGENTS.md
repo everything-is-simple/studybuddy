@@ -50,7 +50,9 @@ This revision exists because the previous mode produced audit and evidence docum
 - **H:\studybuddy-composer**：组件独立测试目录，组件必须先在此完成独立测试
 - **H:\studybuddy-integration**：组件组合测试目录，通过Composer测试的组件在此完成组合测试
 - **H:\studybuddy-test**：测试artifacts和fixtures目录，存放合成fixture、测试运行结果和脱敏artifact
-- **H:\studybuddy-ChinaTextbook**：真实教材文件目录（例如：五年级上下、四年级上下课程教材）
+- **H:\studybuddy-ChinaTextbook**：真实教材与学习资料目录（`小学教材\<年级>\<科目>\`、`基础性作业\`、下载脚本、`教材清单.md`；`智慧教育token.txt` 为密钥，永不清扫）
+
+各目录"必须保留 / 可清理"边界与清扫操作规范见 [`docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md`](docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md)（权威来源），本文与其冲突时以该文档为准。
 
 **重要原则**：
 - 不得从Composer或Integration项目直接复制源码到正式系统
