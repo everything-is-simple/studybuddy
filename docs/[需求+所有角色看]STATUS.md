@@ -85,6 +85,8 @@
 
 **P0 复核发现的 2 项遗留全部解决**（清理前双库备份 `H:\studybuddy-test\backups\pre-legacy-cleanup-20260918`，verify-backup 均通过）：
 
+> ⚠️ **2026-09-19 更正**：`H:\studybuddy-test\backups\pre-legacy-cleanup-20260918` 已在 2026-09-19 六目录大扫除中被删除，本节及 `H:\studybuddy-data\ARCHIVE_NOTES.md` 中引用它的恢复路径**均已失效**。另经 2026-09-19 只读复测，`H:\studybuddy-data\live\` 残存的 FTS5 **影子表**碎片（`chunks_search_data` 27 / `material_search_data` 24 等）与 **27 个孤立 original**（约 3.6 MB）原样存在；因虚表本身 0 行，下文"FTS 0 行"仅在虚表层面成立，不影响系统运行。**同日后续**：`live/` 目录已在该日第二轮大扫除中整体删除，`H:\studybuddy-test\backups\repo-data-archived-20260919`（386 MB 旧 scratch 数据根归档）亦一并清理；详见 `docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md` 清扫日志。
+
 1. **fake 旧向量清除**：活跃根库 `H:\studybuddy-data\studybuddy.sqlite3` 中每分块曾并存 fake 32 维旧向量（499 条）与 doubao 2048 维真实向量；已删除全部 `provider_id='fake'` 行（499 条），现库内仅存 499 条真实向量。校验：embeddings=499 全部 doubao 2048 维、零孤儿、`foreign_key_check` 零违规、`integrity_check ok`、user_version=15。
 2. **旧 live 数据根处置**：`H:\studybuddy-data\live\`（历史 data_root，含 51 条合成测试材料、22 qa_threads、55 retrieval_runs 等）经备份验证后原地清空——通过生产代码 `purge_material` 仓储函数清理全部 51 条材料（含 FTS 同步），并清扫关联 chunks/embeddings/spans/revisions/extractions 与 QA/检索/报告/练习/笔记/计划等测试痕迹。终态校验：全部业务表 0 行、FTS 0 行、schema 与迁移历史完整（v15）、integrity ok、零外键违规，仅保留 default 项目行。目录因系统安全删除策略保留（已空），`H:\studybuddy-data\ARCHIVE_NOTES.md` 记录处置过程与恢复方式；活跃 data_root 仍为 `H:\studybuddy-data` 根目录。
 

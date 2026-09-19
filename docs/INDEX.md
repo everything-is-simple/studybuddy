@@ -9,13 +9,15 @@
 | 目录 | 用途 | 关键约束 |
 |------|------|----------|
 | `H:\studybuddy` | 正式源码仓库：生产代码（`backend/app/`）、正式测试（`backend/tests/`）、必要文档 | 根目录只留入口文档与项目元数据；不存运行数据 |
-| `H:\studybuddy-data` | 正式运行数据根（data_root）：SQLite、hash-derived 原文件、配置、日志 | 唯一活跃 data_root；不进 Git；多实例禁止共用 |
+| `H:\studybuddy-data` | 正式运行数据根（data_root）：SQLite、hash-derived 原文件、配置、日志 | 唯一活跃 data_root 是其**根目录**；`live/` 为已废弃历史根（禁止指向）；不进 Git/网盘；多实例禁止共用 |
 | `H:\studybuddy-composer` | 组件独立测试目录 | 组件必须先在此完成独立测试，才能进入 Integration |
 | `H:\studybuddy-integration` | 组件组合测试目录 | 通过 Composer 的组件在此完成组合契约验证 |
 | `H:\studybuddy-test` | 测试 artifacts/fixtures：合成 fixture、测试运行结果、脱敏 artifact、备份 | 正式测试的数据来源；不写入正式仓库 |
 | `H:\studybuddy-ChinaTextbook` | 真实教材与学习资料目录（`小学教材\<年级>\<科目>\`、`基础性作业\`、下载脚本、`教材清单.md`） | 真实素材源，导入正式系统后的原件由 data_root 保存；`智慧教育token.txt` 为密钥，永不清扫 |
 
 > 详细规则见 [`AGENTS.md`](../AGENTS.md) "Directory usage规范" 章节与 [`README.md`](../README.md) 同名章节；各目录"必须保留 / 可清理"边界与清扫操作的**权威文档**为 [`[架构师+运维看]WORKSPACE_DIRECTORIES.md`]([架构师+运维看]WORKSPACE_DIRECTORIES.md)。
+>
+> ⚠️ **两点易错**：① 活跃 data_root 是 `H:\studybuddy-data` 的**根目录**，其下 `live/` 是已废弃历史根，禁止把 `STUDYBUDDY_DATA_ROOT` 指向它；② `H:\studybuddy-e2e-test*` 属一次性临时 data_root，不是正式目录，可整目录删除。
 
 ---
 
