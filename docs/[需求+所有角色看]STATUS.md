@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-09-20：Email/SMTP 配置打通 + 连接测试两个真实缺陷修复（gzip 误报 + QQ 拒收无头邮件）
+
+**背景**：用户以 4 张 settings/status 截图求证"能力设置是否全部正常"。核实发现：能力矩阵 7/7 available 属实，但 settings-provider.html 的 LLM/Embedding 连接测试稳定误报 `provider_protocol_error`（同一 Provider 真实 QA 却能通），SMTP/Email 从未测试过。
+
+**两个真实缺陷修复（`backend/app/connection_test.py`）**：
+1. **Provider 连接测试 gzip 误报**：llm/embedding 两处 `urlopen` 响应直接 `json.loads`，无 gzip 透明解压；火山引擎 plan API 无论 Accept-Encoding 都返回 gzip 响应体（`providers/_helpers.py:139-142` 已有同类修复，本文件漏同步）→ 补 gzip 魔数透明解压（解压失败仍稳定映射 `provider_protocol_error`，解压后超限仍报 `provider_response_too_large`）。
+2. **SMTP 测试邮件被 QQ 拒收**：测试邮件只有 Subject 无 From/To 头，QQ SMTP 返回 550 "The 'From' header is missing or invalid"，被掩码为 `delivery_failed`，凭据有效也报失败 → 测试邮件补齐 RFC 5322 From/To 头。
+
+[REDACTED_CREDENTIAL_HISTORY]
+
+**修复后真实链路验证（重启服务后实测）**：
+- LLM 连接测试：**200 OK ×3**（首次失败为重启后瞬时抖动）
+- Embedding 连接测试：**200 OK**（gzip 修复实证）
+- SMTP 连接测试：**200 OK**（真实测试邮件已发至 [REDACTED_EMAIL]）
+- 飞书 Webhook：**200 OK**
+- QA 回归：真实问答带引用正常（glm-5.3-flash）
+
+**测试覆盖**：focused `test_p1_5_2_0_connection_test.py` + `test_p1_5_2_1_api.py` **33 passed**（新增 3 用例：LLM gzip 响应、损坏 gzip 拒绝、SMTP RFC 5322 邮件头断言）；后端全量 **640 passed / 3 skipped**（352.98s，新增 3 用例后基线由 637 刷新为 640，skip 均为 opt-in 真实 smoke）；`check-source-size.py` 通过。
+
+**未覆盖（如实标注）**：163 邮箱备用 SMTP 配置未配置未测；浏览器 E2E 未跑（本修复不涉及页面交互变更，页面仅消费既有错误码）；首次 LLM 连接测试抖动的网络层根因（服务进程代理环境）未深挖。
+
+---
+
 ## 2026-09-19：第二轮大扫除后全量回归 + 3 个过时 spec 修复 + 全量基线刷新
 
 **大扫除（第二轮收尾核查）**：按 `WORKSPACE_DIRECTORIES.md` 边界对六目录只读扫描——主仓库无 `__pycache__`/`.pytest_cache`/`test-results`/`probe-*`/`tmp-*` 残留；test 目录 `runs/`、`e2e-screenshots/`、`backups/` 均为空；data 根为唯一活跃 data_root（`live/` 已于本轮早前删除）；composer 无可清 `.venv`/压缩包（09-19 已清 376MB）；integration 无可清项；ChinaTextbook 密钥与教材按规永久保留。**无可清项，本轮零删除**，扫描确认前两轮清扫已到位。

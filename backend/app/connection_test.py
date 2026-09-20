@@ -33,6 +33,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import smtplib
 import socket
@@ -143,6 +144,20 @@ def provider_llm_connection_test(
             if len(body) > MAX_TEST_RESPONSE_BYTES:
                 raise ConnectionTestError("provider_response_too_large")
 
+            # Some providers (e.g. the Volcano Ark plan API) return a
+            # gzip-compressed body regardless of Accept-Encoding. The real
+            # provider request path already transparently decompresses
+            # (providers/_helpers.py), so the connection test must do the
+            # same, otherwise every gzip-encoding provider is misreported
+            # as provider_protocol_error even though it answered correctly.
+            if body[:2] == b"\x1f\x8b":
+                try:
+                    body = gzip.decompress(body)
+                except OSError:
+                    raise ConnectionTestError("provider_protocol_error") from None
+                if len(body) > MAX_TEST_RESPONSE_BYTES:
+                    raise ConnectionTestError("provider_response_too_large")
+
             # Validate JSON response
             try:
                 data = json.loads(body.decode("utf-8"))
@@ -232,6 +247,15 @@ def provider_embedding_connection_test(
             if len(body) > MAX_EMBEDDING_TEST_RESPONSE_BYTES:
                 raise ConnectionTestError("provider_response_too_large")
 
+            # Gzip transparency: same rationale as provider_llm_connection_test.
+            if body[:2] == b"\x1f\x8b":
+                try:
+                    body = gzip.decompress(body)
+                except OSError:
+                    raise ConnectionTestError("provider_protocol_error") from None
+                if len(body) > MAX_EMBEDDING_TEST_RESPONSE_BYTES:
+                    raise ConnectionTestError("provider_response_too_large")
+
             try:
                 data = json.loads(body.decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError):
@@ -317,7 +341,16 @@ def smtp_connection_test(
                 smtp.login(username, password)
 
             # Send test message
-            message = f"Subject: {SMTP_TEST_SUBJECT}\n\n{SMTP_TEST_BODY}"
+            # RFC 5322 requires From/To headers. QQ SMTP rejects header-less
+            # messages with a 550 data error, which used to surface as a
+            # generic delivery_failed even with valid credentials.
+            message = (
+                f"From: {sender}\r\n"
+                f"To: {recipient}\r\n"
+                f"Subject: {SMTP_TEST_SUBJECT}\r\n"
+                "\r\n"
+                f"{SMTP_TEST_BODY}"
+            )
             smtp.sendmail(sender, [recipient], message)
 
             return {"status": "ok"}

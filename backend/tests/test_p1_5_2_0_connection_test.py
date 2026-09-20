@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 from unittest.mock import MagicMock, patch
+import gzip
 import json
 
 import pytest
@@ -24,6 +25,8 @@ from app.connection_test import (  # noqa: E402
     LLM_TEST_PAYLOAD,
     EMBEDDING_TEST_PAYLOAD,
     FEISHU_TEST_PAYLOAD,
+    SMTP_TEST_SUBJECT,
+    SMTP_TEST_BODY,
     MAX_TEST_RESPONSE_BYTES,
     MAX_EMBEDDING_TEST_RESPONSE_BYTES,
 )
@@ -175,6 +178,52 @@ def test_provider_llm_connection_test_malformed_response() -> None:
     assert exc.value.code == "provider_protocol_error"
 
 
+def test_provider_llm_connection_test_gzip_response() -> None:
+    """火山引擎 plan API 等 Provider 无论 Accept-Encoding 都返回 gzip 响应体。
+
+    真实问答链路（providers/_helpers.py）对 gzip 透明解压，连接测试此前没有，
+    导致同一 Provider 问答能通、连接测试误报 provider_protocol_error。
+    修复：连接测试对 gzip 魔数同样透明解压。
+    """
+    payload = json.dumps({"choices": [{"message": {"content": "Hi"}}]}).encode("utf-8")
+    gzipped = gzip.compress(payload)
+
+    mock_response = MagicMock()
+    mock_response.headers.get.return_value = None
+    mock_response.read.return_value = gzipped
+    mock_response.__enter__ = lambda self: self
+    mock_response.__exit__ = lambda self, *args: None
+
+    with patch("app.connection_test.urlopen", return_value=mock_response):
+        result = provider_llm_connection_test(
+            base_url="https://api.example.com",
+            api_key="test-key",
+            model_id="test-model",
+        )
+
+    assert result == {"status": "ok"}
+
+
+def test_provider_llm_connection_test_rejects_corrupt_gzip() -> None:
+    """gzip 魔数但解压失败 → 稳定映射为 provider_protocol_error。"""
+    corrupt = b"\x1f\x8b" + b"not-a-valid-gzip-stream"
+
+    mock_response = MagicMock()
+    mock_response.headers.get.return_value = None
+    mock_response.read.return_value = corrupt
+    mock_response.__enter__ = lambda self: self
+    mock_response.__exit__ = lambda self, *args: None
+
+    with patch("app.connection_test.urlopen", return_value=mock_response):
+        with pytest.raises(ConnectionTestError) as exc:
+            provider_llm_connection_test(
+                base_url="https://api.example.com",
+                api_key="test-key",
+                model_id="test-model",
+            )
+    assert exc.value.code == "provider_protocol_error"
+
+
 def test_provider_embedding_connection_test_success() -> None:
     """验证 Embedding Provider connection-test 成功路径。"""
     mock_response = MagicMock()
@@ -214,6 +263,35 @@ def test_smtp_connection_test_success() -> None:
     mock_smtp.login.assert_called_once_with("user@example.com", "test-password")
     mock_smtp.sendmail.assert_called_once()
     mock_smtp.quit.assert_called_once()
+
+
+def test_smtp_connection_test_message_carries_rfc5322_headers() -> None:
+    """QQ SMTP 拒收缺 From/To 头的邮件（550 data error）。
+
+    此前测试邮件只有 Subject，真实 QQ SMTP 返回
+    550 'The "From" header is missing or invalid'，被掩码为 delivery_failed，
+    即使凭据有效也报失败。修复：邮件头补齐 From/To。
+    """
+    mock_smtp = MagicMock()
+
+    with patch("app.connection_test.smtplib.SMTP_SSL", return_value=mock_smtp):
+        result = smtp_connection_test(
+            host="smtp.qq.com",
+            port=465,
+            secure=True,
+            username="sender@example.com",
+            password="test-password",
+            sender="sender@example.com",
+            recipient="recipient@example.com",
+        )
+
+    assert result == {"status": "ok"}
+    args, _kwargs = mock_smtp.sendmail.call_args
+    message = args[2]
+    assert message.startswith("From: sender@example.com\r\n")
+    assert "To: recipient@example.com\r\n" in message
+    assert f"Subject: {SMTP_TEST_SUBJECT}\r\n" in message
+    assert message.endswith(SMTP_TEST_BODY)
 
 
 def test_smtp_connection_test_invalid_config() -> None:
