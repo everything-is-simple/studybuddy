@@ -142,6 +142,7 @@
 |------|------|--------|
 | [`[维护者看]CLEAN_SYSTEM_PROMPT.md`]([维护者看]CLEAN_SYSTEM_PROMPT.md) | 系统清洁工作指南 | 架构师 + 需求分析师 |
 | [`[维护者看]CODE_DOCUMENTATION_PROJECT.md`]([维护者看]CODE_DOCUMENTATION_PROJECT.md) | 代码注释补齐工程总结 | 架构师 |
+| [`[维护者看]PI_WORKFLOW.md`]([维护者看]PI_WORKFLOW.md) | Pi 会话、模型默认值和上下文管理工作流 | 维护者 |
 | [`roles/SIX_ROLES_SYNERGY_LESSONS.md`](roles/SIX_ROLES_SYNERGY_LESSONS.md) | **六角色协同开发系统的经验教训之谈** | 需求分析师 + 架构师 |
 
 ---

@@ -3,6 +3,17 @@
 本文档记录项目的重要进展、决策和当前状态。所有角色均应阅读本文档以了解项目全貌。
 
 ---
+## 2026-09-21：SoL-Pi 会话证据保留收口
+
+项目本地 `.pi/sol-pi.json` 已启用 `actionFusion`、`observationPack`、`evidencePreservingReducer` 和 `onlineContextCompact`，保留 `cacheWriteReadRatio: 12.5`；未改 StudyBuddy 正式配置、数据库、API 或凭据。SoL-Pi schema preflight 通过，focused config tests **30 passed**；StudyBuddy capability/config focused tests **31 passed**。命名 session 的大 README 读取生成 observation id、27,995 字节原始大小和 SHA-256，第三次发送后压缩为 601 字节占位符并保留可回溯 id；续接返回 `CONTINUE`。自动 online compact 的真实触发条件本次未达到，标记 `not_verified`。微信文章继续保持 `not_verified`。
+
+---
+
+## 2026-09-20：Pi 协作工作流与上下文精简
+
+用户明确启用 Pi 长任务优化：项目 `AGENTS.md` 已从长篇说明压缩为常驻硬约束，并将目录、架构、迁移和测试细节链接至既有权威文档；新增维护者 [`PI_WORKFLOW.md`]([维护者看]PI_WORKFLOW.md)，覆盖命名会话、`pi -c`/`pi -r` 续接、分叉、手工压缩、模型/思考默认值保存和模型循环。项目级 `.pi/settings.json` 的扩展瘦身配置保持不变，未修改凭据、模型目录、生产代码、schema 或运行数据。实际 token 节省与 TUI 快捷键结果须由本机会话统计和手工验证确认，不作固定数值承诺。
+
+---
 
 ## 2026-09-20：Email/SMTP 配置打通 + 连接测试两个真实缺陷修复（gzip 误报 + QQ 拒收无头邮件）
 

@@ -1,5 +1,9 @@
 # StudyBuddy TODO 清单
 
+> 更新：2026-09-21（**SoL-Pi 会话证据保留收口**：项目 `.pi/sol-pi.json` 已启用四项 SoL-Pi 机制并保留 `cacheWriteReadRatio: 12.5`；schema preflight、SoL-Pi focused config tests（30 passed）和 StudyBuddy capability/config tests（31 passed）通过。大输出 observation ledger 已验证 id/hash/原始大小及第三次发送后的占位压缩；在线 compact 自动触发本次 `not_verified`。未改正式应用配置、数据库、API、凭据或文章结论。）
+
+> 更新：2026-09-20（**Pi 协作工作流与上下文精简**：`AGENTS.md` 已收敛为项目硬约束；新增维护者 `[维护者看]PI_WORKFLOW.md`，记录命名会话、`pi -c`/`pi -r` 续接、分叉、`/compact`、`/model`/`/thinking` 的 `Ctrl+S` 默认保存及 `/scoped-models` + `Ctrl+P` 切换。项目级扩展瘦身保持不变；未改生产代码、schema、运行数据、凭据或模型目录。快捷键和实际 token 收益待本机 TUI 观察确认。）
+
 [REDACTED_CREDENTIAL_HISTORY]
 
 > 更新：2026-09-19（**第二轮大扫除后全量回归收口**：① 六目录只读扫描确认 09-19 前两轮清扫已到位，本轮无可清项、零删除；② 修复 3 个过时 spec（A-E2E-QA-7 文案断言、B-PLAN-2 捕获请求归属假设失效、P-D21/22 busy 守卫竞态）——全部只改测试，产品代码零 diff，各 spec 隔离验证通过；③ 全量基线：后端 **637 passed / 3 skipped**，Chromium 全量 **551 passed / 4 skipped**（3 个失败均为瞬态，隔离复跑全过）。详见 STATUS.md 2026-09-19 节。）

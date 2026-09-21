@@ -236,6 +236,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "[运维看]BACKUP_RESTORE.md",
         "[维护者看]CLEAN_SYSTEM_PROMPT.md",
         "[维护者看]CODE_DOCUMENTATION_PROJECT.md",
+        "[维护者看]PI_WORKFLOW.md",
         "[架构师+测试看]CODE_TEST_GOVERNANCE.md",
         "[架构+需求看]DECISIONS.md",
         "INDEX.md",
