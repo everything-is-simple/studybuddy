@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\health-stu
 powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\check-development-environment.ps1
 ```
 
-目录职责和新机器重建顺序见 [`NEW_MACHINE_SETUP.md`](NEW_MACHINE_SETUP.md)；可直接交给新机器 AI 的完整配置提示词见 [`STUDYBUDDY_NEW_MACHINE_PROMPT.md`](STUDYBUDDY_NEW_MACHINE_PROMPT.md)。
+目录职责和新机器重建顺序见 [`NEW_MACHINE_SETUP.md`]([维护者看]NEW_MACHINE_SETUP.md)；可直接交给新机器 AI 的完整配置提示词见 [`STUDYBUDDY_NEW_MACHINE_PROMPT.md`]([维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md)。
 
 ## 已验证的开发工具
 

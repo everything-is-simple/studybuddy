@@ -1,6 +1,6 @@
 # StudyBuddy 本地单机 v1：竣工报告、首次使用与验收手册
 
-> 适用版本：StudyBuddy local v1，application version `local-v1`，schema v15。当前环境和功能组件基线见 [`DEVELOPMENT_ENVIRONMENT_BASELINE.md`](../[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md)。
+> 适用版本：StudyBuddy local v1，application version `local-v1`，schema v15。当前环境和功能组件基线见 [`DEVELOPMENT_ENVIRONMENT_BASELINE.md`]([维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md)。
 >
 > 支持范围：Windows、本机浏览器、单进程、单实例、SQLite、本地磁盘、一个 `data_root`。
 >

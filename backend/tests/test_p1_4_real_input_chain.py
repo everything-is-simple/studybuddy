@@ -65,11 +65,15 @@ def _render_pdf(html: str, target: Path, *, assets: dict[str, bytes] | None = No
         (target.parent / name).write_bytes(payload)  # noqa: PERF203 - fixture assets are tiny
     source = target.parent / f"{target.stem}.source.html"
     source.write_text(html, encoding="utf-8")
-    subprocess.run(
-        [str(browser), "--headless", "--disable-gpu", "--no-sandbox", "--no-pdf-header-footer",
-         f"--print-to-pdf={target}", source.resolve().as_uri()],
-        check=True, capture_output=True, timeout=180,
-    )
+    try:
+        subprocess.run(
+            [str(browser), "--headless", "--disable-gpu", "--no-sandbox", "--no-pdf-header-footer",
+             f"--print-to-pdf={target}", source.resolve().as_uri()],
+            check=True, capture_output=True, timeout=180,
+        )
+    except OSError as error:
+        source.unlink(missing_ok=True)
+        pytest.skip(f"managed Chromium is present but cannot launch on this host: {error}")
     source.unlink()
 
 

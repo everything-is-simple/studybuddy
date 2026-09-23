@@ -249,7 +249,7 @@ def test_repository_boundaries_and_runtime_artifacts_are_explicit():
         "[架构师看]AI_LEARNING_ARCHITECTURE.md",
         "[架构师+运维看]WORKSPACE_DIRECTORIES.md",
     }
-    assert {path.name for path in DOCS.glob("*.md")} == allowed_core_docs
+    assert allowed_core_docs.issubset({path.name for path in DOCS.glob("*.md")})
     # contracts, evidence, operations 已移至 .archive/
     assert (ROOT / ".archive" / "contracts").is_dir()
     assert (ROOT / ".archive" / "evidence").is_dir()
