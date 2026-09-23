@@ -12,3 +12,4 @@ paddlepaddle==3.3.1
 paddleocr==3.7.0
 onnxruntime==1.20.1
 rapidocr_onnxruntime==1.4.4
+chardet==5.2.0
