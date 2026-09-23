@@ -65,4 +65,3 @@ $failed = @($checks | Where-Object { $_.status -in @('failed', 'not_installed') 
     checks = $checks
 } | ConvertTo-Json -Depth 4 -Compress
 if ($failed -gt 0) { exit 1 }
-

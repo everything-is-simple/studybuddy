@@ -41,4 +41,3 @@ Composer 的 `manifests/b0-catalog.json` 是候选组件证据源，不是安装
 ## 可交付判定
 
 新机器只有在环境检查为 `ok`、正式服务三项健康端点为 200、`python -m backend.app version` 为 `local-v1/schema-15`、delivery 仍为 off，并且组件状态没有被候选 evidence 偷换后，才算完成基础配置。真实 OCR/ASR、真实外发和真实 Provider 连接不能由安装包存在自动升级为 `available`。
-
