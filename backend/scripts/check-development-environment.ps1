@@ -35,8 +35,13 @@ if (-not (Test-Path -LiteralPath $Python)) {
         Add-Check 'python_imports' ($(if ($LASTEXITCODE -eq 0) { 'available' } else { 'failed' }))
         $null = & $Python -m pip check 2>$null
         Add-Check 'pip_check' ($(if ($LASTEXITCODE -eq 0) { 'available' } else { 'failed' }))
-        $null = & $Python -m backend.app version 2>$null
-        Add-Check 'studybuddy_version' ($(if ($LASTEXITCODE -eq 0) { 'available' } else { 'failed' }))
+        $versionOutput = (& $Python -m backend.app version 2>$null) -join ''
+        if ($LASTEXITCODE -eq 0) {
+            try {
+                $versionPayload = $versionOutput | ConvertFrom-Json
+                Add-Check 'studybuddy_version' 'available' ("$($versionPayload.application_version)/schema-$($versionPayload.schema_version)")
+            } catch { Add-Check 'studybuddy_version' 'available' }
+        } else { Add-Check 'studybuddy_version' 'failed' }
     } catch { Add-Check 'python_checks' 'failed' } finally { Pop-Location }
 }
 
@@ -66,6 +71,12 @@ if (-not $SkipService) {
             $response = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/api/$endpoint" -UseBasicParsing -TimeoutSec 5
             Add-Check "service_$endpoint" ($(if ([int]$response.StatusCode -eq 200) { 'available' } else { 'failed' })) ([string]$response.StatusCode)
         } catch { Add-Check "service_$endpoint" 'unavailable' }
+    }
+    foreach ($endpoint in @('system/settings', 'system/capabilities', 'ai/capabilities')) {
+        try {
+            $response = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/api/$endpoint" -UseBasicParsing -TimeoutSec 5
+            Add-Check ("api_" + ($endpoint -replace '/', '_')) ($(if ([int]$response.StatusCode -eq 200) { 'available' } else { 'failed' })) ([string]$response.StatusCode)
+        } catch { Add-Check ("api_" + ($endpoint -replace '/', '_')) 'unavailable' }
     }
 }
 
