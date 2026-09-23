@@ -4,13 +4,13 @@
 
 > 更新：2026-09-20（**Pi 协作工作流与上下文精简**：`AGENTS.md` 已收敛为项目硬约束；新增维护者 `[维护者看]PI_WORKFLOW.md`，记录命名会话、`pi -c`/`pi -r` 续接、分叉、`/compact`、`/model`/`/thinking` 的 `Ctrl+S` 默认保存及 `/scoped-models` + `Ctrl+P` 切换。项目级扩展瘦身保持不变；未改生产代码、schema、运行数据、凭据或模型目录。快捷键和实际 token 收益待本机 TUI 观察确认。）
 
-[REDACTED_CREDENTIAL_HISTORY]
+> 更新：2026-09-20（**连接测试边界修复**：`connection_test.py` 增加压缩响应处理和邮件测试头；focused 连接测试回归曾通过，后端历史基线为 **640 passed / 3 skipped**。凭据、收件人、Webhook、Provider/model、原始响应和网络细节已从治理记录移除；真实外部能力仍按精确证据单独标记。）
 
 > 更新：2026-09-19（**第二轮大扫除后全量回归收口**：① 六目录只读扫描确认 09-19 前两轮清扫已到位，本轮无可清项、零删除；② 修复 3 个过时 spec（A-E2E-QA-7 文案断言、B-PLAN-2 捕获请求归属假设失效、P-D21/22 busy 守卫竞态）——全部只改测试，产品代码零 diff，各 spec 隔离验证通过；③ 全量基线：后端 **637 passed / 3 skipped**，Chromium 全量 **551 passed / 4 skipped**（3 个失败均为瞬态，隔离复跑全过）。详见 STATUS.md 2026-09-19 节。）
 
-> 更新：2026-09-19（**P1/P2 清零推进**：① ~~P1 积累向量检索质量基线~~ ✅ 完成——14 个五年级真实问答场景（6 本教材 + 1 个范围外问题）全部通过并带引用，平均 9.9s，基线数据 `studybuddy-test/artifacts/vector-quality-baseline-20260919.json`；过程中发现并修复思考型模型 max_tokens 预算耗尽缺陷（content 空 → 误报 malformed；现默认 max_output_tokens 800→2048，预算耗尽准确报 provider_output_too_large，新增 3 用例）。② ~~P1 复查 TLS 阻断~~ ✅ 结论：HTTPS 类（DeepSeek/ark/agnes/feishu）全部恢复放行；SMTP（qq 465/587）仍被拦，属环境事实持续跟进。③ ~~P2 DeepSeek 验证~~ ✅ 连接测试通过（[REDACTED_KEY]… 密钥真实调用成功）。④ ~~P2 监控启动告警日志~~ ✅ 已查（无 misnamed/警告记录），转为长期运行观察。⑤ P1-7 观察期进行中（D1-D7 场景待使用者执行）。）
+> 更新：2026-09-19（**P1/P2 进展**：向量检索质量基线已记录；连接状态仅保留为历史结论，具体服务商、主机、模型、凭据和密钥均不在此复述；P1-7 观察期仍待使用者完成场景记录。）
 
-[REDACTED_STUDY_CONTENT]
+> 更新：2026-09-18 夜（**P1-7 真实自用观察期启动**：记录了运行配置调整和 Provider 兼容性修复；具体 data root、端口、Provider/model、凭据与原始问答内容不在此复述。新增 gzip 响应处理及测试；真实外部能力状态仍按单独、脱敏的证据记录。）
 
 > 更新：2026-09-18 深夜（**P0 复核遗留 2 项清理完成**：① 活跃根库 499 条 fake 32 维旧向量全部清除，现仅存 499 条 doubao 2048 维真实向量，零孤儿、integrity ok、user_version=15；② 旧数据根 `H:\studybuddy-data\live\` 经备份验证（`studybuddy-test/backups/pre-legacy-cleanup-20260918`，verify-backup 通过）后原地清空——生产代码 `purge_material` 清理 51 条合成测试材料并清扫 QA/检索/报告等全部测试痕迹，业务表与 FTS 全部归零、schema 完整保留，处置记录见 `H:\studybuddy-data\ARCHIVE_NOTES.md`。活跃 data_root 仍为 `H:\studybuddy-data` 根目录。）
 

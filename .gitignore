@@ -45,6 +45,10 @@ first-run-studybuddy.local.ps1
 # local runtime data root (databases, uploaded originals, generated artifacts)
 data/
 
+# local runtime and generated output accidentally created under the repository root
+/studybuddy-data/
+/results/
+
 # E2E 检测运行产物与本机运行日志（不提交）
 server.log
 server_err.log

@@ -23,14 +23,14 @@
 1. **Provider 连接测试 gzip 误报**：llm/embedding 两处 `urlopen` 响应直接 `json.loads`，无 gzip 透明解压；火山引擎 plan API 无论 Accept-Encoding 都返回 gzip 响应体（`providers/_helpers.py:139-142` 已有同类修复，本文件漏同步）→ 补 gzip 魔数透明解压（解压失败仍稳定映射 `provider_protocol_error`，解压后超限仍报 `provider_response_too_large`）。
 2. **SMTP 测试邮件被 QQ 拒收**：测试邮件只有 Subject 无 From/To 头，QQ SMTP 返回 550 "The 'From' header is missing or invalid"，被掩码为 `delivery_failed`，凭据有效也报失败 → 测试邮件补齐 RFC 5322 From/To 头。
 
-[REDACTED_CREDENTIAL_HISTORY]
+**配置处理记录**：曾通过设置 API 更新本地运行配置并修正配置映射。凭据来源、凭据状态、收件人、Webhook 和运行配置路径不纳入治理文档。
 
 **修复后真实链路验证（重启服务后实测）**：
 - LLM 连接测试：**200 OK ×3**（首次失败为重启后瞬时抖动）
 - Embedding 连接测试：**200 OK**（gzip 修复实证）
-- SMTP 连接测试：**200 OK**（真实测试邮件已发至 [REDACTED_EMAIL]）
-- 飞书 Webhook：**200 OK**
-- QA 回归：真实问答带引用正常（glm-5.3-flash）
+- 外部连接测试：历史记录显示曾执行；渠道状态、收件人、Webhook 和原始响应不纳入治理文档。
+- QA 回归：历史记录显示问答引用链路曾执行；Provider、原始响应和运行配置不纳入治理文档。
+
 
 **测试覆盖**：focused `test_p1_5_2_0_connection_test.py` + `test_p1_5_2_1_api.py` **33 passed**（新增 3 用例：LLM gzip 响应、损坏 gzip 拒绝、SMTP RFC 5322 邮件头断言）；后端全量 **640 passed / 3 skipped**（352.98s，新增 3 用例后基线由 637 刷新为 640，skip 均为 opt-in 真实 smoke）；`check-source-size.py` 通过。
 
@@ -158,15 +158,15 @@
 - 修复：`backend/app/providers/_helpers.py` 对 gzip 魔数（`1f 8b`）响应透明解压；新增 `backend/tests/test_provider_gzip_response.py`（本地 gzip HTTP 服务，2 用例）；`pyproject.toml` 显式 `pythonpath=["backend"]` 固化测试导入路径。
 [REDACTED_STUDY_CONTENT]
 
-**2026-09-19 补充：报告外发通道配置与验证（观察 #3）**：
-- QQ SMTP + 飞书 Webhook 已持久化到 data_root（`delivery_configured=true`）；凭证文件中 SMTP 用户名错配（163 用户名 + QQ 授权码）已修正为 [REDACTED_EMAIL]。
-- **飞书 ✅ 真实验证通过**（应用内连接测试 ok + 真实消息送达飞书群，code 0）。
-- **SMTP ⚠️ not_verified**：smtp.qq.com 465/587 在本机 TLS 层仍被拦截（SSL record layer failure，与凭证无关；ark/agnes/feishu 已恢复但 SMTP 未恢复），属环境事实，网络恢复后复测，不得宣称 real-pass。
+**2026-09-19 补充：报告外发通道配置与验证（观察 #3）**：具体渠道、目标、凭据、Webhook、原始响应和网络细节已从治理记录移除；外发能力继续保持 `not_verified`，产品 `report_delivery` 仍须默认关闭并按次授权。
+
+
+
 
 **2026-09-19：P1/P2 清零推进（观察 #4 已修复）**：
 - **向量检索质量基线建立**：14 个五年级真实问答场景（6 本教材覆盖语文/数学 + 1 个范围外问题）**14/14 通过、全部带引用、平均 9.9s**；范围外问题（光合作用）诚实声明资料无此内容、仅引用最近相关课文，无幻觉。基线数据：`H:\studybuddy-test\artifacts\vector-quality-baseline-20260919.json`。
 - **观察 #4（思考型模型预算耗尽缺陷，已修复）**：glm-5.3-flash 思考/非思考双模式会把推理放入 `reasoning_content`；当推理耗尽 `max_tokens`（原默认 800）时 `content` 为空 → 误报 `provider_malformed_response`（琥珀问题稳定复现）。修复：`DEFAULT_AI_MAX_OUTPUT_TOKENS` 800→2048；`_parse_openai_response` 对 content 为 None/空 + `finish_reason=length` 准确报 `provider_output_too_large`；新增 `test_provider_reasoning_empty_content.py`（3 用例）。修复后 #12 真实作答带 3 处引用。
-- **TLS 复查结论（P1 收口）**：api.deepseek.com 已放行（401=握手成功）且 DeepSeek `deepseek-chat` **真实连接测试通过**；QQ SMTP 465/587 仍被拦（环境事实）。`config.py` 启动告警日志检查：无 misnamed 告警记录。
+- **外部连接复查结论（P1 收口）**：具体 Provider、主机、模型、凭据和网络响应不纳入治理记录；真实外部能力继续按精确证据单独标记。`config.py` 启动告警日志检查：无 misnamed 告警记录。
 - 回归：provider/embedding/治理相关 21+ passed；源码体积门禁通过。
 
 ---
