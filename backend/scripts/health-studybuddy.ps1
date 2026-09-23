@@ -9,9 +9,9 @@ $ErrorActionPreference = 'Stop'
 if ($Port -lt 1024 -or $Port -gt 65535) { throw 'invalid_port' }
 $base = if ($BaseUrl) { $BaseUrl.TrimEnd('/') } else { "http://127.0.0.1:$Port" }
 try {
-    $liveness = Invoke-RestMethod -Uri "$base/api/liveness" -Method Get -TimeoutSec 5
-    $health = Invoke-WebRequest -Uri "$base/api/health" -Method Get -TimeoutSec 5 -SkipHttpErrorCheck
-    $readiness = Invoke-WebRequest -Uri "$base/api/readiness" -Method Get -TimeoutSec 5 -SkipHttpErrorCheck
+    $liveness = Invoke-RestMethod -Uri "$base/api/liveness" -Method Get -TimeoutSec 10
+    $health = Invoke-WebRequest -Uri "$base/api/health" -Method Get -TimeoutSec 10 -UseBasicParsing
+    $readiness = Invoke-WebRequest -Uri "$base/api/readiness" -Method Get -TimeoutSec 10 -UseBasicParsing
     [pscustomobject]@{
         liveness = $liveness.status
         health_status = [int]$health.StatusCode

@@ -17,6 +17,9 @@ $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
 if (-not $process) { Remove-Item -Force -LiteralPath $pidPath; Write-Output 'studybuddy_not_running'; exit 0 }
 try { $process.CloseMainWindow() | Out-Null } catch { throw 'studybuddy_stop_failed' }
 $process.Refresh()
-if (-not $process.WaitForExit($TimeoutSeconds * 1000)) { throw 'studybuddy_stop_timeout' }
+if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+    try { Stop-Process -Id $processId -Force -ErrorAction Stop } catch { throw 'studybuddy_stop_timeout' }
+    try { $process.WaitForExit(2000) | Out-Null } catch {}
+}
 Remove-Item -Force -LiteralPath $pidPath -ErrorAction SilentlyContinue
 Write-Output 'studybuddy_stopped'
