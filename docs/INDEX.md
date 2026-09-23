@@ -28,6 +28,7 @@
 | [`[需求+所有角色看]STATUS.md`]([需求+所有角色看]STATUS.md) | **实现状态与证据索引的权威来源**，所有角色每周必读 | 需求分析师 |
 | [`../README.md`](../README.md) | 项目定位、运行入口与当前能力摘要 | 需求分析师 |
 | [`../AGENTS.md`](../AGENTS.md) | 贡献和 coding-agent 约束 | 架构师 |
+| [`[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md`]([维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md) | **当前开发工具、Python 依赖和 StudyBuddy 功能组件基线** | 维护者/运维 |
 
 ---
 
@@ -143,6 +144,7 @@
 | [`[维护者看]CLEAN_SYSTEM_PROMPT.md`]([维护者看]CLEAN_SYSTEM_PROMPT.md) | 系统清洁工作指南 | 架构师 + 需求分析师 |
 | [`[维护者看]CODE_DOCUMENTATION_PROJECT.md`]([维护者看]CODE_DOCUMENTATION_PROJECT.md) | 代码注释补齐工程总结 | 架构师 |
 | [`[维护者看]PI_WORKFLOW.md`]([维护者看]PI_WORKFLOW.md) | Pi 会话、模型默认值和上下文管理工作流 | 维护者 |
+| [`[维护者看]PI_DESKTOP_DEVELOPMENT.md`]([维护者看]PI_DESKTOP_DEVELOPMENT.md) | Pi / pi-desktop 正式开发环境和启动入口 | 维护者 |
 | [`roles/SIX_ROLES_SYNERGY_LESSONS.md`](roles/SIX_ROLES_SYNERGY_LESSONS.md) | **六角色协同开发系统的经验教训之谈** | 需求分析师 + 架构师 |
 
 ---

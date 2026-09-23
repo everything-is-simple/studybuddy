@@ -19,7 +19,7 @@ StudyBuddy is a local, single-process FastAPI + SQLite capability-integration sy
 - Schema changes use `backend/app/migrations/runner.py`; migrations are consecutive, idempotent, transactional, and rollback-tested.
 - Follow `revision → chunks → retrieval → citations → Q&A → cards/exercises`; generated content starts as a cited draft and never overwrites confirmed edits.
 - New/substantially rewritten `.py`, `.js`, `.css`, `.html`, `.ps1`, `.json` files are ≤100 KB unless explicitly approved.
-- Test with `C:\miniconda\py310\python.exe -m pytest backend/tests/`; run focused tests first, full backend tests after infrastructure/migration/storage/API changes, and `python backend/scripts/check-source-size.py` before structural completion.
+- Test with `D:\miniconda\py310\python.exe -m pytest backend/tests/`; run focused tests first, full backend tests after infrastructure/migration/storage/API changes, and `python backend/scripts/check-source-size.py` before structural completion.
 - For completed slices update [`STATUS.md`](docs/[需求+所有角色看]STATUS.md) and [`TODO.md`](docs/[需求看]TODO.md); do not add evidence/contracts unless the slice also ships user-exercisable capability.
 
 ## Support And Authority

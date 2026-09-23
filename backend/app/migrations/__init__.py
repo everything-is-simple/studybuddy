@@ -1,7 +1,7 @@
 """数据库迁移包。
 
 导出迁移系统的公共 API：
-- CURRENT_SCHEMA_VERSION: 当前 Schema 版本（14）
+- CURRENT_SCHEMA_VERSION: 当前 Schema 版本（15）
 - MigrationError: 迁移错误异常
 - MigrationResult: 迁移执行结果
 - migrate(): 执行迁移

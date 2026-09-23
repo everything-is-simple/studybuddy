@@ -2,7 +2,7 @@
 
 > 核心运行入口：`backend/app/main.py:create_app`（向后兼容 façade）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。应用边界由 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/` 等模块实现；`main.py` 只保留兼容导出和模板载荷读取。业务持久化经 `backend/app/repository.py` façade 进入 `backend/app/repositories/` 域模块，schema 由 `backend/app/migrations/runner.py` 执行并委托版本模块，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
 
-> 当前项目阶段与优先级见 [`STATUS.md`]([需求+所有角色看]STATUS.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v13（Phase 9D 的历史 persistence baseline 为 v12，Phase 9A 学习计划域 persistence baseline 为 v9）；Phase 9D 最终限定范围证据见 [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 已完成 v13 task/attempt persistence schema、explicit-only single-process task runner/recovery、approved `embedding_index` provider-backed task 接入、safe structured observability/readiness/read-only diagnostics，以及 explicit backup/restore/migration operations（upgrade preflight、verified rotation、restore drill、stop/quarantine policy）；runner 只由显式 API/CLI 调用，不在 startup、backup、restore 或 read path 自动启动。Q&A、generation、report 和 delivery 未接入；capture transcription 仅在 ASR scoped Formal contract 中接入；scheduler/worker、多进程执行仍不在支持范围。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、TTS、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。已选 Composer C0 媒体候选为官方 `H:/Whisper/cli` + `H:/Whisper/Models/ggml-large-v3-turbo.bin`（ASR，历史 `H:/WhisperCli` 仅保留为 provenance reference）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；它们的本机预检不改变本段 Formal 支持边界。详见 [`contracts/MEDIA_CAPABILITY_DECISION.md`](../.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
+> 当前项目阶段与优先级见 [`STATUS.md`]([需求+所有角色看]STATUS.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v15（v14 修订指纹修复，v15 卡片复习排程）；Phase 9D 的历史 persistence baseline 为 v12，Phase 9A 学习计划域 persistence baseline 为 v9。Phase 9D 最终限定范围证据见 [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 的 task/attempt persistence、explicit-only task runner/recovery、backup/restore/migration operations 仍按各自历史证据解释；runner 只由显式 API/CLI 调用，不在 startup、backup、restore 或 read path 自动启动。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、TTS、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。已选 Composer C0 媒体候选不改变正式 capability 状态；详见 [`contracts/MEDIA_CAPABILITY_DECISION.md`](../.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
 
 ## Evolution boundary
 
@@ -16,7 +16,7 @@ Phase 9 is therefore a gated learning-program family (9A–9D), not one delivery
 
 The bounded refactoring is complete and behavior-preserving. `backend/app/main.py` remains the stable `create_app`/`app` façade and reads `backend/app/templates/index.html`; application implementation lives in `app_factory.py`, `lifespan.py`, and `api/`. `backend/app/repository.py` remains the compatibility repository entry point while domain implementations live in `backend/app/repositories/`. `backend/app/migrations/runner.py` is the only migration execution entry point, with shared helpers and `_v01_*.py` through `_v13_*.py` implementation modules. Provider public imports remain at `app.providers`, whose package contains `_core.py`, `_helpers.py`, `_fake.py`, `_capture.py`, `_openai_llm.py`, `_openai_embedding.py`, `_registry.py`, and `_ssl.py`.
 
-These internal moves do not alter API paths, dataclass/protocol signatures, stable error codes, migration history, schema v13, provider behavior, or the single-process/local-disk support boundary. New code must use the public façades and must not import internal modules unless the owning module requires it.
+These internal moves do not alter API paths, dataclass/protocol signatures, stable error codes, migration history, schema v15, provider behavior, or the single-process/local-disk support boundary. New code must use the public façades and must not import internal modules unless the owning module requires it.
 
 ## Runtime target
 
@@ -54,7 +54,7 @@ backend/app/
   providers/                     # core、helpers、fake、capture、OpenAI adapters、registry
 ```
 
-公共入口保持稳定：`app.main:create_app`、`app.providers`、`app.migrations.runner` 和 `app.repositories` 不因内部文件移动而改变。A2.X 不改变 schema v13、API、错误码、provider 行为或数据生命周期；后续模块新增必须遵守单一职责、低耦合、公共 façade 稳定和 source-size gate。
+公共入口保持稳定：`app.main:create_app`、`app.providers`、`app.migrations.runner` 和 `app.repositories` 不因内部文件移动而改变。A2.X 不改变 schema v15、API、错误码、provider 行为或数据生命周期；后续模块新增必须遵守单一职责、低耦合、公共 façade 稳定和 source-size gate。
 
 ## Persistence and safety boundary
 

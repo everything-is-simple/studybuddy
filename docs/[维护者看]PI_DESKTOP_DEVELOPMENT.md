@@ -2,6 +2,8 @@
 
 StudyBuddy 的正式开发根目录是 `H:\studybuddy`。
 
+当前工具、依赖和功能组件的唯一基线见 [`DEVELOPMENT_ENVIRONMENT_BASELINE.md`](DEVELOPMENT_ENVIRONMENT_BASELINE.md)；每次环境变更后从仓库根目录运行 `backend/scripts/check-development-environment.ps1`。
+
 ## 已确认的工具环境
 
 - Python 3.10：`D:\miniconda\py310`
