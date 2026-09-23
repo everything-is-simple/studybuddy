@@ -24,6 +24,6 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\dev-studyb
   -DataRoot H:\studybuddy-data -Port 8787
 ```
 
-脚本优先使用 `H:\studybuddy\.venv`，不存在时回退到 `D:\miniconda\py310`。delivery 始终设置为 off/false/false。
+脚本优先使用 `D:\miniconda\py310`，不存在时回退到 `H:\studybuddy\.venv`。delivery 始终设置为 off/false/false。
 
 如果正式实例已经运行，脚本返回 `studybuddy_already_running` 并同步 data root 的 PID 文件，不会重复启动第二个实例。

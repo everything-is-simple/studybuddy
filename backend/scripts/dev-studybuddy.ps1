@@ -9,10 +9,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-$python = if ($Python) { $Python } else { Join-Path $root '.venv/Scripts/python.exe' }
-if (-not (Test-Path $python)) {
-    $python = 'D:/miniconda/py310/python.exe'
-}
+$python = if ($Python) { $Python } elseif (Test-Path 'D:/miniconda/py310/python.exe') { 'D:/miniconda/py310/python.exe' } else { Join-Path $root '.venv/Scripts/python.exe' }
 if (-not (Test-Path $python)) { throw 'studybuddy_python_unavailable' }
 
 $env:STUDYBUDDY_DATA_ROOT = [System.IO.Path]::GetFullPath($DataRoot)

@@ -11,9 +11,10 @@ $ErrorActionPreference = 'Stop'
 if (-not $DataRoot) { throw 'data_root_required' }
 if ($Port -lt 1024 -or $Port -gt 65535) { throw 'invalid_port' }
 if (-not $Python) {
-    $candidate = 'C:/miniconda/py310/python.exe'
+    $candidate = 'D:/miniconda/py310/python.exe'
+    $legacyCandidate = 'C:/miniconda/py310/python.exe'
     $venvCandidate = Join-Path (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path '.venv/Scripts/python.exe'
-    $Python = if (Test-Path $candidate) { $candidate } elseif (Test-Path $venvCandidate) { $venvCandidate } else { 'python' }
+    $Python = if (Test-Path $candidate) { $candidate } elseif (Test-Path $venvCandidate) { $venvCandidate } elseif (Test-Path $legacyCandidate) { $legacyCandidate } else { 'python' }
 }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $resolvedRoot = [System.IO.Path]::GetFullPath($DataRoot)
@@ -56,7 +57,7 @@ try {
         throw 'studybuddy_start_failed'
     }
     $ready = $false
-    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+    for ($attempt = 0; $attempt -lt 60; $attempt++) {
         try {
             $probe = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/api/liveness" -UseBasicParsing -TimeoutSec 1 -SkipHttpErrorCheck
             if ([int]$probe.StatusCode -eq 200) { $ready = $true; break }
