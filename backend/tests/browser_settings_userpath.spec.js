@@ -14,6 +14,7 @@ const RUN_ROOT = `H:/studybuddy-test/runs/settings-userpath-${STAMP}`;
 const ART_ROOT = `H:/studybuddy-test/artifacts/settings-userpath-${STAMP}`;
 const PORT = 8842, PROVIDER_PORT = 8942, SMTP_PORT = 8942 + 1, CLOSED_PORT = 8942 + 2;
 const BASE = `http://127.0.0.1:${PORT}`;
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const FAKE_BASE = `http://127.0.0.1:${PROVIDER_PORT}/v1`;
 const KEY = 'TEST_SETTINGS_API_KEY_DO_NOT_LEAK_u9';
 const SMTP_PASS = 'TEST_SMTP_PASSWORD_DO_NOT_LEAK_s3';
@@ -24,7 +25,7 @@ function startServer(withFakeAI = true) {
   const env = { ...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT };
   if (withFakeAI) env.STUDYBUDDY_AI_PROVIDER = 'fake'; else delete env.STUDYBUDDY_AI_PROVIDER;
   for (const k of ['STUDYBUDDY_AI_MODEL', 'STUDYBUDDY_AI_BASE_URL', 'STUDYBUDDY_AI_API_KEY']) delete env[k];
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], { cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true });
+  return spawn(PYTHON, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], { cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true });
 }
 function stopServer(s) { return new Promise(resolve => { const p = s || server; if (!p || p.killed) return resolve(); p.once('exit', resolve); p.kill(); if (p === server) server = null; }); }
 async function ready() { await expect.poll(async () => { try { return (await fetch(`${BASE}/api/readiness`)).ok; } catch (_) { return false; } }, { timeout: 20000 }).toBe(true); }
@@ -101,7 +102,7 @@ test('SET-1 首次访问能力仪表盘：七项状态、安全文案、无自�
   await expect(page.locator('#capability-grid')).toBeVisible();
   const titles = await page.locator('#capability-grid h3').allInnerTexts();
   expect(titles).toEqual(['导入解析', '图片 OCR', '录音转写', '索引', '问答', '生成', '报告']);
-  for (const badge of await page.locator('#capability-grid .badge').allInnerTexts()) expect(['可用', '降级可用', '未配置', '未安装', '已关闭']).toContain(badge);
+  for (const badge of await page.locator('#capability-grid .badge').allInnerTexts()) expect(['可用', '已配置·未验证', '演示模式', '降级可用', '未配置', '配置无效', '未安装', '已关闭']).toContain(badge);
   await expect(page.locator('#capability-grid')).toContainText('演示模式');
   await expect(page.locator('body')).not.toContainText(/not_installed|not_configured|available/i);
   await expect(page.locator('body')).not.toContainText(/api[_-]?key|H:\\|H:\//i);
@@ -191,15 +192,26 @@ test('SET-4 fake Embedding 测试并保存：settings 页真实变化、持久�
 
 test('SET-5 OCR/ASR 本机覆盖：保存、不回显路径、清除恢复', async ({ page }) => {
   const puts = countRequests(page, '/api/system/settings', 'PUT');
+  let releasePut;
+  const heldPut = new Promise(resolve => { releasePut = resolve; });
+  await page.route('**/api/system/settings', async route => {
+    if (route.request().method() === 'PUT') await heldPut;
+    await route.continue();
+  });
   await page.goto(`${BASE}/app/settings.html`);
   await expect(page.locator('#ocr-enabled')).toHaveValue('');
   await page.locator('#ocr-enabled').selectOption('false');
   await page.locator('#ocr-root').fill(`${RUN_ROOT}/fixture-ocr`);
   await page.locator('#local-save').click();
-  await page.locator('#local-save').dispatchEvent('click');
+  try {
+    await expect.poll(() => puts.length).toBe(1);
+    await page.locator('#local-save').dispatchEvent('click');
+    expect(puts).toHaveLength(1);
+  } finally {
+    releasePut();
+  }
   await expect(page.locator('#local-result')).toContainText('已保存');
-  // The duplicate dispatch must not produce a second PUT.
-  expect(puts).toHaveLength(1);
+  await page.unroute('**/api/system/settings');
   await page.locator('#capability-refresh').click();
   await expect(page.locator('#ocr-enabled')).toHaveValue('false');
   await expect(page.locator('#ocr-root')).toHaveAttribute('placeholder', /已设置/);
@@ -208,7 +220,7 @@ test('SET-5 OCR/ASR 本机覆盖：保存、不回显路径、清除恢复', asy
   await page.reload();
   await expect(page.locator('#ocr-enabled')).toHaveValue('false');
   await expect(page.locator('#ocr-root')).toHaveAttribute('placeholder', /已设置/);
-  for (const badge of await page.locator('#capability-grid .badge').allInnerTexts()) expect(['可用', '降级可用', '未配置', '未安装', '已关闭']).toContain(badge);
+  for (const badge of await page.locator('#capability-grid .badge').allInnerTexts()) expect(['可用', '已配置·未验证', '演示模式', '降级可用', '未配置', '配置无效', '未安装', '已关闭']).toContain(badge);
   await page.locator('#local-clear').click();
   await expect(page.locator('#local-clear')).toBeDisabled();
   await expect(page.locator('#local-result')).toContainText('已清除');
@@ -534,7 +546,7 @@ test('SET-12 缺失/失败状态边界（含 B 类 route 注入）', async ({ pa
   await expect(page.locator('#capability-summary')).not.toContainText(/正在探测/);
   await expect(page.locator('#capability-grid')).toContainText('组件状态暂不可用');
   const badges = await page.locator('#capability-grid .badge').allInnerTexts();
-  for (const badge of badges) expect(['可用', '降级可用', '未配置', '未安装', '已关闭']).toContain(badge);
+  for (const badge of badges) expect(['可用', '已配置·未验证', '演示模式', '降级可用', '未配置', '配置无效', '未安装', '已关闭']).toContain(badge);
   expect(await page.evaluate(() => window.__settingsXss)).toBeUndefined();
   expect(await page.locator('#capability-grid img').count()).toBe(0);
   // Provider page: readiness failure gets its own retry without touching capabilities.

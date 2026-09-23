@@ -158,4 +158,6 @@ def test_operator_scripts_are_local_single_process_and_do_not_accept_secrets():
     assert "STUDYBUDDY_AI_API_KEY" in first_run
     assert "-OpenBrowser:$OpenBrowser" in first_run
     assert "STUDYBUDDY_AI_BASE_URL" in first_run and "STUDYBUDDY_AI_PROVIDER" in first_run
-    assert "api/liveness" in health and "api/health" in health and "api/readiness" in health
+    assert "Get-Probe 'liveness' 'ok'" in health
+    assert "Get-Probe 'health' 'ok'" in health
+    assert "Get-Probe 'readiness' 'ready'" in health

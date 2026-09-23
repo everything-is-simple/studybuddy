@@ -21,6 +21,8 @@
 
 状态值：
 - available: 可用
+- configured: 已配置，但尚未验证真实运行
+- demo: fake 演示实现，不代表真实 Provider
 - degraded: 降级可用（如仅词法索引，无向量）
 - disabled: 已禁用（本地组件存在但被关闭）
 - not_configured: 未配置（缺少 API 密钥或路径）
@@ -50,6 +52,8 @@ _SOURCE_DETECTED = "detected"
 _SOURCE_UNSET = "unset"
 
 STATUS_DEGRADED = "degraded"
+STATUS_CONFIGURED = "configured"
+STATUS_DEMO = "demo"
 
 CAPABILITY_KEYS = ("import_parse", "ocr", "asr", "index", "qa", "generation", "report")
 
@@ -285,25 +289,50 @@ def _ocr_state(config: AppConfig, detection: DetectionResult | None) -> dict[str
     could run on this host but was explicitly turned off, so the dashboard never
     hides a missing dependency behind a switch.
     """
-    probe = detection.paddle_ocr if detection else None
-    if probe is not None and probe.status == STATUS_NOT_INSTALLED:
-        return _state(STATUS_NOT_INSTALLED, reason=probe.reason, source=config.ocr_source)
-    if probe is not None and not probe.available and config.ocr_model_root is not None:
-        # A configured model root that does not validate is a configuration
-        # error, not a working capability: the provider refuses to construct.
-        return _state(probe.status, reason=probe.reason, source=config.ocr_source)
-    usable = bool(config.ocr_provider_id and config.ocr_model_root) or bool(probe and probe.available)
+    paddle = detection.paddle_ocr if detection else None
+    rapid = detection.rapid_ocr if detection else None
+    provider_id = config.ocr_provider_id
+    paddle_ready = bool(paddle and paddle.available and config.ocr_model_root)
+    rapid_ready = bool(rapid and rapid.available)
+    if provider_id == "paddleocr":
+        usable = paddle_ready
+        reason = paddle.reason if paddle and not paddle.available else "ocr_model_root_not_found"
+        if config.ocr_model_id not in (None, "", "PP-OCRv5_server_det+PP-OCRv5_server_rec"):
+            return _state("invalid_config", reason="ocr_model_id_mismatch", provider_id=provider_id,
+                          model_id=config.ocr_model_id, source=config.ocr_source)
+    elif provider_id == "rapidocr":
+        return _state(STATUS_NOT_CONFIGURED, reason="rapidocr_formal_gate_not_passed",
+                      provider_id=provider_id, model_id=config.ocr_model_id,
+                      source=config.ocr_source,
+                      detail={"candidate_detected": rapid_ready, "verification_status": "not_verified"})
+    elif provider_id == "ocr-fallback":
+        return _state(STATUS_NOT_CONFIGURED, reason="rapidocr_formal_gate_not_passed",
+                      provider_id=provider_id, model_id=config.ocr_model_id,
+                      source=config.ocr_source,
+                      detail={"candidate_detected": rapid_ready, "verification_status": "not_verified"})
+    elif provider_id is None:
+        if config.ocr_model_root is not None and paddle is not None and not paddle.available:
+            return _state(paddle.status, reason=paddle.reason, source=config.ocr_source)
+        if paddle and paddle.status == STATUS_NOT_INSTALLED and not rapid_ready:
+            return _state(STATUS_NOT_INSTALLED, reason=paddle.reason, source=config.ocr_source)
+        usable = False
+        reason = "ocr_provider_not_configured"
+    else:
+        usable = False
+        reason = "ocr_provider_not_supported_by_api"
     if not config.ocr_enabled:
         if not usable:
-            reason = probe.reason if probe is not None else "ocr_model_root_not_found"
             return _state(STATUS_NOT_CONFIGURED, reason=reason, source=config.ocr_source)
         return _state(STATUS_DISABLED, reason="ocr_disabled_by_configuration",
-                      provider_id=config.ocr_provider_id, model_id=config.ocr_model_id,
+                      provider_id=provider_id, model_id=config.ocr_model_id,
                       source=config.ocr_source)
-    if config.ocr_provider_id and config.ocr_model_root:
-        return _state(STATUS_AVAILABLE, provider_id=config.ocr_provider_id,
-                      model_id=config.ocr_model_id, source=config.ocr_source)
-    reason = probe.reason if probe is not None else "ocr_model_root_not_found"
+    if usable:
+        return _state(STATUS_CONFIGURED, provider_id=provider_id,
+                      model_id=config.ocr_model_id, source=config.ocr_source,
+                      detail={"verification_status": "not_verified", "model_hash_status": "not_verified",
+                              "runtime_kind": "local_model",
+                              "fallback_available": rapid_ready,
+                              "fallback_active": provider_id == "ocr-fallback"})
     return _state(STATUS_NOT_CONFIGURED, reason=reason, source=config.ocr_source)
 
 
@@ -314,12 +343,16 @@ def _asr_state(config: AppConfig, detection: DetectionResult | None) -> dict[str
         # Same rule as OCR: a configured runtime or model that does not validate
         # must report its probe reason instead of a usable capability.
         return _state(probe.status, reason=probe.reason, source=config.asr_source)
-    if config.asr_provider_id and config.asr_runtime_path and config.asr_model_path:
-        return _state(STATUS_AVAILABLE, provider_id=config.asr_provider_id,
-                      model_id=config.asr_model_id, source=config.asr_source)
-    if config.demo_mode:
-        return _state(STATUS_AVAILABLE, provider_id="fake", model_id="fake-capture-v1",
-                      source="demo")
+    if (config.asr_provider_id == "whisper-cpp" and config.asr_runtime_path and config.asr_model_path
+            and config.asr_model_id):
+        return _state(STATUS_CONFIGURED, provider_id=config.asr_provider_id,
+                      model_id=config.asr_model_id, source=config.asr_source,
+                      detail={"verification_status": "not_verified", "model_hash_status": "not_verified",
+                              "runtime_kind": "local_cli"})
+    if config.demo_mode or config.asr_provider_id in {"fake", "loopback"}:
+        return _state(STATUS_DEMO, provider_id=config.asr_provider_id or "fake",
+                      model_id=config.asr_model_id or "fake-capture-v1",
+                      source="demo", detail={"verification_status": "not_applicable"})
     reason = probe.reason if probe is not None else "asr_runtime_not_found"
     status = probe.status if probe is not None else STATUS_NOT_CONFIGURED
     if status == STATUS_AVAILABLE:
@@ -332,12 +365,14 @@ def _provider_state(provider_id: str | None, model_id: str | None, api_key: str 
     if provider_id is None:
         return _state(STATUS_NOT_CONFIGURED, reason="provider_not_configured")
     if provider_id == "fake":
-        return _state(STATUS_AVAILABLE, provider_id=provider_id, model_id=model_id,
-                      source="demo")
-    if not api_key or not base_url:
-        return _state(STATUS_NOT_CONFIGURED, reason="provider_credentials_missing",
+        return _state(STATUS_DEMO, provider_id=provider_id, model_id=model_id,
+                      source="demo", detail={"verification_status": "not_applicable"})
+    if not api_key or not base_url or not model_id:
+        return _state(STATUS_NOT_CONFIGURED, reason="provider_configuration_incomplete",
                       provider_id=provider_id, model_id=model_id)
-    return _state(STATUS_AVAILABLE, provider_id=provider_id, model_id=model_id)
+    return _state(STATUS_CONFIGURED, provider_id=provider_id, model_id=model_id,
+                  detail={"verification_status": "not_verified", "runtime_kind": "openai_compatible",
+                          "network_required": True})
 
 
 def _index_state(config: AppConfig, embedding: dict[str, object]) -> dict[str, object]:
@@ -348,7 +383,7 @@ def _index_state(config: AppConfig, embedding: dict[str, object]) -> dict[str, o
     deterministic demo embeddings until a real embedding provider is configured;
     that is a degradation and is labeled as one instead of being hidden.
     """
-    if embedding["status"] == STATUS_AVAILABLE:
+    if embedding["status"] in {STATUS_AVAILABLE, STATUS_CONFIGURED, STATUS_DEMO}:
         return embedding
     return _state(STATUS_DEGRADED, reason="embedding_provider_not_configured",
                   provider_id="local", model_id="lexical_fts_v1")
@@ -370,7 +405,7 @@ def capability_snapshot(config: AppConfig, detection: DetectionResult | None = N
         },
         "auto_detect_enabled": bool,
         "delivery_mode": "off"|"smtp"|"feishu",
-        "ocr_fallback_installed": bool,  # RapidOCR 备用
+        "ocr_fallback_installed": bool,  # 检测到 RapidOCR 包模型，不代表正式 API 已启用
         "ready_count": int,  # 可用能力数
         "degraded_count": int,  # 降级能力数
         "total_count": 7
@@ -388,7 +423,8 @@ def capability_snapshot(config: AppConfig, detection: DetectionResult | None = N
         - index 可降级到词法 FTS（无 Embedding Provider 时）
         - report 本地生成总是可用，但交付需额外配置
         - OCR disabled 仅在组件存在但被关闭时出现
-        - demo_mode 下所有能力为 available（使用 fake provider）
+        - configured 表示配置及结构检查通过，不等于真实运行验证
+        - demo 明确标记 fake provider，不等于真实 Provider 验证
     """
     if detection is not None and config.auto_detect_enabled:
         detection = _probe_configured_paths(detection, config.ocr_model_root,
@@ -422,7 +458,14 @@ def capability_snapshot(config: AppConfig, detection: DetectionResult | None = N
         "auto_detect_enabled": config.auto_detect_enabled,
         "delivery_mode": config.report_delivery_mode,
         "ocr_fallback_installed": bool(fallback and fallback.available),
-        "ready_count": sum(1 for item in capabilities.values() if item["status"] == STATUS_AVAILABLE),
+        "ready_count": sum(1 for item in capabilities.values()
+                            if item["status"] == STATUS_AVAILABLE),
+        "configured_count": sum(1 for item in capabilities.values()
+                                if item["status"] == STATUS_CONFIGURED),
+        "demo_count": sum(1 for item in capabilities.values() if item["status"] == STATUS_DEMO),
         "degraded_count": sum(1 for item in capabilities.values() if item["status"] == STATUS_DEGRADED),
+        "ocr_fallback_runtime_active": False,
+        "ocr_model_hash_status": "not_verified",
+        "asr_model_hash_status": "not_verified",
         "total_count": len(capabilities),
     }

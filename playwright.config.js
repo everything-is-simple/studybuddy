@@ -10,6 +10,7 @@ module.exports = defineConfig({
   workers: 1,
   use: {
     headless: true,
-    launchOptions: { executablePath: chromium.executablePath() },
+    launchOptions: process.env.STUDYBUDDY_PLAYWRIGHT_HEADLESS_SHELL === '1'
+      ? {} : { executablePath: chromium.executablePath() },
   },
 });

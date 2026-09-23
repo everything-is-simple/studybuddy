@@ -37,6 +37,8 @@ def _client(tmp_path: Path, *, project_id: str = PROJECT_ID,
     return TestClient(create_app(AppConfig(
         data_root=root,
         project_id=project_id,
+        asr_provider_id="fake",
+        asr_model_id="fake-capture-v1",
         report_delivery_mode=delivery_mode,
         report_delivery_targets=delivery_targets,
     )))

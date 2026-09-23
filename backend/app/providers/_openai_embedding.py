@@ -93,14 +93,14 @@ class OpenAICompatibleEmbeddingProvider:
             - status: 总是 "configured"
             - configured: 总是 True
             - runtime_kind: "openai_compatible"
-            - verification_status: "unverified"（未实际调用 API）
+            - verification_status: "not_verified"（未实际调用 API）
             - network_required: True（需要网络连接）
             - provider_id, model_id, model_revision: 配置参数
             - encoding: 文本编码方式（总是 "utf-8"）
             - supports: {"embeddings": True, "batch": True}
         """
         return {"status": "configured", "configured": True, "runtime_kind": "openai_compatible",
-                "verification_status": "unverified", "network_required": True,
+                "verification_status": "not_verified", "network_required": True,
                 "provider_id": self.provider_id, "model_id": self.model_id,
                 "model_revision": self.model_revision, "encoding": self.encoding,
                 "supports": {"embeddings": True, "batch": True}}

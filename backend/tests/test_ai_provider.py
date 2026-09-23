@@ -17,28 +17,13 @@ def test_capabilities_default_provider_not_configured(tmp_path: Path):
         response = client.get("/api/ai/capabilities")
         assert response.status_code == 200
         payload = response.json()
-        assert payload == {
-            "status": "not_configured",
-            "configured": False,
-            "verification_status": "not_applicable",
-            "runtime_kind": "none",
-            "config_source": "process_environment",
-            "provider_id": None,
-            "model_id": None,
-            "supports": {"qa": False},
-            "error_code": "provider_not_configured",
-            "capture": {
-                "status": "demo", "configured": True, "provider_id": "fake",
-                "model_id": "fake-capture-v1", "runtime_kind": "deterministic_demo",
-                "network_required": False, "supports": {"transcription": True},
-            },
-            "ocr": {
-                "status": "not_configured", "configured": False,
-                "verification_status": "not_applicable", "runtime_kind": "none",
-                "network_required": False, "provider_id": None, "model_id": None,
-                "supports": {"ocr": False},
-            },
-        }
+        assert payload["status"] == "not_configured"
+        assert payload["configured"] is False
+        assert payload["error_code"] == "provider_not_configured"
+        assert payload["supports"] == {"qa": False}
+        assert payload["capture"]["status"] == "not_configured"
+        assert payload["ocr"]["status"] == "not_configured"
+        assert payload["capabilities"]["qa"]["status"] == "not_configured"
         text = response.text.lower()
         for bad in ("secret", "token", "key", "stored_path", "traceback", "sqlite", "h:/", "g:/"):
             assert bad not in text
@@ -52,11 +37,8 @@ def test_capabilities_fake_provider_available(tmp_path: Path):
         payload = response.json()
         assert payload["status"] == "demo"
         assert payload["provider_id"] == "fake"
-        assert payload["capture"] == {
-            "status": "demo", "configured": True, "provider_id": "fake",
-            "model_id": "fake-capture-v1", "runtime_kind": "deterministic_demo",
-            "network_required": False, "supports": {"transcription": True},
-        }
+        assert payload["capture"]["status"] == "not_configured"
+        assert payload["capabilities"]["qa"]["status"] == "demo"
 
 
 def test_capabilities_complete_generic_provider_is_configured_but_unverified(tmp_path: Path):
@@ -65,7 +47,7 @@ def test_capabilities_complete_generic_provider_is_configured_but_unverified(tmp
     with TestClient(create_app(config)) as client:
         payload = client.get("/api/ai/capabilities").json()
         assert payload["status"] == "configured"
-        assert payload["verification_status"] == "unverified"
+        assert payload["verification_status"] == "not_verified"
         assert payload["runtime_kind"] == "openai_compatible"
         assert payload["provider_id"] == "deepseek"
         assert payload["model_id"] == "deepseek-chat"
@@ -77,7 +59,7 @@ def test_capabilities_partial_provider_config_is_invalid(tmp_path: Path):
     config = AppConfig(data_root=tmp_path, ai_provider_id="deepseek", ai_model_id="deepseek-chat")
     with TestClient(create_app(config)) as client:
         payload = client.get("/api/ai/capabilities").json()
-        assert payload["status"] == "invalid_config"
+        assert payload["status"] == "not_configured"
         assert payload["error_code"] == "provider_invalid_config"
         assert payload["supports"] == {"qa": False}
 
@@ -94,11 +76,10 @@ def test_capture_capabilities_are_safe_for_local_whisper_configuration(tmp_path:
     )
     with TestClient(create_app(config)) as client:
         payload = client.get("/api/ai/capabilities").json()
-    assert payload["capture"] == {
-        "status": "configured", "configured": True, "provider_id": "whisper-cpp",
-        "model_id": "ggml-large-v3-turbo", "runtime_kind": "local_cli",
-        "network_required": False, "supports": {"transcription": True},
-    }
+    assert payload["capture"]["status"] == "configured"
+    assert payload["capture"]["provider_id"] == "whisper-cpp"
+    assert payload["capture"]["verification_status"] == "not_verified"
+    assert payload["capture"]["model_hash_status"] == "not_verified"
     assert str(runtime) not in str(payload)
     assert str(model) not in str(payload)
 

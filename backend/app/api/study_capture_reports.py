@@ -138,7 +138,7 @@ def register_routes(app, context: dict[str, object]) -> None:
     ) -> dict[str, object]:
         """Transcribe uploaded asset via OCR (image) or ASR (audio).
         
-        Routes to PaddleOCR for images or configured ASR provider for audio.
+        Routes to the configured OCR provider for images or ASR provider for audio.
         Creates transcript draft in pending state awaiting user review.
         Idempotent via Idempotency-Key header.
         """
@@ -155,12 +155,16 @@ def register_routes(app, context: dict[str, object]) -> None:
             if capture["asset_kind"] == "image":
                 if not (config.ocr_enabled and config.ocr_provider_id == "paddleocr"):
                     raise ProviderError("transcription_provider_not_configured")
+                if not config.ocr_model_root:
+                    raise ProviderError("transcription_provider_not_configured")
                 provider_id, model_id = config.ocr_provider_id, config.ocr_model_id
                 timeout_seconds = config.ocr_timeout_seconds
                 provider_kwargs = {"ocr_model_root": str(config.ocr_model_root) if config.ocr_model_root else None,
                                    "timeout_seconds": config.ocr_timeout_seconds,
                                    "max_output_bytes": config.ocr_max_output_bytes}
             else:
+                if not config.asr_provider_id and not config.demo_mode:
+                    raise ProviderError("transcription_provider_not_configured")
                 provider_id = config.asr_provider_id or "fake"
                 model_id = config.asr_model_id if config.asr_provider_id else "fake-capture-v1"
                 timeout_seconds = config.asr_timeout_seconds

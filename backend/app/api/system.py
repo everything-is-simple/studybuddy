@@ -169,9 +169,10 @@ def register_routes(app, context: dict[str, object]) -> None:
             max_response_bytes=config.embedding_max_response_bytes,
             max_retries=config.embedding_max_retries,
         ).capabilities()
+        capture_provider_id = config.asr_provider_id or ("fake" if config.demo_mode else None)
+        capture_model_id = config.asr_model_id if config.asr_provider_id else ("fake-capture-v1" if config.demo_mode else None)
         capture = provider_registry(
-            config.asr_provider_id or "fake",
-            config.asr_model_id if config.asr_provider_id else "fake-capture-v1",
+            capture_provider_id, capture_model_id,
         ).capture_capabilities(
             runtime_path=str(config.asr_runtime_path) if config.asr_runtime_path else None,
             model_path=str(config.asr_model_path) if config.asr_model_path else None,
@@ -180,6 +181,7 @@ def register_routes(app, context: dict[str, object]) -> None:
         )
         ocr = {
             "status": "not_configured", "configured": False, "verification_status": "not_applicable",
+            "model_hash_status": "not_applicable",
             "runtime_kind": "none", "network_required": False, "provider_id": None,
             "model_id": None, "supports": {"ocr": False},
         }
@@ -196,15 +198,37 @@ def register_routes(app, context: dict[str, object]) -> None:
                 ocr_provider = None
             if ocr_provider is not None:
                 ocr = {
-                    "status": "configured", "configured": True, "verification_status": "unverified",
+                    "status": "configured", "configured": True, "verification_status": "not_verified",
+                    "model_hash_status": "not_verified",
                     "runtime_kind": "local_model", "network_required": False,
-                    "provider_id": "paddleocr", "model_id": config.ocr_model_id,
+                    "provider_id": config.ocr_provider_id, "model_id": config.ocr_model_id,
                     "supports": {"ocr": True},
                 }
+        matrix = capability_snapshot(config, getattr(app.state, "detection", None))
+        canonical = matrix["capabilities"]
+        qa_state = canonical["qa"]
+        llm["status"] = qa_state["status"]
+        llm["verification_status"] = qa_state.get("verification_status", "not_applicable")
+        capture_state = canonical["asr"]
+        capture.update({
+            "status": capture_state["status"],
+            "configured": capture_state["status"] in {"configured", "available", "demo"},
+            "verification_status": capture_state.get("verification_status", "not_applicable"),
+            "model_hash_status": capture_state.get("model_hash_status", "not_applicable"),
+        })
+        ocr_state = canonical["ocr"]
+        ocr.update({
+            "status": ocr_state["status"],
+            "configured": ocr_state["status"] in {"configured", "available", "demo"},
+            "verification_status": ocr_state.get("verification_status", "not_applicable"),
+            "model_hash_status": ocr_state.get("model_hash_status", "not_applicable"),
+        })
         # Legacy top-level LLM fields preserved for backwards compatibility
         if embedding_provider_id is None:
-            return {**llm, "capture": capture, "ocr": ocr}
-        return {**llm, "llm": llm, "embedding": embedding, "capture": capture, "ocr": ocr}
+            return {**llm, "capture": capture, "ocr": ocr,
+                    "capabilities": canonical}
+        return {**llm, "llm": llm, "embedding": embedding, "capture": capture, "ocr": ocr,
+                "capabilities": canonical}
 
     @app.post("/api/system/provider-connection-test")
     def provider_connection_test(request: ProviderConnectionTestRequest) -> dict[str, str]:

@@ -1,8 +1,26 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-23：P1 状态、健康、计划与任务链路修订（本轮证据）
+
+- 正式图片转录 API 继续仅接受 PaddleOCR。RapidOCR/`ocr-fallback` 只保留候选探测与 provider 代码；严格 C2 尚未通过，正式能力状态为 `not_configured`，正式 fallback 未启用。检测到候选组件不等于 Formal 接入或 `real-pass`。
+- 系统能力矩阵、Provider 与 QA 页面使用同一能力状态含义：`available`、`configured`、`demo`、`degraded`、`not_configured` 等分别呈现；配置或模型文件存在仅表示结构检查，不表示真实服务、质量或模型 hash 已验证。报告投递仍默认关闭并按次授权。
+- 健康脚本按 liveness/health/readiness 分别输出稳定、脱敏的 200、503、超时、无服务和无效响应状态。计划页以 URL `plan_id` 为首次选择依据，新建后同步 URL；任务页分页同步 URL，TK-6 独立建立隔离夹具。
+- 本轮新跑：聚焦后端 **71 passed**；后端全量 **642 passed / 8 failed / 3 skipped**（5 个治理文档一致性断言、3 个依赖本机无法启动的完整 Chromium 生成 PDF 的用例失败）；本轮相关三个隔离 Chromium spec **24 passed**，含计划、settings 和 tasks 完整用户路径。默认关闭的真实 Provider/ASR smoke 未执行。完整 Chromium 门禁未运行：旧 spec 中存在固定测试根递归清理和不存在的解释器路径，不宜在保留现有产物的前提下直接执行。以上均不构成全局 `real-pass`。
+- P1-7 的 13 个场景仍待真实使用者逐日记录；服务商侧凭据撤销/轮换无本轮证据。当前修订尚未提交或推送。
+
 本文档记录项目的重要进展、决策和当前状态。所有角色均应阅读本文档以了解项目全貌。
 
 ---
+## 2026-09-21：新手手册场景一至场景二真实浏览器链路
+
+使用正式启动脚本以 `H:\studybuddy-data`、`127.0.0.1:8787` 启动并保留服务运行。浏览器实测 `/api/liveness`、`/api/health`、`/api/readiness` 分别返回 200/200/200；`today.html` 显示“系统就绪”。健康脚本本次曾返回 `health_check_failed`，但同一服务的浏览器端点实测均为 200，故脚本结果单独标记为需后续排查，不影响本次端点观察证据。
+
+场景一：通过 `/app/materials.html` 导入合成 fixture `真实链路测试材料.txt`，页面显示 `已导入 1/1`、材料状态“解析完成”；详情页显示“材料已加载”，正文可见；搜索“六要素”后列表收敛为该材料 1 条。未使用真实教材或凭据。
+
+场景二：同一材料详情点击“建立 AI 索引”，页面显示“AI 索引已建立，可用于问答”，索引阶段显示“可用”、1 个片段。问答页保持“混合检索”，问题“记叙文阅读首先要理清什么？”回答成功，引用 `[1] 真实链路测试材料.txt` 可点击；点击后回到同一材料详情，显示“已定位引用来源”并高亮正文。
+
+配置边界：系统设置能力仪表盘显示 7/7 可用，但 Provider 页面当前能力状态显示 LLM/Embedding 不可用且问答页显示“AI Provider 未配置”；本次未修改配置、未切换 fake、未暴露密钥。实际 QA/索引链路已由浏览器完成，因此记录本次用户路径为已验证，同时保留设置页/API 状态不一致待单独排查。课堂采集、任务队列、真实教材链路未纳入本次验证。
+
 ## 2026-09-21：SoL-Pi 会话证据保留收口
 
 项目本地 `.pi/sol-pi.json` 已启用 `actionFusion`、`observationPack`、`evidencePreservingReducer` 和 `onlineContextCompact`，保留 `cacheWriteReadRatio: 12.5`；未改 StudyBuddy 正式配置、数据库、API 或凭据。SoL-Pi schema preflight 通过，focused config tests **30 passed**；StudyBuddy capability/config focused tests **31 passed**。命名 session 的大 README 读取生成 observation id、27,995 字节原始大小和 SHA-256，第三次发送后压缩为 601 字节占位符并保留可回溯 id；续接返回 `CONTINUE`。自动 online compact 的真实触发条件本次未达到，标记 `not_verified`。微信文章继续保持 `not_verified`。
@@ -99,7 +117,7 @@
   2. 批次大小硬编码32 → 改为 `provider.max_batch_size`（火山plan API上限10）
 - ✅ 修复 `_legacy_part_15.py` 两处关键缺陷后，6本教材全部完成真实向量索引（清理测试残留后的稳态为 499 个 ready 分块、499 条 2048 维真实火山向量；复核发现的 499 条 fake 旧向量已于 2026-09-18 深夜清除，现库内仅存真实向量）
 - ✅ 向量检索质量验证通过：
-[REDACTED_STUDY_CONTENT]
+  - "白鹭是一首怎样的诗" → 精确命中《白鹭》课文（score 0.54）
   - "落花生告诉我们什么道理" → 正确引用3处相关段落
   - "什么是分段乘法"（语文材料外） → AI诚实回答"资料中无此内容"，无幻觉
 - ✅ 真实QA端到端测试通过：glm-5.3-flash + 真实向量检索 + 准确引用
@@ -151,12 +169,12 @@
 
 **P1-7 启动**（2026-09-18 ~ 2026-09-25，7 天，观察日志 `H:\studybuddy-data\p1-7-observation-log-2026-09-18.md`）：
 - 服务以后台监控进程拉起（data_root=`H:\studybuddy-data`，端口 8787，liveness ok）。
-- 活跃根库 Provider 配置经 `PUT /api/system/settings` 补齐（此前配置遗留在已废弃 live 目录、根库 settings 为空 → provider_not_configured）：LLM=`glm-5.3-flash`、Embedding=`doubao-embedding-vision`（火山 `api/plan/v3`，batch≤10），capabilities 全 available，配置持久化免重启。
+- 当时通过 `PUT /api/system/settings` 补齐本地 Provider 配置；该日“capabilities 全 available”是旧状态模型的历史输出，不代表当前真实能力均已验证。当前状态裁定以本文件 2026-09-23 条目与正式 API 为准；配置持久化不等于真实 Provider `real-pass`。
 - TLS 复查结论：ark / agnes 端点均恢复可达（401=握手成功仅缺鉴权），此前记录的 SSLEOFError 不复现——P1"复查 TLS 阻断"可进入补验阶段。
 
 **观察 #1（真实缺陷，已修复）**：火山 plan API 无论 Accept-Encoding 如何均返回 gzip 压缩响应体，Provider HTTP 客户端（`_request_json_with_limit`/`_request_json`，urllib 栈）不解压 → `embedding_provider_malformed_response`，阻塞 QA/生成。
 - 修复：`backend/app/providers/_helpers.py` 对 gzip 魔数（`1f 8b`）响应透明解压；新增 `backend/tests/test_provider_gzip_response.py`（本地 gzip HTTP 服务，2 用例）；`pyproject.toml` 显式 `pythonpath=["backend"]` 固化测试导入路径。
-[REDACTED_STUDY_CONTENT]
+- 验证：真实 QA 冒烟通过（"白鹭是一首怎样的诗"→ 准确回答带 3 处引用 ctx-c687e0a2-*）；provider/embedding/治理回归 55 passed；源码体积门禁通过。
 
 **2026-09-19 补充：报告外发通道配置与验证（观察 #3）**：具体渠道、目标、凭据、Webhook、原始响应和网络细节已从治理记录移除；外发能力继续保持 `not_verified`，产品 `report_delivery` 仍须默认关闭并按次授权。
 

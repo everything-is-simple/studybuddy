@@ -171,6 +171,20 @@ def test_image_api_does_not_fallback_when_ocr_is_disabled(tmp_path: Path):
         assert response.json()["detail"] == "transcription_provider_not_configured"
 
 
+def test_audio_api_does_not_silently_use_fake_when_asr_is_unconfigured(tmp_path: Path):
+    with TestClient(create_app(AppConfig(data_root=tmp_path, project_id="p",
+                                         auto_detect_enabled=False))) as client:
+        created = client.post("/api/study/capture-sessions", json={
+            "asset_kind": "audio", "original_name": "sample.wav", "media_type": "audio/wav"})
+        assert created.status_code == 201
+        response = client.post(f"/api/study/capture-sessions/{created.json()['id']}/transcribe")
+        assert response.status_code == 503
+        assert response.json()["detail"] == "transcription_provider_not_configured"
+        capabilities = client.get("/api/ai/capabilities").json()
+        assert capabilities["capture"]["status"] == "not_configured"
+        assert capabilities["capabilities"]["asr"]["status"] == "not_configured"
+
+
 def test_environment_ocr_gate_is_explicit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("STUDYBUDDY_DATA_ROOT", str(tmp_path))
     monkeypatch.delenv("STUDYBUDDY_OCR_ENABLED", raising=False)

@@ -5,11 +5,13 @@ const fs = require('fs');
 // A-class pure user-path E2E for plans.html + plan-detail.html.
 // Rule: no business API calls from test code. All data created via page UI.
 // Plan doc (7 dimensions): docs/roles/[需求+测试看]UI_TEST_PLAN_PLANS_PAGES.md
-let RUN_ROOT = 'H:/studybuddy-test/runs/plans-plan-detail-userpath';
+const RUN_ID = Date.now();
+let RUN_ROOT = `H:/studybuddy-test/runs/plans-plan-detail-userpath-${RUN_ID}`;
 const PORT = 8903;
 const BASE = `http://127.0.0.1:${PORT}`;
-const ART = 'H:/studybuddy-test/artifacts/plans-userpath';
-const FIXTURE = 'H:/studybuddy-test/fixtures/真实链路测试材料.txt';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
+const ART = `H:/studybuddy-test/artifacts/plans-userpath-${RUN_ID}`;
+const FIXTURE = `H:/studybuddy-test/fixtures/plans-userpath-${RUN_ID}/真实链路测试材料.txt`;
 const TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
 let server;
 
@@ -17,7 +19,7 @@ function startServer() {
   const env = { ...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT };
   env.STUDYBUDDY_AI_PROVIDER = 'fake';
   delete env.STUDYBUDDY_AI_MODEL; delete env.STUDYBUDDY_AI_BASE_URL; delete env.STUDYBUDDY_AI_API_KEY;
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {
+  return spawn(PYTHON, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {
     cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true,
   });
 }
@@ -38,8 +40,9 @@ function stopServer() {
 
 test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
   test.beforeAll(async () => {
-    RUN_ROOT = `H:/studybuddy-test/runs/plans-plan-detail-userpath-${Date.now()}`;
     fs.mkdirSync(ART, { recursive: true });
+    fs.mkdirSync(require('path').dirname(FIXTURE), { recursive: true });
+    fs.writeFileSync(FIXTURE, 'Synthetic source for plan citation and retrieval.', 'utf8');
     server = startServer();
     await ready();
   });
@@ -336,6 +339,15 @@ test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
     const newPlanId = new URL(page.url()).searchParams.get('plan_id');
     expect(newPlanId).toBeTruthy();
     expect(newPlanId).not.toBe(oldPlanId);
+    await page.reload();
+    await expect(page.locator('#plan-detail > h3')).toHaveText('新计划详情');
+    await expect(page).toHaveURL(new RegExp(`plan_id=${newPlanId}`));
+
+    await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(oldPlanId)}`);
+    await expect(page.locator('#plan-detail > h3')).toHaveText('旧计划详情');
+    await expect(page).toHaveURL(new RegExp(`plan_id=${oldPlanId}`));
+    await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(newPlanId)}`);
+    await expect(page.locator('#plan-detail > h3')).toHaveText('新计划详情');
     await assertNoSensitiveVisibleText(page);
   });
 

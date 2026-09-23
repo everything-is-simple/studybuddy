@@ -286,15 +286,18 @@ def test_snapshot_reports_seven_capabilities_with_honest_degradation(tmp_path: P
 
     assert set(capabilities) == {"import_parse", "ocr", "asr", "index", "qa", "generation", "report"}
     assert capabilities["import_parse"]["status"] == STATUS_AVAILABLE
-    assert capabilities["ocr"]["status"] == STATUS_AVAILABLE
-    assert capabilities["asr"]["status"] == STATUS_AVAILABLE
+    assert capabilities["ocr"]["status"] == "configured"
+    assert capabilities["asr"]["status"] == "configured"
+    assert capabilities["ocr"]["verification_status"] == "not_verified"
+    assert capabilities["asr"]["model_hash_status"] == "not_verified"
     assert capabilities["report"]["status"] == STATUS_AVAILABLE
     # No provider key yet: index degrades honestly, Q&A and generation stay unconfigured.
     assert capabilities["index"]["status"] == "degraded"
     assert capabilities["index"]["reason"] == "embedding_provider_not_configured"
     assert capabilities["qa"]["status"] == STATUS_NOT_CONFIGURED
     assert capabilities["generation"]["status"] == STATUS_NOT_CONFIGURED
-    assert snapshot["ready_count"] == 4 and snapshot["total_count"] == 7
+    assert snapshot["ready_count"] == 2 and snapshot["configured_count"] == 2
+    assert snapshot["total_count"] == 7
     assert snapshot["delivery_mode"] == "off"
 
 
@@ -306,7 +309,8 @@ def test_provider_credentials_complete_the_snapshot(tmp_path: Path) -> None:
     resolved = resolve_config(_config(tmp_path), settings=stored, detection=_detection())
     snapshot = capability_snapshot(resolved, _detection())
 
-    assert snapshot["ready_count"] == 7
+    assert snapshot["ready_count"] == 2
+    assert snapshot["configured_count"] == 5
     assert snapshot["degraded_count"] == 0
     assert "sk-secret" not in json.dumps(snapshot)
 
@@ -318,7 +322,26 @@ def test_partial_credentials_are_not_reported_available(tmp_path: Path) -> None:
                               detection=_detection())
     state = capability_snapshot(resolved, _detection())["capabilities"]["qa"]
     assert state["status"] == STATUS_NOT_CONFIGURED
-    assert state["reason"] == "provider_credentials_missing"
+    assert state["reason"] == "provider_configuration_incomplete"
+
+
+def test_ocr_fallback_stays_outside_formal_gate(tmp_path: Path) -> None:
+    rapid = AppConfig(data_root=tmp_path / "rapid", auto_detect_enabled=True,
+                      ocr_enabled=True, ocr_provider_id="rapidocr",
+                      ocr_model_id="ch_PP-OCRv4_det_infer+ch_PP-OCRv4_rec_infer")
+    rapid_snapshot = capability_snapshot(rapid, _detection())
+    assert rapid_snapshot["capabilities"]["ocr"]["status"] == "not_configured"
+    assert rapid_snapshot["capabilities"]["ocr"]["verification_status"] == "not_verified"
+    assert rapid_snapshot["capabilities"]["ocr"]["candidate_detected"] is True
+    assert rapid_snapshot["ocr_fallback_runtime_active"] is False
+
+    fallback = AppConfig(data_root=tmp_path / "fallback", auto_detect_enabled=True,
+                         ocr_enabled=True, ocr_provider_id="ocr-fallback",
+                         ocr_model_id="paddleocr+rapidocr", ocr_model_root=Path("/models"))
+    fallback_snapshot = capability_snapshot(fallback, _detection(ocr_root=Path("/models")))
+    assert fallback_snapshot["capabilities"]["ocr"]["status"] == "not_configured"
+    assert fallback_snapshot["capabilities"]["ocr"]["candidate_detected"] is True
+    assert fallback_snapshot["ocr_fallback_runtime_active"] is False
 
 
 # --- API surface -------------------------------------------------------------
@@ -338,11 +361,56 @@ def test_capabilities_endpoint_returns_dashboard_payload(client: TestClient) -> 
     assert response.status_code == 200
     payload = response.json()
 
-    assert payload["capabilities"]["ocr"]["status"] == STATUS_AVAILABLE
+    assert payload["capabilities"]["ocr"]["status"] == "configured"
     assert payload["capabilities"]["ocr"]["source"] == "detected"
     assert payload["auto_detect_enabled"] is True
     assert payload["delivery_mode"] == "off"
     assert "/models" not in json.dumps(payload).replace("PP-OCRv5", "")
+
+
+@pytest.mark.parametrize("provider_id", ["rapidocr", "ocr-fallback"])
+def test_detected_rapidocr_candidate_cannot_enter_formal_transcription(
+        client: TestClient, provider_id: str) -> None:
+    saved = client.put("/api/system/settings", json={
+        "ocr_provider_id": provider_id, "ocr_enabled": True,
+    })
+    assert saved.status_code == 200
+    system = client.get("/api/system/capabilities").json()
+    ai = client.get("/api/ai/capabilities").json()
+    assert system["ocr_fallback_installed"] is True
+    assert system["ocr_fallback_runtime_active"] is False
+    assert system["capabilities"]["ocr"]["status"] == "not_configured"
+    assert ai["ocr"]["status"] == "not_configured"
+    assert ai["ocr"]["supports"] == {"ocr": False}
+
+    created = client.post("/api/study/capture-sessions", json={
+        "asset_kind": "image", "original_name": "synthetic.png", "media_type": "image/png",
+    })
+    assert created.status_code == 201
+    rejected = client.post(f"/api/study/capture-sessions/{created.json()['id']}/transcribe")
+    assert rejected.status_code == 503
+    assert rejected.json()["detail"] == "transcription_provider_not_configured"
+
+
+def test_settings_provider_and_qa_share_canonical_capability_status(client: TestClient) -> None:
+    saved = client.put("/api/system/settings", json={
+        "ai_provider_id": "local-provider", "ai_model_id": "study-model",
+        "ai_base_url": "http://127.0.0.1:9999/v1", "ai_api_key": "test-only-value",
+    })
+    assert saved.status_code == 200
+    system = client.get("/api/system/capabilities").json()
+    provider = client.get("/api/ai/capabilities").json()
+
+    assert system["capabilities"]["qa"]["status"] == "configured"
+    assert system["capabilities"]["qa"]["verification_status"] == "not_verified"
+    assert provider["status"] == system["capabilities"]["qa"]["status"]
+    assert provider["capabilities"]["qa"] == system["capabilities"]["qa"]
+    assert saved.json()["capabilities"]["qa"] == system["capabilities"]["qa"]
+    assert provider["ocr"]["status"] == system["capabilities"]["ocr"]["status"]
+    assert provider["capture"]["status"] == system["capabilities"]["asr"]["status"]
+    assert provider["ocr"]["model_hash_status"] == "not_verified"
+    assert provider["capture"]["model_hash_status"] == "not_verified"
+    assert "test-only-value" not in json.dumps(provider)
 
 
 def test_self_check_endpoint_reprobes(client: TestClient) -> None:
@@ -360,8 +428,8 @@ def test_settings_endpoint_persists_and_applies_without_restart(client: TestClie
     payload = written.json()
 
     # Applied in the same process, no restart involved.
-    assert payload["capabilities"]["qa"]["status"] == STATUS_AVAILABLE
-    assert payload["capabilities"]["generation"]["status"] == STATUS_AVAILABLE
+    assert payload["capabilities"]["qa"]["status"] == "configured"
+    assert payload["capabilities"]["generation"]["status"] == "configured"
     assert payload["settings"]["ai_api_key_set"] is True
     assert "sk-secret" not in written.text
 
@@ -370,7 +438,7 @@ def test_settings_endpoint_persists_and_applies_without_restart(client: TestClie
     assert "ai_api_key" not in reread
 
     after = client.get("/api/system/capabilities").json()
-    assert after["capabilities"]["qa"]["status"] == STATUS_AVAILABLE
+    assert after["capabilities"]["qa"]["status"] == "configured"
 
 
 def test_settings_endpoint_clears_with_empty_string(client: TestClient) -> None:
@@ -406,8 +474,8 @@ def test_a_configured_component_path_is_validated_not_assumed(tmp_path: Path) ->
 
     # Detection still wins when nothing is configured by hand.
     untouched = capability_snapshot(resolve_config(base, settings={}, detection=good), good)
-    assert untouched["capabilities"]["ocr"]["status"] == STATUS_AVAILABLE
-    assert untouched["capabilities"]["asr"]["status"] == STATUS_AVAILABLE
+    assert untouched["capabilities"]["ocr"]["status"] == "configured"
+    assert untouched["capabilities"]["asr"]["status"] == "configured"
 
 
 def test_local_component_form_payload_is_accepted(client: TestClient) -> None:

@@ -1,5 +1,9 @@
 # StudyBuddy TODO 清单
 
+> 2026-09-23 本轮修订：正式 OCR API 已恢复为 PaddleOCR-only；RapidOCR 严格 C2 保持 `not_passed`，不得标作 Formal fallback。能力状态、健康脚本、plans `plan_id` 和 TK-6 独立夹具的代码与聚焦用户路径已修订；本轮聚焦后端 71 passed、相关隔离 Chromium 24 passed。后端全量仍为 642 passed / 8 failed / 3 skipped（治理文档断言 5、PDF 浏览器夹具 3），完整 Chromium 门禁未运行；修订尚未达到总门禁全绿。后续依次处理剩余门禁、服务商侧凭据撤销/轮换与提交范围审查；P1-7 的 13 个场景只由真实使用者记录。真实 Provider、OCR/ASR 质量、live delivery、跨浏览器与屏幕阅读器继续 `not_verified`。
+> 更新：2026-09-21（**新手手册场景一至场景二真实浏览器链路完成**：正式服务以 `H:\studybuddy-data`/`127.0.0.1:8787` 运行；浏览器端点 liveness/health/readiness=200/200/200，today 显示系统就绪。使用合成 fixture `真实链路测试材料.txt` 完成导入解析、详情正文和“六要素”搜索；同一材料建立 AI 索引并显示 ready/1 chunk；混合检索问答“记叙文阅读首先要理清什么？”成功生成回答，引用可点击并在同一材料详情高亮定位。Provider 设置页仍显示 LLM/Embedding 不可用，与系统设置 7/7 可用仪表盘及实际 QA/索引结果不一致；未改配置、未切换 fake，已标记为独立排查项。健康脚本本次输出 `health_check_failed`，浏览器端点直接实测全 200，脚本兼容性/时序问题未在本次验证中修订。服务保持运行。`)
+
+
 > 更新：2026-09-21（**SoL-Pi 会话证据保留收口**：项目 `.pi/sol-pi.json` 已启用四项 SoL-Pi 机制并保留 `cacheWriteReadRatio: 12.5`；schema preflight、SoL-Pi focused config tests（30 passed）和 StudyBuddy capability/config tests（31 passed）通过。大输出 observation ledger 已验证 id/hash/原始大小及第三次发送后的占位压缩；在线 compact 自动触发本次 `not_verified`。未改正式应用配置、数据库、API、凭据或文章结论。）
 
 > 更新：2026-09-20（**Pi 协作工作流与上下文精简**：`AGENTS.md` 已收敛为项目硬约束；新增维护者 `[维护者看]PI_WORKFLOW.md`，记录命名会话、`pi -c`/`pi -r` 续接、分叉、`/compact`、`/model`/`/thinking` 的 `Ctrl+S` 默认保存及 `/scoped-models` + `Ctrl+P` 切换。项目级扩展瘦身保持不变；未改生产代码、schema、运行数据、凭据或模型目录。快捷键和实际 token 收益待本机 TUI 观察确认。）

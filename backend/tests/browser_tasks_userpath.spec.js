@@ -1,17 +1,18 @@
 const { test, expect } = require('@playwright/test');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
 
 // A-class: task creation begins with visible materials UI and every task
 // assertion is read from rendered pages. No page.request business operations.
-let ROOT = `H:/studybuddy-test/runs/tasks-userpath-${Date.now()}`;
-const FIXTURES = 'H:/studybuddy-test/fixtures/tasks-userpath';
-const ART = 'H:/studybuddy-test/artifacts/tasks-userpath';
+const RUN_ID = Date.now();
+let ROOT = `H:/studybuddy-test/runs/tasks-userpath-${RUN_ID}`;
+const FIXTURES = `H:/studybuddy-test/fixtures/tasks-userpath-${RUN_ID}`;
+const ART = `H:/studybuddy-test/artifacts/tasks-userpath-${RUN_ID}`;
 const PORT = 8977;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server, providerServer, providerFail = true, embeddingEnv = {}, retriedHref = '';
 
 function runtimeEnv() {
@@ -46,6 +47,15 @@ function runOneTask() {
       try { expect(code, stderr || stdout).toBe(0); expect(JSON.parse(stdout).tasks_run).toBe(1); resolve(); } catch (error) { reject(error); }
     });
   });
+}
+function seedTaskListData() {
+  const result = spawnSync(PYTHON, ['H:/studybuddy/backend/tests/seed_task_list_data.py', ROOT], {
+    cwd: 'H:/studybuddy/backend', env: runtimeEnv(), encoding: 'utf8', windowsHide: true,
+  });
+  if (result.status !== 0) {
+    const category = /(?:^|\n)([A-Za-z]+Error)(?=:)/.exec(result.stderr || '')?.[1] || 'unknown';
+    throw new Error('task_filter_fixture_seed_failed:' + category);
+  }
 }
 async function ready() { await expect.poll(async () => { try { return (await fetch(`${BASE}/api/readiness`)).ok; } catch (_) { return false; } }, { timeout: 20000 }).toBe(true); }
 function stop() { return new Promise(resolve => { if (!server || server.killed) { server = null; return resolve(); } let done = false; const finish = () => { if (!done) { done = true; server = null; resolve(); } }; server.once('exit', finish); server.kill(); setTimeout(finish, 5000); }); }
@@ -111,12 +121,14 @@ test.describe.serial('tasks.html A-class pure user path', () => {
   });
 
   test('TK-6 状态筛选、分页 URL 和返回后恢复', async ({ page }) => {
+    seedTaskListData();
     await page.goto(`${BASE}/app/tasks.html`); await page.locator('#status-filter').selectOption('cancelled'); await page.locator('#apply-filters').click();
-    await expect(page).toHaveURL(/status=cancelled/); await expect(page.locator('#state')).toContainText(/共 [3-9][0-9]* 个任务/); await expect(page.locator('#tasks .task-status')).toHaveText(Array(await page.locator('#tasks .task-status').count()).fill('已取消'));
+    await expect(page).toHaveURL(/status=cancelled/); await expect(page.locator('#state')).toContainText(/共 3[0-9] 个任务/); await expect(page.locator('#tasks .task-status')).toHaveText(Array(await page.locator('#tasks .task-status').count()).fill('已取消'));
+    await page.getByRole('button', { name: '下一页' }).click(); await expect(page).toHaveURL(/status=cancelled&page=1/); await expect.poll(() => page.locator('#tasks .task-status').count()).toBeGreaterThan(0); await expect(page.locator('#tasks .task-status')).toHaveText(Array(await page.locator('#tasks .task-status').count()).fill('已取消'));
     await page.locator('#status-filter').selectOption('succeeded'); await page.locator('#apply-filters').click(); await expect(page.locator('#tasks')).toContainText('已成功');
-    await page.locator('#status-filter').selectOption('failed'); await page.locator('#apply-filters').click(); await expect(page.locator('#state')).toHaveText('当前无全局任务列表');
+    await page.locator('#status-filter').selectOption('failed'); await page.locator('#apply-filters').click(); await expect(page.locator('#tasks')).toContainText('失败');
     await page.locator('#status-filter').selectOption('cancelled'); await page.locator('#apply-filters').click();
-    await page.goto(`${BASE}/app/materials.html`); await page.goBack(); await expect(page.locator('#status-filter')).toHaveValue('cancelled'); await expect(page).toHaveURL(/status=cancelled/); await safe(page);
+    await page.getByRole('button', { name: '下一页' }).click(); await page.goto(`${BASE}/app/materials.html`); await page.goBack(); await expect(page.locator('#status-filter')).toHaveValue('cancelled'); await expect(page).toHaveURL(/status=cancelled&page=1/); await safe(page);
   });
 
   test('TK-8 五档 viewport、键盘焦点和重启后任务保留', async ({ page }) => {

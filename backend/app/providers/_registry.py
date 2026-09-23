@@ -154,14 +154,14 @@ class ProviderRegistry:
                          ocr_model_root: str | None = None, timeout_seconds: float = 120.0,
                          max_output_bytes: int = 262144) -> CaptureTranscriptionProvider:
         if self.provider_id in {"paddleocr", "rapidocr", "ocr-fallback"}:
-            if not ocr_model_root:
-                raise ProviderError("transcription_provider_not_configured")
             try:
                 if self.provider_id == "rapidocr":
                     if self.model_id not in (None, "", RapidImageOcrProvider.model_id):
                         raise ProviderError("transcription_provider_not_configured")
                     return RapidImageOcrProvider(ocr_model_root, timeout_seconds=timeout_seconds,
                                                  max_output_bytes=max_output_bytes)
+                if not ocr_model_root:
+                    raise ProviderError("transcription_provider_not_configured")
                 if self.provider_id == "paddleocr":
                     if self.model_id not in (None, "", PaddleImageOcrProvider.model_id):
                         raise ProviderError("transcription_provider_not_configured")
@@ -210,11 +210,13 @@ class ProviderRegistry:
             return {
                 "status": "demo", "configured": True, "provider_id": provider.provider_id,
                 "model_id": provider.model_id, "runtime_kind": "deterministic_demo",
-                "network_required": False, "supports": {"transcription": True},
+                "network_required": False, "verification_status": "not_applicable",
+                "model_hash_status": "not_applicable", "supports": {"transcription": True},
             }
         return {
             "status": "configured", "configured": True, "provider_id": provider.provider_id,
             "model_id": provider.model_id, "runtime_kind": "local_cli",
+            "verification_status": "not_verified", "model_hash_status": "not_verified",
             "network_required": False, "supports": {"transcription": True},
         }
 
@@ -259,7 +261,7 @@ class ProviderRegistry:
         return {
             "status": "configured",
             "configured": True,
-            "verification_status": "unverified",
+            "verification_status": "not_verified",
             "runtime_kind": "openai_compatible",
             "config_source": "process_environment",
             "provider_id": provider.provider_id,

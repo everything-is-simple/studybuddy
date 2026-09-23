@@ -58,3 +58,4 @@ server_out.log
 # 已被运行时复检推翻的静态误报报告，保留在本地不入库
 E2E_TEST_REPORT.md
 test_e2e_report.md
+.local/agent-work/

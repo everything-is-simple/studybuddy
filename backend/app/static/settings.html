@@ -83,8 +83,8 @@ const pageRequest=sbApi.setPageScope('settings');
 const $=id=>document.getElementById(id);
 const LABELS={import_parse:'导入解析',ocr:'图片 OCR',asr:'录音转写',index:'索引',qa:'问答',generation:'生成',report:'报告'};
 const ORDER=['import_parse','ocr','asr','index','qa','generation','report'];
-const STATUS={available:{text:'可用',cls:'available',badge:'badge badge-success'},degraded:{text:'降级可用',cls:'',badge:'badge badge-warn'},not_configured:{text:'未配置',cls:'',badge:'badge badge-warn'},not_installed:{text:'未安装',cls:'unavailable',badge:'badge badge-warn'},disabled:{text:'已关闭',cls:'unavailable',badge:'badge'}};
-const REASONS={paddleocr_package_missing:'未安装 PaddleOCR 运行库',rapidocr_package_missing:'未安装 RapidOCR 运行库',onnxruntime_missing:'未安装 ONNX Runtime',rapidocr_models_not_found:'RapidOCR 模型文件缺失',rapidocr_package_unreadable:'RapidOCR 安装目录不可读',ocr_model_root_not_found:'未找到本机 OCR 模型目录',ocr_model_root_invalid:'指定的 OCR 模型目录结构不完整',ocr_disabled_by_configuration:'已按配置关闭',asr_runtime_not_found:'未找到本机转写程序',asr_runtime_invalid:'指定的转写程序不存在',asr_model_not_found:'未找到转写模型文件',provider_not_configured:'尚未填写 Provider',provider_credentials_missing:'缺少 Base URL 或 API Key',embedding_provider_not_configured:'关键词检索可用；配置 Embedding 后才有向量与混合检索'};
+const STATUS={available:{text:'可用',cls:'available',badge:'badge badge-success'},configured:{text:'已配置·未验证',cls:'configured',badge:'badge badge-warn'},demo:{text:'演示模式',cls:'demo',badge:'badge badge-warn'},degraded:{text:'降级可用',cls:'',badge:'badge badge-warn'},not_configured:{text:'未配置',cls:'',badge:'badge badge-warn'},invalid_config:{text:'配置无效',cls:'unavailable',badge:'badge badge-warn'},not_installed:{text:'未安装',cls:'unavailable',badge:'badge badge-warn'},disabled:{text:'已关闭',cls:'unavailable',badge:'badge'}};
+const REASONS={paddleocr_package_missing:'未安装 PaddleOCR 运行库',rapidocr_package_missing:'未安装 RapidOCR 运行库',onnxruntime_missing:'未安装 ONNX Runtime',rapidocr_models_not_found:'RapidOCR 模型文件缺失',rapidocr_package_unreadable:'RapidOCR 安装目录不可读',ocr_model_root_not_found:'未找到本机 OCR 模型目录',ocr_model_root_invalid:'指定的 OCR 模型目录结构不完整',ocr_disabled_by_configuration:'已按配置关闭',asr_runtime_not_found:'未找到本机转写程序',asr_runtime_invalid:'指定的转写程序不存在',asr_model_not_found:'未找到转写模型文件',provider_not_configured:'尚未填写 Provider',provider_configuration_incomplete:'Provider 配置不完整',rapidocr_formal_gate_not_passed:'RapidOCR 尚未通过正式接入门槛',embedding_provider_not_configured:'关键词检索可用；配置 Embedding 后才有向量与混合检索'};
 const SOURCES={detected:'来源：本机探测',settings:'来源：本页保存',environment:'来源：启动环境变量',demo:'来源：演示模式',unset:'来源：尚未配置'};
 const UNKNOWN_REASON='组件状态暂不可用';
 const SETTING_ERRORS={settings_invalid_value:'填写内容无效，请检查格式',settings_unknown_key:'配置项不受支持',settings_empty_payload:'没有需要保存的内容',settings_payload_too_large:'配置内容过大',settings_write_failed:'配置写入失败，请重试',settings_read_failed:'配置读取失败，请重试',settings_clear_failed:'配置清除失败，请重试',capability_probe_failed:'本机组件探测失败，请重试',capability_read_failed:'能力状态读取失败，请重试'};
@@ -113,9 +113,11 @@ function renderCapabilities(data){
     grid.append(card);
   });
   grid.hidden=false;$('capability-loading').hidden=true;
-  const extra=data.ocr_fallback_installed?'；OCR 兜底组件已安装':'';
+  const extra=data.ocr_fallback_installed?'；RapidOCR 候选组件已探测，正式回退未启用':'';
   const degraded=data.degraded_count?'，降级 '+data.degraded_count:'';
-  summary.textContent='可用 '+data.ready_count+' / '+data.total_count+degraded+'，报告投递：'+(data.delivery_mode==='off'?'已关闭':data.delivery_mode)+extra;
+  const configured=data.configured_count?'，已配置待验证 '+data.configured_count:'';
+  const demo=data.demo_count?'，演示 '+data.demo_count:'';
+  summary.textContent='可用 '+data.ready_count+' / '+data.total_count+configured+demo+degraded+'，报告投递：'+(data.delivery_mode==='off'?'已关闭':data.delivery_mode)+extra;
 }
 
 function fillSettings(settings){
