@@ -26,10 +26,10 @@
 执行顺序：
 1. 确认 Git、PowerShell、Node/npm 和 Python 3.10 可执行；优先使用 D:\miniconda\py310\python.exe，或使用用户明确提供的 Python 路径。
 2. 将正式源码、Composer、Integration、Test、ChinaTextbook 仓库分别放到固定目录；创建 data/log 目录。
-3. 在 H:\studybuddy 执行：
+3. 在 H:\studybuddy 执行（这会安装正式 OCR runtime 包；不会自动下载 OCR/ASR 模型）：
    D:\miniconda\py310\python.exe -m pip install -r backend\requirements.txt
    D:\miniconda\py310\python.exe -m pip check
-4. 在 H:\studybuddy 执行 npm ci；使用项目 Playwright 脚本安装 Chromium。
+4. 如果用户提供了经批准的 OCR/ASR 模型和 runtime artifact，按对应 `model-inventory.json`/组件卡校验 hash 后放置；没有 artifact 就保持能力为 `not_installed`，不要自行寻找或下载替代模型。然后在 H:\studybuddy 执行 npm ci；使用项目 Playwright 脚本安装 Chromium。
 5. 执行：
    powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\check-studybuddy-workspace.ps1
    powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\check-development-environment.ps1 -SkipService

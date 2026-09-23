@@ -8,3 +8,7 @@ uvicorn==0.53.0
 pymupdf==1.28.2
 python-pptx==1.0.2
 httpx==0.28.1
+paddlepaddle==3.3.1
+paddleocr==3.7.0
+onnxruntime==1.20.1
+rapidocr_onnxruntime==1.4.4

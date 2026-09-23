@@ -3,6 +3,7 @@ param(
     [string]$DataRoot = $env:STUDYBUDDY_DATA_ROOT,
     [int]$Port = 8787,
     [string]$Python = $env:STUDYBUDDY_PYTHON,
+    [string]$OcrModelRoot = $env:STUDYBUDDY_OCR_MODEL_ROOT,
     [switch]$OpenBrowser
 )
 Set-StrictMode -Version Latest
@@ -42,6 +43,16 @@ $env:STUDYBUDDY_PORT = [string]$Port
 $env:STUDYBUDDY_REPORT_DELIVERY_MODE = 'off'
 $env:STUDYBUDDY_REPORT_DELIVERY_ENABLED = 'false'
 $env:STUDYBUDDY_REPORT_DELIVERY_AUTHORIZED = 'false'
+if (-not $OcrModelRoot) {
+    $candidateOcrModelRoot = Join-Path (Split-Path $root -Parent) 'studybuddy-composer/references/vendor/PaddleOCR/models'
+    if (Test-Path -LiteralPath $candidateOcrModelRoot -PathType Container) { $OcrModelRoot = $candidateOcrModelRoot }
+}
+if ($OcrModelRoot) {
+    $env:STUDYBUDDY_OCR_PROVIDER = 'paddleocr'
+    $env:STUDYBUDDY_OCR_MODEL = 'PP-OCRv5_server_det+PP-OCRv5_server_rec'
+    $env:STUDYBUDDY_OCR_MODEL_ROOT = [System.IO.Path]::GetFullPath($OcrModelRoot)
+    $env:STUDYBUDDY_OCR_ENABLED = 'true'
+}
 
 try { $null = & $Python --version 2>&1 } catch { throw 'studybuddy_python_unavailable' }
 
@@ -59,7 +70,7 @@ try {
     $ready = $false
     for ($attempt = 0; $attempt -lt 60; $attempt++) {
         try {
-            $probe = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/api/liveness" -UseBasicParsing -TimeoutSec 1 -SkipHttpErrorCheck
+            $probe = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/api/liveness" -UseBasicParsing -TimeoutSec 1
             if ([int]$probe.StatusCode -eq 200) { $ready = $true; break }
         } catch {}
         Start-Sleep -Milliseconds 250

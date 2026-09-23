@@ -20,9 +20,9 @@
 
 Composer 的 `manifests/b0-catalog.json` 是候选组件证据源，不是安装清单。当前记录的精确范围如下：
 
-- `asr-whisper-cpp`：Composer/Integration 有精确 evidence，但正式系统禁止直接 import；当前机器的 `H:\Whisper\cli\main.exe`、模型和 fixture 不存在，当前状态是 `not_installed`。
-- `ocr-paddleocr`：Composer/Integration 仅证明特定 Python 3.10 + 模型范围；当前 Miniconda 没有 `paddleocr`/`paddlepaddle`，Formal 状态仍是 `not_installed`/`not_verified`。
-- `ocr-rapidocr`：只有 Composer smoke 范围，Integration 未完成；当前没有 `rapidocr_onnxruntime`，状态是 `not_installed`。
+- `asr-whisper-cpp`：Composer/Integration 有精确 evidence，但正式系统禁止直接 import；当前正式服务已检测到本地 ASR 为 `available`。新机器必须单独提供并校验 runtime、模型和 fixture，缺失时标记 `not_installed`/`not_configured`。
+- `ocr-paddleocr`：Composer/Integration 证明特定 Python 3.10 + 模型范围；正式依赖已包含 `paddleocr==3.7.0`/`paddlepaddle==3.3.1`，不代表通用 OCR 质量已验证。
+- `ocr-rapidocr`：正式依赖已包含 `rapidocr_onnxruntime==1.4.4` 和 `onnxruntime==1.20.1`；它是 fallback，仍不能扩大为通用 OCR real-pass。
 - `report-core`：只读、脱敏、合成数据投影有 Composer/Integration evidence；Formal 使用的是 StudyBuddy 自己的实现，不能复制实验室代码。
 - SMTP/飞书：Composer 只验证 loopback 协议边界；Integration live smoke 需要明确授权和本地 secret，默认禁止执行。StudyBuddy delivery 保持 `off`。
 - 文件解析、SQLite、检索、QA、Cards/Exercises、Plans/Notes、backup/restore 是正式仓库自己的组件，依赖以 `backend/requirements.txt` 和 `README.md` 为准。
@@ -31,7 +31,7 @@ Composer 的 `manifests/b0-catalog.json` 是候选组件证据源，不是安装
 
 1. 安装并确认 Python 3.10、Node/npm、Git、PowerShell；Python 路径通过 `STUDYBUDDY_PYTHON` 或脚本参数传入。
 2. 克隆四个 Git 仓库到上表路径；创建 data、log、test 目录，不从旧机器复制凭据。
-3. 在正式仓库用 `D:\miniconda\py310\python.exe -m pip install -r backend/requirements.txt` 安装正式依赖，再执行 `pip check`。
+3. 在正式仓库用 `D:\miniconda\py310\python.exe -m pip install -r backend/requirements.txt` 安装正式依赖，再执行 `pip check`。OCR/ASR 模型和本地 runtime 不由 pip 自动产生；必须从批准的离线 artifact 恢复并按 Composer evidence 校验。
 4. 在正式仓库执行 `npm ci`，再用项目 Playwright 脚本安装 Chromium。
 5. 执行 `check-studybuddy-workspace.ps1` 和 `check-development-environment.ps1`；先修复结构/依赖失败，再启动服务。
 6. 用 `dev-studybuddy.ps1` 启动正式 data root，确认 liveness/health/readiness 均为 200。

@@ -53,12 +53,12 @@ StudyBuddy 的 Python 运行依赖为：FastAPI、Uvicorn、Pydantic、python-mu
 | Cards / Exercises | 草稿、引用、确认/拒绝、复习和练习记录 | `implemented`；生成能力依赖 LLM provider |
 | Goals / Plans / Notes / Rhythm | 目标、模块、计划、进度、笔记和节奏 | `implemented`；不包含自动 scheduler/worker |
 | Capture / transcription | capture、loopback/deterministic transcription、草稿确认后进入材料管线 | `implemented`；真实音频格式、语言、并发和长时稳定性为 `not_verified` |
-| OCR | 正式 OCR 边界和适配器已定义 | 当前环境缺少可确认的通用 OCR runtime，标记 `not_installed`/`not_verified`；不能把候选 PaddleOCR/RapidOCR 记录当作通用可用 |
+| OCR | PaddleOCR 主引擎 + RapidOCR ONNX fallback，使用 Composer 已验证模型 | `available` 仅限当前 Python 3.10、模型和离线 C1/C2 scope；通用准确率、多语言、容量仍为 `not_verified` |
 | Reports | daily/weekly/monthly/exam_alert 脱敏只读投影与导出 | `implemented`；来源不足时显式降级 |
 | SMTP / 飞书 delivery | 配置元数据和 allowlisted dry-run 审计 | 默认 `off`；`enabled=false`、`authorized=false`；不执行真实发送 |
 | Backup / verify / restore | SQLite Online Backup、manifest、完整性和 schema 检查 | `available`；restore 只写入空目标，不自动 repair |
 
-Composer、Integration 和 Test 的关系不是“额外依赖全部装进正式环境”：Composer/Integration 只保留组件证据和组合契约，正式系统必须按验证后的契约独立实现。当前机器未安装 PaddleOCR/RapidOCR，也没有规范中的 Whisper runtime/model；因此这些能力不能从历史 evidence 自动升级为当前 `available`。
+Composer、Integration 和 Test 的关系不是“把实验代码 import 进正式环境”：Composer/Integration 只保留组件证据和组合契约，正式系统使用自己的 Provider 适配器。当前机器的 OCR 包、Composer 模型和离线 C1/C2 证据已具备；Whisper ASR 由正式服务的已配置本地 runtime 提供，缺失时仍必须由能力接口标记为 `not_installed` 或 `not_configured`。
 
 ## AI、邮件和飞书配置规则
 
