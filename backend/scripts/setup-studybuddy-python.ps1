@@ -12,5 +12,6 @@ if (-not (Test-Path (Join-Path $venv 'Scripts/python.exe'))) {
 }
 $venvPython = Join-Path $venv 'Scripts/python.exe'
 & $venvPython -m pip install --upgrade pip
-& $venvPython -m pip install fastapi uvicorn pydantic python-multipart python-docx pypdf pymupdf python-pptx pytest httpx
+& $venvPython -m pip install -r (Join-Path $root 'backend/requirements.txt')
+& $venvPython -m pip check
 & $venvPython -m backend.app version

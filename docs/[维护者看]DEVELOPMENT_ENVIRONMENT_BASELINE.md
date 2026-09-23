@@ -22,6 +22,8 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\health-stu
 powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\check-development-environment.ps1
 ```
 
+目录职责和新机器重建顺序见 [`NEW_MACHINE_SETUP.md`](NEW_MACHINE_SETUP.md)；可直接交给新机器 AI 的完整配置提示词见 [`STUDYBUDDY_NEW_MACHINE_PROMPT.md`](STUDYBUDDY_NEW_MACHINE_PROMPT.md)。
+
 ## 已验证的开发工具
 
 | 组件 | 当前标准位置/版本 | 用途 | 状态 |
@@ -55,6 +57,8 @@ StudyBuddy 的 Python 运行依赖为：FastAPI、Uvicorn、Pydantic、python-mu
 | Reports | daily/weekly/monthly/exam_alert 脱敏只读投影与导出 | `implemented`；来源不足时显式降级 |
 | SMTP / 飞书 delivery | 配置元数据和 allowlisted dry-run 审计 | 默认 `off`；`enabled=false`、`authorized=false`；不执行真实发送 |
 | Backup / verify / restore | SQLite Online Backup、manifest、完整性和 schema 检查 | `available`；restore 只写入空目标，不自动 repair |
+
+Composer、Integration 和 Test 的关系不是“额外依赖全部装进正式环境”：Composer/Integration 只保留组件证据和组合契约，正式系统必须按验证后的契约独立实现。当前机器未安装 PaddleOCR/RapidOCR，也没有规范中的 Whisper runtime/model；因此这些能力不能从历史 evidence 自动升级为当前 `available`。
 
 ## AI、邮件和飞书配置规则
 

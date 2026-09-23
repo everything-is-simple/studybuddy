@@ -3,6 +3,8 @@
 > 本文是六个系统工作目录的**唯一权威说明**：各目录定位、必须保留的内容、可清理的内容。
 > 变更目录用途时先改本文，再同步 `AGENTS.md`、`README.md`、`docs/INDEX.md`。
 
+新机器按 [`docs/[维护者看]NEW_MACHINE_SETUP.md`](../[维护者看]NEW_MACHINE_SETUP.md) 的目录重建顺序执行；可直接交给 AI 的配置提示词在 [`docs/[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md`](../[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md)。
+
 ## 一、目录地图
 
 | 目录 | 定位 | 关键约束 |

@@ -39,6 +39,8 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 
 各目录定位、"必须保留 / 可清理"边界与清扫日志见 [`docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md`](docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md)。
 
+新机器目录重建、组件证据边界和可直接交给 AI 的配置提示词见 [`docs/[维护者看]NEW_MACHINE_SETUP.md`](docs/[维护者看]NEW_MACHINE_SETUP.md) 与 [`docs/[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md`](docs/[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md)。
+
 **目录内部结构补充（2026-09-19）**：
 
 - `H:\studybuddy-data` 的**根目录**才是活跃 data_root；其下的 `live/` 是已废弃的历史 data_root 残留（业务表已归零），**禁止**把 `STUDYBUDDY_DATA_ROOT` 指向它。

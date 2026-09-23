@@ -29,6 +29,8 @@
 | [`../README.md`](../README.md) | 项目定位、运行入口与当前能力摘要 | 需求分析师 |
 | [`../AGENTS.md`](../AGENTS.md) | 贡献和 coding-agent 约束 | 架构师 |
 | [`[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md`]([维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md) | **当前开发工具、Python 依赖和 StudyBuddy 功能组件基线** | 维护者/运维 |
+| [`[维护者看]NEW_MACHINE_SETUP.md`]([维护者看]NEW_MACHINE_SETUP.md) | **新机器目录、组件证据和重建顺序** | 维护者/运维 |
+| [`[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md`]([维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md) | **可直接交给 AI 的新机器配置提示词** | 维护者/运维 |
 
 ---
 
