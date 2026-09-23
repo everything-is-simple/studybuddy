@@ -57,7 +57,33 @@ def _chromium() -> Path | None:
     return None
 
 
+def _render_with_playwright(html: str, target: Path, *, assets: dict[str, bytes] | None = None) -> bool:
+    """Render through the repository's verified Node Playwright runtime."""
+    for name, payload in (assets or {}).items():
+        (target.parent / name).write_bytes(payload)
+    source = target.parent / f"{target.stem}.source.html"
+    source.write_text(html, encoding="utf-8")
+    try:
+        script = (
+            "const fs=require('fs');const {chromium}=require('playwright');"
+            "(async()=>{const b=await chromium.launch();const p=await b.newPage();"
+            "await p.goto('file:///'+process.argv[1].replace(/\\\\/g,'/'),{waitUntil:'load'});"
+            "await p.pdf({path:process.argv[2],printBackground:true});await b.close()})()"
+        )
+        subprocess.run(
+            ["node", "-e", script, str(source.resolve()), str(target.resolve())],
+            check=True, capture_output=True, timeout=180,
+        )
+        return True
+    except Exception:
+        return False
+    finally:
+        source.unlink(missing_ok=True)
+
+
 def _render_pdf(html: str, target: Path, *, assets: dict[str, bytes] | None = None) -> None:
+    if _render_with_playwright(html, target, assets=assets):
+        return
     browser = _chromium()
     if browser is None:
         pytest.skip("browser-rendered PDF fixture requires the managed Chromium binary")

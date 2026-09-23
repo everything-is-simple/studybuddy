@@ -7,6 +7,7 @@
 - 健康脚本按 liveness/health/readiness 分别输出稳定、脱敏的 200、503、超时、无服务和无效响应状态。计划页以 URL `plan_id` 为首次选择依据，新建后同步 URL；任务页分页同步 URL，TK-6 独立建立隔离夹具。
 - 本轮新跑：聚焦后端 **71 passed**；后端全量 **642 passed / 8 failed / 3 skipped**（5 个治理文档一致性断言、3 个依赖本机无法启动的完整 Chromium 生成 PDF 的用例失败）；本轮相关三个隔离 Chromium spec **24 passed**，含计划、settings 和 tasks 完整用户路径。默认关闭的真实 Provider/ASR smoke 未执行。完整 Chromium 门禁未运行：旧 spec 中存在固定测试根递归清理和不存在的解释器路径，不宜在保留现有产物的前提下直接执行。以上均不构成全局 `real-pass`。
 - P1-7 的 13 个场景仍待真实使用者逐日记录；服务商侧凭据撤销/轮换无本轮证据。当前修订尚未提交或推送。
+- 2026-09-24：本机完整 Chrome CLI 仍报 Windows side-by-side `WinError 14001`；已强制重装 Visual C++ Redistributable 和 Playwright 浏览器缓存，并将 PDF fixture 改用已验证可启动的 Node Playwright runtime。`test_p1_4_real_input_chain.py` 当前 **11 passed**，不再有 3 个环境 skip；这只修复本机测试夹具运行方式，不扩大跨浏览器或真实能力边界。
 
 本文档记录项目的重要进展、决策和当前状态。所有角色均应阅读本文档以了解项目全貌。
 

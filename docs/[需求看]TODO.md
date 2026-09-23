@@ -1,6 +1,7 @@
 # StudyBuddy TODO 清单
 
 > 2026-09-23 本轮修订：正式 OCR API 已恢复为 PaddleOCR-only；RapidOCR 严格 C2 保持 `not_passed`，不得标作 Formal fallback。能力状态、健康脚本、plans `plan_id` 和 TK-6 独立夹具的代码与聚焦用户路径已修订；本轮聚焦后端 71 passed、相关隔离 Chromium 24 passed。后端全量仍为 642 passed / 8 failed / 3 skipped（治理文档断言 5、PDF 浏览器夹具 3），完整 Chromium 门禁未运行；修订尚未达到总门禁全绿。后续依次处理剩余门禁、服务商侧凭据撤销/轮换与提交范围审查；P1-7 的 13 个场景只由真实使用者记录。真实 Provider、OCR/ASR 质量、live delivery、跨浏览器与屏幕阅读器继续 `not_verified`。
+> 2026-09-24 追加：治理一致性测试已恢复 `11 passed`；真实输入/PDF fixture 改用 Node Playwright 运行时后为 `11 passed`。完整 Chrome CLI 的 side-by-side 问题仍记录为本机环境边界，但不再阻塞该 PDF 测试集合。服务商侧凭据撤销/轮换仍需控制台操作和非敏感完成记录。
 > 更新：2026-09-21（**新手手册场景一至场景二真实浏览器链路完成**：正式服务以 `H:\studybuddy-data`/`127.0.0.1:8787` 运行；浏览器端点 liveness/health/readiness=200/200/200，today 显示系统就绪。使用合成 fixture `真实链路测试材料.txt` 完成导入解析、详情正文和“六要素”搜索；同一材料建立 AI 索引并显示 ready/1 chunk；混合检索问答“记叙文阅读首先要理清什么？”成功生成回答，引用可点击并在同一材料详情高亮定位。Provider 设置页仍显示 LLM/Embedding 不可用，与系统设置 7/7 可用仪表盘及实际 QA/索引结果不一致；未改配置、未切换 fake，已标记为独立排查项。健康脚本本次输出 `health_check_failed`，浏览器端点直接实测全 200，脚本兼容性/时序问题未在本次验证中修订。服务保持运行。`)
 
 
