@@ -33,7 +33,7 @@ StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地
 
 ### 2.3 变更要求
 
-代码变更必须保持最小范围，并同步：实现、聚焦测试、必要的完整回归、权威状态和 TODO。新增业务表、字段约束或索引时，必须新增或修改 migration，并覆盖新库、升级、幂等、失败 rollback、backup/restore 版本保持测试。不得在业务运行路径中以 ad-hoc `CREATE TABLE IF NOT EXISTS` 代替 migration。新增或实质重写的代码文件（`.py`、`.js`、`.css`、`.html`、`.ps1`、`.json`）必须不超过 32 KiB，目标是 20-30 KiB；超过上限必须先获得明确审批。文档文件（`.md`）不受此大小限制约束。不得通过新建/搬迁大 compatibility、legacy、static 或 inline-content 文件规避该限制。A2.X 已完成现有核心文件拆分：`main.py` 的 HTML 位于 `backend/app/templates/index.html`，provider 实现位于 `backend/app/providers/`，migration 版本模块位于 `backend/app/migrations/`，repository 实现位于 `backend/app/repositories/`。所有新代码模块仍必须通过 source-size gate。
+代码变更必须保持最小范围，并同步：实现、聚焦测试、必要的完整回归、权威状态和 TODO。新增业务表、字段约束或索引时，必须新增或修改 migration，并覆盖新库、升级、幂等、失败 rollback、backup/restore 版本保持测试。不得在业务运行路径中以 ad-hoc `CREATE TABLE IF NOT EXISTS` 代替 migration。新增或实质重写的代码文件（`.py`、`.js`、`.css`、`.html`、`.ps1`、`.json`）必须不超过 32 KiB，目标是 20-30 KiB；超过上限必须先获得明确审批。文档文件（`.md`）不受此大小限制约束。不得通过新建/搬迁大 compatibility、legacy、static 或 inline-content 文件规避该限制。A2.X 已完成现有核心文件拆分：`main.py` 的 legacy HTML 由 `backend/app/templates/index_head.html`、有序 `index_script_*.js`、`index_tail.html` 组装，provider 实现位于 `backend/app/providers/`，migration 版本模块位于 `backend/app/migrations/`，repository 实现位于 `backend/app/repositories/`。所有新代码模块仍必须通过 source-size gate。
 
 ## 3. 测试分层与命令
 
@@ -48,10 +48,10 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\test-backe
 如需绕过统一 runner，直接命令必须指定可写的测试临时目录并禁用仓库 cache provider：
 
 ```text
-C:\miniconda\py310\python.exe -m pytest backend/tests/ -q --basetemp=H:\studybuddy-test\runs\pytest-basetemp -p no:cacheprovider
+D:\miniconda\py310\python.exe -m pytest backend/tests/ -q --basetemp=H:\studybuddy-test\runs\pytest-basetemp -p no:cacheprovider
 ```
 
-Bash/Cygwin 等价路径为 `/cygdrive/c/miniconda/py310/python -m pytest backend/tests/ -q --basetemp=/cygdrive/h/studybuddy-test/runs/pytest-basetemp -p no:cacheprovider`。可用 `STUDYBUDDY_PYTEST_BASETEMP` 覆盖统一 runner 的临时目录；该目录只用于可删除的 pytest 临时文件，不能指向任何 live `data_root` 或 backup 目录。
+Bash/Cygwin 等价路径为 `/cygdrive/d/miniconda/py310/python -m pytest backend/tests/ -q --basetemp=/cygdrive/h/studybuddy-test/runs/pytest-basetemp -p no:cacheprovider`。可用 `STUDYBUDDY_PYTEST_BASETEMP` 覆盖统一 runner 的临时目录；该目录只用于可删除的 pytest 临时文件，不能指向任何 live `data_root` 或 backup 目录。
 
 浏览器门禁必须串行执行，并通过统一入口指定 spec（如本机策略拦截脚本，同样使用 `-ExecutionPolicy Bypass`）：
 
@@ -67,7 +67,7 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 `test-browser.ps1` 每次只接受一个 spec；需要多个 browser spec 时必须分别串行执行。
 
-历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前全仓默认 backend 基线由 `STATUS.md` 记录为 `468 passed, 3 skipped`（verified 2026-08-31）；当前 Chromium 基线为 `144 passed, 4 skipped`；skip 均为显式 opt-in real smoke。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
+历史 Phase 9B closeout 的脱敏回归基线为：focused Gate A-I `59 passed`，完整 backend `299 passed, 2 skipped`，相关非真实 Provider Chromium `45 passed, 1 skipped`，默认 real-provider spec `2 skipped`；权威证据见 `PHASE9B_ACCEPTANCE_EVIDENCE.md`。当前 backend 基线为 `665 passed, 3 skipped`（2026-09-24，以 D:\miniconda Python 和每次运行唯一 basetemp 重跑）；当前完整 Chromium 基线尚未建立，因本机浏览器启动报 Windows `spawn UNKNOWN`。测试数量变化必须以新运行输出为准，不得把历史文档数字当作当前事实。
 
 真实 Provider 仍只能通过目标专用 gate 或 `run-provider-api-acceptance.ps1` 启用，不属于默认门禁。
 

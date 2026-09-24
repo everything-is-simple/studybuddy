@@ -146,7 +146,7 @@ backend/app/
 | 任务 | 文件 | 当前大小 | 目标 | 责任边界 |
 |---|---|---:|---:|---|
 | A2.1 | `backend/app/repositories/_legacy.py` | ~~379,741 B~~ → 29,750 B bridge | ✅ completed | 18部分实现+runtime+bridge；保持305符号、monkeypatch兼容；413 passed |
-| A2.2 | `backend/app/main.py` | ~~156,889 B~~ → 969 B | ✅ completed | INDEX_HTML 提取到 templates/index.html；保持兼容导出；413 passed |
+| A2.2 | `backend/app/main.py` | ~~156,889 B~~ → bounded façade | ✅ completed | INDEX_HTML 提取到 ordered bounded template fragments；保持兼容导出；413 passed |
 | A2.3 | `backend/app/migrations/runner.py` | ~~68,846 B~~ → 7,412 B | ✅ completed | 拆分为 13 个版本模块 + helpers；413 passed |
 | A2.4 | `backend/app/providers.py` | ~~33,593 B~~ → 目录 (9 模块) | ✅ completed | 拆分为职责模块；413 passed |
 
@@ -227,7 +227,7 @@ backend/app/
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
 6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3-2 通过后执行的首批页面拆分已完成：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
-8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。当前完整基线为 backend `468 passed, 3 skipped`、browser `144 passed, 4 skipped`；视觉任务未改变 API 或业务行为。
+8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。历史视觉基线为 backend `468 passed, 3 skipped`、browser `144 passed, 4 skipped`；当前 backend 基线为 `665 passed, 3 skipped`，完整 browser 基线仍 `not_verified`，因本机 Chromium 启动报 Windows `spawn UNKNOWN`；视觉任务未改变 API 或业务行为。
 
 **通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表所有 `legacy_only`/`not_exposed` 能力已迁移；A3-PAGES/A3-VISUAL 已分别完成声明范围，剩余未暴露能力仍按独立契约推进。
 
@@ -413,5 +413,5 @@ backend/app/
 - 组件候选下载、模型下载或真实 smoke 不得与正式系统代码变更放在同一提交中。
 - 失败组件要保留可审计的失败结论、版本和安全原因；不删除失败测试来得到“通过”。
 - 所有真实网络/真实音频/真实图片/真实外发均需 explicit opt-in；默认 fixture、loopback、dry-run 和脱敏 evidence。
-- 完整 backend 命令保持：`C:\miniconda\py310\python.exe -m pytest backend/tests/`。浏览器和桌面门禁使用项目正式脚本；新增命令必须写入组件卡和相关 evidence。
+- 完整 backend 命令保持：`D:\miniconda\py310\python.exe -m pytest backend/tests/`。浏览器和桌面门禁使用项目正式脚本；新增命令必须写入组件卡和相关 evidence。
 - 每个完成声明都要说明精确工具、模型、运行环境、输入类别、时间、通过范围和 `not_verified` 限制。

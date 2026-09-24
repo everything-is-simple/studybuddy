@@ -8,10 +8,9 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-MAX_BYTES = 100 * 1024
+MAX_BYTES = 32 * 1024
 LEGACY_MAIN = Path("backend/app/main.py")
-# Documentation files (.md) are exempt from the size policy; only code/source
-# files are size-enforced. The INDEX_HTML hash check is independent of this set.
+# Documentation files (.md) are exempt; every managed source file is bounded.
 SOURCE_SUFFIXES = {".py", ".js", ".css", ".html", ".ps1", ".json"}
 
 
@@ -32,15 +31,19 @@ def _base_size(root: Path, base: str, path: Path) -> int | None:
 def _changed_paths(root: Path, base: str) -> list[Path]:
     names = _git(root, "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD").splitlines()
     names += _git(root, "diff", "--name-only", "--diff-filter=AM").splitlines()
+    names += _git(root, "diff", "--cached", "--name-only", "--diff-filter=AM").splitlines()
+    names += _git(root, "ls-files", "--others", "--exclude-standard").splitlines()
     return sorted({Path(name) for name in names})
 
 
 def _main_html_sha256(path: Path) -> str | None:
-    # INDEX_HTML is now loaded from templates/index.html
-    template_path = path.parent / "templates" / "index.html"
-    if not template_path.exists():
+    template_dir = path.parent / "templates"
+    parts = [template_dir / "index_head.html"]
+    parts.extend(sorted(template_dir.glob("index_script_*.js"), key=lambda item: item.name))
+    parts.append(template_dir / "index_tail.html")
+    if not all(part.exists() for part in parts):
         return None
-    content = template_path.read_text(encoding="utf-8")
+    content = "".join(part.read_text(encoding="utf-8") for part in parts)
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
@@ -59,17 +62,8 @@ def main() -> int:
         if not path.is_file():
             continue
         size = path.stat().st_size
-        baseline = _base_size(root, args.base, relative)
-        # Existing oversized files are grandfathered. The former
-        # "must-not-grow" comparison made it unsafe to fix real defects in
-        # the legacy UI; only new files and files that were within the limit
-        # at their baseline remain size-enforced.
-        if relative == LEGACY_MAIN:
-            continue
-        if baseline is None and size > MAX_BYTES:
-            failures.append(f"{relative}: new file is {size} bytes; maximum is {MAX_BYTES}")
-        elif baseline is not None and baseline <= MAX_BYTES and size > MAX_BYTES:
-            failures.append(f"{relative}: grew to {size} bytes; maximum is {MAX_BYTES}")
+        if size > MAX_BYTES:
+            failures.append(f"{relative}: file is {size} bytes; maximum is {MAX_BYTES}")
     main_path = root / LEGACY_MAIN
     if args.main_html_sha256 and main_path.exists():
         digest = _main_html_sha256(main_path)
@@ -79,7 +73,7 @@ def main() -> int:
         print("source-size check failed:")
         print("\n".join(failures))
         return 1
-    print(f"source-size check passed: new and previously bounded files respect the {MAX_BYTES}-byte policy")
+    print(f"source-size check passed: managed source files respect the {MAX_BYTES}-byte policy")
     return 0
 
 

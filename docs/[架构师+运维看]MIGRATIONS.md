@@ -53,7 +53,7 @@ Use `runner.py` as the only public execution entry point. Version modules are in
 升级前必须停止访问 live `data_root` 的所有 StudyBuddy/SQLite writer，先创建并 verify 新的 rollback backup，再执行：
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli upgrade-preflight \
+D:/miniconda/py310/python.exe -m app.cli upgrade-preflight \
   --data-root <live-data-root> \
   --backup <verified-backup-root>
 ```
@@ -65,7 +65,7 @@ C:/miniconda/py310/python.exe -m app.cli upgrade-preflight \
 ## Inspecting a database
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli schema-version \
+D:/miniconda/py310/python.exe -m app.cli schema-version \
   --database <data-root>/studybuddy.sqlite3
 ```
 

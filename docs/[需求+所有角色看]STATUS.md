@@ -5,7 +5,7 @@
 - 正式图片转录 API 继续仅接受 PaddleOCR。RapidOCR 严格 C2 Integration 已在精确 Windows/Python 3.10/CPU、本地模型 hash、合成 PNG/JPEG/WEBP 和受控 fallback scope 内通过；仍不进入 Formal，正式 fallback 未启用，正式能力状态继续为 `not_configured`。检测到候选组件或 Integration 通过不等于 Formal 接入或 `real-pass`。
 - 系统能力矩阵、Provider 与 QA 页面使用同一能力状态含义：`available`、`configured`、`demo`、`degraded`、`not_configured` 等分别呈现；配置或模型文件存在仅表示结构检查，不表示真实服务、质量或模型 hash 已验证。报告投递仍默认关闭并按次授权。
 - 健康脚本按 liveness/health/readiness 分别输出稳定、脱敏的 200、503、超时、无服务和无效响应状态。计划页以 URL `plan_id` 为首次选择依据，新建后同步 URL；任务页分页同步 URL，TK-6 独立建立隔离夹具。
-- 本轮新跑：聚焦后端 **71 passed**；后端全量 **642 passed / 8 failed / 3 skipped**（5 个治理文档一致性断言、3 个依赖本机无法启动的完整 Chromium 生成 PDF 的用例失败）；本轮相关三个隔离 Chromium spec **24 passed**，含计划、settings 和 tasks 完整用户路径。默认关闭的真实 Provider/ASR smoke 未执行。完整 Chromium 门禁未运行：旧 spec 中存在固定测试根递归清理和不存在的解释器路径，不宜在保留现有产物的前提下直接执行。以上均不构成全局 `real-pass`。
+- 本轮新跑：兼容导出、治理和基础设施 focused tests 通过；后端全量 **665 passed / 3 skipped**（D:\miniconda Python、每次运行唯一 pytest basetemp）；默认关闭的真实 Provider/ASR smoke 未执行。浏览器统一入口已支持解释器和测试根注入，但本机 Chromium 启动仍报 Windows `spawn UNKNOWN`，完整 Chromium 基线保持 `not_verified`。以上均不构成全局 `real-pass`。
 - P1-7 的 13 个场景仍待真实使用者逐日记录；服务商侧凭据撤销/轮换无本轮证据。当前修订尚未提交或推送。
 - 2026-09-24：本机完整 Chrome CLI 仍报 Windows side-by-side `WinError 14001`；已强制重装 Visual C++ Redistributable 和 Playwright 浏览器缓存，并将 PDF fixture 改用已验证可启动的 Node Playwright runtime。`test_p1_4_real_input_chain.py` 当前 **11 passed**，不再有 3 个环境 skip；这只修复本机测试夹具运行方式，不扩大跨浏览器或真实能力边界。
 
@@ -70,7 +70,7 @@
 - 后端全量：**637 passed / 3 skipped**（313.5s；skip 均为 opt-in 真实 smoke），0 failed。
 - 浏览器 Chromium 全量（workers=1，59.6m）：**551 passed / 4 skipped / 3 failed / 5 did not run**。3 个失败（full_coverage materials「页面有标题元素」耗时 10.3m 异常、frontend_failure_contract:27、notes B-ND-5）隔离复跑**全部通过**（16 passed 含原 did-not-run 的 B-ND-6~10；full_coverage 隔离整跑 107 passed），定性为瞬态环境问题，非确定性缺陷。修复后 3 spec 隔离验证：plans_b_class 4 passed（B-PLAN-2 另连跑 1 次 4 passed）、plan_detail_full+qa_userpath 34 passed。
 - 证据落盘：`H:\studybuddy-test\runs\e2e-full-final2-20260919`、`e2e-3repro-20260919`、`e2e-fc-final-20260919`、`three-fix-verify-output.txt` 等。
-- `check-source-size.py` 通过（102400 字节策略）。
+- `check-source-size.py` 通过（32768 字节策略；legacy HTML 已按有序片段组装并保持 hash 不变）。
 
 **未验证边界（如实标注）**：真实 Provider/OCR/ASR、live delivery、跨浏览器、系统级屏幕阅读器继续 `not_verified`；本轮 3 个全量瞬态失败未做多次重复全量验证（成本原因，以隔离复验为准）。
 
@@ -101,7 +101,7 @@
 **测试覆盖**：
 - 新增 `test_retrieval_chinese_long_question_bigram_fallback` 验证降级路径和 policy_version。
 - 35个retrieval + QA + generation测试全部通过（test_retrieval.py 9个, test_qa_api.py 18个, test_phase8_generation.py 8个）。
-- 源码体积检查通过（102400字节策略）。
+- 源码体积检查通过（32768 字节策略）。
 
 **真实教材库**：
 - 四年级上册语文：56,320字138段 (material_1923dcf898fa4eafbf1fae8d619171aa)
@@ -196,7 +196,7 @@
 
 - **P6-E 边界**：P6-E core workflow acceptance 已收口（P6-E fake Provider 核心工作流整体验收），证据见 evidence/P6E_ACCEPTANCE_EVIDENCE.md；结论仅覆盖 fake Provider complete workflow，not global availability（real network）。
 - **能力声明边界**：本文档遵守 not_verified / real-pass 诚实标注规则；DeepSeek `deepseek-chat` 等真实 Provider 的当前验收受本机网络限制，not_verified 项不得宣称 real-pass。
-- **媒体能力选型**：OCR 以 PaddleOCR 为主路径、RapidOCR 为回退；ASR 使用 H:/WhisperCli；TTS（edge-tts）暂缓。
+- **媒体能力选型**：OCR 以 PaddleOCR 为主路径、RapidOCR 为回退；ASR 使用 H:/Whisper；TTS（edge-tts）暂缓。
 - **B3 报告边界**：B3 C0-C6 scoped closeout is complete only for local deterministic project-scoped JSON/Markdown reports；B3 不授权 B4，delivery=off 为默认；不建立第二套 report domain。
 - **历史 Phase 证据**：
   - Phase 8：见 PHASE8_ACCEPTANCE_EVIDENCE.md。

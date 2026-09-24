@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy 新手用户使用手册 v1.0</title>
+<meta name="description" content="StudyBuddy 新手用户使用手册：通过五个渐进场景熟悉资料、问答、笔记、卡片、练习、复盘和课堂采集。">
+<style>
+:root{--ink:#172033;--muted:#5f6b7a;--line:#d9e1ea;--paper:#fff;--bg:#f3f6f9;--blue:#1769c2;--blue-soft:#eaf3ff;--green:#13795b;--green-soft:#e8f7f0;--amber:#9a6500;--amber-soft:#fff6df;--red:#b42318;--red-soft:#fff0ee;--dark:#102235}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}header{background:var(--dark);color:#fff;padding:42px 22px 36px}.hero{max-width:980px;margin:auto}.eyebrow{margin:0 0 8px;color:#b7d7f8;font-size:13px;font-weight:700;letter-spacing:.12em}.hero h1{margin:0;font-size:32px;line-height:1.25}.hero p{max-width:780px;margin:12px 0 0;color:#dce9f5}.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.meta span{border:1px solid #5f7890;border-radius:5px;padding:3px 9px;color:#dce9f5;font-size:13px}.wrap{max-width:980px;margin:auto;padding:20px 18px 60px}.toc,.panel,section{background:var(--paper);border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 6px #1022350b}.toc{padding:18px 22px;margin-bottom:22px}.toc strong{font-size:16px}.toc ol{columns:2;margin:8px 0 0;padding-left:22px}.toc a{color:var(--blue);text-decoration:none}.toc a:hover{text-decoration:underline}.panel,section{padding:24px;margin:22px 0}h2{font-size:23px;line-height:1.35;margin:0 0 8px}h3{font-size:17px;margin:20px 0 6px}.lead{color:var(--muted);margin:0 0 14px}.tag{display:inline-block;background:var(--blue-soft);color:var(--blue);border-radius:4px;padding:2px 8px;font-size:13px;font-weight:700}.goal{border-left:4px solid var(--blue);background:var(--blue-soft);padding:10px 14px;margin:14px 0}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:stretch;margin:18px 0}.flow .node{position:relative;background:#f7fafc;border:1px solid #cbd8e5;border-radius:6px;padding:13px 8px;text-align:center;font-weight:700;font-size:14px}.flow .node:not(:last-child)::after{content:"→";position:absolute;right:-15px;top:50%;transform:translateY(-50%);color:var(--blue);font-weight:700;font-size:19px;z-index:2}.flow small{display:block;font-weight:400;color:var(--muted);font-size:12px;line-height:1.4;margin-top:3px}.screen{border:1px solid #c8d5e1;border-radius:7px;overflow:hidden;background:#fbfdff;margin:16px 0}.screenbar{height:28px;background:#e9eef3;border-bottom:1px solid #d4dee8;padding:4px 12px;color:#68798a;font:12px Consolas,monospace}.screenbody{padding:17px}.screen-title{display:flex;justify-content:space-between;gap:12px;align-items:center;font-weight:700;margin-bottom:12px}.uirow{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.button,.select,.input,.status{display:inline-block;border-radius:5px;padding:6px 11px;border:1px solid #bdcbd8;background:#fff;font-size:13px}.button.primary{color:#fff;background:var(--blue);border-color:var(--blue)}.button.success{color:#fff;background:var(--green);border-color:var(--green)}.select,.input{color:#6c7885;min-width:125px}.status{background:var(--green-soft);border-color:#a9ddc5;color:var(--green)}.status.warn{background:var(--amber-soft);border-color:#efd38b;color:var(--amber)}.listrow{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid #dbe4ed;background:#fff;border-radius:5px;padding:9px 11px;margin-top:8px}.marker{display:inline-flex;width:21px;height:21px;border-radius:50%;align-items:center;justify-content:center;background:#ef9f18;color:#fff;font-size:12px;font-weight:700;margin-right:5px}.caption{color:var(--muted);font-size:12px;text-align:center;margin:5px 0 0}.steps{counter-reset:step;list-style:none;padding:0;margin:12px 0}.steps li{counter-increment:step;display:flex;gap:10px;margin:8px 0}.steps li::before{content:counter(step);flex:0 0 24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;text-align:center;font-weight:700;line-height:24px}.done,.tip,.warn{padding:11px 14px;border-radius:5px;margin-top:14px}.done{background:var(--green-soft);border:1px solid #b9e5d1;color:#155d47}.tip{background:var(--amber-soft);border:1px solid #f0d796;color:#765000}.warn{background:var(--red-soft);border:1px solid #f1b9b2;color:#8a2119}.checklist{list-style:none;padding:0}.checklist li{margin:7px 0}.checklist input{width:16px;height:16px;vertical-align:-3px;margin-right:8px}.small{font-size:13px;color:var(--muted)}code{background:#eef2f6;border-radius:3px;padding:2px 5px;font:13px Consolas,monospace}footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:18px;margin-top:34px}@media(max-width:700px){.hero h1{font-size:26px}.toc ol{columns:1}.wrap{padding:12px 10px 40px}.panel,section{padding:18px 15px}.flow{grid-template-columns:1fr;gap:7px}.flow .node:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-19px;transform:translateX(-50%)}.screen-title{align-items:flex-start;flex-direction:column}.listrow{align-items:flex-start;flex-direction:column}}
+@media print{body{background:#fff}.toc,section,.panel{box-shadow:none}section{break-inside:avoid}.flow{break-inside:avoid}header{padding:24px}.wrap{padding-top:8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hero">
+    <p class="eyebrow">STUDYBUDDY · 新手训练手册</p>
+    <h1>跟着五个场景，学会使用 StudyBuddy</h1>
+    <p>你不需要一次记住所有页面。每完成一个场景，就得到一个看得见的学习成果；完成前四个场景，你已经可以独立完成“资料 → 问答 → 沉淀 → 练习 → 复盘”的核心闭环。</p>
+    <div class="meta"><span>版本 v1.0</span><span>日期 2026-09-19</span><span>作者 wdstevens2233</span><span>写给第一次使用的学生、家长和教师</span></div>
+  </div>
+</header>
+<main class="wrap">
+<nav class="toc"><strong>先按这个顺序练习</strong><ol><li><a href="#start">开始与能力检查</a></li><li><a href="#scene1">场景一：导入第一份资料</a></li><li><a href="#scene2">场景二：问答并核对引用</a></li><li><a href="#scene3">场景三：沉淀笔记和卡片</a></li><li><a href="#scene4">场景四：练习并复盘</a></li><li><a href="#scene5">场景五：课堂采集</a></li><li><a href="#extra">熟悉后再用：计划与报告</a></li><li><a href="#trouble">卡住时怎么办</a></li><li><a href="#graduate">新手毕业清单</a></li></ol></nav>
+<section id="start">
+  <span class="tag">第 0 课 · 先准备</span><h2>开始与能力检查</h2>
+  <p class="lead">StudyBuddy 是运行在自己电脑上的本地学习资料系统。它不是云端协作平台，当前按“本机、单进程、单实例、本地磁盘”使用。</p>
+  <div class="goal"><b>今天的目标：</b>启动服务，打开首页，知道哪些能力已经可用。第一次请使用一份不敏感、较短的测试资料。</div>
+  <div class="flow"><div class="node">启动服务<small>PowerShell</small></div><div class="node">打开首页<small>127.0.0.1:8787</small></div><div class="node">系统设置<small>看能力状态</small></div><div class="node">选择场景<small>从场景一开始</small></div><div class="node">完成一项<small>再进入下一项</small></div></div>
+  <h3>启动</h3>
+  <p>在项目目录执行项目提供的启动脚本；开发时也可以使用：</p>
+  <p><code>python -m backend.app serve</code></p>
+  <p>服务启动后打开 <code>http://127.0.0.1:8787</code>。不用时，用项目的停止脚本停止对应实例，不要随意结束其他 Python 进程。</p>
+  <div class="screen"><div class="screenbar">http://127.0.0.1:8787/app/today.html</div><div class="screenbody"><div class="screen-title"><span>StudyBuddy · 今天</span><span class="status">系统就绪</span></div><div class="uirow"><span class="button primary">今天</span><span class="button">资料</span><span class="button">问答</span><span class="button">练习</span><span class="button">更多</span></div></div></div><p class="caption">图 0-1　启动后从“今天”进入；页面顶部的“更多”可展开其他入口。</p>
+  <h3>第一次看“系统设置”</h3>
+  <div class="screen"><div class="screenbar">/app/settings.html</div><div class="screenbody"><div class="screen-title"><span>能力与运行状态</span><span class="button primary">重新自检</span></div><div class="uirow"><span class="status">导入解析 · 可用</span><span class="status warn">AI Provider · 未配置</span><span class="status warn">Embedding · 未配置</span><span class="status warn">OCR / ASR · 未配置</span></div></div></div><p class="caption">图 0-2　“未配置”表示前置条件还没准备好，不等于整个系统坏了。</p>
+  <div class="tip"><b>能力关系：</b>导入资料不依赖真实 AI；问答和 AI 生成需要 AI Provider；混合检索需要 Embedding；课堂图片需要 OCR，课堂音频需要 ASR。没有这些能力时，仍可先练习资料管理和手工学习。</div>
+</section>
+<section id="scene1">
+  <span class="tag">场景一 · 资料</span><h2>把第一份资料放进系统</h2>
+  <p class="lead">这是所有学习的起点。先不要急着配置 AI，先确认资料能被正确保存和阅读。</p>
+  <div class="goal"><b>完成后你会得到：</b>一份状态为成功、正文可见、可以搜索和导出的学习材料。</div>
+  <div class="flow"><div class="node">资料<small>materials.html</small></div><div class="node">选择文件/文件夹<small>TXT / MD / PDF / DOCX / PPTX</small></div><div class="node">查看状态<small>成功 / 空 / 失败</small></div><div class="node">打开详情<small>查看正文</small></div><div class="node">搜索或导出<small>确认可用</small></div></div>
+  <div class="screen"><div class="screenbar">/app/materials.html</div><div class="screenbody"><div class="uirow"><span class="button primary"><i class="marker">1</i>选择文件夹导入</span><span class="select"><i class="marker">2</i>状态筛选 ▾</span><span class="button">应用筛选</span><span class="button">查看回收站</span></div><div class="listrow"><span><i class="marker">3</i>第一份测试资料.pdf</span><span class="status">解析成功</span></div><div class="listrow"><span>点击材料行进入详情</span><span class="button">打开详情 →</span></div></div></div><p class="caption">图 1-1　先导入，再根据状态处理；材料行可以进入材料详情。</p>
+  <ol class="steps"><li>打开“资料”，选择一份小的 TXT、MD、PDF、DOCX 或 PPTX 文件；也可以选择文件夹导入。</li><li>等待结果，确认材料状态为“解析成功”，再点击材料行进入详情。</li><li>在详情中确认正文可见；回到资料页尝试搜索一个正文关键词。</li><li>需要时使用“导出解析文本”验证系统读到的内容。</li></ol>
+  <div class="done"><b>完成标志：</b>材料列表有记录，详情能看到正文，搜索或文本导出能得到预期内容。</div>
+  <div class="warn"><b>卡住时：</b>旧版 DOC、旧版 PPT、RTF 会被拒绝；空文件会显示空状态；损坏或过大的文件请先换一份小的标准格式文件。不要把“格式拒绝”当成 AI 配置问题。</div>
+</section>
+<section id="scene2">
+  <span class="tag">场景二 · 问答</span><h2>让系统回答，并核对引用</h2>
+  <p class="lead">StudyBuddy 的问答不是“输入问题就直接回答”。正确顺序是：材料先建立索引，回答后再沿引用核对原文。</p>
+  <div class="goal"><b>完成后你会得到：</b>一个带引用的回答，并能点击引用回到材料正文位置。</div>
+  <div class="flow"><div class="node">材料详情<small>选择已解析材料</small></div><div class="node">建立索引<small>立即执行或加入任务</small></div><div class="node">问答<small>选择材料范围</small></div><div class="node">提交问题<small>推荐混合模式</small></div><div class="node">核对引用<small>回看原文</small></div></div>
+  <div class="screen"><div class="screenbar">/app/material-detail.html → /app/qa.html</div><div class="screenbody"><div class="uirow"><span class="button primary"><i class="marker">1</i>建立 AI 索引</span><span class="button">加入索引任务</span><span class="status">索引完成</span></div><hr><div class="uirow"><span class="select">材料范围 ▾</span><span class="button primary">混合检索</span><span class="input">输入资料中能回答的问题……</span><span class="button primary"><i class="marker">2</i>提交问题</span></div><div class="listrow"><span>回答：根据材料，第一单元的核心内容是……</span><span class="button">引用 [1] → 原文</span></div></div></div><p class="caption">图 2-1　先完成索引，再在问答页提问；引用是判断回答是否可靠的入口。</p>
+  <ol class="steps"><li>在材料详情点击“建立 AI 索引”。材料较大或希望排队处理时，使用“加入索引任务”。</li><li>索引完成后进入“问答”，选择材料范围。第一次建议保持“混合检索”。</li><li>提出资料中能直接找到答案的问题，例如“这一节列出了哪三个要点？”。</li><li>阅读回答，点击引用编号，确认它确实回到正确的材料正文。</li></ol>
+  <div class="tip"><b>两个索引按钮的区别：</b>“建立 AI 索引”是立即执行；“加入索引任务”是进入当前已接入的向量索引任务队列。任务页目前主要展示 <code>embedding_index</code>，课堂转写、问答和报告生成不会自动出现在这个队列里。</div>
+  <div class="done"><b>完成标志：</b>回答有引用，点击引用能定位到材料内容；没有引用时，不要把回答当作已核实结论。</div>
+  <div class="warn"><b>卡住时：</b>先到“系统设置”看 AI Provider 和 Embedding，再确认材料索引状态。Provider 未配置、材料未索引或没有可引用内容时，页面会提示原因。</div>
+</section>
+<section id="scene3">
+  <span class="tag">场景三 · 沉淀</span><h2>把答案变成自己的笔记和卡片</h2>
+  <p class="lead">问答解决“现在理解”，笔记和卡片帮助你“以后记住”。先练手工笔记，再按需要使用 AI 草稿。</p>
+  <div class="goal"><b>完成后你会得到：</b>至少一条自己的学习笔记；如果 AI 条件已具备，再确认一张来源有效的卡片。</div>
+  <div class="flow"><div class="node">问答/材料<small>找到重点</small></div><div class="node">新建笔记<small>先写自己的话</small></div><div class="node">查看来源<small>核对材料</small></div><div class="node">卡片草稿<small>可选 AI</small></div><div class="node">确认后复习<small>不直接入库</small></div></div>
+  <div class="screen"><div class="screenbar">/app/notes.html · /app/cards.html</div><div class="screenbody"><div class="uirow"><span class="input">笔记标题</span><span class="input">用自己的话写下要点……</span><span class="button primary"><i class="marker">1</i>新建用户笔记</span></div><div class="listrow"><span>笔记：第一单元三个要点</span><span class="button">详情 · 来源状态</span></div><div class="uirow" style="margin-top:13px"><span class="input">AI 草稿主题</span><span class="select">选择材料 ▾</span><span class="button">生成卡片草稿</span><span class="button success"><i class="marker">2</i>确认卡片</span></div></div></div><p class="caption">图 3-1　手工笔记可以立即保存；AI 生成内容必须先读、再确认。</p>
+  <ol class="steps"><li>打开“笔记”，填写标题和内容，点击“新建用户笔记”。</li><li>打开笔记详情，查看类型、内容和来源状态；顺着来源回到材料核对。</li><li>需要时进入“卡片”，创建卡片组，手工创建卡片，或选择材料生成 AI 卡片草稿。</li><li>只确认自己检查过的草稿。确认后卡片才进入复习流程。</li></ol>
+  <div class="tip"><b>记住：</b>AI 生成的是草稿，不是自动正确的知识。草稿必须经过人工阅读和确认，不会自动覆盖已经确认的内容。</div>
+  <div class="done"><b>完成标志：</b>你能独立写一条笔记，并知道如何从笔记来源回看原文；卡片练习以“确认后复习”为结束。</div>
+</section>
+<section id="scene4">
+  <span class="tag">场景四 · 练习</span><h2>做一次练习，再完成复盘</h2>
+  <p class="lead">这是核心学习闭环的最后一段：准备题目、答题、看结果、处理错题。手工题目不需要真实 AI。</p>
+  <div class="goal"><b>完成后你会得到：</b>一次练习会话的结果，以及可以继续处理的错题或薄弱点。</div>
+  <div class="flow"><div class="node">题目/练习集<small>手工创建或确认草稿</small></div><div class="node">练习<small>选择题目</small></div><div class="node">答题会话<small>逐题提交</small></div><div class="node">练习结果<small>看提交情况</small></div><div class="node">复盘<small>处理错题</small></div></div>
+  <div class="screen"><div class="screenbar">/app/exercises.html → /app/practice-session.html → /app/review.html</div><div class="screenbody"><div class="uirow"><span class="button primary">创建练习集</span><span class="button">创建题目</span><span class="status">题目已确认</span></div><div class="listrow"><span><i class="marker">1</i>第 1 题 · 已提交</span><span class="button primary">提交答案</span></div><div class="listrow"><span>练习结果：得分 1 / 1 · 已评分 1 · 已提交 1</span><span class="button">进入复盘</span></div></div></div><p class="caption">图 4-1　题目准备好后进入练习会话，结果页再进入复盘。</p>
+  <ol class="steps"><li>打开“题目”，创建练习集，再手工创建一道选择题、判断题或简答题；也可以确认一条 AI 草稿。</li><li>打开“练习”，选择可用题目，创建练习会话。</li><li>在答题会话中逐题作答并点击“提交答案”；完成后进入练习结果。</li><li>在结果页查看得分、已评分数量、已提交数量、错题数量和“进入复盘”入口。</li><li>打开“复盘”，查看错题和薄弱点；简答题可能需要人工复核，不要把所有简答题理解成自动判分。</li></ol>
+  <div class="done"><b>完成标志：</b>至少提交一道题，能打开练习结果，并能进入复盘查看错题或薄弱点。</div>
+  <div class="warn"><b>说明：</b>练习结果页当前以真实页面显示的摘要为准，不承诺固定出现各题型统计或 AI 反馈。AI 出题还需要 Provider、索引和有效来源。</div>
+</section>
+<section id="scene5">
+  <span class="tag">场景五 · 按需练习</span><h2>处理一节课堂录音或板书图片</h2>
+  <p class="lead">当你熟悉资料和练习后，再来尝试课堂采集。它采用“先草稿、后确认”的方式，上传不会直接把内容变成正式学习材料。</p>
+  <div class="goal"><b>完成后你会得到：</b>一份经人工核对并确认的课堂转写或 OCR 材料。</div>
+  <div class="flow"><div class="node">课堂采集<small>capture.html</small></div><div class="node">新建会话<small>类型/名称/媒体</small></div><div class="node">打开详情<small>上传原件</small></div><div class="node">转写/识别<small>ASR / OCR 草稿</small></div><div class="node">编辑并确认<small>成为学习材料</small></div></div>
+  <div class="screen"><div class="screenbar">/app/capture.html · 会话详情</div><div class="screenbody"><div class="uirow"><span class="button primary"><i class="marker">1</i>新建采集会话</span><span class="button">选择上传文件</span><span class="button">开始转写（ASR）</span></div><div class="listrow"><span>转写草稿 · 可编辑 · 待确认</span><span class="button success"><i class="marker">2</i>确认转为学习材料</span></div><p class="small">音频建议 .wav / .mp3 / .m4a；图片建议 .png / .jpg / .webp。</p></div></div><p class="caption">图 5-1　创建、上传、转写/识别、编辑和确认都在采集会话详情中完成。</p>
+  <ol class="steps"><li>进入“课堂采集”，点击“新建采集会话”，填写类型、名称和媒体类型。</li><li>打开刚创建的会话，在会话详情中上传音频或图片。</li><li>点击“开始转写（ASR）”或“开始识别（OCR）”，等待草稿出现。</li><li>核对并编辑草稿；确认无误后点击“确认转为学习材料”。</li><li>需要查看历史会话、转写稿和报告时，再进入“课堂采集与报告”工作区。</li></ol>
+  <div class="tip"><b>入口区别：</b><code>capture.html</code>负责创建、上传、转写、编辑和确认；<code>classroom.html</code>主要负责查看会话、转写稿和报告。课堂转写不是当前任务页的后台任务。</div>
+  <div class="done"><b>完成标志：</b>草稿经过人工核对，确认后能在“资料”中看到新的学习材料。</div>
+  <div class="warn"><b>能力限制：</b>没有配置 ASR/OCR 时，先在“系统设置”查看状态。若页面显示未配置，可以先跳过这个场景；演示模式的结果不代表真实语音识别或图片识别质量。</div>
+</section>
+<section id="extra">
+  <span class="tag">扩展训练 · 熟悉核心链路后</span><h2>学习计划与报告</h2>
+  <p class="lead">计划和报告是组织与复盘工具，不是第一次使用必须完成的前置步骤。</p>
+  <div class="flow"><div class="node">创建目标<small>期中提分</small></div><div class="node">创建计划<small>属于目标</small></div><div class="node">添加学习项<small>可绑定模块</small></div><div class="node">激活并学习<small>记录进度</small></div><div class="node">生成报告<small>导出脱敏摘要</small></div></div>
+  <ol class="steps"><li>在“计划”创建目标；再创建计划并选择所属目标。</li><li>在计划详情添加学习项；需要按科目组织时，再把学习项绑定到模块。</li><li>确认并激活计划，学习后记录或刷新进度。</li><li>在“报告”选择日期范围和报告类型，生成本地脱敏报告，选择报告后刷新预览，再导出 JSON 或 Markdown。</li></ol>
+  <div class="tip"><b>报告边界：</b>报告不会自动发送，外发默认关闭。Provider 设置的主流程是“填写 → 测试连接 → 保存此配置”；“复制到剪贴板”只是高级配置迁移选项，不是普通用户必须操作的步骤。</div>
+</section>
+<section id="trouble">
+  <span class="tag">故障排查</span><h2>看到什么，就做什么</h2>
+  <div class="screen"><div class="screenbar">StudyBuddy 排查地图</div><div class="screenbody"><div class="listrow"><b>服务打不开</b><span>确认启动命令、端口和 127.0.0.1 地址</span></div><div class="listrow"><b>材料导入失败</b><span>看格式、空文件、大小和材料状态</span></div><div class="listrow"><b>问答不可用</b><span>系统设置 → Provider → 材料索引 → 引用</span></div><div class="listrow"><b>索引失败</b><span>材料详情或任务详情 → 刷新/重试</span></div><div class="listrow"><b>课堂转写不可用</b><span>检查 ASR/OCR、后缀、原件是否已上传</span></div></div></div>
+  <p>页面显示“未配置”时，先处理配置；显示“未安装”时，先准备本机组件；显示“失败”时，保留页面提示并按页面提供的重试入口操作。不要手工编辑 SQLite，不要把密钥写进 Git、截图、命令行或聊天记录。</p>
+</section>
+<section id="graduate">
+  <span class="tag">新手毕业</span><h2>我已经能独立使用了吗？</h2>
+  <p>完成下面四项，就已经掌握核心使用路径；第五项是按需扩展。</p>
+  <ul class="checklist"><li><label><input type="checkbox">我能启动服务并从“今天”进入系统。</label></li><li><label><input type="checkbox">我能导入、查看和导出一份资料。</label></li><li><label><input type="checkbox">我知道问答前要先索引，并会点击引用核对原文。</label></li><li><label><input type="checkbox">我能写笔记、准备题目、完成练习并进入复盘。</label></li><li><label><input type="checkbox">我理解课堂采集是“上传 → 转写/识别 → 编辑 → 确认”，并知道能力未配置时先跳过。</label></li></ul>
+  <div class="done"><b>训练方式：</b>不要一次把所有页面都打开。每次只完成一个场景，并确认“完成标志”；第二天从“今天”页继续。这样可以逐渐熟悉 StudyBuddy，而不是被大量功能一次性淹没。</div>
+  <footer>StudyBuddy 新手用户使用手册 · v1.0 · 2026-09-19 · 作者：wdstevens2233 · 完整页面参考请查阅《StudyBuddy使用手册》</footer>
+</section>
+</main>
+</body>
+</html>

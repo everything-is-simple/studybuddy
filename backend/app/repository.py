@@ -6,10 +6,11 @@ import types
 # Implementations remain in the legacy module while domain exports are introduced.
 from .repositories import _legacy
 
-# Keep legacy private helpers patchable for existing transaction tests and callers.
-for _name in dir(_legacy):
-    if not _name.startswith("__"):
-        globals().setdefault(_name, getattr(_legacy, _name))
+# Keep only the private helpers used by the existing transaction contracts
+# patchable through the compatibility facade. Public symbols are imported from
+# their owning domain modules below; avoid re-exporting the whole assembler.
+_create_retrieval_run = _legacy._create_retrieval_run
+_insert_search_row = _legacy._insert_search_row
 
 
 class _FacadeModule(types.ModuleType):
@@ -194,6 +195,7 @@ from .repositories.practice import (
     list_mistake_cases,
     redo_mistake_case,
     list_weak_points,
+    recommend_practice_exercises,
 )
 
 from .repositories.capture import (
@@ -231,6 +233,7 @@ from .repositories.capture import (
 )
 
 from .repositories.reports import (
+    PHASE9D_REPORT_MAX_EXPORT_BYTES,
     build_report_projection,
     export_report_snapshot,
     create_report_snapshot,
@@ -307,6 +310,13 @@ from .repositories.plans import (
     update_rhythm_allocation,
     delete_rhythm_allocation,
     rhythm_summary,
+    study_weekly_trend,
+    get_study_rhythm,
+    set_study_rhythm,
+    get_rhythm_summary,
+    create_study_rhythm_allocation,
+    update_study_rhythm_allocation,
+    delete_study_rhythm_allocation,
 )
 
 from .repositories.ai import (
@@ -350,16 +360,6 @@ from .repositories.ai import (
     persist_qa_answer,
     validate_citation_key,
     assemble_context,
-)
-
-# Public compatibility names not owned by a domain implementation.
-from .repositories._legacy import (
-    get_study_rhythm,
-    set_study_rhythm,
-    get_rhythm_summary,
-    create_study_rhythm_allocation,
-    update_study_rhythm_allocation,
-    delete_study_rhythm_allocation,
 )
 
 __all__ = [

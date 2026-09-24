@@ -1,6 +1,6 @@
 # AI / 学习功能架构设计
 
-当前正式媒体边界：PaddleOCR 是 Formal OCR 主路径；RapidOCR 仍处于候选状态，严格 C2 尚未通过。Phase 9A、Phase 9C 与 Phase 9D 的历史验收材料分别位于 `.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`、`.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md` 与 `.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`，这些材料只描述限定范围。
+当前正式媒体边界：PaddleOCR 是 Formal OCR 主路径；RapidOCR 已在精确本地 scope 通过严格 C2 Integration，但仍未进入 Formal fallback。Phase 9A、Phase 9C 与 Phase 9D 的历史验收材料分别位于 `.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`、`.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md` 与 `.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`，这些材料只描述限定范围。
 
 状态：material revision、deterministic chunks、lexical/vector/hybrid retrieval、context/citation、Q&A、Cards/Exercises，以及 Phase 9A/9B/9C 已按各自证据实现并验收；Phase 9D 的部分立项范围已完成 v12 schema、共享 domain、S7 deterministic fake/loopback capture/transcription、S7→S2 confirmed transcript ingestion、S6 report aggregation/redaction、默认关闭的 allowlisted dry-run delivery audit、API、Chromium workspace、source lifecycle 和 backup/restore non-repair。schema 由 Phase 9A 的 v9、Phase 9B 的 v10、Phase 9C 的 v11、Phase 9D 的 v12、后续 v13 task/attempt、v14 修订指纹修复、v15 卡片复习排程连续演进到当前 v15；各阶段完成声明分别限于对应 acceptance 文档记录的 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 与 backup/restore 范围。S6 report 仅支持显式生成的 daily/weekly/monthly/exam_alert 安全聚合、snapshot/fingerprint、JSON/Markdown 导出和 source degradation；delivery 默认为 off，dry-run 不联网，live 固定拒绝。真实 OCR/ASR、TTS、真实交付或全局 production `real-pass` 仍按能力单独标记；详见 [`contracts/MEDIA_CAPABILITY_DECISION.md`](../.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
 

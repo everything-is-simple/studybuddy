@@ -12,7 +12,7 @@ StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统
 
 **本地单机 v1 已完成生产化和上线收口**，范围严格限于 local single-process / single-instance / SQLite / local-disk：Phase 10 Gates A-J 已通过，release candidate 已在隔离 data root 完成启动、导入、索引、学习路径、显式任务、backup、verify、restore、重启和 diagnostics 演练。runner 仍只由显式 API/CLI 调用，启动/backup/restore/read 不自动执行；只有 approved `embedding_index` 接入 runner，Q&A、generation、OCR/ASR、report/delivery 未接入。该完成不代表多用户、认证授权、云同步、协作、多进程共享 data root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 或全局 production `real-pass`。
 
-**当前完整回归基线（2026-09-05）**：后端 `623 passed, 3 skipped`；浏览器 `176 passed, 4 skipped`；所有 skip 均为默认关闭的 opt-in 真实 smoke，不计为失败。前端当前实现事实（页面/共享层/测试/路由覆盖）见 [`docs/frontend-inventory-report.md`](.archive/frontend/frontend-inventory-report.md)。
+**当前验证基线（2026-09-24）**：后端 `665 passed, 3 skipped`（D:\miniconda Python、每次运行唯一 basetemp）；本机 Chromium 启动仍被 Windows `spawn UNKNOWN` 环境错误阻断，尚无新的完整浏览器基线。浏览器历史数字只作为历史快照，不能替代当前证据。前端当前实现事实（页面/共享层/测试/路由覆盖）见 [`docs/frontend-inventory-report.md`](.archive/frontend/frontend-inventory-report.md)。
 
 **A2.X 系列完成 (2025-01-28)**: 4 个超限核心文件（repositories/_legacy.py, main.py, migrations/runner.py, providers.py）已拆分为模块化结构，从 639KB 减少到 48KB（92.6% 减少），所有模块 ≤ 32 KiB，所有公共 API 保持向后兼容。413 passed, 2 skipped 是 A2.X 的历史基线；当前完整回归基线以 `docs/STATUS.md` 为准（backend 468 passed, 3 skipped；browser 144 passed, 4 skipped）。详见 [`docs/archive/A2_X_SERIES_SUMMARY.md`](.archive/A2_X_SERIES_SUMMARY.md)。
 
@@ -53,15 +53,15 @@ AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/ai
 - 不要将data_root放在OneDrive/网盘同步目录、网络盘或Git仓库内
 - 不要让多个StudyBuddy实例共用同一个data_root
 
-本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/[需求+架构看]ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立。已选 C0 路径为 `H:\WhisperCli`/whisper.cpp `large-v3-turbo`（ASR）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS 候选）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；B1 ASR 与 B2 PaddleOCR 已分别在各自精确 scope 内完成 scoped closeout，RapidOCR、TTS、PPTX 图片页 OCR 仍未完成对应 Formal 门禁。真实 OCR/ASR/TTS 不得据此视为通用能力或全局 real-pass。B2 脱敏证据见 [`docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`](.archive/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md)。详见 [`docs/contracts/MEDIA_CAPABILITY_DECISION.md`](.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
+本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/ROADMAP_CAPABILITIES.md`](docs/[需求+架构看]ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立。已选 C0 路径为 `H:\Whisper`/whisper.cpp `large-v3-turbo`（ASR）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS 候选）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；B1 ASR 与 B2 PaddleOCR 已分别在各自精确 scope 内完成 scoped closeout，RapidOCR、TTS、PPTX 图片页 OCR 仍未完成对应 Formal 门禁。真实 OCR/ASR/TTS 不得据此视为通用能力或全局 real-pass。B2 脱敏证据见 [`docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`](.archive/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md)。详见 [`docs/contracts/MEDIA_CAPABILITY_DECISION.md`](.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
 
 ## 当前正式实现
 
 正式文件解析 Adapter 位于 `backend/app/adapters/file_parsers/`，依据已通过的 Composer smoke 和 Integration 契约独立重实现。当前覆盖 TXT、Markdown、PDF、DOCX、PPTX；RTF、旧 DOC、旧 PPT 明确拒绝。Adapter 返回 SHA-256、版本、状态、结构化 page/slide span、warning、错误码和耗时，并执行文件大小与 ZIP/XML 容器资源限制。
 
-默认单文件上传上限为 50 MiB，可通过 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这不是免费版或解析组件的硬限制。ZIP/XML 容器仍执行 member 数量、解压总量和压缩比限制。`backend/app/storage.py` 提供最小原文件保存边界，`backend/app/repository.py` 提供最小 SQLite extraction/span 事务边界。`backend/app/main.py` 现在提供最小 FastAPI multipart 上传、材料查询和静态文件选择器页面：上传文件会保存原文件、调用 Parser、在同一 SQLite 事务写入 extraction/spans，并可在服务重启后通过 API 回读。
+默认单文件上传上限为 200 MiB，可通过 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这不是免费版或解析组件的硬限制。ZIP/XML 容器仍执行 member 数量、解压总量和压缩比限制。`backend/app/storage.py` 提供最小原文件保存边界，`backend/app/repository.py` 提供最小 SQLite extraction/span 事务边界。`backend/app/main.py` 现在提供最小 FastAPI multipart 上传、材料查询和静态文件选择器页面：上传文件会保存原文件、调用 Parser、在同一 SQLite 事务写入 extraction/spans，并可在服务重启后通过 API 回读。
 
-正式文件导入基础链路已达到局部 `real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json`。真实 Chromium 已覆盖 TXT/Markdown/中文 TXT、合法空文件、PDF、DOCX、PPTX、损坏容器、RTF/旧 DOC/旧 PPT rejection；50 MiB 边界、重复 hash、原文件清理、刷新回读和服务重启回读均已通过。
+正式文件导入基础链路已达到局部 `real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json`。真实 Chromium 已覆盖 TXT/Markdown/中文 TXT、合法空文件、PDF、DOCX、PPTX、损坏容器、RTF/旧 DOC/旧 PPT rejection；200 MiB 边界、重复 hash、原文件清理、刷新回读和服务重启回读均已通过。
 
 多文件导入与材料列表基础能力已实现：`POST /api/materials/batch` 接受多个 `files`，每个文件独立解析、保存和 SQLite 事务，允许 batch 部分成功；单文件超限仍返回 HTTP 413，batch 中超限文件返回 item-level `rejected/file_too_large`。`GET /api/materials?status=success|empty|rejected|failed` 只返回列表元数据，不返回正文；详情接口回读正文和 spans。页面支持真实多文件选择、批量摘要、逐文件结果、列表筛选、详情查看及刷新/重启回读。当前 `formal-multi-file-import = real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-multi-file-import\latest.json`。
 

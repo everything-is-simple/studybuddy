@@ -5,7 +5,7 @@ StudyBuddy 的备份与恢复是显式 operator 操作，不是普通用户 API�
 ## 备份
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli backup \
+D:/miniconda/py310/python.exe -m app.cli backup \
   --data-root <data-root> \
   --output <backup-root>
 ```
@@ -23,7 +23,7 @@ SQLite 使用 Online Backup API 生成一致性快照，并执行 `integrity_che
 ## 验证
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
+D:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
 ```
 
 验证只检查 manifest、SQLite hash/integrity/foreign keys/连续 migration history/schema version、original 文件路径/类型/大小/hash 及数据库引用。验证不删除、不运行 migration、不重建 FTS、不修复数据库或修改 backup。连续 history 与 `PRAGMA user_version` 一致的旧 schema backup 可以作为升级回退证据，并可恢复到新空 target；其 restore acceptance 必须等待后续显式启动新版本完成 migration，不能把未升级 target 当作 current v1 ready。
@@ -33,7 +33,7 @@ C:/miniconda/py310/python.exe -m app.cli verify-backup --backup <backup-root>
 恢复是破坏性操作。第一版只允许恢复到不存在或为空的目标目录；必须先停止服务，并显式提供 `--confirm`：
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli restore \
+D:/miniconda/py310/python.exe -m app.cli restore \
   --data-root <empty-target> \
   --backup <backup-root> \
   --confirm
@@ -44,7 +44,7 @@ C:/miniconda/py310/python.exe -m app.cli restore \
 恢复到新空 data root 时，restore 会将数据库中材料的 `stored_path` 重定位到新目标的 hash-derived originals 布局；这不是业务 repair，不会创建材料、计划、chunk 或 source link，也不会提升 unavailable/stale 状态。若 backup schema 旧于当前版本，先显式启动新版本让 migration runner 完成事务升级；完成后再执行：
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
+D:/miniconda/py310/python.exe -m app.cli verify-restored-data \
   --data-root <restored-root>
 ```
 
@@ -53,9 +53,9 @@ C:/miniconda/py310/python.exe -m app.cli verify-restored-data \
 ## 保留、轮换与升级预检
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli rotate-backups --backup-root <backup-root> --retain <count>
-C:/miniconda/py310/python.exe -m app.cli rotate-backups --backup-root <backup-root> --retain <count> --confirm
-C:/miniconda/py310/python.exe -m app.cli upgrade-preflight --data-root <live-root> --backup <verified-backup>
+D:/miniconda/py310/python.exe -m app.cli rotate-backups --backup-root <backup-root> --retain <count>
+D:/miniconda/py310/python.exe -m app.cli rotate-backups --backup-root <backup-root> --retain <count> --confirm
+D:/miniconda/py310/python.exe -m app.cli upgrade-preflight --data-root <live-root> --backup <verified-backup>
 ```
 
 `rotate-backups` 默认 dry-run；确认后才删除超过 `retain >= 1` 的较旧 verified set。它在删除前重新验证所有候选；symlink、file、incomplete、unknown 或 invalid/corrupt backup 永远不删，并保留为隔离证据。轮换失败不会写 live data root，也不会删除未通过预验证的其他候选。calendar daily/weekly/monthly 分类与 scheduler 仍由外部 operator 负责。
@@ -75,7 +75,7 @@ powershell -NoProfile -File .\backend\scripts\stop-studybuddy.ps1 -DataRoot <loc
 ## 诊断与健康
 
 ```text
-C:/miniconda/py310/python.exe -m app.cli diagnostics --data-root <data-root>
+D:/miniconda/py310/python.exe -m app.cli diagnostics --data-root <data-root>
 ```
 
 该命令以 SQLite read-only connection 输出 application/schema version、task status counts、稳定降级原因和建议动作；不会执行 migration、repair、index rebuild、Provider 或 task handler。`/api/liveness` 只表示 HTTP process 可应答；`/api/health` 与 `/api/readiness` 在 database/audit/stale-task 诊断为 degraded 时返回 503，不伪造 healthy。diagnostics 返回 degraded/unavailable 时也以非零退出，operator 应保留数据与已验证 backup 后再执行明确的恢复决策。

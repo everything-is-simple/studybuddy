@@ -1,73 +1,21 @@
-"""连接管理和工具函数代理。
+"""稳定的连接、共享运行时和存储工具仓储出口。"""
 
-本模块从 repositories._legacy 导出数据库连接、时间处理、文件操作等
-基础设施函数。真正的实现在 _legacy 模块中，等待后续重构拆分。
+from . import _legacy_part_00 as _part_00
+from ._legacy_runtime import (
+    annotations, hashlib, json, sqlite3, stat, time, uuid, Callable,
+    date, datetime, timedelta, timezone, Path, ZoneInfo,
+    ZoneInfoNotFoundError, ParseResult, CHUNKING_STRATEGY, CHUNKING_VERSION,
+    SourceSpan, chunk_text, EMBEDDING_ENCODING, MAX_EMBEDDING_PAYLOAD_BYTES,
+    EmbeddingError, EmbeddingIdentity, EmbeddingProvider, cosine_similarity,
+    decode_vector, embedding_content_hash, embedding_staleness, encode_vector,
+    acquire_hash_lock, release_hash_lock, MigrationError, assert_schema_version,
+    migrate, CaptureProviderError, CaptureTranscriptionProvider,
+    CaptureTranscriptionRequest, LLMProvider, ProviderError, ProviderRequest,
+    sha256_file, store_original,
+)
 
-主要导出：
-- connect: 创建 SQLite 数据库连接
-- utc_now: 获取 UTC 时间戳
-- sha256_file: 计算文件哈希
-- store_original: 存储原始文件到存储系统
-- chunk_text: 文本分块算法
-- embedding 相关: 向量编码/解码、相似度计算
-- migration 相关: 数据库迁移工具
-
-关联模块：
-- repositories._legacy: 实际实现（待重构）
-- 所有 API 和 Repository 模块都依赖此模块的导出
-
-Note:
-    此模块是临时代理层，待 _legacy 重构完成后将被拆分为
-    独立的工具模块。不建议在此文件中添加新功能。
-"""
-
-from . import _legacy
-
-annotations = getattr(_legacy, 'annotations')
-hashlib = getattr(_legacy, 'hashlib')
-json = getattr(_legacy, 'json')
-sqlite3 = getattr(_legacy, 'sqlite3')
-stat = getattr(_legacy, 'stat')
-time = getattr(_legacy, 'time')
-uuid = getattr(_legacy, 'uuid')
-Callable = getattr(_legacy, 'Callable')
-date = getattr(_legacy, 'date')
-datetime = getattr(_legacy, 'datetime')
-timedelta = getattr(_legacy, 'timedelta')
-timezone = getattr(_legacy, 'timezone')
-Path = getattr(_legacy, 'Path')
-ZoneInfo = getattr(_legacy, 'ZoneInfo')
-ZoneInfoNotFoundError = getattr(_legacy, 'ZoneInfoNotFoundError')
-ParseResult = getattr(_legacy, 'ParseResult')
-CHUNKING_STRATEGY = getattr(_legacy, 'CHUNKING_STRATEGY')
-CHUNKING_VERSION = getattr(_legacy, 'CHUNKING_VERSION')
-SourceSpan = getattr(_legacy, 'SourceSpan')
-chunk_text = getattr(_legacy, 'chunk_text')
-EMBEDDING_ENCODING = getattr(_legacy, 'EMBEDDING_ENCODING')
-MAX_EMBEDDING_PAYLOAD_BYTES = getattr(_legacy, 'MAX_EMBEDDING_PAYLOAD_BYTES')
-EmbeddingError = getattr(_legacy, 'EmbeddingError')
-EmbeddingIdentity = getattr(_legacy, 'EmbeddingIdentity')
-EmbeddingProvider = getattr(_legacy, 'EmbeddingProvider')
-cosine_similarity = getattr(_legacy, 'cosine_similarity')
-decode_vector = getattr(_legacy, 'decode_vector')
-embedding_content_hash = getattr(_legacy, 'embedding_content_hash')
-embedding_staleness = getattr(_legacy, 'embedding_staleness')
-encode_vector = getattr(_legacy, 'encode_vector')
-acquire_hash_lock = getattr(_legacy, 'acquire_hash_lock')
-release_hash_lock = getattr(_legacy, 'release_hash_lock')
-MigrationError = getattr(_legacy, 'MigrationError')
-assert_schema_version = getattr(_legacy, 'assert_schema_version')
-migrate = getattr(_legacy, 'migrate')
-CaptureProviderError = getattr(_legacy, 'CaptureProviderError')
-CaptureTranscriptionProvider = getattr(_legacy, 'CaptureTranscriptionProvider')
-CaptureTranscriptionRequest = getattr(_legacy, 'CaptureTranscriptionRequest')
-LLMProvider = getattr(_legacy, 'LLMProvider')
-ProviderError = getattr(_legacy, 'ProviderError')
-ProviderRequest = getattr(_legacy, 'ProviderRequest')
-sha256_file = getattr(_legacy, 'sha256_file')
-store_original = getattr(_legacy, 'store_original')
-VALID_STATUSES = getattr(_legacy, 'VALID_STATUSES')
-connect = getattr(_legacy, 'connect')
-utc_now = getattr(_legacy, 'utc_now')
+VALID_STATUSES = _part_00.VALID_STATUSES
+connect = _part_00.connect
+utc_now = _part_00.utc_now
 
 __all__ = ['annotations', 'hashlib', 'json', 'sqlite3', 'stat', 'time', 'uuid', 'Callable', 'date', 'datetime', 'timedelta', 'timezone', 'Path', 'ZoneInfo', 'ZoneInfoNotFoundError', 'ParseResult', 'CHUNKING_STRATEGY', 'CHUNKING_VERSION', 'SourceSpan', 'chunk_text', 'EMBEDDING_ENCODING', 'MAX_EMBEDDING_PAYLOAD_BYTES', 'EmbeddingError', 'EmbeddingIdentity', 'EmbeddingProvider', 'cosine_similarity', 'decode_vector', 'embedding_content_hash', 'embedding_staleness', 'encode_vector', 'acquire_hash_lock', 'release_hash_lock', 'MigrationError', 'assert_schema_version', 'migrate', 'CaptureProviderError', 'CaptureTranscriptionProvider', 'CaptureTranscriptionRequest', 'LLMProvider', 'ProviderError', 'ProviderRequest', 'sha256_file', 'store_original', 'VALID_STATUSES', 'connect', 'utc_now']

@@ -2,7 +2,7 @@
 
 > 核心运行入口：`backend/app/main.py:create_app`（向后兼容 façade）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。应用边界由 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/` 等模块实现；`main.py` 只保留兼容导出和模板载荷读取。业务持久化经 `backend/app/repository.py` façade 进入 `backend/app/repositories/` 域模块，schema 由 `backend/app/migrations/runner.py` 执行并委托版本模块，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
 
-当前媒体能力治理以 PaddleOCR 为 Formal 主路径，RapidOCR 仅为候选回退组件，严格 C2 未通过前不得进入 Formal；真实 OCR/ASR 质量继续标记为 `not_verified`。ASR 的 canonical runtime 仍是 `H:/WhisperCli`；`edge-tts` 暂不进入 Formal。Phase 9A/9C/9D 的历史限定证据保存在 `.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`、`.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md` 和 `.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`，不代表当前全局 `real-pass`。
+当前媒体能力治理以 PaddleOCR 为 Formal 主路径，RapidOCR 已在精确本地 scope 通过严格 C2 Integration，但仍未进入 Formal fallback；真实 OCR/ASR 质量继续标记为 `not_verified`。ASR 的 canonical runtime 是 `H:/Whisper`；`edge-tts` 暂不进入 Formal。Phase 9A/9C/9D 的历史限定证据保存在 `.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`、`.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md` 和 `.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`，不代表当前全局 `real-pass`。
 
 > 当前项目阶段与优先级见 [`STATUS.md`]([需求+所有角色看]STATUS.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v15（v14 修订指纹修复，v15 卡片复习排程）；Phase 9D 的历史 persistence baseline 为 v12，Phase 9A 学习计划域 persistence baseline 为 v9。Phase 9D 最终限定范围证据见 [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 的 task/attempt persistence、explicit-only task runner/recovery、backup/restore/migration operations 仍按各自历史证据解释；runner 只由显式 API/CLI 调用，不在 startup、backup、restore 或 read path 自动启动。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、TTS、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。已选 Composer C0 媒体候选不改变正式 capability 状态；详见 [`contracts/MEDIA_CAPABILITY_DECISION.md`](../.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
 
@@ -16,7 +16,7 @@ Phase 9 is therefore a gated learning-program family (9A–9D), not one delivery
 
 ## A2.X module boundaries
 
-The bounded refactoring is complete and behavior-preserving. `backend/app/main.py` remains the stable `create_app`/`app` façade and reads `backend/app/templates/index.html`; application implementation lives in `app_factory.py`, `lifespan.py`, and `api/`. `backend/app/repository.py` remains the compatibility repository entry point while domain implementations live in `backend/app/repositories/`. `backend/app/migrations/runner.py` is the only migration execution entry point, with shared helpers and `_v01_*.py` through `_v13_*.py` implementation modules. Provider public imports remain at `app.providers`, whose package contains `_core.py`, `_helpers.py`, `_fake.py`, `_capture.py`, `_openai_llm.py`, `_openai_embedding.py`, `_registry.py`, and `_ssl.py`.
+The bounded refactoring is complete and behavior-preserving. `backend/app/main.py` remains the stable `create_app`/`app` façade and assembles the legacy page from ordered bounded fragments under `backend/app/templates/`; application implementation lives in `app_factory.py`, `lifespan.py`, and `api/`. `backend/app/repository.py` remains the compatibility repository entry point while domain implementations live in `backend/app/repositories/`. `backend/app/migrations/runner.py` is the only migration execution entry point, with shared helpers and `_v01_*.py` through `_v13_*.py` implementation modules. Provider public imports remain at `app.providers`, whose package contains `_core.py`, `_helpers.py`, `_fake.py`, `_capture.py`, `_openai_llm.py`, `_openai_embedding.py`, `_registry.py`, and `_ssl.py`.
 
 These internal moves do not alter API paths, dataclass/protocol signatures, stable error codes, migration history, schema v15, provider behavior, or the single-process/local-disk support boundary. New code must use the public façades and must not import internal modules unless the owning module requires it.
 
@@ -36,7 +36,7 @@ These internal moves do not alter API paths, dataclass/protocol signatures, stab
 
 `backend/app/storage.py` 通过配置传入的 root 保存 hash 派生路径下的原文件，并使用临时文件加原子替换。`backend/app/repository.py` 是稳定兼容 façade；实际 SQLite projects/materials/extractions/text_spans、AI retrieval/Q&A、Cards/Exercises、learning、capture、reports 和 tasks 持久化按职责位于 `backend/app/repositories/`，并由 façade 保持既有导入与 monkeypatch 兼容。启用外键和 WAL；material import 的 extraction 与 spans 仍在同一事务中写入。
 
-正式默认运行路径不指向 fixture；本阶段测试使用 `H:\studybuddy-test\runs`。`backend/app/main.py` 是兼容 façade，实际 FastAPI 应用工厂、生命周期和 API routers 位于 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/`；产品页面模板位于 `backend/app/templates/index.html`。multipart 文件选择与上传、原文件保存、Parser 调用、SQLite extraction/span 事务写入、材料列表/详情 API 的行为保持不变。默认单文件上传上限为 50 MiB，可由 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这属于正式系统配置，不是免费版或 Parser 能力限制。服务重新启动后，材料详情从 SQLite 回读。
+正式默认运行路径不指向 fixture；本阶段测试使用 `H:\studybuddy-test\runs`。`backend/app/main.py` 是兼容 façade，实际 FastAPI 应用工厂、生命周期和 API routers 位于 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/`；legacy 页面由 `backend/app/templates/index_head.html`、有序 `index_script_*.js` 和 `index_tail.html` 组装。multipart 文件选择与上传、原文件保存、Parser 调用、SQLite extraction/span 事务写入、材料列表/详情 API 的行为保持不变。默认单文件上传上限为 200 MiB，可由 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这属于正式系统配置，不是免费版或 Parser 能力限制。服务重新启动后，材料详情从 SQLite 回读。
 
 正式文件导入、批量导入、文件夹导入、材料管理、回收站、导出和搜索均已有局部 `real-pass` 证据；Phase 4 fake Provider Q&A、Phase 5 精确 Provider smoke 和 Phase 6 P6-A–P6-E 的对应 evidence 分别记录在状态与验收文档中。该状态不代表整个 StudyBuddy 或所有 Provider/model 已完成。
 
@@ -46,7 +46,7 @@ A2.X（A2.1-A2.4）已完成行为保持型模块化收口。四个超限核心�
 
 ```text
 backend/app/
-  main.py                         # 兼容 façade；从 templates/index.html 读取 INDEX_HTML
+  main.py                         # 兼容 façade；组装 bounded legacy HTML fragments
   app_factory.py / lifespan.py   # 应用工厂与生命周期
   api/                            # 按业务域的 HTTP routers
   repositories/                   # façade 后的域持久化模块与 legacy compatibility bridge
