@@ -1,6 +1,6 @@
 # StudyBuddy TODO 清单
 
-> 2026-09-23 本轮修订：正式 OCR API 已恢复为 PaddleOCR-only；RapidOCR 严格 C2 保持 `not_passed`，不得标作 Formal fallback。能力状态、健康脚本、plans `plan_id` 和 TK-6 独立夹具的代码与聚焦用户路径已修订；本轮聚焦后端 71 passed、相关隔离 Chromium 24 passed。后端全量仍为 642 passed / 8 failed / 3 skipped（治理文档断言 5、PDF 浏览器夹具 3），完整 Chromium 门禁未运行；修订尚未达到总门禁全绿。后续依次处理剩余门禁、服务商侧凭据撤销/轮换与提交范围审查；P1-7 的 13 个场景只由真实使用者记录。真实 Provider、OCR/ASR 质量、live delivery、跨浏览器与屏幕阅读器继续 `not_verified`。
+> 2026-09-23 本轮修订：正式 OCR API 继续 PaddleOCR-only；RapidOCR 严格 C2 已在精确本地 scope 通过，但不得标作 Formal fallback。能力状态、健康脚本、plans `plan_id` 和 TK-6 独立夹具的代码与聚焦用户路径已修订；本轮聚焦后端 71 passed、相关隔离 Chromium 24 passed。后端全量仍为 642 passed / 8 failed / 3 skipped（治理文档断言 5、PDF 浏览器夹具 3），完整 Chromium 门禁未运行；修订尚未达到总门禁全绿。P1-7 的 13 个场景只由真实使用者记录。真实 Provider、OCR/ASR 质量、live delivery、跨浏览器与屏幕阅读器继续 `not_verified`。
 > 2026-09-24 追加：治理一致性测试已恢复 `11 passed`；真实输入/PDF fixture 改用 Node Playwright 运行时后为 `11 passed`。完整 Chrome CLI 的 side-by-side 问题仍记录为本机环境边界，但不再阻塞该 PDF 测试集合。服务商侧凭据撤销/轮换仍需控制台操作和非敏感完成记录。
 > 更新：2026-09-21（**新手手册场景一至场景二真实浏览器链路完成**：正式服务以 `H:\studybuddy-data`/`127.0.0.1:8787` 运行；浏览器端点 liveness/health/readiness=200/200/200，today 显示系统就绪。使用合成 fixture `真实链路测试材料.txt` 完成导入解析、详情正文和“六要素”搜索；同一材料建立 AI 索引并显示 ready/1 chunk；混合检索问答“记叙文阅读首先要理清什么？”成功生成回答，引用可点击并在同一材料详情高亮定位。Provider 设置页仍显示 LLM/Embedding 不可用，与系统设置 7/7 可用仪表盘及实际 QA/索引结果不一致；未改配置、未切换 fake，已标记为独立排查项。健康脚本本次输出 `health_check_failed`，浏览器端点直接实测全 200，脚本兼容性/时序问题未在本次验证中修订。服务保持运行。`)
 
@@ -40,7 +40,7 @@
 > 历史快照：2026-09-06（**P2-FE-B3 状态模板模块完成**：创建 js/templates.js（约 3.8 KiB），迁移 6 个正式页面的状态入口，新增 `setState`、loading/empty/failed/retry API；B3 focused browser 2 passed，关联回归 14 passed；完整 Chromium 首次串行为 219 passed、4 skipped、1 个既有 Phase 9C 时序超时，单独重跑该 spec 为 3 passed。）
 > 基线记录：本地单进程文件材料管理基础系统已完成 local v1 上线收口，正式 schema 为 v15；最近已验证后端快照为 `623 passed, 3 skipped`（本前端切片未重跑后端全量）。当前 Chromium 完整串行回归为 `208 passed, 4 skipped`（61 files / 212 tests）；本轮材料专项 `8 passed`、重命名后端 focused `3 passed`。4 个 browser skip 均为 opt-in 真实 Provider/ASR smoke。此轮已修正测试服务端口隔离、Phase 9D deterministic fixture 的显式 fake 配置和 review 失败→重试合同；正式入口统一到 `today.html`；**Plans → Today → Progress 链路已实现**：`today.html` 只显示 active plan 当天 allocation，`plan-detail.html` 提供 progress 记录按钮，`plans.html` 提供详情入口，跨页测试 `3 passed`（含 Today 失败注入→重试恢复）。**P2-FE-1 前端事实盘点已完成**；P2-FE-2 已完成“计划 → 今天 → 进度”完整模板与 27 个 `unreached` path key 定性，并同步交付进度历史和 Today 三类可操作空态，详见 [`frontend-inventory-report.md`](../.archive/frontend/frontend-inventory-report.md) 与 [`contracts/frontend-scenario-contract.md`](../.archive/contracts/frontend-scenario-contract.md)。整体阶段性完成度约 **65%**。前端 A3/A4 仅代表已验收的静态页面与限定行为；Neutral Modern 已在已验收静态页面范围完成，但不代表完整产品化页面架构、deferred capability 或全局 real-pass。Phase 9D 的 9D-0 部分立项范围已完成 9D-11 scoped closeout，完整状态见 [`STATUS.md`]([需求+所有角色看]STATUS.md)、[`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md) 与 [`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](../.archive/evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
 >
-> 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，P1-6 系列仍为背景项，P1-6-3-1～P1-6-3-7 已取消立项。
+> 执行原则（2026-09-01 修订）：每个活动切片必须改变**使用者实际能做的事**。不得以「产出一份 md」作为切片完成标志；纯审计/纯契约/纯状态切片不得作为活动工作项，除非使用者明确要求。每项完成必须有代码、测试、状态同步和可复现验证命令。`implemented` 不等于 `real-pass`，后者要求真实用户路径验收；但诚实标注是报告义务，不是扣着可用能力不交付的理由。**当前活动主线是 P2-FE（前后端场景对齐）**；P2-USE 五个切片已全部完成，RapidOCR 严格 C2 修复按用户明确要求恢复为独立活动，其 Formal 后续仍未启动。
 
 ## 已完成（不再作为待办）
 
@@ -377,9 +377,11 @@ revision → chunks → retrieval → citations → Q&A
 +- [x] P1-6-2：B2 OCR 输入集与失败恢复验证（依赖 P1-6-1）。
 +  已使用真实 PNG/JPEG/WebP 解码与 fake PaddleOCR 输出验证三种已批准 MIME、空/损坏图片、像素/字节上限、timeout 后临时目录清理，并复用现有 draft/source lifecycle 与显式 retry 回归。证据：`docs/evidence/P1_6_2_OCR_INPUT_RECOVERY_EVIDENCE.md`；B2/Phase 9D focused `18 passed`。本项不扩大通用 OCR 准确率、并发、取消、跨环境或 global real-pass 声明。
 +- [x] P1-6-3-0：真实 OCR 组件与当前 Formal 边界审计（依赖 P1-6-2）。
-+  已核对本机 PaddleOCR/RapidOCR 版本、模型 inventory、Composer C1、Integration C2 记录、Formal provider/operation/schema/API 边界。旧 RapidOCR Integration 记录可证明真实格式 smoke，但严格新 C2 门禁仍未通过：fallback 为硬编码 decision、未实际注入主失败并验证调用链、模型路径/hash 与 backup/restore non-call 证据不足。证据：`docs/evidence/P1_6_3_0_COMPONENT_AUDIT_EVIDENCE.md`、`docs/evidence/P1_6_3_1_OCR_INTEGRATION_EVIDENCE.md`。状态：`planned/audit-draft` / `integration-not-passed`；不进入 Formal contract。
-+  该审计结论继续有效，但**只用于限制能力声明**：RapidOCR 不得被宣称为已验证 fallback。它不阻止探测 RapidOCR 是否安装、不阻止 UI 显示其状态，也不阻止使用者启用已完成 C0-C6 的 PaddleOCR 主路径。
-+- [✗] P1-6-3-1～P1-6-3-7：**已取消立项（2026-09-01）**。原 RapidOCR C2 修复、Formal fallback contract freeze、独立实现、真实 acceptance、source lifecycle、browser evidence、scoped closeout 七个子切片全部撤销。取消原因：证据梯子先行、可用性滞后。RapidOCR fallback 若将来仍需要，必须在 P2-USE 完成后作为一个「先能用、后补证据」的单一切片重新立项。
+- [x] P1-6-3-0：真实 OCR 组件与当前 Formal 边界审计（依赖 P1-6-2）。
+  审计结论保留：Formal 仍只接受 PaddleOCR，RapidOCR 不因组件门禁通过而自动进入 Formal。
+- [x] P1-6-3-1：RapidOCR 严格 C2 Integration 修复与验收。
+  已补齐显式模型路径与 SHA-256 inventory、离线网络拒绝、真实 PaddleOCR 主路径成功、真实主路径 timeout → 单次 RapidOCR fallback、双失败无第三 provider、draft-first/source lifecycle/rollback，以及 backup/restore/read 零 OCR 调用计数。严格 runner `12/12` 通过，脱敏结果见 `docs/evidence/P1_6_3_2_RAPIDOCR_C2_STRICT_EVIDENCE.md` 及 `H:/studybuddy-test/artifacts/rapidocr-c2-strict-20260924/rerun.json`。状态：`integration_passed`；仍不得进入 Formal。
+- [ ] P1-6-3-2～P1-6-3-7：Formal fallback contract freeze、Formal 独立实现、真实 acceptance、source lifecycle、browser evidence、scoped closeout 尚未启动；必须在独立 contract/API/schema 决策后推进。
 +- [ ] P1-6-3：B3 reports 跨环境与恢复矩阵验证（依赖 P1-6-2；本任务 P1-6-3 OCR 扩展不得与该历史条目混淆）。
 +  使用 deterministic report projection 验证 IANA timezone/window、空/退化 source、export boundary、restart/restore replay；保持 read-only，不引入 PDF/HTML、AI narrative 或 delivery。
 - [ ] P1-7：真实自用观察期（由使用者本人执行，非编码任务）。

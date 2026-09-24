@@ -2,7 +2,7 @@
 
 ## 2026-09-23：P1 状态、健康、计划与任务链路修订（本轮证据）
 
-- 正式图片转录 API 继续仅接受 PaddleOCR。RapidOCR/`ocr-fallback` 只保留候选探测与 provider 代码；严格 C2 尚未通过，正式能力状态为 `not_configured`，正式 fallback 未启用。检测到候选组件不等于 Formal 接入或 `real-pass`。
+- 正式图片转录 API 继续仅接受 PaddleOCR。RapidOCR 严格 C2 Integration 已在精确 Windows/Python 3.10/CPU、本地模型 hash、合成 PNG/JPEG/WEBP 和受控 fallback scope 内通过；仍不进入 Formal，正式 fallback 未启用，正式能力状态继续为 `not_configured`。检测到候选组件或 Integration 通过不等于 Formal 接入或 `real-pass`。
 - 系统能力矩阵、Provider 与 QA 页面使用同一能力状态含义：`available`、`configured`、`demo`、`degraded`、`not_configured` 等分别呈现；配置或模型文件存在仅表示结构检查，不表示真实服务、质量或模型 hash 已验证。报告投递仍默认关闭并按次授权。
 - 健康脚本按 liveness/health/readiness 分别输出稳定、脱敏的 200、503、超时、无服务和无效响应状态。计划页以 URL `plan_id` 为首次选择依据，新建后同步 URL；任务页分页同步 URL，TK-6 独立建立隔离夹具。
 - 本轮新跑：聚焦后端 **71 passed**；后端全量 **642 passed / 8 failed / 3 skipped**（5 个治理文档一致性断言、3 个依赖本机无法启动的完整 Chromium 生成 PDF 的用例失败）；本轮相关三个隔离 Chromium spec **24 passed**，含计划、settings 和 tasks 完整用户路径。默认关闭的真实 Provider/ASR smoke 未执行。完整 Chromium 门禁未运行：旧 spec 中存在固定测试根递归清理和不存在的解释器路径，不宜在保留现有产物的前提下直接执行。以上均不构成全局 `real-pass`。

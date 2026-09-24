@@ -250,7 +250,7 @@ backend/app/
 3. 在 `components.json` 只登记已完成规定 smoke 的组件；候选在 `initial-catalog.json` 或等价目录中标为 `researching`，不得伪造 pass。
 4. 为每个组件定义网络默认关闭、受控临时目录、超时、子进程清理、输出上限、错误脱敏和 test artifact 位置。
 
-**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`。B1 ASR、B2 PaddleOCR、B3 report 和 B4 delivery 均已在各自精确 scope 完成 C0-C6 scoped closeout；当前状态和限制以 `docs/STATUS.md` 为准。RapidOCR 已有 C1 smoke 和一份可重跑的真实格式 Integration 记录，但 P1-6-3-0 复核确认其严格 C2 尚未通过：真实 fallback 调用链、显式模型路径/hash、bounded execution、backup/restore non-call 与 durable governance 证据不完整；因此仍不允许进入 Formal。Tesseract 是兼容后备，TTS/PPTX 图片页 OCR 尚未进入 Formal。C0 选型仍冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`；组件 catalog 只记录可复核来源、版本、scope 与未验证范围，不得把限定 smoke 外推为通用能力。
+**当前实现：** B0 governance scaffold 已建立于 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md`，机器可读 catalog 为 `manifests/b0-catalog.json`。B1 ASR、B2 PaddleOCR、B3 report 和 B4 delivery 均已在各自精确 scope 完成 C0-C6 scoped closeout；当前状态和限制以 `docs/STATUS.md` 为准。RapidOCR 已通过严格 C2 Integration：真实 fallback 调用链、显式模型路径/hash、bounded execution、backup/restore non-call 与 durable governance evidence 均在精确本地 scope 内通过；因此仍不允许进入 Formal，Formal fallback contract/adapter 需独立推进。Tesseract 是兼容后备，TTS/PPTX 图片页 OCR 尚未进入 Formal。C0 选型仍冻结于 `H:\studybuddy-composer\DECISIONS\STUDYBUDDY_MEDIA_CAPABILITIES.md`；组件 catalog 只记录可复核来源、版本、scope 与未验证范围，不得把限定 smoke 外推为通用能力。
 
 **通过门槛：** 四类能力均有可审计候选记录；没有不明二进制被提交或被正式系统调用。
 
@@ -274,7 +274,7 @@ backend/app/
 
 ### B2：真实 OCR 组件流水线
 
-**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR 已完成 Composer C1、Integration C2、Formal C3 contract freeze、C4 implementation、C5 acceptance 与 C6 scoped closeout；RapidOCR 的真实 PNG/JPEG/WebP Integration smoke 已复跑，但严格 P1-6-3 C2 仍为 `not_passed`，未自动纳入 Formal。下一独立切片只能修复 C2，不能提前冻结 fallback contract 或实现 provider。
+**候选与选择：** C0 已选择 PaddleOCR 为中文、表格、版面和图片/扫描 PPT 页的主 OCR；RapidOCR + ONNX Runtime 为资源受限的轻量回退；Tesseract 只作低依赖兼容后备；CapsWriter 的 OCR fit 不再作为主线。PaddleOCR 已完成 Composer C1、Integration C2、Formal C3 contract freeze、C4 implementation、C5 acceptance 与 C6 scoped closeout；RapidOCR 严格 P1-6-3 C2 已在精确本地 scope 通过，包含真实主路径失败后的单次 fallback 和 backup/restore non-call 证据，但未自动纳入 Formal。下一独立切片必须先完成 Formal fallback contract/API/schema 决策，再实现 provider。
 
 **Composer smoke：**
 
