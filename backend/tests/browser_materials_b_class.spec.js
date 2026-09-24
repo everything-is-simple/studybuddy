@@ -9,7 +9,7 @@ const fs = require('fs');
 let ROOT = 'H:/studybuddy-test/runs/materials-b-class';
 const PORT = 8969;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server;
 
 function startServer() {

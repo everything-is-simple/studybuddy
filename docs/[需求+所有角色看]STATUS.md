@@ -7,6 +7,13 @@
 - 当前正式服务的系统能力仪表盘与 Provider 页面均把 LLM/Embedding 表示为“已配置·未验证”，Provider 页面也显示“系统就绪”；直接的两类能力 API 与页面一致。2026-09-21 记录的页面状态分歧已不再是当前缺陷，保留为历史观察。
 - 真实 Provider、OCR/ASR 质量、外发、跨浏览器、屏幕阅读器、长时稳定性和全局 `real-pass` 仍为 `not_verified`。
 
+## 2026-09-25：浏览器契约修订与全量回归完成
+
+- 修订后的 Playwright Chromium 全量套件以单 worker、隔离 `H:\studybuddy-test` 数据根完成：**559 passed / 4 skipped / 0 failed**（21.0m，退出码 0）。覆盖 563 个计划用例；4 个 skip 为默认关闭的真实 Provider/ASR smoke。
+- 本轮完成四类过时契约同步：50 MiB 上传边界的显式测试配置、能力状态 `not_configured`/`demo` 文案、QA Provider 未配置安全文案、能力状态枚举；同时修复 browser source loader 对 ESM spec 的路径注入。88 个浏览器规格统一支持 `STUDYBUDDY_TEST_PYTHON`，默认使用本机项目 Python 3.10。
+- 本轮首次全量中曾出现一次 `ERR_NO_BUFFER_SPACE` 的单项网络资源瞬态错误；对应规格立即隔离复跑通过，随后完整重跑以退出码 0 收口，不作为产品缺陷或浏览器启动失败记录。
+- 以上是隔离 fake Provider 的 browser-pass 证据，不扩大为真实 Provider/OCR/ASR 质量、外发、跨浏览器、屏幕阅读器、长时稳定性或全局 `real-pass`；这些边界继续为 `not_verified`。
+
 ## 2026-09-25：Chromium 可重复执行基线恢复
 
 - Playwright 完整 Chromium 套件以单 worker、隔离 `H:\studybuddy-test` 数据根执行完成：**553 passed / 4 failed / 4 skipped / 2 did not run**（20.8m）。测试入口、共享测试服务和 PDF fixture 统一采用 Playwright headless shell；完整 Chromium 和两处 fixture helper 的 `spawn UNKNOWN` 已消除。

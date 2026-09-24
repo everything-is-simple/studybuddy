@@ -18,7 +18,7 @@ const FIXTURES = 'H:/studybuddy-test/fixtures/qa-userpath';
 const ART = 'H:/studybuddy-test/artifacts/qa-userpath';
 const PORT = 8956;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const MAIN_NAME = '问答链路主材料.txt';
 const SECOND_NAME = '问答链路未索引材料.txt';
 const MAIN_BODY = '问答链路验证材料。蓝鲸潮汐是本材料的唯一标记词。蓝鲸潮汐出现在正文第一段，用于检索与引用回溯验证。材料正文足够长，可以建立索引并支持词法检索命中。';
@@ -209,7 +209,7 @@ test.describe.serial('material-detail -> qa.html pure user path (A-class)', () =
     await page.goto(`${BASE}/app/qa.html?material=${mainId}`);
     // The notice ends with a settings link ("打开设置页配置"); toHaveText
     // asserts the full accessible text including that link label.
-    await expect(page.locator('#provider-status')).toHaveText('AI Provider 未配置，问答功能不可用。打开设置页配置', { timeout: 10000 });
+    await expect(page.locator('#provider-status')).toHaveText('AI Provider 未配置或配置无效，问答功能不可用。打开设置页配置', { timeout: 10000 });
     await page.locator('#question').fill('蓝鲸潮汐');
     await page.locator('#retrieval-mode').selectOption('lexical');
     await page.locator('#submit-btn').click();

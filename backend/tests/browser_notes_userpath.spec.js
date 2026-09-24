@@ -13,7 +13,7 @@ const FIXTURES = 'H:/studybuddy-test/fixtures/notes-userpath';
 const ART = 'H:/studybuddy-test/artifacts/notes-userpath';
 const PORT = 8951;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const TXT_NAME = '笔记链路测试材料.txt';
 let server;
 

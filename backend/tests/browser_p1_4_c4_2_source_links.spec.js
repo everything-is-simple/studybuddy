@@ -1,7 +1,7 @@
 const {test,expect}=require('@playwright/test');
 const {spawn,spawnSync}=require('child_process');
 const fs=require('fs');
-const ROOT='H:/studybuddy-test/runs/p1-4-c4-2-source-links';const PORT=8864;const BASE=`http://127.0.0.1:${PORT}`;const PYTHON='C:/miniconda/py310/python.exe';let server;
+const ROOT='H:/studybuddy-test/runs/p1-4-c4-2-source-links';const PORT=8864;const BASE=`http://127.0.0.1:${PORT}`;const PYTHON=process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';let server;
 function start(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'};return spawn(PYTHON,['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:20000}).toBe(true)}
 async function stop(){if(!server||server.killed){server=null;return}await new Promise(resolve=>{let done=false;const finish=()=>{if(!done){done=true;resolve()}};server.once('exit',finish);server.kill();setTimeout(finish,5000)});server=null}

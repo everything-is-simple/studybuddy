@@ -13,7 +13,7 @@ const ROOT = `H:/studybuddy-test/runs/capture-classroom-b-${STAMP}`;
 const ART = `H:/studybuddy-test/artifacts/capture-classroom-b-${STAMP}`;
 const PORT = 8848;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server;
 
 function wavBuffer() {

@@ -5,7 +5,7 @@ const fs=require('fs');
 const ROOT='H:/studybuddy-test/runs/p1-4-c4-cram';
 const PORT=8864;
 const BASE=`http://127.0.0.1:${PORT}`;
-const PYTHON='C:/miniconda/py310/python.exe';
+const PYTHON=process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server;
 
 function startServer(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'};return spawn(PYTHON,['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}

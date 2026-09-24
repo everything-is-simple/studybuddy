@@ -13,8 +13,8 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const LIMIT = 50 * 1024 * 1024;
 
 function startServer() {
-  const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {
+  const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT, STUDYBUDDY_MAX_UPLOAD_BYTES: String(LIMIT)};
+  return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {
     cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true,
   });
 }
@@ -44,11 +44,11 @@ function countFiles(root, pattern) {
 }
 function sqliteCounts() {
   const code = `import json, sqlite3; c=sqlite3.connect(r'${path.join(RUN_ROOT, 'studybuddy.sqlite3')}'); print(json.dumps({t: c.execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in ['materials','extractions','text_spans']})); c.close()`;
-  return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
+  return JSON.parse(spawnSync(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
 }
 function makeBoundaryFiles() {
   fs.mkdirSync(RUN_ROOT, {recursive: true});
-  spawnSync('C:/miniconda/py310/python.exe', ['-c', `from docx import Document; Document().save(r'${VALID_EMPTY}')`], {stdio: 'inherit'});
+  spawnSync(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-c', `from docx import Document; Document().save(r'${VALID_EMPTY}')`], {stdio: 'inherit'});
   const exact = path.join(RUN_ROOT, 'exact-50m.txt');
   const over = path.join(RUN_ROOT, 'over-50m.txt');
   fs.writeFileSync(exact, Buffer.alloc(LIMIT, 0x61));
@@ -172,7 +172,7 @@ function makeBoundaryFiles() {
     const payload = {
       component: 'formal-file-import-final', formal_system_version: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), git_commit: execSync('git -C H:/studybuddy rev-parse HEAD').toString().trim(), status: 'real-pass',
       python: '3.10.19', node: process.version, playwright: '1.62.1', browser: 'chromium', viewport: await page.viewportSize(),
-      startup_command: 'C:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8850',
+      startup_command: 'D:/miniconda/py310/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8850',
       browser_test_command: 'npx playwright test backend/tests/browser_file_import.spec.js --workers=1 --reporter=line',
       cases: records, fifty_mib: {limit: LIMIT, exact_status: exactStatus, over_status: overStatus, over_detail: overDetail, material_count_before_over: beforeCount + 1, material_count_after_over: afterOverMaterials, original_count: countFiles(path.join(RUN_ROOT, 'originals'), /^original$/), temporary_count: countFiles(RUN_ROOT, /^\.incoming-/)},
       duplicate_hash_reuse: duplicatePayload, database_counts: counts, refresh_readback: refreshReadback, restart_readback: {passed: true, material_count: beforeRestart},

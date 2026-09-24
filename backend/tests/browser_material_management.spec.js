@@ -12,7 +12,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 function startServer() {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
+  return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function waitReady() {
   for (let i = 0; i < 100; i++) {
@@ -34,7 +34,7 @@ function originalCountForHash(sourceHash) {
 function sqliteSnapshot() {
   const db = path.join(RUN_ROOT, 'studybuddy.sqlite3');
   const code = `import json, sqlite3; c=sqlite3.connect(r'${db}'); print(json.dumps({'materials':c.execute('SELECT COUNT(*) FROM materials').fetchone()[0], 'active_materials':c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NULL').fetchone()[0], 'deleted_materials':c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL').fetchone()[0], 'extractions':c.execute('SELECT COUNT(*) FROM extractions').fetchone()[0], 'text_spans':c.execute('SELECT COUNT(*) FROM text_spans').fetchone()[0], 'deleted_at_present':c.execute('SELECT COUNT(*) FROM materials WHERE deleted_at IS NOT NULL').fetchone()[0]})); c.close()`;
-  return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
+  return JSON.parse(spawnSync(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
 }
 
 test('formal material management browser acceptance', async ({page}) => {

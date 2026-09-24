@@ -13,7 +13,7 @@ let RUN_ROOT = 'H:/studybuddy-test/runs/reports-userpath';
 const ART = 'H:/studybuddy-test/artifacts/reports-userpath';
 const PORT = 8967;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server;
 
 function startServer() {

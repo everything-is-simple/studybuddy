@@ -16,7 +16,7 @@ let RUN_ROOT = 'H:/studybuddy-test/runs/today-userpath';
 const ART = 'H:/studybuddy-test/artifacts/today-userpath';
 const PORT = 8955;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const PLAN_TITLE = '今日链路验证计划';
 const ITEM_TITLE = '今日分配的学习项';
 let server;

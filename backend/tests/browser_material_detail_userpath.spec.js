@@ -12,7 +12,7 @@ const FIXTURES = 'H:/studybuddy-test/fixtures/material-detail-userpath';
 const ART = 'H:/studybuddy-test/artifacts/material-detail-userpath';
 const PORT = 8942;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const TXT_NAME = '材料详情链路测试.txt';
 const PDF_NAME = 'blank-scan.pdf';
 let server;

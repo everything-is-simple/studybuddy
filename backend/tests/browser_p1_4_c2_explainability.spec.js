@@ -9,7 +9,7 @@ const FIXTURES='H:/studybuddy-test/runs/p1-4-c2-fixtures';
 const FOUNDATION='H:/studybuddy-test/fixtures/kaobuddy-foundation';
 const PORT=8861;
 const BASE=`http://127.0.0.1:${PORT}`;
-const PYTHON='C:/miniconda/py310/python.exe';
+const PYTHON=process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server;
 
 function startServer(){

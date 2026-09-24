@@ -5,9 +5,11 @@ const Module = require('module');
 
 const original = Module._extensions['.js'];
 const testMarker = `${path.sep}backend${path.sep}tests${path.sep}`;
-const testRoot = '(process.env.STUDYBUDDY_TEST_ROOT || require("path").resolve(__dirname, "../../../studybuddy-test"))';
-const fixtureRoot = '(process.env.STUDYBUDDY_FIXTURE_ROOT || process.env.STUDYBUDDY_TEST_ROOT || require("path").resolve(__dirname, "../../../studybuddy-test"))';
-const backendRoot = '(process.env.STUDYBUDDY_BACKEND_ROOT || require("path").resolve(__dirname, ".."))';
+// Rewritten specs can be either CommonJS or ESM. Do not inject `require()` into
+// their source because ESM specs do not have that binding at runtime.
+const testRoot = '(process.env.STUDYBUDDY_TEST_ROOT || "H:/studybuddy-test")';
+const fixtureRoot = '(process.env.STUDYBUDDY_FIXTURE_ROOT || process.env.STUDYBUDDY_TEST_ROOT || "H:/studybuddy-test")';
+const backendRoot = '(process.env.STUDYBUDDY_BACKEND_ROOT || (process.cwd() + "/backend"))';
 const python = '(process.env.STUDYBUDDY_PYTHON || "python")';
 const baseUrl = '(process.env.STUDYBUDDY_BASE_URL || "http://localhost:8787")';
 
@@ -20,9 +22,13 @@ function rewrite(source) {
     return `${root} + ${JSON.stringify(suffix)}`;
   });
   source = source.replace(/`([^`]*)`/g, (literal, body) => {
+    const fixtureMarker = "__STUDYBUDDY_FIXTURE_ROOT__";
+    const testMarker = "__STUDYBUDDY_TEST_ROOT__";
     const rewritten = body
-      .replaceAll('H:/studybuddy-test/fixtures', `\${${fixtureRoot}}/fixtures`)
-      .replaceAll('H:/studybuddy-test', `\${${testRoot}}`)
+      .replaceAll('H:/studybuddy-test/fixtures', fixtureMarker)
+      .replaceAll('H:/studybuddy-test', testMarker)
+      .replaceAll(fixtureMarker, `\${${fixtureRoot}}/fixtures`)
+      .replaceAll(testMarker, `\${${testRoot}}`)
       .replaceAll('H:/studybuddy/backend', `\${${backendRoot}}`);
     return rewritten === body ? literal : `\`${rewritten}\``;
   });

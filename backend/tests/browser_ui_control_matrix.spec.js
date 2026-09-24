@@ -7,7 +7,7 @@ const ROOT = `H:/studybuddy-test/runs/ui-control-matrix-${Date.now()}`;
 const PORT = 8862;
 const BASE = `http://127.0.0.1:${PORT}`;
 const STATIC = 'H:/studybuddy/backend/app/static';
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const pages = fs.readdirSync(STATIC).filter(file => file.endsWith('.html')).sort();
 let server;
 

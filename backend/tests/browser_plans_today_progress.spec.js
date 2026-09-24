@@ -5,7 +5,7 @@ const ROOT='H:/studybuddy-test/runs/plans-today-progress';
 const PORT=8852;
 const BASE=`http://127.0.0.1:${PORT}`;
 let server;
-function start(){return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env:{...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'},stdio:'ignore',windowsHide:true})}
+function start(){return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env:{...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT,STUDYBUDDY_AI_PROVIDER:'fake'},stdio:'ignore',windowsHide:true})}
 async function stop(){if(!server||server.killed){server=null;return}await new Promise(resolve=>{let done=false;const finish=()=>{if(!done){done=true;resolve()}};server.once('exit',finish);server.kill();setTimeout(finish,5000)});server=null}
 async function ready(){await expect.poll(async()=>{try{return(await fetch(BASE+'/api/readiness')).ok}catch(_){return false}},{timeout:20000}).toBe(true)}
 async function post(request,path,data){const response=await request.post(BASE+path,{data});expect(response.ok(),await response.text()).toBeTruthy();return response.json()}

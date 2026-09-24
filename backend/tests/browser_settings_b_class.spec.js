@@ -19,7 +19,7 @@ const KEY = 'TEST_SETTINGS_API_KEY_DO_NOT_LEAK_u9';
 const SMTP_PASS = 'TEST_SMTP_PASSWORD_DO_NOT_LEAK_s3';
 const WEBHOOK = 'https://open.feishu.cn/hook/TEST_FEISHU_WEBHOOK_DO_NOT_LEAK_w5';
 const CAP_KEYS = ['import_parse', 'ocr', 'asr', 'index', 'qa', 'generation', 'report'];
-const CAP_STATUSES = ['available', 'degraded', 'not_configured', 'not_installed', 'disabled'];
+const CAP_STATUSES = ['available', 'configured', 'demo', 'degraded', 'not_configured', 'invalid_config', 'not_installed', 'disabled'];
 let server, fakeProvider, fakeSmtp;
 
 function startFakeProvider() {
@@ -75,7 +75,7 @@ function startFakeSmtp() {
 function startServer() {
   const env = { ...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT, STUDYBUDDY_AI_PROVIDER: 'fake' };
   for (const k of ['STUDYBUDDY_AI_MODEL', 'STUDYBUDDY_AI_BASE_URL', 'STUDYBUDDY_AI_API_KEY']) delete env[k];
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], { cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true });
+  return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], { cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true });
 }
 function stopServer(s) { return new Promise(resolve => { const p = s || server; if (!p || p.killed) return resolve(); p.once('exit', resolve); p.kill(); if (p === server) server = null; }); }
 async function ready() { await expect.poll(async () => { try { return (await fetch(`${BASE}/api/readiness`)).ok; } catch (_) { return false; } }, { timeout: 20000 }).toBe(true); }

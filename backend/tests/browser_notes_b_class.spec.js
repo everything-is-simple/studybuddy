@@ -20,7 +20,7 @@ const FIXTURES = 'H:/studybuddy-test/fixtures/notes-b';
 const ART = 'H:/studybuddy-test/artifacts/notes-b';
 const PORT = 8953;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const TXT_NAME = 'B 类契约材料.txt';
 
 // Stable pattern identity is required by page.unroute(pattern).

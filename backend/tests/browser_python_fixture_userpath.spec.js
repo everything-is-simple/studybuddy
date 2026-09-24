@@ -12,7 +12,7 @@ const SMTP_PORT = 8959;
 const BASE = `http://127.0.0.1:${BASE_PORT}`;
 const PROVIDER_OK_BASE = `http://127.0.0.1:${PROVIDER_OK_PORT}/v1`;
 const PROVIDER_FAIL_BASE = `http://127.0.0.1:${PROVIDER_FAIL_PORT}/v1`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const providerCode = String.raw`
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import sys

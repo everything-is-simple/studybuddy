@@ -5,7 +5,7 @@ const ROOT='H:/studybuddy-test/runs/p2-fe4-report-preview';
 const PORT=8858;
 const BASE=`http://127.0.0.1:${PORT}`;
 let server;
-function start(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT};return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
+function start(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:ROOT};return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:15000}).toBe(true)}
 async function createReport(page){const seeded=await page.request.post(`${BASE}/api/materials`,{multipart:{file:{name:'preview-scope.txt',mimeType:'text/plain',buffer:Buffer.from('P2 FE4 report preview scope')}}});expect(seeded.ok()).toBe(true);const response=await page.request.post(`${BASE}/api/study/reports`,{data:{report_kind:'daily',timezone:'UTC',period_start:'2026-01-15',period_end:'2026-01-16'}});expect(response.ok()).toBe(true);return response.json()}
 test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=start();await ready()});

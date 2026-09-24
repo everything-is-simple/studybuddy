@@ -10,7 +10,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 function startServer() {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: ROOT};
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
+  return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function ready() { for (let i = 0; i < 100; i++) { try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch (_) {} await new Promise(r => setTimeout(r, 100)); } throw new Error('server_not_ready'); }
 async function stop(server){if(!server||server.killed)return;await new Promise(resolve=>{const finish=()=>resolve();server.once("exit",finish);server.kill();setTimeout(finish,5000)})}
@@ -22,7 +22,7 @@ async function importFiles(page, names = ['sample.txt', 'sample.md']) {
 }
 async function zipNames(filePath) {
   const code = `import json,zipfile;print(json.dumps(sorted(zipfile.ZipFile(r'''${filePath}''').namelist())))`;
-  return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
+  return JSON.parse(spawnSync(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
 }
 async function downloadNames(page, selector) {
   const promise = page.waitForEvent('download');

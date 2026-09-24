@@ -12,7 +12,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 function startServer() {
   const env = {...process.env, PYTHONPATH: 'H:/studybuddy/backend', STUDYBUDDY_DATA_ROOT: RUN_ROOT};
-  return spawn('C:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
+  return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(PORT)], {cwd: 'H:/studybuddy/backend', env, stdio: 'ignore', windowsHide: true});
 }
 async function waitReady() {
   for (let i = 0; i < 100; i++) {
@@ -26,7 +26,7 @@ function hashFile(file) { return crypto.createHash('sha256').update(fs.readFileS
 function counts() {
   const db = path.join(RUN_ROOT, 'studybuddy.sqlite3');
   const code = `import json, sqlite3; c=sqlite3.connect(r'${db}'); print(json.dumps({t:c.execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in ['materials','extractions','text_spans']})); c.close()`;
-  return JSON.parse(spawnSync('C:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
+  return JSON.parse(spawnSync(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe', ['-c', code], {encoding: 'utf8'}).stdout);
 }
 function originalCount() { if (!fs.existsSync(path.join(RUN_ROOT, 'originals'))) return 0; return fs.readdirSync(path.join(RUN_ROOT, 'originals'), {recursive: true}).filter(name => path.basename(name) === 'original').length; }
 

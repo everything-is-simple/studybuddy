@@ -3,7 +3,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const RUN_ROOT = 'H:/studybuddy-test/runs/p1-5-4-browser';
 const PORT = 8834; const BASE = `http://127.0.0.1:${PORT}`; let server;
-function start(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:RUN_ROOT,STUDYBUDDY_AI_PROVIDER:'fake'};return spawn('C:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
+function start(){const env={...process.env,PYTHONPATH:'H:/studybuddy/backend',STUDYBUDDY_DATA_ROOT:RUN_ROOT,STUDYBUDDY_AI_PROVIDER:'fake'};return spawn(process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe',['-m','uvicorn','app.main:app','--host','127.0.0.1','--port',String(PORT)],{cwd:'H:/studybuddy/backend',env,stdio:'ignore',windowsHide:true})}
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:15000}).toBe(true)}
 async function open(page){await page.goto(`${BASE}/app/settings-provider.html`);await expect(page.locator('#provider-test')).toBeVisible()}
 function noLeak(page,s){return page.evaluate(secret=>({text:document.body.innerText,html:document.documentElement.outerHTML,url:location.href,history:JSON.stringify(history.state),cookie:document.cookie,local:JSON.stringify(localStorage),session:JSON.stringify(sessionStorage)}),s).then(x=>Object.values(x).every(v=>!v.includes(s)))}
