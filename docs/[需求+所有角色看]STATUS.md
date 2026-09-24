@@ -1,5 +1,12 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-25：正式运行态与隔离核心流程复核
+
+- 正式启动入口当前以活跃正式 data root、loopback 单进程运行；PID、监听端口和进程命令行相互一致。`/api/liveness`、`/api/health`、`/api/readiness` 都返回预期成功状态，健康脚本同步输出 `healthy`。此前 `health_check_failed` 是历史观察，本次未复现；不据此推断极端时序或长期稳定性已验证。
+- 隔离 browser user path 使用 `H:\studybuddy-test` 下的临时 data root 与 fake Provider，`browser_p1_4_real_input_restart.spec.js` 为 **3 passed (13.3s)**：真实格式导入、详情、索引、问答、可点击引文和重启后的同一引用高亮均通过。该规格的解释器选择现支持 `STUDYBUDDY_TEST_PYTHON`，默认使用项目 Python 3.10；未触碰正式材料或 Provider。
+- 当前正式服务的系统能力仪表盘与 Provider 页面均把 LLM/Embedding 表示为“已配置·未验证”，Provider 页面也显示“系统就绪”；直接的两类能力 API 与页面一致。2026-09-21 记录的页面状态分歧已不再是当前缺陷，保留为历史观察。
+- 真实 Provider、OCR/ASR 质量、外发、跨浏览器、屏幕阅读器、长时稳定性和全局 `real-pass` 仍为 `not_verified`。
+
 ## 2026-09-25：Chromium 可重复执行基线恢复
 
 - Playwright 完整 Chromium 套件以单 worker、隔离 `H:\studybuddy-test` 数据根执行完成：**553 passed / 4 failed / 4 skipped / 2 did not run**（20.8m）。测试入口、共享测试服务和 PDF fixture 统一采用 Playwright headless shell；完整 Chromium 和两处 fixture helper 的 `spawn UNKNOWN` 已消除。

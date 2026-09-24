@@ -8,7 +8,7 @@ const ROOT = 'H:/studybuddy-test/runs/p1-4-real-input-restart';
 const FIXTURES = 'H:/studybuddy-test/runs/p1-4-real-input-fixtures';
 const PORT = 8857;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PYTHON = 'C:/miniconda/py310/python.exe';
+const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 let server;
 
 function startServer() {
