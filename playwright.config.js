@@ -4,15 +4,16 @@ const path = require('path');
 
 require(path.resolve(__dirname, 'backend/scripts/browser-source-loader.js'));
 
-// The bundled headless shell crashes on this Windows host. Run the full
-// Playwright-managed Chromium binary instead, retaining headless test behavior.
+// On this Windows host the full Chromium binary fails Node's process spawn
+// before it reaches Playwright. The bundled headless shell launches normally.
+// Set STUDYBUDDY_PLAYWRIGHT_FULL_CHROMIUM=1 only when diagnosing that host issue.
 module.exports = defineConfig({
   testDir: path.resolve(__dirname, 'backend/tests'),
   workers: 1,
   use: {
     headless: true,
-    launchOptions: process.env.STUDYBUDDY_PLAYWRIGHT_HEADLESS_SHELL === '1'
-      ? {} : { executablePath: chromium.executablePath() },
+    launchOptions: process.env.STUDYBUDDY_PLAYWRIGHT_FULL_CHROMIUM === '1'
+      ? { executablePath: chromium.executablePath() } : {},
   },
   reporter: process.env.PLAYWRIGHT_REPORTER || 'line',
 });

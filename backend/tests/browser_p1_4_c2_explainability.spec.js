@@ -19,7 +19,7 @@ function startServer(){
 }
 async function ready(){await expect.poll(async()=>{try{return(await fetch(`${BASE}/api/readiness`)).ok}catch(_){return false}},{timeout:20000}).toBe(true)}
 async function stopServer(){if(!server||server.killed){server=null;return}await new Promise(resolve=>{let done=false;const finish=()=>{if(!done){done=true;resolve()}};server.once('exit',finish);server.kill();setTimeout(finish,5000)});server=null}
-function chromium(){const base=path.join(process.env.LOCALAPPDATA||os.homedir(),'ms-playwright');for(const dir of fs.existsSync(base)?fs.readdirSync(base):[]){for(const inner of ['chrome-win64','chrome-win']){const candidate=path.join(base,dir,inner,'chrome.exe');if(dir.startsWith('chromium')&&fs.existsSync(candidate))return candidate}}return null}
+function chromium(){const base=path.join(process.env.LOCALAPPDATA||os.homedir(),'ms-playwright');const dirs=fs.existsSync(base)?fs.readdirSync(base):[];for(const dir of dirs){const candidate=path.join(base,dir,'chrome-headless-shell-win64','chrome-headless-shell.exe');if(dir.startsWith('chromium_headless_shell')&&fs.existsSync(candidate))return candidate}for(const dir of dirs){for(const inner of ['chrome-win64','chrome-win']){const candidate=path.join(base,dir,inner,'chrome.exe');if(dir.startsWith('chromium-')&&fs.existsSync(candidate))return candidate}}return null}
 function buildFixtures(){
   fs.rmSync(FIXTURES,{recursive:true,force:true});fs.mkdirSync(FIXTURES,{recursive:true});
   for(const name of ['sample.doc','sample.ppt','sample.rtf'])fs.copyFileSync(path.join(FOUNDATION,name),path.join(FIXTURES,name));

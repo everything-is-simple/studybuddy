@@ -33,11 +33,15 @@ async function stopServer() {
 
 function chromium() {
   const base = path.join(process.env.LOCALAPPDATA || os.homedir(), 'ms-playwright');
-  const roots = fs.existsSync(base) ? fs.readdirSync(base).filter(name => name.startsWith('chromium')) : [];
+  const roots = fs.existsSync(base) ? fs.readdirSync(base) : [];
+  for (const dir of roots) {
+    const candidate = path.join(base, dir, 'chrome-headless-shell-win64', 'chrome-headless-shell.exe');
+    if (dir.startsWith('chromium_headless_shell') && fs.existsSync(candidate)) return candidate;
+  }
   for (const dir of roots) {
     for (const inner of ['chrome-win64', 'chrome-win']) {
       const candidate = path.join(base, dir, inner, 'chrome.exe');
-      if (fs.existsSync(candidate)) return candidate;
+      if (dir.startsWith('chromium-') && fs.existsSync(candidate)) return candidate;
     }
   }
   return null;

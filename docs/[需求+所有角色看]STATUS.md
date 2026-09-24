@@ -1,5 +1,11 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-25：Chromium 可重复执行基线恢复
+
+- Playwright 完整 Chromium 套件以单 worker、隔离 `H:\studybuddy-test` 数据根执行完成：**553 passed / 4 failed / 4 skipped / 2 did not run**（20.8m）。测试入口、共享测试服务和 PDF fixture 统一采用 Playwright headless shell；完整 Chromium 和两处 fixture helper 的 `spawn UNKNOWN` 已消除。
+- 剩余 4 个失败均已获得独立首因，不属于浏览器启动：文件导入规格的 50 MiB 边界预期为 413 而实际为 201；Provider capability 页面期望“不可用”而实际状态为“未知”；QA 未配置的旧精确文案；capability 契约仍允许已移除的 `configured` 枚举。它们需要独立产品或测试契约裁定。
+- 真实 Provider/OCR/ASR、外发、跨浏览器、屏幕阅读器和长时稳定性继续保持 `not_verified`；本轮 Chromium 结果不扩大为全局 `real-pass`。
+
 ## 2026-09-23：P1 状态、健康、计划与任务链路修订（本轮证据）
 
 - 正式图片转录 API 继续仅接受 PaddleOCR。RapidOCR 严格 C2 Integration 已在精确 Windows/Python 3.10/CPU、本地模型 hash、合成 PNG/JPEG/WEBP 和受控 fallback scope 内通过；仍不进入 Formal，正式 fallback 未启用，正式能力状态继续为 `not_configured`。检测到候选组件或 Integration 通过不等于 Formal 接入或 `real-pass`。

@@ -1,5 +1,6 @@
 # StudyBuddy TODO 清单
 
+> 2026-09-25 浏览器执行基线：完整 Chromium `553 passed, 4 failed, 4 skipped, 2 did not run`（20.8m，单 worker、隔离数据根）。`spawn UNKNOWN` 已通过 Playwright headless shell 入口和 PDF fixture helper 修复。剩余失败待独立处理：50 MiB 文件导入边界、Provider capability 未知状态文案、QA 未配置文案、capability 枚举断言；真实 Provider、OCR/ASR、live delivery、跨浏览器和屏幕阅读器继续 `not_verified`。
 > 2026-09-24 本轮修订：正式 OCR API 继续 PaddleOCR-only；RapidOCR 严格 C2 已在精确本地 scope 通过，但不得标作 Formal fallback。浏览器 runner 已统一 Python、仓库根、测试根和每次运行的 backend basetemp；本轮后端全量 `665 passed, 3 skipped`。本机 Chromium 启动仍报 Windows `spawn UNKNOWN`，完整 Chromium 基线未建立；P1-7 的 13 个场景只由真实使用者记录。真实 Provider、OCR/ASR 质量、live delivery、跨浏览器与屏幕阅读器继续 `not_verified`。
 > 2026-09-24 追加：治理一致性测试已恢复 `11 passed`；真实输入/PDF fixture 改用 Node Playwright 运行时后为 `11 passed`。完整 Chrome CLI 的 side-by-side 问题仍记录为本机环境边界，但不再阻塞该 PDF 测试集合。服务商侧凭据撤销/轮换仍需控制台操作和非敏感完成记录。
 > 更新：2026-09-21（**新手手册场景一至场景二真实浏览器链路完成**：正式服务以 `H:\studybuddy-data`/`127.0.0.1:8787` 运行；浏览器端点 liveness/health/readiness=200/200/200，today 显示系统就绪。使用合成 fixture `真实链路测试材料.txt` 完成导入解析、详情正文和“六要素”搜索；同一材料建立 AI 索引并显示 ready/1 chunk；混合检索问答“记叙文阅读首先要理清什么？”成功生成回答，引用可点击并在同一材料详情高亮定位。Provider 设置页仍显示 LLM/Embedding 不可用，与系统设置 7/7 可用仪表盘及实际 QA/索引结果不一致；未改配置、未切换 fake，已标记为独立排查项。健康脚本本次输出 `health_check_failed`，浏览器端点直接实测全 200，脚本兼容性/时序问题未在本次验证中修订。服务保持运行。`)

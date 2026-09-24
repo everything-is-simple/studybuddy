@@ -12,7 +12,7 @@ StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统
 
 **本地单机 v1 已完成生产化和上线收口**，范围严格限于 local single-process / single-instance / SQLite / local-disk：Phase 10 Gates A-J 已通过，release candidate 已在隔离 data root 完成启动、导入、索引、学习路径、显式任务、backup、verify、restore、重启和 diagnostics 演练。runner 仍只由显式 API/CLI 调用，启动/backup/restore/read 不自动执行；只有 approved `embedding_index` 接入 runner，Q&A、generation、OCR/ASR、report/delivery 未接入。该完成不代表多用户、认证授权、云同步、协作、多进程共享 data root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 或全局 production `real-pass`。
 
-**当前验证基线（2026-09-24）**：后端 `665 passed, 3 skipped`（D:\miniconda Python、每次运行唯一 basetemp）；本机 Chromium 启动仍被 Windows `spawn UNKNOWN` 环境错误阻断，尚无新的完整浏览器基线。浏览器历史数字只作为历史快照，不能替代当前证据。前端当前实现事实（页面/共享层/测试/路由覆盖）见 [`docs/frontend-inventory-report.md`](.archive/frontend/frontend-inventory-report.md)。
+**当前验证基线（2026-09-25）**：后端 `665 passed, 3 skipped`（D:\miniconda Python、每次运行唯一 basetemp）；Chromium 全量 `553 passed, 4 failed, 4 skipped, 2 did not run`（20.8m、单 worker、隔离数据根）。入口与 PDF fixture 已统一使用 Playwright headless shell，未再出现 `spawn UNKNOWN`。4 个失败分别为文件大小边界、能力状态文案、QA 未配置文案和 capability 状态枚举断言，均需单独处理；该结果不构成全局 `real-pass`。前端当前实现事实（页面/共享层/测试/路由覆盖）见 [`docs/frontend-inventory-report.md`](.archive/frontend/frontend-inventory-report.md)。
 
 **A2.X 系列完成 (2025-01-28)**: 4 个超限核心文件（repositories/_legacy.py, main.py, migrations/runner.py, providers.py）已拆分为模块化结构，从 639KB 减少到 48KB（92.6% 减少），所有模块 ≤ 32 KiB，所有公共 API 保持向后兼容。413 passed, 2 skipped 是 A2.X 的历史基线；当前完整回归基线以 `docs/STATUS.md` 为准（backend 468 passed, 3 skipped；browser 144 passed, 4 skipped）。详见 [`docs/archive/A2_X_SERIES_SUMMARY.md`](.archive/A2_X_SERIES_SUMMARY.md)。
 

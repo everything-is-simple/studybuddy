@@ -17,6 +17,8 @@ module.exports = {
   backend: 'H:/studybuddy/backend',
   base: 'http://localhost:8787',
   run: `H:/studybuddy-test/runs/browser-${Date.now()}`,
+  fixture: 'H:/studybuddy-test/fixtures/kaobuddy-foundation/sample.txt',
+  fixtureTemplate: `H:/studybuddy-test/fixtures/kaobuddy-foundation/${'sample.txt'}`,
 };
 """
     node_script = r'''
@@ -31,6 +33,7 @@ vm.runInNewContext(loader.rewrite(source), {
     STUDYBUDDY_BACKEND_ROOT: 'X:/repo/backend',
     STUDYBUDDY_BASE_URL: 'http://127.0.0.1:9123',
     STUDYBUDDY_TEST_ROOT: 'X:/tests/run-123',
+    STUDYBUDDY_FIXTURE_ROOT: 'X:/tests',
   }},
   require,
   __dirname: 'X:/repo/backend/scripts',
@@ -52,3 +55,5 @@ process.stdout.write(JSON.stringify(module.exports));
     assert resolved["backend"] == "X:/repo/backend"
     assert resolved["base"] == "http://127.0.0.1:9123"
     assert resolved["run"].startswith("X:/tests/run-123/runs/browser-")
+    assert resolved["fixture"] == "X:/tests/fixtures/kaobuddy-foundation/sample.txt"
+    assert resolved["fixtureTemplate"] == "X:/tests/fixtures/kaobuddy-foundation/sample.txt"
