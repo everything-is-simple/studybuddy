@@ -70,7 +70,7 @@
 <!-- ============ 0 开始使用 ============ -->
 <section class="page" id="start">
   <h2>0. 开始使用 <span class="path">启动与入口</span></h2>
-  <p>StudyBuddy 是一个本地单进程系统：启动服务后，全部功能都在浏览器里完成，数据只存在你自己的电脑上。启动只需一条命令——在项目目录执行 <code>python -m backend.app serve</code>，看到服务就绪提示后，用浏览器打开 <code>http://localhost:8787/app/today.html</code> 即可进入"今天"首页。页顶导航条固定在所有页面上，"更多"按钮可展开全部页面入口；关闭命令行窗口（或 Ctrl+C）服务即停止，数据不会丢失。</p>
+  <p>StudyBuddy 是一个本地单进程、单实例系统：启动服务后，功能在浏览器里完成，数据只存在你自己的电脑上。启动只需一条命令——在项目目录执行 <code>python -m backend.app serve</code>，并确认 <code>/api/liveness</code>、<code>/api/health</code>、<code>/api/readiness</code> 后，用浏览器打开 <code>http://localhost:8787/app/today.html</code> 即可进入"今天"首页。页面能打开不等于服务已就绪；页顶导航条固定在所有页面上，"更多"按钮可展开页面入口。关闭命令行窗口（或 Ctrl+C）服务即停止，数据不会丢失。</p>
   <figure>
   <svg viewBox="0 0 680 190" role="img" aria-label="启动与入口示意">
     <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -259,12 +259,12 @@
     <rect x="596" y="128" width="60" height="30" rx="8" fill="#2563eb"/><text x="626" y="147" font-size="11" fill="#fff" text-anchor="middle">提交问题</text>
     <circle cx="580" cy="143" r="9" fill="#f59e0b"/><text x="580" y="147" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
     <rect x="24" y="172" width="100" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="74" y="188" font-size="10.5" fill="#475569" text-anchor="middle">新对话</text>
-    <text x="24" y="212" font-size="10" fill="#94a3b8">推荐默认"混合"模式；提问须先有索引，否则点「索引当前材料」</text>
+    <text x="24" y="212" font-size="10" fill="#94a3b8">有 Embedding 时可用"混合"模式；提问须先有索引，否则点「索引当前材料」</text>
   </svg>
   <figcaption>图 4 · 问答页：定范围 → 提问 → 沿引用回原文</figcaption>
   </figure>
   <ol class="steps">
-    <li>选<b>材料范围</b>与检索模式（推荐"混合"）。</li>
+    <li>选<b>材料范围</b>与当前能力支持的检索模式；有 Embedding 时可选"混合"。</li>
     <li>输入问题后点<b>提交问题</b>，等待带引用的回答。</li>
     <li>点回答里的<b>引用编号</b>核对原文；换话题点<b>新对话</b>。</li>
   </ol>
@@ -665,7 +665,7 @@
 <!-- ============ 16 classroom ============ -->
 <section class="page" id="classroom">
   <h2>16. 课堂采集与报告 <span class="path">classroom.html</span></h2>
-  <p>"课堂采集"处理课堂现场素材：上传上课录音或板书照片，系统转写成文字并生成学习报告，让课后复习有据可依。工作区里点"刷新采集列表"查看所有会话；点击某个会话可以看转写全文与对应的学习报告，转写文本之后还能像普通材料一样被引用。配合下一节的"采集会话"页（capture.html）发起新会话。适用场景：网课、补习班、家长会——凡是有录音和照片的学习现场。</p>
+  <p>"课堂采集"是有条件的扩展能力：在 <code>capture.html</code> 创建会话、上传原件并发起 OCR/ASR，系统先生成可编辑草稿；确认后才转为学习材料。<code>classroom.html</code>主要用于刷新会话、查看转写稿和脱敏报告，转写文本确认后才能按普通材料参与后续流程。OCR/ASR 未配置或只有演示状态时，应跳过真实质量判断；它不是首次使用的前置流程。</p>
   <figure>
   <svg viewBox="0 0 680 200" role="img" aria-label="课堂采集示意">
     <rect x="4" y="4" width="672" height="192" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -698,7 +698,7 @@
 <!-- ============ 17 capture ============ -->
 <section class="page" id="capture">
   <h2>17. 新建采集会话 <span class="path">capture.html</span></h2>
-  <p>"采集会话"页是课堂采集的发起点：填会话类型（网课 / 补习班等）、会话名称和媒体类型（音频 / 图片），点"创建"生成一个空会话，然后到"课堂采集与报告"页上传媒体文件并等待转写。一节课对应一个会话，命名建议带日期（如"语文第 3 讲 0919"），方便日后检索。创建后点"刷新"确认会话已出现在列表里。</p>
+  <p>"采集会话"页是课堂采集的发起点：填会话类型、会话名称和媒体类型，点"创建"生成会话。创建后在该会话的详情区域上传媒体、发起 OCR/ASR，并在草稿区编辑、确认或拒绝；<code>classroom.html</code>用于查看已创建的会话和报告。一节课对应一个会话，命名建议带日期，方便日后检索。</p>
   <figure>
   <svg viewBox="0 0 680 180" role="img" aria-label="采集会话示意">
     <rect x="4" y="4" width="672" height="172" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -730,7 +730,7 @@
 <!-- ============ 18 tasks ============ -->
 <section class="page" id="tasks">
   <h2>18. 任务状态 <span class="path">tasks.html</span></h2>
-  <p>"任务"页监控所有后台任务，最常见的是索引任务（材料建索引、课堂转写都在这里排队）。用"应用筛选"按状态过滤（排队 / 进行中 / 成功 / 失败），点"刷新"获取最新进度。卡住的任务可以在详情区"取消"；失败的任务可以"重试"——这两个动作都会弹确认框，防止误触。经验法则：批量导入材料后先来这里看一眼队列，全部成功再去问答。</p>
+  <p>"任务"页只显示当前已接入任务 runner 的操作记录，最常见的是 Embedding 索引任务。用"应用筛选"按状态过滤（排队 / 进行中 / 成功 / 失败），点"刷新"获取最新进度；卡住或失败的任务是否支持取消/重试，以任务详情提供的动作和错误状态为准。课堂 OCR/ASR、问答、报告生成不会因为页面存在就自动进入这个队列，不能把任务页当作所有后台工作的总览。</p>
   <figure>
   <svg viewBox="0 0 680 190" role="img" aria-label="任务页示意">
     <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -766,7 +766,7 @@
 <!-- ============ 19 settings-provider ============ -->
 <section class="page" id="settings-provider">
   <h2>19. Provider 设置 <span class="path">settings-provider.html</span></h2>
-  <p>"Provider 设置"配置 StudyBuddy 背后的 AI 与 Email 连接：填好 API 地址、密钥、模型名后，务必先点"测试 Provider 连接"验证可用，再点"保存此配置"落盘——顺序别反，免得存了一份连不通的配置。配置串较长时可用"复制到剪贴板"（内容仅在内存中生成，不落盘）。保存的凭据存在本地 data_root 的配置文件里、被排除在 Git 与备份之外；Email（报告外发）默认关闭，用一次授权一次。</p>
+  <p>"Provider 设置"配置 StudyBuddy 背后的 AI 与 Email 连接：填好 API 地址、密钥、模型名后可先点"测试 Provider 连接"，通过后再点"保存此配置"。连接测试只证明本次协议/连通性检查，不证明真实问答质量、Embedding 质量或长期可用性；页面使用 synthetic payload，不发送学习材料。配置串可复制到剪贴板，但不要复制到聊天、截图或 Git。保存的凭据存在本地 data_root 配置文件中；Email/Feishu 报告外发默认关闭，属于独立授权和专项验收。</p>
   <figure>
   <svg viewBox="0 0 680 190" role="img" aria-label="Provider 设置示意">
     <rect x="4" y="4" width="672" height="182" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -787,22 +787,22 @@
     <circle cx="440" cy="95" r="9" fill="#f59e0b"/><text x="440" y="99" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
     <rect x="430" y="122" width="140" height="26" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="500" y="139" font-size="10.5" fill="#475569" text-anchor="middle">复制到剪贴板</text>
     <rect x="24" y="142" width="380" height="24" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
-    <text x="38" y="158" font-size="10" fill="#475569">连接测试：<tspan fill="#16a34a">✓ 成功（延迟 320ms）</tspan>　Email 外发：默认关闭</text>
+    <text x="38" y="158" font-size="10" fill="#475569">连接测试：<tspan fill="#a16207">按本次结果显示</tspan>　synthetic payload · Email 外发：默认关闭</text>
     <text x="24" y="182" font-size="10" fill="#94a3b8">顺序：先测试 → 再保存；密钥只存本地 data_root，不入 Git / 备份</text>
   </svg>
   <figcaption>图 19 · Provider 设置：填 → 测 → 存，三步走</figcaption>
   </figure>
   <ol class="steps">
     <li>填<b>API 地址 / 密钥 / 模型名</b>。</li>
-    <li>点<b>测试 Provider 连接</b>，等"成功"提示。</li>
-    <li>再点<b>保存此配置</b>生效；配置串可<b>复制到剪贴板</b>流转。</li>
+    <li>需要使用真实 Provider 时，点<b>测试 Provider 连接</b>并记录本次结果；“成功”不等于真实能力已通过。</li>
+    <li>确认配置边界后再点<b>保存此配置</b>；配置串不要通过聊天、截图或 Git 流转。</li>
   </ol>
 </section>
 
 <!-- ============ 20 settings ============ -->
 <section class="page" id="settings">
   <h2>20. 系统设置 <span class="path">settings.html</span></h2>
-  <p>"系统设置"是整台机器的体检中心：页面列出七项能力（导入解析、OCR、ASR、索引、问答、生成、报告）的自检状态——已安装 / 未安装 / 未配置一目了然，缺什么会明确告诉你，不会悄悄禁用。状态可疑就点"重新自检"或"刷新状态"。这里也能集中保存或清除 AI 与 Embedding 配置（"保存并生效"无需重启服务）。排障口诀：问答答不了 → 先来这里看自检，再去 Provider 设置查连接。</p>
+  <p>"系统设置"显示七项能力（导入解析、OCR、ASR、索引、问答、生成、报告）的探测和配置状态。"available/configured"表示探测或配置条件，不等于真实 Provider、模型质量或完整用户路径已验证；真实能力应按专项证据标记为 <code>real-pass</code> 或 <code>not_verified</code>。状态可疑就点"重新自检"或"刷新状态"；这里也能集中保存或清除 AI 与 Embedding 配置。排障口诀：问答答不了 → 先看能力状态，再去 Provider 设置查连接和材料索引。</p>
   <figure>
   <svg viewBox="0 0 680 210" role="img" aria-label="系统设置示意">
     <rect x="4" y="4" width="672" height="202" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -820,7 +820,7 @@
     <rect x="236" y="82" width="196" height="52" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/><text x="252" y="102" font-size="10.5" fill="#0f172a">索引 / 问答</text><rect x="362" y="90" width="58" height="15" rx="7" fill="#dcfce7"/><text x="391" y="101" font-size="9.5" fill="#16a34a" text-anchor="middle">已安装</text><text x="252" y="122" font-size="9.5" fill="#94a3b8">分块 · 向量 · 引用</text>
     <rect x="448" y="82" width="208" height="52" rx="8" fill="#fffbeb" stroke="#fde68a"/><text x="464" y="102" font-size="10.5" fill="#0f172a">ASR / OCR</text><rect x="590" y="90" width="58" height="15" rx="7" fill="#fef9c3"/><text x="619" y="101" font-size="9.5" fill="#a16207" text-anchor="middle">未配置</text><text x="464" y="122" font-size="9.5" fill="#94a3b8">缺组件时会明确提示，不静默禁用</text>
     <rect x="24" y="146" width="632" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
-    <text x="38" y="163" font-size="10.5" fill="#0f172a">生成 / 报告：<tspan fill="#16a34a">正常</tspan>　　AI 配置：<tspan fill="#16a34a">已保存</tspan>　　Embedding：<tspan fill="#16a34a">已保存</tspan></text>
+    <text x="38" y="163" font-size="10.5" fill="#0f172a">生成 / 报告：<tspan fill="#a16207">按能力状态显示</tspan>　　AI / Embedding：<tspan fill="#a16207">配置不等于真实验证</tspan></text>
     <circle cx="34" cy="159" r="9" fill="#f59e0b"/><text x="34" y="163" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
     <text x="24" y="192" font-size="10" fill="#94a3b8">排障口诀：功能失灵 → 先自检 → 再去 Provider 设置查连接</text>
   </svg>
