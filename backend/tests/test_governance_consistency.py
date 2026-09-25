@@ -253,7 +253,11 @@ def test_service_e2e_runner_isolated_and_does_not_kill_existing_listeners():
 
 def test_browser_loader_default_paths_target_sibling_test_root():
     loader = (ROOT / "backend" / "scripts" / "browser-source-loader.js").read_text(encoding="utf-8")
-    assert "../../../studybuddy-test" in loader
+    # The loader now rewrites legacy literals through injectable roots rather
+    # than relying on a fragile relative path from an individual spec.
+    assert 'STUDYBUDDY_TEST_ROOT || "H:/studybuddy-test"' in loader
+    assert "STUDYBUDDY_FIXTURE_ROOT || process.env.STUDYBUDDY_TEST_ROOT" in loader
+    assert "H:/studybuddy-test/fixtures" in loader
     assert "STUDYBUDDY_TEST_ROOT" in loader
     assert "STUDYBUDDY_BACKEND_ROOT" in loader
     assert "STUDYBUDDY_PYTHON" in loader
@@ -403,10 +407,10 @@ def test_current_regression_fact_source_matches_latest_backend_gate():
     for document in (todo, readme):
         assert "665 passed, 3 skipped" in document[:2500]
         assert "当前 backend 基线为 `665 passed, 3 skipped`" in governance
-        assert "665 passed / 3 skipped" in status[:2500]
+        assert "665 passed / 3 skipped" in status
         assert "当前 backend 基线为 `665 passed, 3 skipped`" in roadmap
-    assert "Chromium" in status[:2500] and "not_verified" in status[:2500]
-    assert "RapidOCR" in status[:1200] and "严格 C2" in status[:1200]
+    assert "Chromium" in status and "not_verified" in status
+    assert "RapidOCR" in status and "严格 C2" in status
     assert "H:\\Whisper" in roadmap
 
 

@@ -363,7 +363,11 @@ actions.className='session-actions';
 const viewBtn=document.createElement('button');
 viewBtn.className='btn btn-primary';
 viewBtn.type='button';
+viewBtn.dataset.control='capture-detail';
+viewBtn.dataset.captureId=text(item.id);
 viewBtn.textContent='查看详情';
+viewBtn.setAttribute('aria-label','查看详情');
+viewBtn.title='查看采集详情';
 viewBtn.onclick=()=>viewSession(text(item.id));
 actions.append(viewBtn);
 card.append(actions);
@@ -452,7 +456,11 @@ transcribeHint.textContent='转写先产生草稿，不会自动转为学习材�
 transcribeSection.append(transcribeHint);
 const transcribeBtn=document.createElement('button');
 transcribeBtn.className='btn btn-primary';transcribeBtn.type='button';
+transcribeBtn.dataset.control='capture-transcribe';
+transcribeBtn.dataset.captureId=captureId;
 transcribeBtn.textContent=data.asset_kind==='image'?'开始识别（OCR）':'开始转写（ASR）';
+transcribeBtn.setAttribute('aria-label',transcribeBtn.textContent);
+transcribeBtn.title=transcribeBtn.textContent;
 transcribeBtn.onclick=()=>transcribeSession(captureId,transcribeBtn);
 transcribeSection.append(transcribeBtn);
 sessionDetailContent.append(transcribeSection);
@@ -494,7 +502,7 @@ const btnGroup=document.createElement('div');
 btnGroup.className='stack-actions mt-12';
 
 const saveBtn=document.createElement('button');
-saveBtn.className='btn';saveBtn.type='button';saveBtn.textContent='保存编辑';
+saveBtn.className='btn';saveBtn.type='button';saveBtn.dataset.control='capture-save-draft';saveBtn.dataset.captureId=captureId;saveBtn.textContent='保存编辑';saveBtn.setAttribute('aria-label','保存编辑');saveBtn.title='保存编辑';
 saveBtn.onclick=()=>{
 if(busy.edit)return;
 busy.edit=true;saveBtn.disabled=true;
@@ -503,7 +511,7 @@ editDraft(captureId,draftId,editArea.value,saveBtn);
 btnGroup.append(saveBtn);
 
 const confirmBtn=document.createElement('button');
-confirmBtn.className='btn btn-primary';confirmBtn.type='button';confirmBtn.textContent='确认转为学习材料';
+confirmBtn.className='btn btn-primary';confirmBtn.type='button';confirmBtn.dataset.control='capture-confirm-draft';confirmBtn.dataset.captureId=captureId;confirmBtn.textContent='确认转为学习材料';confirmBtn.setAttribute('aria-label','确认转为学习材料');confirmBtn.title='确认转为学习材料';
 confirmBtn.onclick=()=>{
 if(busy.confirm)return;
 busy.confirm=true;confirmBtn.disabled=true;
@@ -512,7 +520,7 @@ confirmDraft(captureId,draftId,confirmBtn);
 btnGroup.append(confirmBtn);
 
 const rejectBtn=document.createElement('button');
-rejectBtn.className='btn';rejectBtn.type='button';rejectBtn.textContent='拒绝草稿';
+rejectBtn.className='btn';rejectBtn.type='button';rejectBtn.dataset.control='capture-reject-draft';rejectBtn.dataset.captureId=captureId;rejectBtn.textContent='拒绝草稿';rejectBtn.setAttribute('aria-label','拒绝草稿');rejectBtn.title='拒绝草稿';
 rejectBtn.onclick=()=>{
 if(busy.reject)return;
 busy.reject=true;rejectBtn.disabled=true;

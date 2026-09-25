@@ -102,6 +102,9 @@ const sbList = {
     const prev = document.createElement('button');
     prev.className = 'btn';
     prev.textContent = '上一页';
+    prev.dataset.control = 'pagination-previous';
+    prev.title = '上一页';
+    prev.setAttribute('aria-label', '上一页');
     prev.disabled = !hasPrev;
     if (config.onPrev) prev.onclick = config.onPrev;
     container.append(prev);
@@ -114,6 +117,9 @@ const sbList = {
     const next = document.createElement('button');
     next.className = 'btn';
     next.textContent = '下一页';
+    next.dataset.control = 'pagination-next';
+    next.title = '下一页';
+    next.setAttribute('aria-label', '下一页');
     next.disabled = !hasNext;
     if (config.onNext) next.onclick = config.onNext;
     container.append(next);

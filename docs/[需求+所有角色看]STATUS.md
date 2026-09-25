@@ -1,5 +1,11 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-25：治理契约与后端回归基线同步
+
+- `browser-source-loader.js` 的测试契约已从已移除的相对路径字面量更新为当前的可注入 test root、fixture root、backend root 与 Python 解释器边界；该修订不改变浏览器运行器行为。
+- 本轮完整后端回归以 `D:\miniconda\py310\python.exe -m pytest backend/tests/ -q --basetemp=H:\studybuddy-test\runs\governance-alignment-full -p no:cacheprovider --tb=short` 完成：**665 passed / 3 skipped / 0 failed**（213.92s，退出码 0）。3 个 skip 均为默认关闭的真实 Provider/ASR smoke。
+- 这是本机隔离 pytest 基线，不证明正式运行时、真实 Provider、真实 OCR/ASR、外发或全局 `real-pass`。
+
 ## 2026-09-25：正式运行态与隔离核心流程复核
 
 - 正式启动入口当前以活跃正式 data root、loopback 单进程运行；PID、监听端口和进程命令行相互一致。`/api/liveness`、`/api/health`、`/api/readiness` 都返回预期成功状态，健康脚本同步输出 `healthy`。此前 `health_check_failed` 是历史观察，本次未复现；不据此推断极端时序或长期稳定性已验证。

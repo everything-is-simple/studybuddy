@@ -65,7 +65,7 @@ let setGeneration=0;
 let exerciseGeneration=0;
 let setDetailGeneration=0;
 
-function button(label,handler){const node=document.createElement('button');node.className='btn';node.type='button';node.textContent=label;node.onclick=handler;return node}
+function button(label,handler){const node=document.createElement('button');node.className='btn';node.type='button';node.textContent=label;node.dataset.control='exercise-action';node.setAttribute('aria-label',label);node.title=label;node.onclick=handler;return node}
 
 const typeLabels={
 multiple_choice:'选择题',
