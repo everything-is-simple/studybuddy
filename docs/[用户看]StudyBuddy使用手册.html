@@ -188,7 +188,7 @@
 <!-- ============ 3 material-detail ============ -->
 <section class="page" id="material-detail">
   <h2>3. 材料详情 <span class="path">material-detail.html</span></h2>
-  <p>从资料列表点进来的单份材料工作台：上半部分显示处理状态与解析出的正文，可以"导出解析文本"带走或"下载原文件"对照。核心动作是建索引——点"建立 AI 索引"或"加入索引任务"后，系统对正文切分并生成向量，之后问答才能引用这份材料；切分进度可在"任务"页观察。页面下方的"计划关联"区还能把材料"关联到学习项"，让它在学习计划里占一个位置。</p>
+  <p>从资料列表点进来的单份材料工作台：上半部分显示处理状态与解析出的正文，可以"导出解析文本"带走或"下载原文件"对照。核心动作是建索引——点"建立 AI 索引"或"加入索引任务"后，系统先对正文切分；只有 Embedding 已配置且可用时才会生成向量，问答可用的检索模式以页面能力状态为准。切分或索引进度可在"任务"页观察。页面下方的"计划关联"区还能把材料"关联到学习项"，让它在学习计划里占一个位置。</p>
   <figure>
   <svg viewBox="0 0 680 210" role="img" aria-label="材料详情示意">
     <rect x="4" y="4" width="672" height="202" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -232,7 +232,7 @@
 <!-- ============ 4 qa ============ -->
 <section class="page" id="qa">
   <h2>4. 问答 <span class="path">qa.html</span></h2>
-  <p>"问答"是学习的主战场：针对已建索引的材料提问，回答会附带引用（能点回原文出处）。提问前先设好"材料范围"和检索模式——混合检索效果最好，词法适合精确术语，向量适合换说法的提问；如果当前材料还没索引，点"索引当前材料"先补上。然后输入问题"提交问题"即可；一轮聊完点"新对话"开新话题，历史问答都留在"问答历史"里可回看。</p>
+  <p>"问答"是学习的主战场：针对已建索引的材料提问，回答会附带引用（能点回原文出处）。提问前先设好"材料范围"和当前能力支持的检索模式：有 Embedding 且页面显示可用时才选择"混合"或"向量"，否则使用可用的词法模式；词法适合精确术语，向量适合换说法的提问。如果当前材料还没索引，点"索引当前材料"先补上。然后输入问题"提交问题"即可；一轮聊完点"新对话"开新话题，历史问答都留在"问答历史"里可回看。</p>
   <figure>
   <svg viewBox="0 0 680 220" role="img" aria-label="问答页示意">
     <rect x="4" y="4" width="672" height="212" rx="10" fill="#fff" stroke="#cbd5e1"/>
@@ -242,7 +242,7 @@
     <text x="80" y="21" font-size="11" fill="#64748b">localhost:8787/app/qa.html</text>
     <rect x="24" y="42" width="96" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="72" y="58" font-size="10.5" fill="#475569" text-anchor="middle">材料范围 ▾</text>
     <circle cx="34" cy="54" r="9" fill="#f59e0b"/><text x="34" y="58" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
-    <rect x="128" y="42" width="86" height="24" rx="6" fill="#eff6ff" stroke="#2563eb"/><text x="171" y="58" font-size="10.5" fill="#2563eb" text-anchor="middle">混合检索 ✓</text>
+    <rect x="128" y="42" width="86" height="24" rx="6" fill="#eff6ff" stroke="#2563eb"/><text x="171" y="58" font-size="9.5" fill="#2563eb" text-anchor="middle">混合（需 Embedding）</text>
     <rect x="222" y="42" width="70" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="257" y="58" font-size="10.5" fill="#475569" text-anchor="middle">词法</text>
     <rect x="300" y="42" width="70" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="335" y="58" font-size="10.5" fill="#475569" text-anchor="middle">向量</text>
     <rect x="396" y="42" width="120" height="24" rx="6" fill="#fff" stroke="#cbd5e1"/><text x="456" y="58" font-size="10.5" fill="#475569" text-anchor="middle">索引当前材料</text>
@@ -685,9 +685,9 @@
     <rect x="440" y="122" width="216" height="50" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
     <text x="456" y="142" font-size="10.5" fill="#0f172a" font-weight="bold">学习报告</text>
     <text x="456" y="160" font-size="10" fill="#475569">要点 5 条 · 待练习 2 项</text>
-    <text x="24" y="188" font-size="10" fill="#94a3b8">转写文本可像材料一样被问答引用</text>
+    <text x="24" y="188" font-size="10" fill="#94a3b8">此页用于查看；创建、上传和识别请到 capture.html</text>
   </svg>
-  <figcaption>图 16 · 课堂采集：录音照片进来，转写和报告出去</figcaption>
+  <figcaption>图 16 · 课堂采集工作区：查看会话、转写与报告；创建和上传在 capture.html</figcaption>
   </figure>
   <ol class="steps">
     <li>点<b>刷新采集列表</b>同步所有采集会话。</li>
@@ -747,7 +747,7 @@
     <text x="38" y="98" font-size="10.5" fill="#0f172a">索引：人教版语文五年级上册.pdf</text>
     <rect x="520" y="86" width="120" height="16" rx="8" fill="#dbeafe"/><text x="580" y="98" font-size="9.5" fill="#1d4ed8" text-anchor="middle">进行中 12/24 块</text>
     <rect x="24" y="116" width="632" height="28" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
-    <text x="38" y="134" font-size="10.5" fill="#0f172a">索引：课堂笔记.docx</text>
+    <text x="38" y="134" font-size="10.5" fill="#0f172a">索引：单份学习材料.pdf</text>
     <rect x="430" y="122" width="60" height="16" rx="8" fill="#fee2e2"/><text x="460" y="134" font-size="9.5" fill="#dc2626" text-anchor="middle">失败</text>
     <rect x="498" y="122" width="56" height="16" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="526" y="134" font-size="9.5" fill="#475569" text-anchor="middle">重试</text>
     <rect x="562" y="122" width="56" height="16" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="590" y="134" font-size="9.5" fill="#475569" text-anchor="middle">取消</text>
