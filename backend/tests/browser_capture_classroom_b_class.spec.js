@@ -199,7 +199,7 @@ test.describe('capture.html + classroom.html B-class contract and safety', () =>
     expect(materialsData.some(item => item.original_name === 'Transcript contract.wav')).toBe(true);
   });
 
-  test('B-CAP-4: archive 409 stable boundary and no archive UI entry point on both pages', async ({ page, request }) => {
+  test('B-CAP-4: unreviewed archive stays 409; classroom remains read-only', async ({ page, request }) => {
     const create = await request.post(`${BASE}/api/study/capture-sessions`, {
       data: { asset_kind: 'audio', original_name: 'Archive boundary', media_type: 'audio/wav' }
     });

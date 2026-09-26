@@ -123,7 +123,7 @@ from .repository import (VALID_STATUSES, MAX_CONTEXT_TOKENS, connect, assemble_c
                          create_practice_session, list_practice_sessions, get_practice_session,
                          create_capture_session, upload_capture_asset, get_capture_session, list_capture_sessions,
                          transcribe_capture_session, edit_transcript_draft, confirm_transcript_draft,
-                         reject_transcript_draft, create_report_snapshot, get_report_snapshot,
+                         reject_transcript_draft, archive_capture_session, create_report_snapshot, get_report_snapshot,
                          list_report_snapshots, export_report_snapshot, list_report_delivery_attempts,
                          start_practice_session, submit_practice_session_item, finish_practice_session,
                          archive_practice_session, get_practice_result, review_exercise_attempt,

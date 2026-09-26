@@ -54,6 +54,7 @@
   <div class="screen"><div class="screenbar">/app/material-detail.html → /app/qa.html</div><div class="screenbody"><div class="uirow"><span class="button primary"><i class="marker">1</i>建立 AI 索引</span><span class="button">加入索引任务</span><span class="status">索引完成</span></div><hr><div class="uirow"><span class="select">材料范围 ▾</span><span class="button primary">混合（需 Embedding）</span><span class="input">输入资料中能回答的问题……</span><span class="button primary"><i class="marker">2</i>提交问题</span></div><div class="listrow"><span>回答：根据材料，第一单元的核心内容是……</span><span class="button">引用 [1] → 原文</span></div></div></div><p class="caption">图 2-1　先完成索引，再按能力选择检索模式并核对引用。</p>
   <ol class="steps"><li>在材料详情点击“建立 AI 索引”。材料较大或希望排队处理时，使用“加入索引任务”；正文切分可以先完成，生成向量需要 Embedding 已配置且可用。</li><li>索引完成后进入“问答”，选择材料范围；有 Embedding 时可选“混合”或“向量”，否则按页面提示使用可用的词法模式。</li><li>提出资料中能直接找到答案的问题，例如“这一节列出了哪三个要点？”。</li><li>阅读回答，点击引用编号，确认它确实回到正确的材料正文。</li></ol>
   <div class="tip"><b>两个索引按钮的区别：</b>“建立 AI 索引”是立即执行；“加入索引任务”是进入当前已接入的向量索引任务队列。任务页目前主要展示 <code>embedding_index</code>，课堂转写、问答和报告生成不会自动出现在这个队列里。</div>
+  <p>在“问答历史”点“查看对话与引用”展开详情；看完可点“关闭对话详情”收起。收起不删除回答，随时可重新展开。</p>
   <div class="done"><b>完成标志：</b>回答有引用，点击引用能定位到材料内容；没有引用时，不要把回答当作已核实结论。</div>
   <div class="warn"><b>卡住时：</b>先到“系统设置”看 AI Provider 和 Embedding，再确认材料索引状态。Provider 未配置、材料未索引或没有可引用内容时，页面会提示原因。</div>
 </section>
@@ -83,7 +84,7 @@
   <div class="goal"><b>完成后你会得到：</b>一份经人工核对并确认的课堂转写或 OCR 材料。</div>
   <div class="flow"><div class="node">课堂采集<small>capture.html</small></div><div class="node">新建会话<small>类型/名称/媒体</small></div><div class="node">打开详情<small>上传原件</small></div><div class="node">转写/识别<small>ASR / OCR 草稿</small></div><div class="node">编辑并确认<small>成为学习材料</small></div></div>
   <div class="screen"><div class="screenbar">/app/capture.html · 会话详情</div><div class="screenbody"><div class="uirow"><span class="button primary"><i class="marker">1</i>新建采集会话</span><span class="button">选择上传文件</span><span class="button">开始转写（ASR）</span></div><div class="listrow"><span>转写草稿 · 可编辑 · 待确认</span><span class="button success"><i class="marker">2</i>确认转为学习材料</span></div><p class="small">音频建议 .wav / .mp3 / .m4a；图片建议 .png / .jpg / .webp。</p></div></div><p class="caption">图 5-1　创建、上传、转写/识别、编辑和确认都在采集会话详情中完成。</p>
-  <ol class="steps"><li>进入“课堂采集”，点击“新建采集会话”，填写类型、名称和媒体类型。</li><li>打开刚创建的会话，在会话详情中上传音频或图片。</li><li>点击“开始转写（ASR）”或“开始识别（OCR）”，等待草稿出现。</li><li>核对并编辑草稿；确认无误后点击“确认转为学习材料”。</li><li>需要查看历史会话、转写稿和报告时，再进入“课堂采集与报告”工作区。</li></ol>
+  <ol class="steps"><li>进入“课堂采集”，点击“新建采集会话”，填写类型、名称和媒体类型。</li><li>打开刚创建的会话，在会话详情中上传音频或图片。</li><li>点击“开始转写（ASR）”或“开始识别（OCR）”，等待草稿出现。</li><li>核对并编辑草稿；确认无误后点击“确认转为学习材料”。</li><li>已确认或已拒绝的会话可在详情点“归档采集”；确认后隐藏，取消则保留原状态。勾选“显示已归档”仍可查看，原件和学习材料不会删除，当前没有恢复归档入口。</li><li>需要查看历史会话、转写稿和报告时，再进入“课堂采集与报告”工作区。</li></ol>
   <div class="tip"><b>入口区别：</b><code>capture.html</code>负责创建、上传、转写、编辑和确认；<code>classroom.html</code>主要负责查看会话、转写稿和报告。课堂转写不是当前任务页的后台任务。</div>
   <div class="done"><b>完成标志：</b>草稿经过人工核对，确认后能在“资料”中看到新的学习材料。</div>
   <div class="warn"><b>能力限制：</b>没有配置 ASR/OCR 时，先在“系统设置”查看状态并跳过本扩展。状态为 configured/available 也不等于真实能力 real-pass；演示模式或隔离测试结果不代表真实语音识别或图片识别质量。</div>

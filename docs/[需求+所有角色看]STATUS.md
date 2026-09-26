@@ -1,5 +1,15 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-26：问答详情关闭与采集归档入口
+
+- qa.html 的历史对话继续采用行内详情，新增“关闭对话详情”（data-control=qa-thread-close）；展开按钮可再次收起，维护 aria-expanded 与焦点返回。加载中和失败状态也可关闭；迟到响应不能重新展开已关闭的内容。没有新增或声称存在 qa-dialog-root 弹窗。
+- capture.html 的已确认／已拒绝会话详情新增“归档采集”（data-control=capture-archive），提供确认／取消、防重复提交、安全失败提示与再次操作。归档后默认列表隐藏，勾选“显示已归档”可查看，刷新和重启保持归档状态；原件、转写、已确认材料和来源关联保留。当前没有恢复归档入口。
+- 既有 archive API 已由固定 409 边界改为 project-scoped、事务性、幂等的仓储操作；仅 confirmed／rejected 可转为 archived，重复归档不修改时间戳，未完成审阅及转写中的状态仍返回 409，不存在或跨项目返回 404。沿用 schema v15 已有字段，无 migration。
+- 本轮聚焦后端 **42 passed**；完整后端 **674 passed / 3 skipped / 0 failed**（223.55s）。3 个 skip 为 opt-in 真实 ASR／Provider smoke。新增 test_capture_archive.py 覆盖状态边界、作用域、幂等、持久化、材料保留、回滚与错误脱敏。
+- 新增 browser_qa_capture_controls.spec.js **9 passed**，以 UI 创建 synthetic Markdown/WAV，覆盖 1280×800、390×844、鼠标、Tab/Enter/Space、关闭竞态、引用跳转返回、归档取消/确认、刷新、故障注入恢复、防重及等待归档时切换详情。已有 QA 用户路径 **9 passed**、采集用户路径 **12 passed**、采集契约 **15 passed**，相关 Chromium 共 **45 passed**。全部只构成限定范围 browser-pass。
+- 隔离单进程服务的 liveness／health／readiness 均为 HTTP 200，复核后已停止。正式 8787 只做只读检查，本轮未发现监听，三个健康接口均不可达；未启动或修改正式数据。真实外发均为 delivery_not_executed。
+- 两份用户手册已同步实际入口。历史 958 条账面清单未重新普查或整体认证；本轮解决两个功能缺口，不把旧弹窗 locator、其他替代映射或历史 3 条 failed 自动改成 passed。真实 Provider、真实 OCR/ASR、SMTP／飞书交付、全量控件普查及全局 production real-pass 不在本轮验证范围。
+
 ## 2026-09-25：治理契约与后端回归基线同步
 
 - `browser-source-loader.js` 的测试契约已从已移除的相对路径字面量更新为当前的可注入 test root、fixture root、backend root 与 Python 解释器边界；该修订不改变浏览器运行器行为。

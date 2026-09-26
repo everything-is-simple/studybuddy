@@ -132,7 +132,7 @@ let currentSessions=[];
 let loadGeneration=0,detailGeneration=0,capabilityGeneration=0;
 let listOffset=0,listHasMore=false,listItems=[];
 let captureCapability={status:'loading'},ocrCapability={status:'loading'};
-const busy={create:false,upload:false,transcribe:false,edit:false,confirm:false,reject:false};
+const busy={create:false,upload:false,transcribe:false,edit:false,confirm:false,reject:false,archive:false};
 let uploadTimerId=null;
 
 function text(value){return typeof value==='string'?value:''}
@@ -142,6 +142,7 @@ function mediaLabel(value){return MEDIA_LABEL[value]||text(value)||'未知媒体
 const errorMap={
 capture_list_failed:'采集会话列表加载失败，请重试',
 capture_read_failed:'采集会话详情加载失败，请重试',
+capture_archive_failed:'归档失败，请重试',
 capture_not_found:'采集会话不存在或已删除',
 capture_invalid_state:'当前会话状态不允许此操作',
 capture_invalid_payload:'会话信息无效，请检查名称和类型',
@@ -415,6 +416,19 @@ const strong=document.createElement('strong');strong.textContent=value;p.append(
 });
 sessionDetailContent.append(meta);
 
+if(['confirmed','rejected'].includes(data.status)){
+const btn=document.createElement('button');
+btn.type='button';btn.className='btn';btn.textContent='归档采集';
+btn.dataset.control='capture-archive';btn.dataset.captureId=captureId;
+btn.disabled=busy.archive;
+btn.onclick=()=>archiveSession(captureId,btn);
+sessionDetailContent.append(btn);
+}else if(data.status==='archived'){
+const p=document.createElement('p');p.className='notice';
+p.textContent='此会话已归档；原件、转写和已确认材料仍保留。';
+sessionDetailContent.append(p);
+}
+
 if(data.status==='draft'&&!data.material_id){
 const uploadSection=document.createElement('div');
 uploadSection.className='upload-section';
@@ -534,6 +548,24 @@ sessionDetailContent.append(draftSection);
 }
 }
 
+async function archiveSession(id,btn){
+if(busy.archive)return;
+if(!window.confirm('归档此会话？默认列表将隐藏它，可勾选“显示已归档”查看。原件、转写和已确认材料仍保留。'))return;
+busy.archive=true;btn.disabled=true;
+const generation=detailGeneration;
+showStatus(sessionDetailStatus,'正在归档…');
+try{
+const archived=await sbApi.json(`/api/study/capture-sessions/${encodeURIComponent(id)}/archive`,{method:'POST',signal:pageRequest.signal});
+if(generation===detailGeneration&&sessionDetailDialog.open){renderSessionDetail(archived);showStatus(sessionDetailStatus,'归档成功。')}
+await load(true);
+}catch(e){
+if(e.name!=='AbortError'&&generation===detailGeneration&&sessionDetailDialog.open)showStatus(sessionDetailStatus,mapError(e),true);
+}finally{
+busy.archive=false;btn.disabled=false;
+sessionDetailContent.querySelectorAll('[data-control=capture-archive]').forEach(button=>{button.disabled=false});
+}
+}
+
 async function uploadFile(captureId,file,statusEl,fileInput){
 if(busy.upload)return;
 busy.upload=true;
@@ -647,6 +679,7 @@ closeDetailBtn.onclick=()=>{
 if(uploadTimerId){clearTimeout(uploadTimerId);uploadTimerId=null}
 sessionDetailDialog.close();
 };
+sessionDetailDialog.addEventListener('close',()=>{detailGeneration++});
 
 document.querySelector('#asset-kind').onchange=e=>{
 const image=e.target.value==='image';

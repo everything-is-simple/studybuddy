@@ -12,8 +12,43 @@ materialsInput.addEventListener('input',applyScopeInput);function message(value,
 async function checkCapabilities(){try{const data=await sbApi.json('/api/ai/capabilities',{signal:request.signal}),qa=data.capabilities?.qa||data.llm||data,status=qa.status||'not_configured',summary=window.sbCapability.describe('AI Provider',qa);if(status==='not_configured'||status==='invalid_config'){providerStatus.className='notice warn';providerStatus.replaceChildren(document.createTextNode('AI Provider 未配置或配置无效，问答功能不可用。'),Object.assign(document.createElement('a'),{href:'/app/settings-provider.html',textContent:'打开设置页配置'}))}else if(status==='demo'){providerStatus.className='notice';providerStatus.textContent=summary+'；不代表真实 Provider 已验证'}else if(status==='configured'){providerStatus.className='notice';providerStatus.textContent=summary}else if(status==='available'){providerStatus.className='notice';providerStatus.textContent=summary}else{providerStatus.className='notice warn';providerStatus.textContent='AI Provider 状态暂不可用，可刷新重试'}}catch(error){providerStatus.className='notice warn';providerStatus.textContent='AI Provider 状态检查失败，可刷新重试'}}
 indexBtn.onclick=async()=>{const materialIds=ids();if(!materialIds.length){message('请先指定要索引的材料 ID','warn');return}if(knownMaterials.size){const unknown=materialIds.filter(value=>!knownMaterials.has(value));if(unknown.length){message('材料范围包含未识别的材料 ID：'+unknown.join('、')+'，请修正或从列表勾选。','warn');return}}indexBtn.disabled=true;message('正在建立索引...');try{for(const materialId of materialIds)await sbApi.json('/api/materials/'+encodeURIComponent(materialId)+'/ai-index',{method:'POST',headers:{'Idempotency-Key':sbApi.idempotencyKey()},signal:request.signal});message('索引建立完成','status-ready')}catch(error){message(sbApi.safeError(error)+' 可重试。','warn')}finally{indexBtn.disabled=false}};
 form.onsubmit=async event=>{event.preventDefault();const question=questionInput.value.trim(),materialIds=ids();if(!question)return;if(!materialIds.length){message('请先选择至少一个材料后再提问。','warn');return}if(knownMaterials.size){const unknown=materialIds.filter(value=>!knownMaterials.has(value));if(unknown.length){message('材料范围包含未识别的材料 ID：'+unknown.join('、')+'，请修正或从列表勾选。','warn');return}}submitBtn.disabled=true;message('正在提交问题...');try{const result=await sbSubmit.once('qa-ask',()=>sbApi.json('/api/qa/ask',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':sbApi.idempotencyKey()},body:JSON.stringify({question,material_ids:materialIds,retrieval_mode:modeSelect.value,allow_retrieval_fallback:true,top_k:5,thread_id:currentThreadId||undefined}),signal:request.signal}));if(result.answer_text||result.answer){questionInput.value='';await loadThreads();message(currentThreadId?'回答已生成，已继续当前对话':'回答已生成','status-ready')}else message('问答已记录，但回答生成失败或超时','warn')}catch(error){message(sbApi.safeError(error)+' 可重试。','warn')}finally{submitBtn.disabled=false}};
-function renderThread(thread){const id=thread.id||thread.thread_id||'unknown';const item=document.createElement('article');item.className='thread-item';item.dataset.threadId=id;item.dataset.control='qa-thread';const meta=document.createElement('div');meta.className='thread-meta';meta.textContent='线程 '+id+' · '+(thread.updated_at?new Date(thread.updated_at).toLocaleString('zh-CN'):'时间未知');item.append(meta);if(thread.title){const heading=document.createElement('h3');heading.textContent=thread.title;item.append(heading)}const open=document.createElement('button');open.type='button';open.className='btn';open.dataset.control='qa-thread-open';open.dataset.threadId=id;open.textContent='查看对话与引用';open.setAttribute('aria-label','查看对话与引用');open.title='查看对话与引用';open.onclick=()=>loadThread(id,item);const cont=document.createElement('button');cont.type='button';cont.className='btn';cont.dataset.control='qa-thread-continue';cont.dataset.threadId=id;cont.textContent='继续此对话';cont.setAttribute('aria-label','继续此对话');cont.title='继续此对话';cont.onclick=()=>{currentThreadId=id;message('已切换到该对话，继续提问将在同一线程中进行','status-ready')};item.append(open,cont);return item}
+function renderThread(thread){
+const id=thread.id||thread.thread_id||'unknown';
+const item=document.createElement('article');item.className='thread-item';item.dataset.threadId=id;item.dataset.control='qa-thread';
+const meta=document.createElement('div');meta.className='thread-meta';
+meta.textContent='线程 '+id+' · '+(thread.updated_at?new Date(thread.updated_at).toLocaleString('zh-CN'):'时间未知');item.append(meta);
+if(thread.title){const heading=document.createElement('h3');heading.textContent=thread.title;item.append(heading)}
+const open=document.createElement('button');open.type='button';open.className='btn';
+open.dataset.control='qa-thread-open';open.dataset.threadId=id;open.textContent='查看对话与引用';
+open.setAttribute('aria-label','查看对话与引用');open.setAttribute('aria-expanded','false');open.title='查看对话与引用';
+open.onclick=()=>loadThread(id,item);
+const cont=document.createElement('button');cont.type='button';cont.className='btn';
+cont.dataset.control='qa-thread-continue';cont.dataset.threadId=id;cont.textContent='继续此对话';
+cont.setAttribute('aria-label','继续此对话');cont.title='继续此对话';
+cont.onclick=()=>{currentThreadId=id;message('已切换到该对话，继续提问将在同一线程中进行','status-ready')};
+item.append(open,cont);return item;
+}
 function renderMessages(data,target){target.replaceChildren();const messages=Array.isArray(data.messages)?data.messages:[];if(!messages.length){target.textContent='此对话暂无消息。';return}messages.forEach(messageItem=>{const row=document.createElement('div');row.className=messageItem.role==='user'?'thread-question':'thread-answer';row.textContent=messageItem.content||'';target.append(row);if(Array.isArray(messageItem.citations)&&messageItem.citations.length){const cite=document.createElement('div');cite.className='citations';const label=document.createElement('span');label.className='muted';label.textContent='引用来源：';cite.append(label);messageItem.citations.forEach((citation,index)=>cite.append(citationLink(citation,index)));target.append(cite)}})}
-async function loadThread(id,item){const detail=item.querySelector('.thread-detail')||document.createElement('div');detail.className='thread-detail';detail.textContent='正在加载对话…';if(!detail.parentNode)item.append(detail);try{const data=await sbApi.json('/api/qa/threads/'+encodeURIComponent(id),{signal:request.signal});renderMessages(data,detail)}catch(error){detail.textContent=sbApi.safeError(error)}}
+function closeThread(item){
+const detail=item.querySelector('.thread-detail'),open=item.querySelector('[data-control=qa-thread-open]');
+if(detail){detail.hidden=true;detail.dataset.generation=String(Number(detail.dataset.generation||0)+1)}
+open.setAttribute('aria-expanded','false');open.focus();
+}
+async function loadThread(id,item){
+const open=item.querySelector('[data-control=qa-thread-open]');
+let detail=item.querySelector('.thread-detail');
+if(detail&&!detail.hidden){closeThread(item);return}
+if(!detail){detail=document.createElement('div');detail.className='thread-detail';detail.id='qa-thread-detail-'+id;item.append(detail)}
+detail.hidden=false;open.setAttribute('aria-expanded','true');open.setAttribute('aria-controls',detail.id);
+const generation=Number(detail.dataset.generation||0)+1;detail.dataset.generation=String(generation);
+const close=document.createElement('button');close.type='button';close.className='btn';
+close.dataset.control='qa-thread-close';close.dataset.threadId=id;close.textContent='关闭对话详情';
+close.onclick=()=>closeThread(item);
+const content=document.createElement('div');content.textContent='正在加载对话…';
+detail.replaceChildren(close,content);
+const current=()=>detail.isConnected&&!detail.hidden&&Number(detail.dataset.generation)===generation;
+try{const data=await sbApi.json('/api/qa/threads/'+encodeURIComponent(id),{signal:request.signal});if(current())renderMessages(data,content)}
+catch(error){if(current())content.textContent=sbApi.safeError(error)}
+}
 async function loadThreads(){const generation=++threadGeneration;threadStatus.hidden=false;threadStatus.className='notice';threadStatus.textContent='正在加载线程...';threads.replaceChildren();try{const data=await sbApi.json('/api/qa/threads',{signal:request.signal}),list=Array.isArray(data)?data:data.items||[];if(generation!==threadGeneration)return;if(!list.length){threadStatus.textContent='暂无问答历史';return}threadStatus.hidden=true;list.forEach(thread=>threads.append(renderThread(thread)))}catch(error){if(generation!==threadGeneration)return;threadStatus.className='notice warn';threadStatus.textContent=sbApi.safeError(error)}}
 loadMaterials();loadThreads();checkCapabilities()})();</script></body></html>

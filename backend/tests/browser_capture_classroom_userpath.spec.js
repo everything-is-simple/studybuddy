@@ -124,7 +124,7 @@ test.describe.serial('capture.html + classroom.html A-class user-path E2E', () =
     await expect(page.locator('#new-session-btn')).toBeVisible();
     await expect(page.locator('#refresh-btn')).toBeVisible();
     await expect(page.locator('#include-archived')).not.toBeChecked();
-    // No archive button may exist anywhere (archive is a stable 409 boundary).
+    // No terminal session exists yet, so there is no archive action.
     await expect(page.locator('body')).not.toContainText('归档采集');
     await assertNoSensitiveText(page);
   });
@@ -240,10 +240,12 @@ test.describe.serial('capture.html + classroom.html A-class user-path E2E', () =
     await expect(detail.locator('#session-detail-status')).toContainText('草稿已拒绝', { timeout: 15000 });
     await expect(page.locator('#sessions .session-card').filter({hasText:'拒绝流程测试.wav'})).toContainText('已拒绝', { timeout: 10000 });
 
-    // Archived filter passes the parameter and stays honest (no UI archive entry).
+    // Archived filter includes reviewed sessions; archive is available in detail.
     await page.locator('#include-archived').check();
     await expect(page.locator('#sessions .session-card').filter({hasText:'拒绝流程测试.wav'})).toHaveCount(1, { timeout: 10000 });
-    await expect(page.locator('body')).not.toContainText('归档采集');
+    await page.locator('#sessions .session-card').filter({hasText:'拒绝流程测试.wav'}).getByRole('button', {name:'查看详情'}).click();
+    await expect(detail.locator('[data-control=capture-archive]')).toBeVisible();
+    await page.locator('#close-detail-btn').click();
     await page.locator('#include-archived').uncheck();
     await assertNoSensitiveText(page);
   });

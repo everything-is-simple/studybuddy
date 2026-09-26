@@ -3,6 +3,27 @@
 from . import _legacy_part_05 as _part_05
 from . import _legacy_part_06 as _part_06
 from . import _legacy_part_07 as _part_07
+from .connection import sqlite3, utc_now
+
+
+def archive_capture_session(connection: sqlite3.Connection, *, project_id: str,
+                            capture_session_id: str) -> dict[str, object]:
+    """Archive a reviewed capture without changing its material or transcript."""
+    with connection:
+        now = utc_now()
+        connection.execute(
+            "UPDATE capture_sessions SET status='archived',archived_at=?,updated_at=? "
+            "WHERE id=? AND project_id=? AND status IN ('confirmed','rejected')",
+            (now, now, capture_session_id, project_id),
+        )
+        result = _part_06.get_capture_session(
+            connection, project_id=project_id, capture_session_id=capture_session_id,
+        )
+        if result is None:
+            raise ValueError("capture_not_found")
+        if result["status"] != "archived":
+            raise ValueError("capture_invalid_state")
+        return result
 
 PHASE9D_TRANSCRIPTION_OPERATION = _part_05.PHASE9D_TRANSCRIPTION_OPERATION
 PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD = _part_05.PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD
@@ -37,3 +58,4 @@ reject_transcript_draft = _part_07.reject_transcript_draft
 fail_transcription_operation = _part_07.fail_transcription_operation
 
 __all__ = ['PHASE9D_TRANSCRIPTION_OPERATION', 'PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD', 'PHASE9D_TRANSCRIPT_MAX_SEGMENTS', 'PHASE9D_TRANSCRIPT_MAX_TEXT', 'PHASE9D_REPORT_CONTENT_VERSION', 'PHASE9D_REPORT_KINDS', 'PHASE9D_REPORT_EXPORT_FORMATS', 'PHASE9D_REPORT_PAYLOAD_FIELDS', 'PHASE9D_CAPTURE_ASSET_TYPES', 'PHASE9D_CAPTURE_SUFFIXES', 'PHASE9D_CAPTURE_PARSER_ID', 'PHASE9D_CAPTURE_PARSER_VERSION', 'PHASE9D_TRANSCRIPT_PARSER_ID', 'PHASE9D_TRANSCRIPT_PARSER_VERSION', 'PHASE9D_DELIVERY_CHANNELS', 'PHASE9D_DELIVERY_MODES', 'PHASE9D_SOURCE_STATUSES', 'PHASE9D_TRANSCRIPTION_ERROR_CODES', 'create_capture_session', 'upload_capture_asset', 'get_capture_session', 'list_capture_sessions', 'create_transcription_operation', 'transcribe_capture_session', 'get_transcription_operation', 'list_transcription_operations', 'complete_transcription_operation', 'edit_transcript_draft', 'confirm_transcript_draft', 'reject_transcript_draft', 'fail_transcription_operation']
+__all__.append('archive_capture_session')

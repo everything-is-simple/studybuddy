@@ -1,5 +1,13 @@
 # StudyBuddy TODO 清单
 
+## 2026-09-26：两个剩余 UI 入口缺口
+
+- [x] QA 行内详情增加稳定关闭控件、展开状态和焦点返回；覆盖加载中／失败／迟到响应、键盘、引用返回及刷新回读（browser_qa_capture_controls.spec.js）。
+- [x] 已确认／已拒绝采集会话支持带确认／取消的归档，默认隐藏并可筛选查看；仓储事务保留原件、转写与学习材料，覆盖幂等、project scope、非法状态、回滚与持久化（test_capture_archive.py）。
+- [x] 同步两份用户手册，并完成 42 项聚焦后端、674 passed / 3 skipped 完整后端及相关 Chromium 用户路径验证；结论限定为 backend-pass／browser-pass。
+- [ ] 历史全控件清单仍需重新核实替代映射与动态控件普查；不得用处置等式代替实际功能验证。旧记录的报告重试丢失选中详情、笔记／计划归档缺少确认路径不属于本切片。
+- [ ] 下一优先切片：为笔记与计划归档补统一确认／取消，并验证取消零写入、确认一次提交及刷新持久化。
+
 > 2026-09-25 运行态复核：正式服务已按正式启动入口运行，进程/端口/data root 相互一致；liveness、health、readiness 和健康脚本均为成功。隔离 core workflow `browser_p1_4_real_input_restart.spec.js` 为 `3 passed (13.3s)`，覆盖导入、索引、问答、引文定位与重启回读。系统仪表盘和 Provider 页面当前都显示 LLM/Embedding“已配置·未验证”，历史状态分歧及 `health_check_failed` 本次未复现。真实 Provider、OCR/ASR、live delivery、跨浏览器和屏幕阅读器继续 `not_verified`。
 > 2026-09-25 浏览器契约修订已收口：Chromium 全量单 worker、隔离数据根 **559 passed / 4 skipped / 0 failed**（21.0m，退出码 0）。`spawn UNKNOWN`、四项过时断言/枚举、ESM loader 路径注入和 88 个浏览器规格的解释器路径已处理；该结果属于 fake Provider 的 browser-pass，不改变真实 Provider/OCR/ASR、live delivery、跨浏览器和屏幕阅读器的 `not_verified` 边界。
 > 2026-09-25 浏览器执行基线：完整 Chromium `553 passed, 4 failed, 4 skipped, 2 did not run`（20.8m，单 worker、隔离数据根）。`spawn UNKNOWN` 已通过 Playwright headless shell 入口和 PDF fixture helper 修复。剩余失败待独立处理：50 MiB 文件导入边界、Provider capability 未知状态文案、QA 未配置文案、capability 枚举断言；真实 Provider、OCR/ASR、live delivery、跨浏览器和屏幕阅读器继续 `not_verified`。

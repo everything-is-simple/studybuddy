@@ -245,14 +245,20 @@ def register_routes(app, context: dict[str, object]) -> None:
 
     @app.post("/api/study/capture-sessions/{capture_id}/archive")
     def archive_capture(capture_id: str) -> dict[str, object]:
-        """归档采集会话（当前未实现）
-        
-        9D 领域合约目前没有归档事务。在生命周期门提供该领域操作之前，
-        不要添加路由级 SQL 变更；暴露稳定边界。
-        """
+        """Archive a confirmed/rejected session; replay preserves its timestamps."""
         if not capture_id or len(capture_id) > 120:
             raise HTTPException(status_code=404, detail="capture_not_found")
-        raise HTTPException(status_code=409, detail="capture_invalid_state")
+        try:
+            with connect(app.state.config.database_path) as connection:
+                return archive_capture_session(
+                    connection, project_id=app.state.config.project_id,
+                    capture_session_id=capture_id,
+                )
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=_phase9d_http_status(code), detail=code) from None
+        except sqlite3.Error:
+            raise HTTPException(status_code=500, detail="capture_archive_failed") from None
 
     @app.post("/api/study/reports", status_code=201)
     def create_study_report(

@@ -199,6 +199,7 @@ from .repositories.practice import (
 )
 
 from .repositories.capture import (
+    archive_capture_session,
     PHASE9D_TRANSCRIPTION_OPERATION,
     PHASE9D_TRANSCRIPT_CONFIDENCE_THRESHOLD,
     PHASE9D_TRANSCRIPT_MAX_SEGMENTS,
@@ -541,6 +542,7 @@ __all__ = [
     'edit_transcript_draft',
     'confirm_transcript_draft',
     'reject_transcript_draft',
+    'archive_capture_session',
     'fail_transcription_operation',
     'build_report_projection',
     'export_report_snapshot',
