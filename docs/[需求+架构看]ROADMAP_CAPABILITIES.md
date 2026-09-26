@@ -227,7 +227,7 @@ backend/app/
 5. 收口 `js/shell.js`：只保留产品任务导航，补充报告/任务/设置入口，统一当前页面标记；移动端采用可访问的更多导航，不压缩成不可用的横向长导航。
 6. A3-FC-3 分两轮执行：首轮完成全部现有静态页面的 API/字段/状态/错误/安全审计和基础 browser regression；第二轮已完成每页状态到 `sbState` 的迁移，以及 stale/failure/source-lifecycle、360–1920 响应式、键盘和隐私 DOM 矩阵。失败/retry 证据索引见 `docs/frontend-static-failure-retry-matrix.md`。
 7. A3-FC-3-2 通过后执行的首批页面拆分已完成：`plan-detail.html`、`note-detail.html`、`practice-session.html`、`practice-result.html`、`review.html`、`reports.html`、`settings.html`。页面保持现有 `plans.html`、`notes.html`、`practice.html`、`classroom.html`、`settings-provider.html`、`tasks.html` 可回退，不改变 API 语义。
-8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。历史视觉基线为 backend `468 passed, 3 skipped`、browser `144 passed, 4 skipped`；当前 backend 基线为 `674 passed, 3 skipped, 0 failed`（2026-09-26）；最新完整 Chromium 基线为 2026-09-25 的 `559 passed, 4 skipped, 0 failed`，但最新 UI 提交后尚未重跑完整 browser 套件。视觉任务未改变 API 或业务行为。
+8. 页面拆分和行为门禁已通过；A3-VISUAL 亦已完成：Neutral Modern card/button/badge/notice/dialog/focus/grid 已收敛到共享 CSS，全部 21 个 `/app/*.html` 无局部 `<style>`，visual matrix 覆盖 shared tokens、card、360/1920、触控目标和 focus ring。历史视觉基线为 backend `468 passed, 3 skipped`、browser `144 passed, 4 skipped`；当前 backend 基线为 `674 passed, 3 skipped, 0 failed`，当前完整 Chromium 基线为 `574 passed, 4 skipped, 0 failed`（均为 2026-09-26）；范围为单 worker、隔离 data root 与 fake Provider／ASR，不扩大为全局 `real-pass`。视觉任务未改变 API 或业务行为。
 
 **通过门槛：** A3-FC 已在声明范围内通过：前端契约审计表完整；无未定义 token；页面 endpoint/字段/状态检查通过；核心浏览器套件、360–1920、键盘、错误恢复、source lifecycle 和隐私 DOM 通过；源码尺寸检查通过；TODO/STATUS/frontend-plan/evidence 已同步。该关闭不代表所有 `legacy_only`/`not_exposed` 能力已迁移；A3-PAGES/A3-VISUAL 已分别完成声明范围，剩余未暴露能力仍按独立契约推进。
 

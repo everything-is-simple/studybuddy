@@ -239,6 +239,8 @@ def test_browser_runner_rejects_production_root_and_descendants():
     assert "browser_test_root_must_not_be_production_data_root" in runner
     assert "$testRootBase" in runner
     assert "browser_test_root_must_be_under_studybuddy_test" in runner
+    assert "STUDYBUDDY_ASR_PROVIDER = 'fake'" in runner
+    assert "STUDYBUDDY_ASR_RUNTIME,Env:STUDYBUDDY_ASR_MODEL_PATH" in runner
 
 
 def test_service_e2e_runner_isolated_and_does_not_kill_existing_listeners():

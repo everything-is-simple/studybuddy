@@ -68,6 +68,9 @@ try {
         $env:STUDYBUDDY_DATA_ROOT = $DataRoot
         $env:STUDYBUDDY_AI_PROVIDER = 'fake'
         Remove-Item Env:STUDYBUDDY_AI_API_KEY,Env:STUDYBUDDY_AI_BASE_URL,Env:STUDYBUDDY_AI_MODEL -ErrorAction SilentlyContinue
+        $env:STUDYBUDDY_ASR_PROVIDER = 'fake'
+        $env:STUDYBUDDY_ASR_MODEL = 'fake-capture-v1'
+        Remove-Item Env:STUDYBUDDY_ASR_RUNTIME,Env:STUDYBUDDY_ASR_MODEL_PATH -ErrorAction SilentlyContinue
         Set-Location $BackendRoot
         & $PythonPath -m uvicorn app.main:app --host 127.0.0.1 --port $Port 2>&1
     } -ArgumentList $backend, $sharedDataRoot, $sharedPort, $python

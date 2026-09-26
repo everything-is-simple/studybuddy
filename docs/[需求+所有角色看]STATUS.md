@@ -1,5 +1,10 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-26：全量 Chromium 回归与测试环境隔离
+
+- 浏览器 runner 的共享服务显式锁定 fake LLM 与 fake ASR，并清除继承的本机 ASR 路径／模型环境变量，避免主机自动探测的 Whisper 改变合成音频规格语义；opt-in 真实 ASR 规格继续自行启动显式配置的独立进程。
+- 已同步旧笔记归档规格至当前确认对话行为；完整 Chromium 以单 worker、隔离 `H:\studybuddy-test` data root 运行 **574 passed / 4 skipped / 0 failed**（21.1m）。4 个 skip 为默认关闭的真实 Provider／ASR smoke；本结果为 fake Provider／ASR 的限定 browser-pass，不构成正式服务、真实能力或全局 `real-pass`。
+
 ## 2026-09-26：三项历史 UI 失败修复
 
 - UI-REPORT-RETRY-001：报告列表的重试改为显式调用加载函数，避免浏览器点击事件被误当成 report_id。已有报告链接加载失败后重试，恢复同一报告的选中高亮、详情、预览和导出入口；URL、刷新与返回链保持一致。

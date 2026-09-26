@@ -1,5 +1,9 @@
 # StudyBuddy TODO 清单
 
+## 2026-09-26：全量 Chromium 基线重建
+
+- [x] 浏览器 runner 显式隔离 fake LLM／ASR，清除继承的本机 ASR runtime/model；同步笔记归档确认测试。完整 Chromium 为 **574 passed / 4 skipped / 0 failed**（21.1m、单 worker、隔离 test data root）。4 个 skip 均为 opt-in 真实 Provider／ASR smoke；结果限定为 fake Provider／ASR 的 browser-pass，不扩大为正式运行时或 `real-pass`。
+
 ## 2026-09-26：三项历史失败回归完成
 
 - [x] UI-REPORT-RETRY-001：修复报告重试时点击事件误作报告 ID；验证选中详情、预览、下载、URL、刷新和返回。

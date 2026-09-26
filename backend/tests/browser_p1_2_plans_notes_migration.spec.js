@@ -150,6 +150,7 @@ test('P1-2 notes page creates, edits, confirms and archives a user note',async({
   await expect(page.locator('#note-detail')).toContainText('P1-2 知识模块');
   await page.getByRole('button',{name:'刷新来源状态'}).click();
   await expect(page.locator('#note-status')).toContainText('笔记来源状态已刷新');
+  page.once('dialog',dialog=>dialog.accept());
   await page.getByRole('button',{name:'归档笔记'}).click();
   await expect(page.locator('#note-status')).toContainText('笔记已归档');
   await expect(page.locator('#note-detail')).toContainText('已归档');
