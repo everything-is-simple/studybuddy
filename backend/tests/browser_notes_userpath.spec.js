@@ -9,7 +9,7 @@ const path = require('path');
 //        -> index -> AI draft via material dropdown -> note-detail page ->
 //        confirm / reject -> export -> archive visibility -> failure injection -> real restart.
 let RUN_ROOT = 'H:/studybuddy-test/runs/notes-userpath';
-const FIXTURES = 'H:/studybuddy-test/fixtures/notes-userpath';
+const FIXTURES = path.join(process.env.STUDYBUDDY_TEST_ROOT || 'H:/studybuddy-test', 'fixtures', 'notes-userpath');
 const ART = 'H:/studybuddy-test/artifacts/notes-userpath';
 const PORT = 8951;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -299,6 +299,7 @@ test.describe.serial('notes -> note-detail pure user path (A-class)', () => {
     await page.fill('#new-content', '归档内容只读保存，供之后查阅和导出。');
     await page.click('#create-form button[type=submit]');
     await expect(page.locator('#note-status')).toContainText('用户笔记已创建', { timeout: 10000 });
+    page.once('dialog', dialog => dialog.accept());
     await page.click('#note-archive');
     await expect(page.locator('#note-status')).toContainText('笔记已归档', { timeout: 10000 });
     await expect(page.locator('#notes .note-item', { hasText: '归档后仍可查阅的笔记' })).toHaveCount(0);

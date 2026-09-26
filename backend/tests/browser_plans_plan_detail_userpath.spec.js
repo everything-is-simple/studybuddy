@@ -11,7 +11,7 @@ const PORT = 8903;
 const BASE = `http://127.0.0.1:${PORT}`;
 const PYTHON = process.env.STUDYBUDDY_TEST_PYTHON || 'D:/miniconda/py310/python.exe';
 const ART = `H:/studybuddy-test/artifacts/plans-userpath-${RUN_ID}`;
-const FIXTURE = `H:/studybuddy-test/fixtures/plans-userpath-${RUN_ID}/真实链路测试材料.txt`;
+const FIXTURE = require('path').join(process.env.STUDYBUDDY_TEST_ROOT || 'H:/studybuddy-test', 'fixtures', 'plans-userpath-' + RUN_ID, '真实链路测试材料.txt');
 const TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
 let server;
 

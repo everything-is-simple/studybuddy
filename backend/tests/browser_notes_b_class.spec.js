@@ -16,7 +16,7 @@ const path = require('path');
 // unless the boundary itself is the subject of the contract check.
 // ---------------------------------------------------------------------------
 let RUN_ROOT = 'H:/studybuddy-test/runs/notes-b';
-const FIXTURES = 'H:/studybuddy-test/fixtures/notes-b';
+const FIXTURES = path.join(process.env.STUDYBUDDY_TEST_ROOT || 'H:/studybuddy-test', 'fixtures', 'notes-b');
 const ART = 'H:/studybuddy-test/artifacts/notes-b';
 const PORT = 8953;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -165,6 +165,7 @@ test.describe.serial('notes/note-detail interface contract + fault injection (B-
     await page.goto(`${BASE}/app/notes.html`);
     await notesLoaded(page);
     await createNote(page, '待归档笔记', '待归档正文');
+    page.once('dialog', dialog => dialog.accept());
     await page.click('#note-archive');
     await expect(page.locator('#note-status')).toContainText('笔记已归档', { timeout: 10000 });
     await expect(page.locator('#notes .note-item', { hasText: '待归档笔记' })).toHaveCount(0);
@@ -248,6 +249,7 @@ test.describe.serial('notes/note-detail interface contract + fault injection (B-
     await page.unroute(R.confirm);
     // archive 409 状态已变化
     await inject(page, R.archive, 'POST', 409, 'study_note_invalid_state');
+    page.once('dialog', dialog => dialog.accept());
     await page.click('#note-archive');
     await expect(page.locator('#note-status')).toContainText('笔记状态已变化，请刷新后重试', { timeout: 10000 });
     await page.unroute(R.archive);
