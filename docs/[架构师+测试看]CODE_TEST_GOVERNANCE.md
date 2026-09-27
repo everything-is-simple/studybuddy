@@ -2,6 +2,32 @@
 
 > 本文是仓库级工程治理规范。它规定代码放置、测试分层、状态命名、证据和变更门禁；能力事实仍记录在 `STATUS.md`，执行任务仍只记录在 `TODO.md`，长期顺序仍记录在 `PHASE_ROADMAP.md`。
 
+<!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
+## 统一执行协议（2026-09-27）
+
+本文件与 `H:\studybuddy\docs\[所有角色看]AI_AGENT_TASK_DIALOGUE_TEMPLATES.md` v2.1 使用同一套执行口径。本文档中早于 2026-09-27 的报告、表格和历史标签保留其原始事实；历史标签只能在原日期、原范围和原证据路径下解释，不能升级为当前全局结论。
+
+### 可执行 Prompt 的必填字段
+- **角色**：本次执行者的职责。
+- **唯一目标**：一个可判定的结果，不把多个目标合并成“全部处理”。
+- **当前阶段**：只能填写 `P0`（边界确认）、`P1`（真实状态读取）、`P2`（真实操作执行）、`P3`（证据核对）、`P4`（交付与结论）之一，并按顺序推进。
+- **允许读取/写入**：逐项列出绝对路径、URL、端点、数据根和输入；未列出的对象禁止访问或修改。
+- **指定工具/命令/端口/输入**：必须原样执行；对象不可用时返回 `BLOCKED`，不得替换。
+- **禁止操作、停止条件和证据路径**：逐项写明；每个结论必须有实际命令/动作、结果和绝对证据路径。
+
+### 统一状态与范围
+`PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
+
+### 统一路径和运行基线
+源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`。
+
+正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
+
+### 强制禁止
+不得凭推测输出；不得用 HTML 解析、按钮清单、curl/API 请求、静态检查或 headless 结果冒充可视浏览器点击；不得读取、复制、提交或展示密钥、Token、Cookie、真实教材正文、Provider 原始响应、SQL 或完整 traceback；不得在未授权时调用真实 Provider/OCR/ASR、发送 Email/飞书或扩大文件范围。工具、路径、页面、服务状态或证据不满足前置条件时，立即停止并报告 `BLOCKED`。
+
+<!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
+
 ## 1. 系统边界
 
 StudyBuddy 当前支持的部署模型是单进程、单实例、SQLite、本地磁盘和本地浏览器。多个 worker、多个服务实例或多个进程不得共享同一个 `data_root`。云同步、多用户、认证授权、外部存储、生产级容量和真实断电恢复都必须有独立设计与证据，不能从现有测试结果推断支持。
@@ -48,7 +74,7 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\test-backe
 如需绕过统一 runner，直接命令必须指定可写的测试临时目录并禁用仓库 cache provider：
 
 ```text
-D:\miniconda\py310\python.exe -m pytest backend/tests/ -q --basetemp=H:\studybuddy-test\runs\pytest-basetemp -p no:cacheprovider
+D:\miniconda\py310\python.exe -m pytest backend/tests/ -q --basetemp=H:\studybuddy-test\verification\pytest-basetemp -p no:cacheprovider
 ```
 
 Bash/Cygwin 等价路径为 `/cygdrive/d/miniconda/py310/python -m pytest backend/tests/ -q --basetemp=/cygdrive/h/studybuddy-test/runs/pytest-basetemp -p no:cacheprovider`。可用 `STUDYBUDDY_PYTEST_BASETEMP` 覆盖统一 runner 的临时目录；该目录只用于可删除的 pytest 临时文件，不能指向任何 live `data_root` 或 backup 目录。
@@ -98,9 +124,9 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 
 ### 4.1 权威顺序与历史快照
 
-- `docs/STATUS.md` 是当前实现状态、当前完整回归基线和已知限制的唯一权威来源；发生冲突时先修正其他活跃文档，除非 `STATUS.md` 本身有可复现代码或测试证据证明错误。
-- `docs/TODO.md` 是唯一可勾选的执行清单；未完成工作必须在此登记，完成项必须反映当前状态而非旧计划。
-- `docs/ROADMAP_CAPABILITIES.md` 只定义已批准的执行顺序、前置条件和范围，不得用旧 gate 文案推翻 `STATUS.md` 的完成结论。
+- `docs/[需求+所有角色看]STATUS.md` 是当前实现状态、当前完整回归基线和已知限制的唯一权威来源；发生冲突时先修正其他活跃文档，除非 `STATUS.md` 本身有可复现代码或测试证据证明错误。
+- `docs/[需求看]TODO.md` 是唯一可勾选的执行清单；未完成工作必须在此登记，完成项必须反映当前状态而非旧计划。
+- `docs/[需求+架构看]ROADMAP_CAPABILITIES.md` 只定义已批准的执行顺序、前置条件和范围，不得用旧 gate 文案推翻 `STATUS.md` 的完成结论。
 - `docs/contracts/` 记录某次契约冻结或实现边界；若契约标题或正文包含阶段状态，后续完成时必须更新为当前状态，或显式标为“历史快照”。
 - `docs/evidence/` 与 `docs/archive/` 是不可重写的历史证据；其中的测试数字、日期和阶段结论必须保留并标为历史，不得作为当前基线引用。
 - 活跃文档引用测试数量时，必须写明“当前”或“历史快照”；当前数值只可引用 `STATUS.md`，历史数值不得以“当前完整基线”措辞出现。
@@ -108,12 +134,12 @@ powershell -NoProfile -File .\backend\scripts\test-browser.ps1 browser_phase8.sp
 ### 4.2 文档职责
 
 - `README.md`：入口和简明当前定位，不复制完整状态表。
-- `docs/STATUS.md`：能力状态、证据索引和已知运行限制；是实现状态的权威来源。
+- `docs/[需求+所有角色看]STATUS.md`：能力状态、证据索引和已知运行限制；是实现状态的权威来源。
 - `docs/` 根目录只保留核心入口、设计、治理、状态、路线和 TODO；持久契约、正式证据、运行手册和历史资料分别位于 `docs/contracts/`、`docs/evidence/`、`docs/operations/` 和 `docs/archive/`。
-- `docs/TODO.md`：唯一可勾选的执行清单；完成项必须关联代码、测试、文档和证据。
+- `docs/[需求看]TODO.md`：唯一可勾选的执行清单；完成项必须关联代码、测试、文档和证据。
 - `docs/PHASE_ROADMAP.md`：长期阶段、依赖和执行顺序，不作为测试结果记录。
-- 不维护独立的项目进度报告；面向项目汇报的当前事实摘要以 `docs/STATUS.md` 为准，不能产生第二份冲突状态。
-- `docs/CODE_TEST_GOVERNANCE.md`：本治理契约，描述规则而不是功能完成度。
+- 不维护独立的项目进度报告；面向项目汇报的当前事实摘要以 `docs/[需求+所有角色看]STATUS.md` 为准，不能产生第二份冲突状态。
+- `docs/[架构师+测试看]CODE_TEST_GOVERNANCE.md`：本治理契约，描述规则而不是功能完成度。
 - `docs/INDEX.md`：所有重要文档的导航入口。
 
 发生冲突时，先修正事实源，再修正引用它的摘要文档；禁止用新增第二张状态表解决冲突。

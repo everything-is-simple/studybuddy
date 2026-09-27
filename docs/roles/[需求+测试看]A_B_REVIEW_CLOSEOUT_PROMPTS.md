@@ -1,10 +1,36 @@
 # 21 页 A/B 审查收尾 · Prompt 包（定稿 v2 · 3 份）
 
 > 用途：把「21 个正式页面的 A/B 审查」主线收口。本文档只收录收尾所需 prompt，每条自包含、可直接投喂（GLM 做实现/一审，GPT 做独立二审）。
-> 状态五级：`implemented` / `tested` / `e2e-real-pass` / `not_verified` / `blocked`。只有 A 类纯用户路径全部通过且独立二审通过，页面才能标 `e2e-real-pass`；`e2e-real-pass` 一律指限定范围（本地单进程 / SQLite / Chromium / 确定性 fake Provider）。
+> 当前结果状态：`PASS` / `FAIL` / `BLOCKED` / `LIMITED` / `NOT_APPLICABLE` / `NOT_VERIFIED`。本文历史表中的 `e2e-real-pass` 只表示当时限定范围的历史标签；不得把它升级为当前全局 `real-pass`。本次任务只有在 A 类纯用户路径、独立二审、真实输入、指定数据根和证据均通过时，才可记录 scoped `real-pass`。
 > 定稿日期：2026-09-15。基线 commit：`8ad2d4a`（capture/classroom A/B 二审收口）。
 >
 > **v2 说明（取代本文件早先的 4 份版）**：4 份版 Prompt 2 的前提「完整 Chromium 串行从未取得可审计退出汇总」已失效——09-14 capture/classroom 轮已取得完整汇总 **425 passed / 4 skipped / 1 failed（430 tests）**，唯一失败为 settings B-SET-5 既有偶发（两次隔离复跑 17 passed）。剩余真实缺口只有：① B-SET-5 根因未修；② index.html 从未按七维度审查；③ tasks.html 双标签并存、升级判据未定；④ 收尾改动落在代码后，需在最终 HEAD 上重新取得一次完整汇总作为收口基线；⑤ 21 页权威总表与主线关闭需要独立复核。据此合并为 3 份：**尾项收口 → 最终统一验收 → 独立复核结项**。
+
+<!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
+## 统一执行协议（2026-09-27）
+
+本文件与 `H:\studybuddy\docs\[所有角色看]AI_AGENT_TASK_DIALOGUE_TEMPLATES.md` v2.1 使用同一套执行口径。本文档中早于 2026-09-27 的报告、表格和历史标签保留其原始事实；历史标签只能在原日期、原范围和原证据路径下解释，不能升级为当前全局结论。
+
+### 可执行 Prompt 的必填字段
+- **角色**：本次执行者的职责。
+- **唯一目标**：一个可判定的结果，不把多个目标合并成“全部处理”。
+- **当前阶段**：只能填写 `P0`（边界确认）、`P1`（真实状态读取）、`P2`（真实操作执行）、`P3`（证据核对）、`P4`（交付与结论）之一，并按顺序推进。
+- **允许读取/写入**：逐项列出绝对路径、URL、端点、数据根和输入；未列出的对象禁止访问或修改。
+- **指定工具/命令/端口/输入**：必须原样执行；对象不可用时返回 `BLOCKED`，不得替换。
+- **禁止操作、停止条件和证据路径**：逐项写明；每个结论必须有实际命令/动作、结果和绝对证据路径。
+
+### 统一状态与范围
+`PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
+
+### 统一路径和运行基线
+源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`。
+
+正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
+
+### 强制禁止
+不得凭推测输出；不得用 HTML 解析、按钮清单、curl/API 请求、静态检查或 headless 结果冒充可视浏览器点击；不得读取、复制、提交或展示密钥、Token、Cookie、真实教材正文、Provider 原始响应、SQL 或完整 traceback；不得在未授权时调用真实 Provider/OCR/ASR、发送 Email/飞书或扩大文件范围。工具、路径、页面、服务状态或证据不满足前置条件时，立即停止并报告 `BLOCKED`。
+
+<!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 
 ---
 
@@ -64,7 +90,7 @@
 - 完整 Chromium（~430 项）单次串行超过 20 分钟工具窗口：必须后台启动 + --reporter=list
   重定向到 .log 文件，完成后读 log 取 total/passed/failed/skipped/did-not-run 与退出码，不要前台等待。
 - 浏览器测试运行入口：backend/scripts/test-browser.ps1，或 cd H:/studybuddy && npm run test:browser（workers=1）。
-- data root 只用 H:/studybuddy-test/runs/<时间戳> 独立空目录；绝不写 H:\studybuddy\data 或 H:\studybuddy-data\live。
+- data root 只用 H:/studybuddy-test/data_root/<任务编号> 独立空目录；绝不写 H:\studybuddy\data 或 H:\studybuddy-data\live。
 - Provider 一律确定性 fake：STUDYBUDDY_AI_PROVIDER=fake。
 - 诚实规则：能力不足/未覆盖一律如实标 not_verified；禁止为收尾放宽断言、加 sleep、加 retry、skip 用例凑绿。
 - 状态标签唯一：一个页面同一时点只能有一个页面级状态标签；not_verified 不作为页面级标签使用，

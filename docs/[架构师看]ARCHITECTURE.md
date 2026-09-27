@@ -2,6 +2,32 @@
 
 > 核心运行入口：`backend/app/main.py:create_app`（向后兼容 façade）和 `backend/app/__main__.py` → `backend/app/cli.py:main`（显式 operator CLI）。应用边界由 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/` 等模块实现；`main.py` 只保留兼容导出和模板载荷读取。业务持久化经 `backend/app/repository.py` façade 进入 `backend/app/repositories/` 域模块，schema 由 `backend/app/migrations/runner.py` 执行并委托版本模块，原文件只能经 `backend/app/storage.py`；启动顺序为 preflight → migration/connect → audit → recovery → ready。
 
+<!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
+## 统一执行协议（2026-09-27）
+
+本文件与 `H:\studybuddy\docs\[所有角色看]AI_AGENT_TASK_DIALOGUE_TEMPLATES.md` v2.1 使用同一套执行口径。本文档中早于 2026-09-27 的报告、表格和历史标签保留其原始事实；历史标签只能在原日期、原范围和原证据路径下解释，不能升级为当前全局结论。
+
+### 可执行 Prompt 的必填字段
+- **角色**：本次执行者的职责。
+- **唯一目标**：一个可判定的结果，不把多个目标合并成“全部处理”。
+- **当前阶段**：只能填写 `P0`（边界确认）、`P1`（真实状态读取）、`P2`（真实操作执行）、`P3`（证据核对）、`P4`（交付与结论）之一，并按顺序推进。
+- **允许读取/写入**：逐项列出绝对路径、URL、端点、数据根和输入；未列出的对象禁止访问或修改。
+- **指定工具/命令/端口/输入**：必须原样执行；对象不可用时返回 `BLOCKED`，不得替换。
+- **禁止操作、停止条件和证据路径**：逐项写明；每个结论必须有实际命令/动作、结果和绝对证据路径。
+
+### 统一状态与范围
+`PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
+
+### 统一路径和运行基线
+源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`。
+
+正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
+
+### 强制禁止
+不得凭推测输出；不得用 HTML 解析、按钮清单、curl/API 请求、静态检查或 headless 结果冒充可视浏览器点击；不得读取、复制、提交或展示密钥、Token、Cookie、真实教材正文、Provider 原始响应、SQL 或完整 traceback；不得在未授权时调用真实 Provider/OCR/ASR、发送 Email/飞书或扩大文件范围。工具、路径、页面、服务状态或证据不满足前置条件时，立即停止并报告 `BLOCKED`。
+
+<!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
+
 当前媒体能力治理以 PaddleOCR 为 Formal 主路径，RapidOCR 已在精确本地 scope 通过严格 C2 Integration，但仍未进入 Formal fallback；真实 OCR/ASR 质量继续标记为 `not_verified`。ASR 的 canonical runtime 是 `H:/Whisper`；`edge-tts` 暂不进入 Formal。Phase 9A/9C/9D 的历史限定证据保存在 `.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`、`.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md` 和 `.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`，不代表当前全局 `real-pass`。
 
 > 当前项目阶段与优先级见 [`STATUS.md`]([需求+所有角色看]STATUS.md)。P6-E 的 DeepSeek/Agnes 精确真实 Provider UI evidence 已通过，Phase 7 已在 Mistral 精确 embedding 配置范围收口；Phase 8、Phase 9A、Phase 9B、Phase 9C 和 Phase 9D 的 9D-0 部分立项范围均已在各自 deterministic fake-provider/loopback、本地单进程 SQLite、Chromium 和 backup/restore 限定范围内完成。当前正式 schema 为 v15（v14 修订指纹修复，v15 卡片复习排程）；Phase 9D 的历史 persistence baseline 为 v12，Phase 9A 学习计划域 persistence baseline 为 v9。Phase 9D 最终限定范围证据见 [`evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)。Phase 10 的 task/attempt persistence、explicit-only task runner/recovery、backup/restore/migration operations 仍按各自历史证据解释；runner 只由显式 API/CLI 调用，不在 startup、backup、restore 或 read path 自动启动。真实 Provider generation、真实 OCR/ASR、真实 SMTP/飞书外发、TTS、人工复核、多进程、多用户和云同步仍未实现或不在支持范围。已选 Composer C0 媒体候选不改变正式 capability 状态；详见 [`contracts/MEDIA_CAPABILITY_DECISION.md`](../.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
@@ -36,7 +62,7 @@ These internal moves do not alter API paths, dataclass/protocol signatures, stab
 
 `backend/app/storage.py` 通过配置传入的 root 保存 hash 派生路径下的原文件，并使用临时文件加原子替换。`backend/app/repository.py` 是稳定兼容 façade；实际 SQLite projects/materials/extractions/text_spans、AI retrieval/Q&A、Cards/Exercises、learning、capture、reports 和 tasks 持久化按职责位于 `backend/app/repositories/`，并由 façade 保持既有导入与 monkeypatch 兼容。启用外键和 WAL；material import 的 extraction 与 spans 仍在同一事务中写入。
 
-正式默认运行路径不指向 fixture；本阶段测试使用 `H:\studybuddy-test\runs`。`backend/app/main.py` 是兼容 façade，实际 FastAPI 应用工厂、生命周期和 API routers 位于 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/`；legacy 页面由 `backend/app/templates/index_head.html`、有序 `index_script_*.js` 和 `index_tail.html` 组装。multipart 文件选择与上传、原文件保存、Parser 调用、SQLite extraction/span 事务写入、材料列表/详情 API 的行为保持不变。默认单文件上传上限为 200 MiB，可由 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这属于正式系统配置，不是免费版或 Parser 能力限制。服务重新启动后，材料详情从 SQLite 回读。
+正式默认运行路径不指向 fixture；本阶段测试使用 `H:\studybuddy-test\data_root`。`backend/app/main.py` 是兼容 façade，实际 FastAPI 应用工厂、生命周期和 API routers 位于 `backend/app/app_factory.py`、`backend/app/lifespan.py`、`backend/app/api/`；legacy 页面由 `backend/app/templates/index_head.html`、有序 `index_script_*.js` 和 `index_tail.html` 组装。multipart 文件选择与上传、原文件保存、Parser 调用、SQLite extraction/span 事务写入、材料列表/详情 API 的行为保持不变。默认单文件上传上限为 200 MiB，可由 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这属于正式系统配置，不是免费版或 Parser 能力限制。服务重新启动后，材料详情从 SQLite 回读。
 
 正式文件导入、批量导入、文件夹导入、材料管理、回收站、导出和搜索均已有局部 `real-pass` 证据；Phase 4 fake Provider Q&A、Phase 5 精确 Provider smoke 和 Phase 6 P6-A–P6-E 的对应 evidence 分别记录在状态与验收文档中。该状态不代表整个 StudyBuddy 或所有 Provider/model 已完成。
 
