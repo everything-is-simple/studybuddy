@@ -406,8 +406,8 @@ def test_current_regression_fact_source_matches_latest_backend_gate():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     roadmap = read("[需求+架构看]ROADMAP_CAPABILITIES.md")
 
-    assert "674 passed / 3 skipped" in todo[:2500]
-    assert "674 passed, 3 skipped, 0 failed" in readme[:2500]
+    assert "674 passed / 3 skipped" in todo
+    assert "674 passed, 3 skipped, 0 failed" in readme
     assert "当前 backend 基线为 `674 passed, 3 skipped, 0 failed`" in governance
     assert "完整后端 **674 passed / 3 skipped / 0 failed**" in status
     assert "当前 backend 基线为 `674 passed, 3 skipped, 0 failed`" in roadmap
