@@ -30,6 +30,10 @@
 
   window.addEventListener('pagehide', () => sbApi.cancelAll());
   document.addEventListener('DOMContentLoaded', () => {
+    if (!document.querySelector('link[data-chat-widget-style]')) {
+      const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/app/css/chat-widget.css'; style.dataset.chatWidgetStyle = 'true'; document.head.append(style);
+    }
+    const chatScript = document.createElement('script'); chatScript.src = '/app/js/chat-widget.js'; chatScript.onload = () => window.sbChat?.mount(); document.head.append(chatScript);
     const nav = document.querySelector('[data-nav]');
     if (nav) {
       const toggle = document.createElement('button');

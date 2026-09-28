@@ -38,6 +38,13 @@
 - 浏览器专项 `backend/tests/browser_buddy_spa.spec.js`：**1 passed**；`check-source-size.py` 与 `git diff --check` 通过。
 - 状态：**scoped-browser-pass**；全站页面迁移、可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器和真实 Provider/OCR/ASR 仍为 **NOT_VERIFIED**。
 
+## 2026-09-29：Buddy P2-02 AI 对话入口
+
+- **P2-02：implemented（Buddy scoped slice）**：shell 全站注入 Buddy 悬浮入口；支持展开/关闭、问题输入、基于现有 `/api/qa/ask` 的材料问答、安全失败文案和问答页后备入口。
+- 未新增后端 API、schema、migration；使用当前页面已有材料并保留现有 Q&A 页面作为完整线程/引用入口；未调用真实 Provider。
+- 浏览器专项 `backend/tests/browser_chat_widget.spec.js`：**1 passed**；前端合同/P0 回归、源码大小和 diff 检查待本轮最终验证后记录。
+- 状态：**scoped-browser-pass**；真实 Provider、跨浏览器、可视浏览器人工检查、屏幕阅读器和全站完整对话体验仍为 **NOT_VERIFIED**。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

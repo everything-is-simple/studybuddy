@@ -36,6 +36,12 @@
 - [x] `check-source-size.py` 与 `git diff --check` 通过。
 - [ ] 全站后台页面迁移到 SPA、可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器和真实 Provider/OCR/ASR 继续 `NOT_VERIFIED`；后续可继续扩展更多路由。
 
+## 2026-09-29：Buddy P2-02 AI 对话入口
+
+- [x] shell 已全站注入 Buddy 悬浮入口，支持打开、关闭、输入问题和安全回答/失败文案。
+- [x] 复用现有 `/api/qa/ask` 和材料列表接口，不新增 API/schema/migration；新增 `browser_chat_widget.spec.js` 覆盖隔离问答提交。
+- [ ] 真实 Provider、跨浏览器、可视浏览器人工检查、屏幕阅读器和完整线程/引用体验继续 `NOT_VERIFIED`；下一项为 P2-03 双视图切换。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 
