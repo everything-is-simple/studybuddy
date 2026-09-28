@@ -9,6 +9,8 @@
   const fallback = document.querySelector('#buddy-fallback-link');
   const links = [...document.querySelectorAll('[data-view]')];
   const switches = [...document.querySelectorAll('[data-switch-view]')];
+  const mobileToggle = document.querySelector('[data-mobile-nav-toggle]');
+  const nav = document.querySelector('#buddy-navigation');
   const storageKey = 'studybuddy-buddy-view';
   let currentView = '';
 
@@ -41,8 +43,14 @@
   links.forEach(link => link.addEventListener('click', event => {
     event.preventDefault();
     load(link.dataset.view, false);
+    nav.classList.remove('is-open');
+    mobileToggle?.setAttribute('aria-expanded', 'false');
   }));
   switches.forEach(button => button.addEventListener('click', () => load(button.dataset.switchView, false)));
+  mobileToggle?.addEventListener('click', () => {
+    const open = nav.classList.toggle('is-open');
+    mobileToggle.setAttribute('aria-expanded', String(open));
+  });
   frame.addEventListener('load', () => {
     const route = routes[currentView] || routes.today;
     status.textContent = `${route.label}页面已打开`;

@@ -14,7 +14,8 @@
       <button type="button" class="switch-btn" data-switch-view="student">学生视图</button>
       <button type="button" class="switch-btn" data-switch-view="parent">家长视图</button>
     </div>
-    <nav class="buddy-nav" aria-label="Buddy 页面">
+    <button type="button" class="mobile-nav-toggle" data-mobile-nav-toggle aria-expanded="false" aria-controls="buddy-navigation">菜单</button>
+    <nav id="buddy-navigation" class="buddy-nav" aria-label="Buddy 页面">
       <a href="/app/buddy.html?view=today" data-view="today" data-management-link="true">今天</a>
       <a href="/app/buddy.html?view=student" data-view="student">学生</a>
       <a href="/app/buddy.html?view=parent" data-view="parent">家长</a>

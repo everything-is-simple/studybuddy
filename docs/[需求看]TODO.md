@@ -48,6 +48,12 @@
 - [x] `browser_buddy_spa.spec.js` 覆盖正向切换、持久化和学生模式入口隐藏：**2 passed**。
 - [ ] 正式运行态、跨浏览器、可视浏览器人工检查、屏幕阅读器和真实账号权限边界继续 `NOT_VERIFIED`；下一项为 P2-04 移动端适配。
 
+## 2026-09-29：Buddy P2-04 移动端适配
+
+- [x] Buddy 壳增加 `max-width: 768px` 响应式布局、汉堡导航和 44px 触控目标；390px 视口无横向溢出。
+- [x] `browser_buddy_spa.spec.js` 移动专项通过：**3 passed**，覆盖菜单展开、页面切换后收起和窄屏布局。
+- [ ] 真实 iOS Safari/Android Chrome、真实移动设备、正式运行态、跨浏览器和屏幕阅读器继续 `NOT_VERIFIED`；Buddy 需求分解中的 P2 功能已完成当前代码范围。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

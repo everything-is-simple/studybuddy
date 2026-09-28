@@ -36,7 +36,6 @@ test.describe('Buddy native SPA shell', () => {
     await expect(page.locator('#buddy-frame')).toHaveAttribute('src', '/app/parent.html');
     await expect(page.frameLocator('#buddy-frame').locator('h1')).toHaveText('学习安排');
     expect(topLoads).toBe(1);
-    expect(topLoads).toBe(1);
   });
 
   test('学生/家长视图切换会持久化且学生模式隐藏管理入口', async ({ page }) => {
@@ -50,5 +49,20 @@ test.describe('Buddy native SPA shell', () => {
     await page.reload();
     await expect(page).toHaveURL(/buddy\.html\?view=parent/);
     await expect(page.locator('[data-switch-view="parent"]')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('390px 视口使用汉堡导航且无横向溢出', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE}/app/buddy.html?view=parent`);
+    const toggle = page.locator('[data-mobile-nav-toggle]');
+    await expect(toggle).toBeVisible();
+    await expect(page.locator('#buddy-navigation')).toBeHidden();
+    await toggle.click();
+    await expect(page.locator('#buddy-navigation')).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+    await page.locator('#buddy-navigation a[data-view="student"]').click();
+    await expect(page.locator('#buddy-navigation')).toBeHidden();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 });

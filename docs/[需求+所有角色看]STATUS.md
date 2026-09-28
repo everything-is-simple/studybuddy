@@ -52,6 +52,12 @@
 - 浏览器专项 `backend/tests/browser_buddy_spa.spec.js`：**2 passed**；本轮 focused 回归、源码大小和 diff 检查通过。
 - 状态：**scoped-browser-pass**；正式运行态、跨浏览器、可视浏览器人工检查、屏幕阅读器和账号级权限边界仍为 **NOT_VERIFIED**。
 
+## 2026-09-29：Buddy P2-04 移动端适配
+
+- **P2-04：implemented（Buddy scoped slice）**：Buddy 壳新增 `max-width: 768px` 响应式断点、44px 触控目标、汉堡导航、窄屏 iframe 高度和无横向溢出约束。
+- 浏览器专项 `browser_buddy_spa.spec.js`：**3 passed**，覆盖桌面切换、视图持久化和 390px 汉堡导航/横向溢出；未调用真实 iOS Safari 或 Android Chrome。
+- 状态：**scoped-browser-pass**；真实移动设备、iOS/Android 浏览器、正式运行态、屏幕阅读器和跨浏览器仍为 **NOT_VERIFIED**。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 
