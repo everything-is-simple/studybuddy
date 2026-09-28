@@ -66,6 +66,10 @@ button:focus-visible, a:focus-visible { outline: 4px solid #ffbf47; outline-offs
 
 .week-card { margin-top: 24px; padding: 24px 28px; }
 .week-card h2 { margin: 0; font-size: 28px; }
+.student-progress-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.student-progress-item { display: grid; gap: 4px; padding: 14px 10px; border-radius: 12px; background: #f1f7fc; text-align: center; }
+.student-progress-number { color: #1769e0; font-size: 30px; line-height: 1.1; }
+.student-progress-label { color: #5f7184; font-size: 16px; }
 .week-card p { margin: 10px 0 14px; font-size: 22px; color: #5f7184; }
 .progress-track { height: 16px; overflow: hidden; border-radius: 99px; background: #e4edf5; }
 .progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: #32ad76; transition: width .2s ease; }
@@ -82,5 +86,8 @@ button:focus-visible, a:focus-visible { outline: 4px solid #ffbf47; outline-offs
   .student-view { width: min(100% - 24px, 760px); padding-top: 20px; }
   .welcome { margin-top: 42px; }
   .welcome-copy, .task-time, .week-card p, .student-message { font-size: 20px; }
+  .student-progress-grid { gap: 8px; }
+  .student-progress-number { font-size: 25px; }
+  .student-progress-label { font-size: 14px; }
   .today-task, .week-card, .student-message { padding: 22px; }
 }

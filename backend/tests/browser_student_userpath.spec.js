@@ -13,7 +13,11 @@ async function mockTask(page, state = 'pending') {
   await page.route('**/api/study/plans/student-plan', route => route.fulfill(json({ id: 'student-plan', title: '学习计划', items: [{ id: 'student-item', title: '五年级语文 · 第三课', status: state }] })));
   await page.route('**/api/study/plans/student-plan/rhythm', route => route.fulfill(json({ settings: { timezone: 'UTC' } })));
   await page.route('**/api/study/plans/student-plan/rhythm/allocations', route => route.fulfill(json([{ item_id: 'student-item', local_date: date, planned_minutes: 20 }])));
-  await page.route('**/api/study/plans/student-plan/rhythm/weekly-trend', route => route.fulfill(json({ days: [{ local_date: date, completed_count: state === 'completed' ? 1 : 0 }] })));
+  const days = Array.from({ length: 7 }, (_, index) => ({
+    local_date: `2026-09-${22 + index}`,
+    completed_count: [1, 0, 0, 0, 1, 1, 0][index],
+  }));
+  await page.route('**/api/study/plans/student-plan/rhythm/weekly-trend', route => route.fulfill(json({ days })));
 }
 
 test('student view shows a focused task and starts the learning path', async ({ page }) => {
@@ -22,6 +26,11 @@ test('student view shows a focused task and starts the learning path', async ({ 
   await expect(page.locator('#student-greeting')).toHaveText('早上好！');
   await expect(page.locator('#student-task-title')).toHaveText('五年级语文 · 第三课');
   await expect(page.locator('#student-task-time')).toHaveText('预计 20 分钟');
+  await expect(page.locator('#student-streak')).toHaveText('2');
+  await expect(page.locator('#student-week-days')).toHaveText('3/7');
+  await expect(page.locator('#student-week-rate')).toHaveText('43%');
+  await expect(page.locator('#student-week-copy')).toHaveText('本周已学 3/7 天 · 完成率 43%');
+  await expect.poll(() => page.locator('#student-week-progress').evaluate(element => element.style.width)).toMatch(/^42\.8/);
   await expect(page.locator('#student-start')).toHaveText('开始');
   await expect(page.locator('nav, aside')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText(/目标|模块|节奏/);

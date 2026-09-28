@@ -24,6 +24,13 @@
 - 浏览器专项 `backend/tests/browser_parent_userpath.spec.js`：**2 passed**（三入口/三步安排/创建链路、材料失败安全重试）；前端合同审计 **0 findings**，P0 focused **3 passed**，源码大小与 diff-check 通过。
 - 状态：**scoped-browser-pass**；可视浏览器电脑检查、真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和人工视觉复核仍为 **NOT_VERIFIED**。
 
+## 2026-09-29：Buddy P1-03 进度可视化
+
+- **P1-03：implemented**：学生视图和 Today 页复用现有周趋势接口，显示连续学习天数、本周已学天数、本周完成率和带过渡效果的进度条；当天未完成时连续天数从最近的已完成日倒推。
+- 未新增 API、schema、migration，也未修改正式数据根；失败或无 active 计划时进度区域保持隐藏并保留现有重试/空态。
+- 验证：`browser_student_userpath.spec.js` **2 passed**；`browser_today_userpath.spec.js` **8 passed**；`test_frontend_contract_audit.py` 与 `test_buddy_p0_revision.py` 共 **10 passed**；`check-source-size.py`、`git diff --check` 通过。
+- 状态：**scoped-browser-pass**；可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和人工视觉复核仍为 **NOT_VERIFIED**。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

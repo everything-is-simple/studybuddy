@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
 <style>
 #continue-btn{display:inline-flex;align-items:center;min-height:56px;padding:12px 24px;font-size:20px;font-weight:700}
+#today-progress-visual{margin-top:16px}
 </style>
 </head>
 <body>
@@ -44,6 +45,15 @@
 <div id="summary-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="summary" class="rhythm-summary" hidden></div><div id="today-onboarding" class="notice muted" hidden><strong>开始学习只需三步</strong><ol><li><a href="/app/materials.html">导入教材</a>：先导入五年级上册当前课程。</li><li><a href="/app/plans.html">建立学习计划</a>：安排当前学习、预习和复习内容。</li><li><a href="/app/practice.html">开始练习</a>：完成今天的任务并查看进度。</li></ol></div>
 <div id="weekly-status" class="notice mt-16" role="status" aria-live="polite" hidden></div><div id="weekly-trend" class="rhythm-summary" hidden></div>
+<section id="today-progress-visual" class="today-progress-visual" hidden aria-labelledby="today-progress-title">
+<h2 id="today-progress-title">学习进度</h2>
+<div class="rhythm-summary">
+<div class="rhythm-card"><div id="today-streak" class="rhythm-value">0</div><div class="rhythm-label">连续学习天数</div></div>
+<div class="rhythm-card"><div id="today-week-days" class="rhythm-value">0/7</div><div class="rhythm-label">本周已学</div></div>
+<div class="rhythm-card"><div id="today-week-rate" class="rhythm-value">0%</div><div class="rhythm-label">本周完成率</div></div>
+</div>
+<div id="today-week-progress-track" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="本周学习进度"><div id="today-week-progress" class="progress-fill"></div></div>
+</section>
 </section>
 
 <section class="card mt-24" data-od-id="today-tasks">
@@ -73,6 +83,7 @@ const quickError=document.querySelector('#quick-error');
 const quickToggle=document.querySelector('#quick-toggle');
 const quickBody=document.querySelector('#quick-start-body');
 const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
+const todayProgress=document.querySelector('#today-progress-visual');const todayStreak=document.querySelector('#today-streak');const todayWeekDays=document.querySelector('#today-week-days');const todayWeekRate=document.querySelector('#today-week-rate');const todayWeekProgress=document.querySelector('#today-week-progress');const todayWeekProgressTrack=document.querySelector('#today-week-progress-track');
 const tasks=document.querySelector('#tasks');
 const exits=document.querySelector('#today-exits');
 const retry=document.querySelector('#retry-today');
@@ -104,6 +115,7 @@ sbUi.errorAction(quickError,error,{retry:()=>submitProgress(planId,itemId,localD
 // Empty states offer the next step instead of a dead end; links live outside the
 // notice so swapping notice classes never drops them.
 function showExits(links){exits.replaceChildren();links.forEach(entry=>{const link=document.createElement('a');link.className='btn';link.href=entry.href;link.textContent=entry.label;exits.append(link)});exits.hidden=!links.length}
+function progressMetrics(days){const rows=Array.isArray(days)?days:[];const learned=rows.filter(day=>Number(day.completed_count||0)>0).length;const ordered=rows.slice().sort((a,b)=>String(a.local_date||'').localeCompare(String(b.local_date||'')));if(ordered.length&&Number(ordered[ordered.length-1].completed_count||0)<=0)ordered.pop();let streak=0;for(let index=ordered.length-1;index>=0&&Number(ordered[index].completed_count||0)>0;index-=1)streak+=1;return {learned,streak,rate:Math.round(Math.min(learned/7*100,100))}}
 [summaryStatus,weeklyStatus,taskStatus].forEach(el=>{el.dataset.baseClass=el.className});
 
 // One shared active-plan lookup per load: the three sections used to fetch
@@ -153,7 +165,7 @@ fail(summaryStatus,e)
 }
 }
 
-async function loadWeeklyTrend(generation){try{const context=await activePlan(pageRequest.signal);const plan=context.plan;if(generation!==loadGeneration)return;if(!plan){settled(weeklyStatus,context.plans.length?'计划尚未启动，暂无周趋势':'还没有学习计划，暂无周趋势');return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();data.days.forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){if(generation!==loadGeneration)return;fail(weeklyStatus,e)}}
+async function loadWeeklyTrend(generation){try{const context=await activePlan(pageRequest.signal);const plan=context.plan;if(generation!==loadGeneration)return;if(!plan){todayProgress.hidden=true;settled(weeklyStatus,context.plans.length?'计划尚未启动，暂无周趋势':'还没有学习计划，暂无周趋势');return}const data=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.id)}/rhythm/weekly-trend`,{signal:pageRequest.signal});if(generation!==loadGeneration)return;const metrics=progressMetrics(data.days);todayStreak.textContent=String(metrics.streak);todayWeekDays.textContent=`${metrics.learned}/7`;todayWeekRate.textContent=`${metrics.rate}%`;todayWeekProgress.style.width=`${Math.min(metrics.learned/7*100,100)}%`;todayWeekProgress.setAttribute('aria-valuenow',String(metrics.rate));todayWeekProgressTrack.setAttribute('aria-label',`本周已学 ${metrics.learned}/7 天，完成率 ${metrics.rate}%`);todayProgress.hidden=false;weeklyStatus.hidden=true;weeklyTrend.hidden=false;weeklyTrend.replaceChildren();(Array.isArray(data.days)?data.days:[]).forEach(day=>{const card=document.createElement('div');card.className='rhythm-card';const value=document.createElement('div');value.className='rhythm-value';value.textContent=String(day.completed_count||0);const label=document.createElement('div');label.className='rhythm-label';label.textContent=`${day.local_date} · 完成`;card.append(value,label);weeklyTrend.append(card)})}catch(e){if(generation!==loadGeneration)return;todayProgress.hidden=true;fail(weeklyStatus,e)}}
 
 async function loadTasks(generation){
 try{
@@ -234,6 +246,7 @@ fail(taskStatus,e)
 function resetSections(){
 retry.hidden=true;
 pageLoading.hidden=false;
+todayProgress.hidden=true;
 quickStart.hidden=true;
 activePlanRequest=null;
 tasks.replaceChildren();

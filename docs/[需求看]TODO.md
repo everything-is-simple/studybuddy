@@ -22,6 +22,13 @@
 - [x] 前端合同审计 **0 findings**；P0 focused **3 passed**；源码大小和 diff 检查通过。
 - [ ] 可视浏览器电脑检查、真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 继续 `NOT_VERIFIED`；下一项为 P1-03 进度可视化。
 
+## 2026-09-29：Buddy P1-03 进度可视化
+
+- [x] 学生视图和 Today 页已增加连续学习天数、本周已学 `N/7` 天、本周完成率和进度条，复用既有 weekly-trend 数据。
+- [x] 浏览器专项：`browser_student_userpath.spec.js` **2 passed**；`browser_today_userpath.spec.js` **8 passed**；前端合同/P0 focused **10 passed**。
+- [x] `check-source-size.py` 与 `git diff --check` 通过；未新增 API/schema/migration，未触碰正式数据根。
+- [ ] 可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和人工视觉复核继续 `NOT_VERIFIED`；下一项为 P2-01 SPA 改造。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

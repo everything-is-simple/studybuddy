@@ -12,6 +12,9 @@
   const taskState = document.querySelector('#student-task-state');
   const weekCopy = document.querySelector('#student-week-copy');
   const weekProgress = document.querySelector('#student-week-progress');
+  const streakValue = document.querySelector('#student-streak');
+  const weekDaysValue = document.querySelector('#student-week-days');
+  const weekRateValue = document.querySelector('#student-week-rate');
   let generation = 0;
   let currentHref = '';
 
@@ -39,8 +42,18 @@
   function renderWeek(days) {
     const rows = Array.isArray(days) ? days : [];
     const learned = rows.filter(day => Number(day.completed_count || 0) > 0).length;
-    weekCopy.textContent = `本周已学 ${learned} 天`;
+    const ordered = rows.slice().sort((a, b) => String(a.local_date || '').localeCompare(String(b.local_date || '')));
+    const streakRows = ordered.slice();
+    if (streakRows.length && Number(streakRows[streakRows.length - 1].completed_count || 0) <= 0) streakRows.pop();
+    let streak = 0;
+    for (let index = streakRows.length - 1; index >= 0 && Number(streakRows[index].completed_count || 0) > 0; index -= 1) streak += 1;
+    const rate = Math.round(Math.min(learned / 7 * 100, 100));
+    streakValue.textContent = String(streak);
+    weekDaysValue.textContent = `${learned}/7`;
+    weekRateValue.textContent = `${rate}%`;
+    weekCopy.textContent = `本周已学 ${learned}/7 天 · 完成率 ${rate}%`;
     weekProgress.style.width = `${Math.min(learned / 7 * 100, 100)}%`;
+    weekProgress.parentElement.setAttribute('aria-label', `本周已学 ${learned}/7 天，完成率 ${rate}%`);
     week.hidden = false;
   }
   async function load() {

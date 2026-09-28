@@ -119,6 +119,10 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await page.goto(`${BASE}/app/today.html`);
     await expect(page.locator('#summary')).toContainText(PLAN_TITLE, { timeout: 10000 });
     await expect(page.locator('#weekly-trend .rhythm-card')).toHaveCount(7);
+    await expect(page.locator('#today-progress-visual')).toBeVisible();
+    await expect(page.locator('#today-week-days')).toHaveText('0/7');
+    await expect(page.locator('#today-week-rate')).toHaveText('0%');
+    await expect(page.locator('#today-streak')).toHaveText('0');
     await expect(page.locator('#task-status')).toHaveText(`计划「${PLAN_TITLE}」今日没有安排学习项`);
     const exits = page.locator('#today-exits');
     await expect(exits.getByRole('link', { name: '查看计划详情' })).toHaveAttribute('href', /plan-detail\.html\?plan_id=.+/);
