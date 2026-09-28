@@ -145,30 +145,26 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await expect(page.locator('#quick-start')).toBeVisible();
     await expect(page.locator('#quick-start-title')).toHaveText(ITEM_TITLE);
     await expect(page.locator('#quick-start-time')).toHaveText('预计 25 分钟');
-    await expect(page.locator('#continue-btn')).toHaveAttribute('href',
-      new RegExp(`plan-detail\\.html\\?plan_id=.+item_id=.+local_date=${today()}&return_to=today`));
+    await expect(page.locator('#continue-btn')).toHaveText('开始学习');
     await expect(task).toContainText('来源：有问题');
-    await page.locator('#continue-btn').click();
-    await expect(page).toHaveURL(/plan-detail\.html\?plan_id=.+item_id=.+return_to=today/);
-    const detailItem = page.locator('#plan-detail article.card').filter({ hasText: ITEM_TITLE });
-    await expect(detailItem).toBeVisible();
-    await expect(detailItem.getByRole('button', { name: '开始学习' })).toBeVisible();
+    const todayUrl = page.url();
+    let progressCalls = 0;
+    page.on('request', request => { if (request.url().includes('/progress')) progressCalls += 1; });
+    await page.locator('#continue-btn').evaluate(button => { button.click(); button.click(); });
+    await expect.poll(() => progressCalls).toBe(1);
+    await expect(page).toHaveURL(todayUrl);
+    await expect(page.locator('#continue-btn')).toHaveText('记录完成');
     await assertNoSensitiveVisibleText(page);
   });
 
-  test('A-E2E-TD-3 任务卡 → plan-detail 开始学习/记录完成 → 返回 today 状态即时反映', async ({ page }) => {
+  test('A-E2E-TD-3 Today 内联记录完成 → 状态即时反映', async ({ page }) => {
     await page.goto(`${BASE}/app/today.html`);
     const task = page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE });
     await expect(task).toBeVisible({ timeout: 10000 });
-    await task.getByRole('link', { name: '开始学习' }).click();
-    await expect(page).toHaveURL(/plan-detail\.html\?plan_id=.+item_id=.+return_to=today/);
-    await page.getByRole('button', { name: '开始学习' }).click();
-    await expect(page.locator('#progress-status')).toHaveText('已开始学习', { timeout: 10000 });
-    await page.getByRole('button', { name: '记录完成' }).click();
-    await expect(page.locator('#progress-status')).toHaveText('已完成学习');
-    await page.getByRole('link', { name: '返回计划' }).click();
-    await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    // The freshly loaded today page must reflect the completion immediately.
+    await expect(task.getByRole('button', { name: '记录完成' })).toBeVisible();
+    const todayUrl = page.url();
+    await task.getByRole('button', { name: '记录完成' }).click();
+    await expect(page).toHaveURL(todayUrl);
     await expect(page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE })).toContainText('查看进度', { timeout: 10000 });
     await expect(page.locator('#summary')).toContainText(PLAN_TITLE);
     await assertNoSensitiveVisibleText(page);
@@ -180,7 +176,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
       ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"H:/studybuddy/secret_traceback"}' })
       : route.continue());
     await page.goto(`${BASE}/app/today.html`);
-    const retry = page.getByRole('button', { name: '重新加载' });
+    const retry = page.locator('#retry-today');
     await expect(retry).toBeVisible();
     for (const id of ['#summary-status', '#weekly-status', '#task-status']) {
       await expect(page.locator(id)).toContainText('操作没有完成');

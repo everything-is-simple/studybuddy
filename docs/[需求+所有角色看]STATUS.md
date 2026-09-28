@@ -1,4 +1,15 @@
 # StudyBuddy 项目状态记录
+
+## 2026-09-28：Buddy P0 修订
+
+- **P0-01：PASS（保持）**；**P0-02：PASS（保持）**。
+- **P0-03：PASS（scoped-browser-pass）**：Today 的“开始学习”和“记录完成”复用现有 progress API，核心操作不改变 URL；plan-detail 保留为次级详情入口。
+- **P0-04：PASS（scoped-browser-pass）**：state.js 提供 sourceDisplay()；Materials、Today、Plans 的可见状态统一为“可用 / 处理中 / 有问题”。
+- **P0-05：PASS（scoped-browser-pass）**：errorInfo() 返回安全人话、建议和动作；三页提供聚焦、刷新或重试动作。
+- **Buddy P0 总体：PASS（scoped-browser-pass）**：相关 Today、Plans、Materials 专项已通过；结论仅限本次隔离验证范围。
+- 验证：test_buddy_p0_revision.py 与 test_p1_4_c1_idempotency_feedback.py 共 **9 passed**；Today 专项 **8 passed**；状态矩阵 **3 passed**；失败合同 **6 passed**；check-source-size.py、git diff --check 通过。
+- 范围边界：真实 Provider、真实 OCR/ASR、跨浏览器、屏幕阅读器和正式运行态仍为 **NOT_VERIFIED**；本结果只覆盖隔离 fake Provider/ASR 浏览器路径。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

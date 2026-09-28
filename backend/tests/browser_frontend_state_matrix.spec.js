@@ -16,6 +16,9 @@ test('learning lists render shared labels for lifecycle and source states',async
   await mock(page,'**/api/study/goals',[]);await mock(page,'**/api/study/modules',[]);
   await page.goto(`${BASE}/app/plans.html`);await expect(page.locator('#plans')).toContainText('可用');await expect(page.locator('#plans')).not.toContainText('已确认');
   await page.unrouteAll({behavior:'ignoreErrors'});
+  await mock(page,'**/api/materials?*',{items:[{id:'material-1',original_name:'教材.txt',status:'pending'}],total:1,has_more:false});
+  await page.goto(`${BASE}/app/materials.html`);await expect(page.locator('#items')).toContainText('处理中');await expect(page.locator('#items')).not.toContainText('pending');
+  await page.unrouteAll({behavior:'ignoreErrors'});
   await mock(page,'**/api/study/notes',[{id:'note-1',title:'草稿笔记',note_type:'ai_draft'}]);
   await page.goto(`${BASE}/app/notes.html`);await expect(page.locator('#notes')).toContainText('AI 草稿');
   await page.unrouteAll({behavior:'ignoreErrors'});

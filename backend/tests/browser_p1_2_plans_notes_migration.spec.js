@@ -61,7 +61,8 @@ test('P2-FE-4 plans page exposes goal/module management and dependency removal a
   await page.route('**/api/study/goals/*',route=>{if(route.request().method()==='PATCH'&&renameAttempts++===0)return route.fulfill({status:500,contentType:'application/json',body:JSON.stringify({detail:'private_backend_error'})});return route.continue()});
   page.once('dialog',dialog=>dialog.accept('已重命名目标'));
   await page.getByRole('button',{name:'重命名目标'}).click();
-  await expect(page.locator('#plan-status')).toHaveText('计划操作失败，可重试');
+  await expect(page.locator('#plan-status')).toContainText('计划操作没有完成');
+  await expect(page.locator('#plan-status').getByRole('button', {name:'重新加载'})).toBeVisible();
   await expect(page.locator('#goals')).toContainText('归档前目标');
   page.once('dialog',dialog=>dialog.accept('已重命名目标'));
   await page.getByRole('button',{name:'重命名目标'}).click();
@@ -116,7 +117,8 @@ test('P2-FE-4 formal plans exports local rhythm JSON and recovers from failure',
     return route.continue();
   });
   await exportButton.click();
-  await expect(page.locator('#plan-status')).toHaveText('节奏导出失败，请重试');
+  await expect(page.locator('#plan-status')).toContainText('节奏导出失败，请重试');
+  await expect(page.locator('#plan-status').getByRole('button', {name:'重新加载'})).toBeVisible();
   await expect(exportButton).toBeEnabled();
   const downloadPromise=page.waitForEvent('download');
   await exportButton.click();

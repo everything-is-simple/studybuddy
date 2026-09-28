@@ -1,4 +1,13 @@
 # StudyBuddy TODO 清单
+
+## 2026-09-28：Buddy P0 修订结果
+
+- [x] P0-03：Today 内联开始/完成学习，现有 progress API、幂等键和 busy 状态复用完成。
+- [x] P0-04：Materials、Today、Plans 使用 sourceDisplay() 输出三类用户状态。
+- [x] P0-05：errorInfo() 与统一动作按钮覆盖依赖冲突、当天重复分配、归档目标/模块和通用重试。
+- [x] 验证：定向 Python 9 passed；Today 浏览器 8 passed；状态矩阵 3 passed；失败合同 6 passed；源码尺寸和 diff 检查通过。
+- [ ] 未覆盖：真实 Provider/OCR/ASR、跨浏览器、屏幕阅读器和正式运行态。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

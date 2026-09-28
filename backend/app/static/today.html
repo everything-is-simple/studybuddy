@@ -31,10 +31,13 @@
 
 <div id="page-loading" class="notice" role="status" aria-live="polite">正在加载今天的学习任务...</div>
 <section id="quick-start" class="card" data-od-id="today-quick-start" hidden aria-labelledby="quick-start-heading">
-<h2 id="quick-start-heading">继续学习</h2>
+<h2 id="quick-start-heading"><button id="quick-toggle" class="btn" type="button" aria-expanded="true" aria-controls="quick-start-body">继续学习</button></h2>
+<div id="quick-start-body">
 <p id="quick-start-title" class="item-title"></p>
 <p id="quick-start-time" class="muted"></p>
-<a id="continue-btn" class="btn btn-primary" href="#" data-od-id="today-continue-learning">开始学习</a>
+<div id="quick-error" class="notice warn" role="alert" hidden></div>
+<div class="stack-actions"><button id="continue-btn" class="btn btn-primary" type="button" data-od-id="today-continue-learning" data-control="today-progress">开始学习</button><a id="quick-detail" class="btn" href="#">查看计划详情</a></div>
+</div>
 </section>
 <section class="card" data-od-id="today-summary">
 <h2>今日概览</h2>
@@ -65,18 +68,39 @@ const quickStart=document.querySelector('#quick-start');
 const quickStartTitle=document.querySelector('#quick-start-title');
 const quickStartTime=document.querySelector('#quick-start-time');
 const continueButton=document.querySelector('#continue-btn');
+const quickDetail=document.querySelector('#quick-detail');
+const quickError=document.querySelector('#quick-error');
+const quickToggle=document.querySelector('#quick-toggle');
+const quickBody=document.querySelector('#quick-start-body');
 const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
 const tasks=document.querySelector('#tasks');
 const exits=document.querySelector('#today-exits');
 const retry=document.querySelector('#retry-today');
 let loadGeneration=0;
 let activePlanRequest=null;
+const progressBusy=new Set();
 
 function text(value){return typeof value==='string'?value:''}
 
 function pending(element,message){sbTemplates.setState(element,'loading',{message})}
 function settled(element,message){sbTemplates.setState(element,'empty',{message})}
-function fail(element,error){sbTemplates.setState(element,'failed',{error});retry.hidden=false}
+function fail(element,error){sbTemplates.setState(element,'failed',{error});sbUi.errorAction(element,error,{retry:loadAll});retry.hidden=false}
+quickToggle.addEventListener('click',()=>{quickBody.hidden=!quickBody.hidden;quickToggle.setAttribute('aria-expanded',String(!quickBody.hidden))});
+
+async function submitProgress(planId,itemId,localDate,eventType){
+const key=`today-progress-${planId}-${itemId}`;
+if(progressBusy.has(key))return;
+progressBusy.add(key);
+const buttons=[...document.querySelectorAll(`[data-progress-item="${CSS.escape(itemId)}"]`)];
+buttons.forEach(button=>sbUi.busy(button,true,button.textContent));
+quickError.hidden=true;
+try{
+await sbSubmit.once(key,()=>sbApi.json(`/api/study/plans/${encodeURIComponent(planId)}/items/${encodeURIComponent(itemId)}/progress`,{method:'POST',body:JSON.stringify({event_type:eventType,metadata:{local_date:localDate}}),signal:pageRequest.signal}));
+await loadAll();
+}catch(error){
+sbUi.errorAction(quickError,error,{retry:()=>submitProgress(planId,itemId,localDate,eventType)});
+}finally{progressBusy.delete(key);buttons.forEach(button=>{button.disabled=false;if(button.textContent==='处理中…')button.textContent=button.dataset.idleLabel||'开始学习'})}
+}
 // Empty states offer the next step instead of a dead end; links live outside the
 // notice so swapping notice classes never drops them.
 function showExits(links){exits.replaceChildren();links.forEach(entry=>{const link=document.createElement('a');link.className='btn';link.href=entry.href;link.textContent=entry.label;exits.append(link)});exits.hidden=!links.length}
@@ -158,8 +182,11 @@ const nextItem=items.find(item=>item.status!=='completed')||items[0];
 const nextAllocation=allocationByItem.get(nextItem.id);
 quickStartTitle.textContent=text(nextItem.title||nextItem.item_title||'未命名任务');
 quickStartTime.textContent=`预计 ${nextAllocation.planned_minutes} 分钟`;
-continueButton.href=`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}&item_id=${encodeURIComponent(nextItem.id)}&local_date=${encodeURIComponent(localDate)}&return_to=today`;
-continueButton.textContent=nextItem.status==='completed'?'查看进度':'开始学习';
+quickDetail.href=`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}&item_id=${encodeURIComponent(nextItem.id)}&local_date=${encodeURIComponent(localDate)}&return_to=today`;
+continueButton.dataset.progressItem=nextItem.id;
+continueButton.textContent=nextItem.status==='completed'?'查看进度':nextItem.status==='in_progress'?'记录完成':'开始学习';
+continueButton.onclick=nextItem.status==='completed'?()=>{location.href=quickDetail.href}:()=>submitProgress(plan.id,nextItem.id,localDate,nextItem.status==='in_progress'?'completed':'started');
+quickError.hidden=true;
 quickStart.hidden=false;
 items.forEach(item=>{
 const allocation=allocationByItem.get(item.id);
@@ -186,10 +213,13 @@ action.className='btn';
 action.href=materialId?`/app/material-detail.html?material=${encodeURIComponent(materialId)}`:'#';
 action.textContent='查看资料';
 if(!materialId||sourceStatus!=='valid'){action.setAttribute('aria-disabled','true');action.style.pointerEvents='none';}
-const progress=document.createElement('a');
+const progress=document.createElement('button');
 progress.className='btn btn-primary';
-progress.href=`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}&item_id=${encodeURIComponent(item.id)}&local_date=${encodeURIComponent(localDate)}&return_to=today`;
-progress.textContent=item.status==='completed'?'查看进度':'开始学习';
+progress.type='button';
+progress.dataset.progressItem=item.id;
+progress.dataset.control='today-progress';
+progress.textContent=item.status==='completed'?'查看进度':item.status==='in_progress'?'记录完成':'开始学习';
+progress.onclick=item.status==='completed'?()=>{location.href=`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}&item_id=${encodeURIComponent(item.id)}&return_to=today`}:()=>submitProgress(plan.id,item.id,localDate,item.status==='in_progress'?'completed':'started');
 const minutes=document.createElement('div');minutes.className='task-source';minutes.textContent=`计划 ${allocation.planned_minutes} 分钟 · ${localDate}`;
 meta.append(minutes);
 li.append(action,progress);

@@ -211,7 +211,7 @@ uploadStatus.append(details)
 setTimeout(()=>{uploadStatus.hidden=true},8000);
 load()
 }catch(e){
-uploadStatus.className='notice warn';uploadStatus.textContent=sbApi.safeError(e)+' 可重试。'
+uploadStatus.className='notice warn';sbUi.errorAction(uploadStatus,e,{retry:()=>handleUpload(files)})
 }finally{
 fileInput.disabled=false;
 folderBtn.disabled=false;
@@ -279,7 +279,7 @@ renderPage(data)
 }catch(e){
 if(generation!==loadGeneration)return;
 state.textContent='加载失败';
-error.textContent=sbApi.safeError(e);
+sbUi.errorAction(error,e,{retry:load});
 error.hidden=false;
 retryMaterials.hidden=false;
 retryMaterials.disabled=false
@@ -405,7 +405,7 @@ exportStatus.className='notice status-success';
 exportStatus.textContent=`${prefix} ZIP 导出完成（${selectedIds.size} 份）`
 }catch(e){
 exportStatus.className='notice warn';
-exportStatus.textContent=sbApi.safeError(e)+' 可重试。'
+sbUi.errorAction(exportStatus,e,{retry:()=>exportSelected(includeOriginal,includeText)})
 }finally{
 exportBusy=false;updateSelection()
 }
@@ -433,7 +433,7 @@ mutationStatus.textContent='材料已重命名。';
 await load()
 }catch(e){
 mutationStatus.className='notice warn';
-mutationStatus.textContent=sbApi.safeError(e)+' 可重试。'
+sbUi.errorAction(mutationStatus,e,{retry:()=>renameMaterial(id,name,button)})
 }finally{
 mutationBusy.delete(id);
 button.disabled=false
@@ -448,7 +448,7 @@ try{
 await sbApi.json(`/api/materials/${encodeURIComponent(id)}`,{method:'DELETE'});
 load()
 }catch(e){
-alert(sbApi.safeError(e))
+mutationStatus.className='notice warn';sbUi.errorAction(mutationStatus,e,{retry:()=>deleteMaterial(id,name,button)})
 }finally{
 mutationBusy.delete(id);
 button.disabled=false
@@ -463,7 +463,7 @@ try{
 await sbApi.json(`/api/materials/${encodeURIComponent(id)}/restore`,{method:'POST'});
 load()
 }catch(e){
-alert(sbApi.safeError(e))
+mutationStatus.className='notice warn';sbUi.errorAction(mutationStatus,e,{retry:()=>restoreMaterial(id,name,button)})
 }finally{
 mutationBusy.delete(id);
 button.disabled=false
