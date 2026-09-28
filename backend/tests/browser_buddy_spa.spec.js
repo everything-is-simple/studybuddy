@@ -38,4 +38,17 @@ test.describe('Buddy native SPA shell', () => {
     expect(topLoads).toBe(1);
     expect(topLoads).toBe(1);
   });
+
+  test('学生/家长视图切换会持久化且学生模式隐藏管理入口', async ({ page }) => {
+    await page.goto(`${BASE}/app/buddy.html`);
+    await expect(page).toHaveURL(/buddy\.html\?view=student/);
+    await expect(page.locator('[data-switch-view="student"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-management-link="true"]')).toBeHidden();
+    await page.locator('[data-switch-view="parent"]').click();
+    await expect(page).toHaveURL(/buddy\.html\?view=parent/);
+    await expect(page.locator('[data-management-link="true"]')).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/buddy\.html\?view=parent/);
+    await expect(page.locator('[data-switch-view="parent"]')).toHaveAttribute('aria-pressed', 'true');
+  });
 });

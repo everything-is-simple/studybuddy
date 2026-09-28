@@ -42,6 +42,12 @@
 - [x] 复用现有 `/api/qa/ask` 和材料列表接口，不新增 API/schema/migration；新增 `browser_chat_widget.spec.js` 覆盖隔离问答提交。
 - [ ] 真实 Provider、跨浏览器、可视浏览器人工检查、屏幕阅读器和完整线程/引用体验继续 `NOT_VERIFIED`；下一项为 P2-03 双视图切换。
 
+## 2026-09-29：Buddy P2-03 双视图切换
+
+- [x] Buddy 壳新增学生/家长视图按钮，当前视图写入 `localStorage`，刷新后恢复；学生模式隐藏“今天”管理入口。
+- [x] `browser_buddy_spa.spec.js` 覆盖正向切换、持久化和学生模式入口隐藏：**2 passed**。
+- [ ] 正式运行态、跨浏览器、可视浏览器人工检查、屏幕阅读器和真实账号权限边界继续 `NOT_VERIFIED`；下一项为 P2-04 移动端适配。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

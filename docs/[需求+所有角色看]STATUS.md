@@ -45,6 +45,13 @@
 - 浏览器专项 `backend/tests/browser_chat_widget.spec.js`：**1 passed**；前端合同/P0 回归、源码大小和 diff 检查待本轮最终验证后记录。
 - 状态：**scoped-browser-pass**；真实 Provider、跨浏览器、可视浏览器人工检查、屏幕阅读器和全站完整对话体验仍为 **NOT_VERIFIED**。
 
+## 2026-09-29：Buddy P2-03 双视图切换
+
+- **P2-03：implemented（Buddy scoped slice）**：Buddy 壳新增学生/家长视图切换按钮，使用 `localStorage` 持久化当前视图；学生模式隐藏“今天”管理入口，家长切换仍保持可见。
+- 视图切换复用现有 `/app/student.html` 与 `/app/parent.html`，未新增 API、schema 或 migration；旧页面 URL 保持兼容。
+- 浏览器专项 `backend/tests/browser_buddy_spa.spec.js`：**2 passed**；本轮 focused 回归、源码大小和 diff 检查通过。
+- 状态：**scoped-browser-pass**；正式运行态、跨浏览器、可视浏览器人工检查、屏幕阅读器和账号级权限边界仍为 **NOT_VERIFIED**。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 
