@@ -15,6 +15,13 @@
 - [x] 新增并运行 `backend/tests/browser_student_userpath.spec.js`：隔离 Chromium **2 passed**，覆盖任务显示、开始跳转、空态和失败恢复。
 - [ ] 可视浏览器电脑检查因环境无可用浏览器而 `NOT_VERIFIED`；真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 继续 `NOT_VERIFIED`。
 
+## 2026-09-28：Buddy P1-02 家长视图
+
+- [x] 新增 `backend/app/static/parent.html`、`css/parent.css`、`js/parent.js`：三入口和三步安排流程已实现，内部计划接口由页面自动串联。
+- [x] 新增并运行 `backend/tests/browser_parent_userpath.spec.js`：隔离 Chromium **2 passed**，覆盖入口、选教材、设定时间、完成安排、空/失败恢复和敏感文案隔离。
+- [x] 前端合同审计 **0 findings**；P0 focused **3 passed**；源码大小和 diff 检查通过。
+- [ ] 可视浏览器电脑检查、真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 继续 `NOT_VERIFIED`；下一项为 P1-03 进度可视化。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

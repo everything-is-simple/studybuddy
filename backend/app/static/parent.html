@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 家长</title>
+<link rel="stylesheet" href="/app/css/parent.css">
+</head>
+<body>
+<main class="parent-view" data-control="parent-view">
+  <header class="parent-header">
+    <div>
+      <p class="parent-brand">StudyBuddy</p>
+      <h1>学习安排</h1>
+      <p class="parent-lead">帮孩子安排今天的学习，也可以随时查看进度。</p>
+    </div>
+    <a class="student-link" href="/app/student.html">打开孩子的学习页</a>
+  </header>
+
+  <section id="parent-home" class="action-cards" aria-label="家长入口">
+    <article class="action-card action-card-primary">
+      <span class="card-number">1</span>
+      <h2>安排学习</h2>
+      <p>选一份教材，设置每天的学习时间。</p>
+      <button id="parent-start-planning" class="parent-button primary" type="button" data-control="parent-start-planning">开始安排</button>
+    </article>
+    <article class="action-card">
+      <span class="card-number">2</span>
+      <h2>查看报告</h2>
+      <p>看看这周学了几天、完成了多少内容。</p>
+      <a class="parent-button secondary" href="/app/reports.html" data-control="parent-reports">查看报告</a>
+    </article>
+    <article class="action-card">
+      <span class="card-number">3</span>
+      <h2>调整设置</h2>
+      <p>修改学习时间、提醒和更多设置。</p>
+      <a class="parent-button secondary" href="/app/settings.html" data-control="parent-settings">去设置</a>
+    </article>
+  </section>
+
+  <section id="parent-wizard" class="wizard" hidden aria-labelledby="wizard-title">
+    <div class="wizard-heading">
+      <div>
+        <p class="section-kicker">一步一步来</p>
+        <h2 id="wizard-title">安排一段新的学习</h2>
+      </div>
+      <button id="parent-cancel" class="text-button" type="button" data-control="parent-cancel">返回</button>
+    </div>
+    <ol class="wizard-progress" aria-label="安排步骤">
+      <li id="wizard-progress-1" class="current">选教材</li>
+      <li id="wizard-progress-2">设定时间</li>
+      <li id="wizard-progress-3">完成安排</li>
+    </ol>
+    <div id="parent-status" class="parent-status" role="status" aria-live="polite" hidden></div>
+
+    <section id="parent-step-material" class="wizard-step" aria-labelledby="material-step-title">
+      <h3 id="material-step-title">先选一份教材</h3>
+      <p>从已经导入的教材中选择孩子今天要学习的内容。</p>
+      <label class="field-label" for="parent-material">教材</label>
+      <select id="parent-material" class="parent-select" data-control="parent-material" required>
+        <option value="">正在加载教材...</option>
+      </select>
+      <div class="step-actions"><button id="parent-material-next" class="parent-button primary" type="button" data-control="parent-material-next">下一步</button></div>
+    </section>
+
+    <section id="parent-step-time" class="wizard-step" hidden aria-labelledby="time-step-title">
+      <h3 id="time-step-title">每天学多久？</h3>
+      <p>选一个孩子容易坚持的时间，之后还可以再调整。</p>
+      <label class="field-label" for="parent-minutes">每天学习分钟数</label>
+      <div class="minutes-control"><input id="parent-minutes" class="parent-input" type="number" min="5" max="240" step="5" value="20" data-control="parent-minutes"><span>分钟</span></div>
+      <div class="quick-minutes" aria-label="常用时长"><button type="button" class="minute-option" data-minutes="15">15 分钟</button><button type="button" class="minute-option selected" data-minutes="20">20 分钟</button><button type="button" class="minute-option" data-minutes="30">30 分钟</button></div>
+      <div class="step-actions"><button id="parent-time-back" class="parent-button secondary" type="button" data-control="parent-time-back">上一步</button><button id="parent-time-next" class="parent-button primary" type="button" data-control="parent-time-next">下一步</button></div>
+    </section>
+
+    <section id="parent-step-review" class="wizard-step" hidden aria-labelledby="review-step-title">
+      <h3 id="review-step-title">确认安排</h3>
+      <div class="review-summary"><p><span>教材</span><strong id="parent-review-material"></strong></p><p><span>每天</span><strong id="parent-review-minutes"></strong></p></div>
+      <p class="review-note">点击后会为孩子安排今天的第一段学习。</p>
+      <div class="step-actions"><button id="parent-review-back" class="parent-button secondary" type="button" data-control="parent-review-back">上一步</button><button id="parent-create" class="parent-button primary" type="button" data-control="parent-create">安排完成</button></div>
+    </section>
+  </section>
+
+  <section id="parent-success" class="success-panel" hidden aria-live="polite">
+    <div class="success-mark" aria-hidden="true">✓</div>
+    <h2>安排好了！</h2>
+    <p id="parent-success-copy"></p>
+    <div class="success-actions"><a id="parent-open-student" class="parent-button primary" href="/app/student.html">打开孩子的学习页</a><button id="parent-new-plan" class="parent-button secondary" type="button" data-control="parent-new-plan">再安排一段</button></div>
+  </section>
+
+  <p class="advanced-link"><a href="/app/index.html">进入完整后台</a></p>
+</main>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/state.js"></script>
+<script src="/app/js/parent.js"></script>
+</body>
+</html>

@@ -17,6 +17,13 @@
 - 浏览器专项 `backend/tests/browser_student_userpath.spec.js`：**2 passed**（隔离 fake 服务，覆盖任务显示/开始跳转、空态、失败安全文案和重试恢复），因此本项为 **scoped-browser-pass**。
 - `NOT_VERIFIED`：可视浏览器电脑检查因当前环境 `unsupported Codex auth method: apikey` 无可用浏览器；真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和响应式人工视觉复核仍未覆盖。
 
+## 2026-09-28：Buddy P1-02 家长视图
+
+- **P1-02：implemented**：新增独立 `/app/parent.html` 家长入口，提供“安排学习 / 查看报告 / 调整设置”三个入口，并把安排流程封装为“选教材 → 设定时间 → 完成安排”三步。
+- 安排流程复用现有材料、目标、计划、学习项、确认/激活和节奏分配接口；未新增 API、schema、migration，也未修改正式数据根。
+- 浏览器专项 `backend/tests/browser_parent_userpath.spec.js`：**2 passed**（三入口/三步安排/创建链路、材料失败安全重试）；前端合同审计 **0 findings**，P0 focused **3 passed**，源码大小与 diff-check 通过。
+- 状态：**scoped-browser-pass**；可视浏览器电脑检查、真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和人工视觉复核仍为 **NOT_VERIFIED**。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 
