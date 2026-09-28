@@ -14,7 +14,7 @@ async function mock(page, url, body){await page.route(url, route=>route.fulfill(
 test('learning lists render shared labels for lifecycle and source states',async({page})=>{
   await mock(page,'**/api/study/plans',[{id:'plan-1',title:'计划',status:'confirmed',item_count:0}]);
   await mock(page,'**/api/study/goals',[]);await mock(page,'**/api/study/modules',[]);
-  await page.goto(`${BASE}/app/plans.html`);await expect(page.locator('#plans')).toContainText('已确认');
+  await page.goto(`${BASE}/app/plans.html`);await expect(page.locator('#plans')).toContainText('可用');await expect(page.locator('#plans')).not.toContainText('已确认');
   await page.unrouteAll({behavior:'ignoreErrors'});
   await mock(page,'**/api/study/notes',[{id:'note-1',title:'草稿笔记',note_type:'ai_draft'}]);
   await page.goto(`${BASE}/app/notes.html`);await expect(page.locator('#notes')).toContainText('AI 草稿');
@@ -44,7 +44,7 @@ test('plan and note detail display source degradation as user labels',async({pag
   await mock(page,'**/api/study/goals',[]);await mock(page,'**/api/study/modules',[]);
   await mock(page,'**/api/study/plans',[{id:'plan-1',title:'计划',status:'active',item_count:1}]);
   await mock(page,'**/api/study/plans/plan-1',{id:'plan-1',title:'计划',items:[{id:'item-1',title:'学习项'}],source_links:[{id:'link-1',plan_item_id:'item-1',status:'source_deleted'}]});
-  await page.goto(`${BASE}/app/plans.html`);await page.locator('#plans .plan-item').click();await expect(page.locator('#plan-detail')).toContainText('来源: 来源已删除');
+  await page.goto(`${BASE}/app/plans.html`);await page.locator('#plans .plan-item').click();await expect(page.locator('#plan-detail')).toContainText('计划状态：有问题');
   await page.unrouteAll({behavior:'ignoreErrors'});
   await mock(page,'**/api/study/notes',[{id:'note-1',title:'笔记',provenance:'ai_generated',status:'draft'}]);
   await mock(page,'**/api/study/notes/note-1',{id:'note-1',title:'笔记',status:'draft',provenance:'ai_generated',blocks:[{block_kind:'text',content:'内容',sources:[{citation_key:'ctx-a',status:'source_unavailable'}]}],modules:[],source_warning_count:1});

@@ -45,10 +45,10 @@
 <div class="filters">
 <select id="status-filter" aria-label="状态筛选">
 <option value="">全部状态</option>
-<option value="success">解析完成</option>
-<option value="empty">没有可提取的正文</option>
-<option value="rejected">已拒绝</option>
-<option value="failed">失败</option>
+<option value="success">可用</option>
+<option value="empty">有问题</option>
+<option value="rejected">有问题（已拒绝）</option>
+<option value="failed">有问题（导入失败）</option>
 </select>
 <input type="search" id="search-input" placeholder="搜索材料名称..." aria-label="搜索材料" title="[4] 搜索材料 - 输入关键词搜索材料名称或内容">
 <button class="btn" id="apply-filters" type="button" title="[2] 应用筛选 - 按状态筛选材料（成功、空文件、失败等）">应用筛选</button>
@@ -327,8 +327,9 @@ link.setAttribute('aria-label',`打开 ${name} 详情`);
 link.textContent=name;
 li.append(link);
 const badge=document.createElement('span');
-badge.className='badge';
-badge.textContent=sbState.label(status);
+badge.className='badge '+sbState.displayClass(status);
+badge.textContent=sbState.displayLabel(status);
+badge.title=sbState.displayTitle(status);
 li.append(badge);
 if(currentView==='active'&&!deleted){
 const actions=document.createElement('div');

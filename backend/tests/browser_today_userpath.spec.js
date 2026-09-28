@@ -147,7 +147,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await expect(page.locator('#quick-start-time')).toHaveText('预计 25 分钟');
     await expect(page.locator('#continue-btn')).toHaveAttribute('href',
       new RegExp(`plan-detail\\.html\\?plan_id=.+item_id=.+local_date=${today()}&return_to=today`));
-    await expect(task).toContainText('来源状态: 未关联来源');
+    await expect(task).toContainText('来源：有问题');
     await page.locator('#continue-btn').click();
     await expect(page).toHaveURL(/plan-detail\.html\?plan_id=.+item_id=.+return_to=today/);
     const detailItem = page.locator('#plan-detail article.card').filter({ hasText: ITEM_TITLE });
