@@ -8,6 +8,13 @@
 - [x] 验证：定向 Python 9 passed；Today 浏览器 8 passed；状态矩阵 3 passed；失败合同 6 passed；源码尺寸和 diff 检查通过。
 - [ ] 未覆盖：真实 Provider/OCR/ASR、跨浏览器、屏幕阅读器和正式运行态。
 
+## 2026-09-28：Buddy P1-01 学生视图
+
+- [x] 已新增 `backend/app/static/student.html`、`css/student.css`、`js/student.js`：学生视图仅显示欢迎语、今日任务、预计时长、本周学习信息和学习入口，不显示后台导航及“目标/模块/节奏”术语。
+- [x] 开始按钮复用现有 `plan-detail.html` 路径；空态、加载态、失败安全文案和重试动作已实现。
+- [x] 新增并运行 `backend/tests/browser_student_userpath.spec.js`：隔离 Chromium **2 passed**，覆盖任务显示、开始跳转、空态和失败恢复。
+- [ ] 可视浏览器电脑检查因环境无可用浏览器而 `NOT_VERIFIED`；真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 继续 `NOT_VERIFIED`。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

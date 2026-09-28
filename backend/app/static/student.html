@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 学习</title>
+<link rel="stylesheet" href="/app/css/student.css">
+</head>
+<body>
+<main class="student-view" data-control="student-view">
+  <header class="student-header">
+    <p class="student-brand">StudyBuddy</p>
+    <p id="student-date" class="student-date" aria-live="polite"></p>
+  </header>
+
+  <section class="welcome" aria-labelledby="student-greeting">
+    <h1 id="student-greeting" class="greeting">早上好！</h1>
+    <p class="welcome-copy">今天也一起学一点吧</p>
+  </section>
+
+  <section id="student-loading" class="student-message" role="status" aria-live="polite">
+    正在准备今天的学习...
+  </section>
+
+  <section id="student-task" class="today-task" hidden aria-labelledby="student-task-title">
+    <p class="section-kicker">今天学什么？</p>
+    <h2 id="student-task-title" class="task-title"></h2>
+    <p id="student-task-time" class="task-time"></p>
+    <p id="student-task-state" class="task-state" aria-live="polite"></p>
+    <button id="student-start" class="btn-huge btn-primary" type="button" data-control="student-start">开始</button>
+  </section>
+
+  <section id="student-empty" class="student-message" hidden>
+    <h2>今天还没有学习安排</h2>
+    <p>等安排好学习内容后，就可以从这里开始。</p>
+    <a class="btn-large" href="/app/plans.html">去安排学习</a>
+  </section>
+
+  <section id="student-week" class="week-card" hidden aria-labelledby="student-week-title">
+    <h2 id="student-week-title">我的这一周</h2>
+    <p id="student-week-copy"></p>
+    <div class="progress-track" aria-hidden="true"><span id="student-week-progress"></span></div>
+  </section>
+
+  <section id="student-error" class="student-message student-error" role="alert" hidden></section>
+  <button id="student-retry" class="btn-large retry-button" type="button" data-control="retry" hidden>重新加载</button>
+</main>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/state.js"></script>
+<script src="/app/js/student.js"></script>
+</body>
+</html>

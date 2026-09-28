@@ -1,0 +1,86 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: #17324d;
+  background: linear-gradient(135deg, #eef7ff 0%, #f8fffb 100%);
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+
+button, a { font: inherit; }
+
+.student-view {
+  width: min(100% - 32px, 760px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.student-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.student-brand { margin: 0; font-size: 18px; font-weight: 800; color: #0c4eaf; }
+.student-date { margin: 0; color: #5f7184; font-size: 17px; }
+.welcome { margin: 58px 0 28px; }
+.greeting { margin: 0; font-size: clamp(36px, 7vw, 56px); line-height: 1.15; letter-spacing: 0; }
+.welcome-copy { margin: 12px 0 0; font-size: 24px; color: #5f7184; }
+
+.today-task, .week-card, .student-message {
+  border: 2px solid #d5e3f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(23, 50, 77, .08);
+}
+
+.today-task { padding: 30px; background: #e9f8f2; border-color: #b9e5d1; }
+.section-kicker { margin: 0 0 12px; font-size: 20px; font-weight: 700; color: #0c4eaf; }
+.task-title { margin: 0; font-size: clamp(28px, 5vw, 40px); line-height: 1.25; overflow-wrap: anywhere; }
+.task-time { margin: 14px 0 4px; font-size: 24px; color: #5f7184; }
+.task-state { min-height: 28px; margin: 0 0 18px; font-size: 20px; color: #0c4eaf; }
+
+.btn-huge, .btn-large {
+  display: inline-flex;
+  min-height: 60px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 26px;
+  text-decoration: none;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-huge { width: 100%; margin-top: 8px; font-size: 28px; }
+.btn-large { font-size: 21px; color: #0c4eaf; background: #dcecff; }
+.btn-primary { color: #ffffff; background: #1769e0; box-shadow: 0 6px 0 #0c4eaf; }
+.btn-primary:hover { background: #0c4eaf; }
+.btn-primary:active { transform: translateY(2px); box-shadow: 0 4px 0 #083b85; }
+button:disabled { cursor: wait; opacity: .7; }
+button:focus-visible, a:focus-visible { outline: 4px solid #ffbf47; outline-offset: 4px; }
+
+.week-card { margin-top: 24px; padding: 24px 28px; }
+.week-card h2 { margin: 0; font-size: 28px; }
+.week-card p { margin: 10px 0 14px; font-size: 22px; color: #5f7184; }
+.progress-track { height: 16px; overflow: hidden; border-radius: 99px; background: #e4edf5; }
+.progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: #32ad76; transition: width .2s ease; }
+
+.student-message { margin-top: 20px; padding: 24px 28px; font-size: 22px; }
+.student-message h2 { margin: 0 0 8px; font-size: 30px; }
+.student-message p { margin: 8px 0 18px; }
+.student-error { border-color: #efb6b6; background: #fff2f2; }
+.retry-button { margin-top: 14px; }
+
+[hidden] { display: none !important; }
+
+@media (max-width: 520px) {
+  .student-view { width: min(100% - 24px, 760px); padding-top: 20px; }
+  .welcome { margin-top: 42px; }
+  .welcome-copy, .task-time, .week-card p, .student-message { font-size: 20px; }
+  .today-task, .week-card, .student-message { padding: 22px; }
+}

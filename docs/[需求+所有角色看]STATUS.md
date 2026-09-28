@@ -10,6 +10,13 @@
 - 验证：test_buddy_p0_revision.py 与 test_p1_4_c1_idempotency_feedback.py 共 **9 passed**；Today 专项 **8 passed**；状态矩阵 **3 passed**；失败合同 **6 passed**；check-source-size.py、git diff --check 通过。
 - 范围边界：真实 Provider、真实 OCR/ASR、跨浏览器、屏幕阅读器和正式运行态仍为 **NOT_VERIFIED**；本结果只覆盖隔离 fake Provider/ASR 浏览器路径。
 
+## 2026-09-28：Buddy P1-01 学生视图
+
+- **P1-01：implemented**：新增独立 `/app/student.html` 学生入口，复用现有学习计划、节奏分配和周趋势接口；页面不加载后台导航，提供大字、大按钮、今日任务、预计时长、本周学习天数、空态和安全重试。
+- 开始按钮进入现有 `plan-detail.html` 学习路径；未新增 API、schema、migration，也未改正式数据根。
+- 浏览器专项 `backend/tests/browser_student_userpath.spec.js`：**2 passed**（隔离 fake 服务，覆盖任务显示/开始跳转、空态、失败安全文案和重试恢复），因此本项为 **scoped-browser-pass**。
+- `NOT_VERIFIED`：可视浏览器电脑检查因当前环境 `unsupported Codex auth method: apikey` 无可用浏览器；真实运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和响应式人工视觉复核仍未覆盖。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 
