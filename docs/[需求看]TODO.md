@@ -29,6 +29,13 @@
 - [x] `check-source-size.py` 与 `git diff --check` 通过；未新增 API/schema/migration，未触碰正式数据根。
 - [ ] 可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和人工视觉复核继续 `NOT_VERIFIED`；下一项为 P2-01 SPA 改造。
 
+## 2026-09-29：Buddy P2-01 原生 SPA 壳
+
+- [x] 新增 `/app/buddy.html` 和原生 `History API` 路由，覆盖 Today、学生、家长三个 Buddy 入口；顶部页面切换不触发顶层文档刷新。
+- [x] 复用现有页面，不新增 React/Vue 依赖、API、schema 或 migration；新增 `browser_buddy_spa.spec.js`，隔离 Chromium **1 passed**。
+- [x] `check-source-size.py` 与 `git diff --check` 通过。
+- [ ] 全站后台页面迁移到 SPA、可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器和真实 Provider/OCR/ASR 继续 `NOT_VERIFIED`；后续可继续扩展更多路由。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

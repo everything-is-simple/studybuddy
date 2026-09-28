@@ -31,6 +31,13 @@
 - 验证：`browser_student_userpath.spec.js` **2 passed**；`browser_today_userpath.spec.js` **8 passed**；`test_frontend_contract_audit.py` 与 `test_buddy_p0_revision.py` 共 **10 passed**；`check-source-size.py`、`git diff --check` 通过。
 - 状态：**scoped-browser-pass**；可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器、真实 Provider/OCR/ASR 和人工视觉复核仍为 **NOT_VERIFIED**。
 
+## 2026-09-29：Buddy P2-01 原生 SPA 壳
+
+- **P2-01：implemented（Buddy scoped slice）**：新增 `/app/buddy.html` 原生 History API 入口，覆盖 Today、学生、家长三个 Buddy 页面；通过同源 iframe 复用既有页面和业务逻辑，页面切换更新地址且不刷新顶层文档，旧多页 URL 保持兼容。
+- 未引入 React/Vue、构建链、后端 API、schema 或 migration；本轮未迁移后台全部页面，也未声称完成全站 SPA 重构。
+- 浏览器专项 `backend/tests/browser_buddy_spa.spec.js`：**1 passed**；`check-source-size.py` 与 `git diff --check` 通过。
+- 状态：**scoped-browser-pass**；全站页面迁移、可视浏览器电脑检查、正式运行态、跨浏览器、屏幕阅读器和真实 Provider/OCR/ASR 仍为 **NOT_VERIFIED**。
+
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

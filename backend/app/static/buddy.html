@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · Buddy</title>
+<link rel="stylesheet" href="/app/css/buddy.css">
+</head>
+<body>
+<main class="buddy-shell" data-control="buddy-spa">
+  <header class="buddy-header">
+    <a class="buddy-brand" href="/app/buddy.html?view=today">StudyBuddy</a>
+    <nav class="buddy-nav" aria-label="Buddy 页面">
+      <a href="/app/buddy.html?view=today" data-view="today">今天</a>
+      <a href="/app/buddy.html?view=student" data-view="student">学生</a>
+      <a href="/app/buddy.html?view=parent" data-view="parent">家长</a>
+    </nav>
+  </header>
+  <div id="buddy-status" class="buddy-status" role="status" aria-live="polite">正在打开 Buddy…</div>
+  <iframe id="buddy-frame" title="Buddy 页面" loading="eager"></iframe>
+  <p class="buddy-fallback">页面没有打开？<a id="buddy-fallback-link" href="/app/today.html">直接打开今天页面</a></p>
+</main>
+<script src="/app/js/buddy-spa.js"></script>
+</body>
+</html>
