@@ -58,7 +58,7 @@ test('IDX-1 三入口统一落到 /app/today.html（A 类）', async ({ page }) 
   for (const path of ['/', '/app/', '/app/index.html']) {
     await page.goto(`${BASE}${path}`);
     await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    await expect(page.locator('h1')).toContainText('你的学习日程');
+    await expect(page.locator('h1')).toContainText('今天学什么？');
   }
 });
 
@@ -68,7 +68,7 @@ test('IDX-2 无 JavaScript 时 meta refresh 仍可达 today（降级路径，A �
   try {
     await noJsPage.goto(`${BASE}/app/index.html`);
     await expect(noJsPage).toHaveURL(`${BASE}/app/today.html`);
-    await expect(noJsPage.locator('h1')).toContainText('你的学习日程');
+    await expect(noJsPage.locator('h1')).toContainText('今天学什么？');
   } finally {
     await noJsPage.context().close();
   }
@@ -87,7 +87,7 @@ test('IDX-3 兜底锚点存在且目标可达（B 类要素：page.request 读�
 test('IDX-4 query/hash 边界且无开放重定向（A 类）', async ({ page }) => {
   await page.goto(`${BASE}/app/index.html?x=1#y`);
   await expect(page).toHaveURL(`${BASE}/app/today.html`);
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   // index.html 的跳转目标是硬编码的 today，query 不得改变落点（防开放重定向）。
   await page.goto(`${BASE}/app/index.html?next=${encodeURIComponent('/app/qa.html')}`);
   await expect(page).toHaveURL(`${BASE}/app/today.html`);
@@ -100,7 +100,7 @@ test('IDX-5 390 与 1920 两档视口跳转均正常（A 类）', async ({ page 
     await page.setViewportSize(viewport);
     await page.goto(`${BASE}/app/index.html`);
     await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    await expect(page.locator('h1')).toContainText('你的学习日程');
+    await expect(page.locator('h1')).toContainText('今天学什么？');
   }
 });
 

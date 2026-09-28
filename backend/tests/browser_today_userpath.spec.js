@@ -64,11 +64,32 @@ test.describe.serial('today.html pure user path (A-class)', () => {
   });
   test.afterAll(() => stopServer());
 
+  test('B-TD-LOAD-1 统一加载提示覆盖三区并在请求完成后退出', async ({ page }) => {
+    let releasePlans;
+    const plansResponse = new Promise(resolve => { releasePlans = resolve; });
+    await page.route('**/api/study/plans', async route => {
+      await plansResponse;
+      await route.continue();
+    });
+    await page.goto(`${BASE}/app/today.html`);
+    await expect(page.locator('#page-loading')).toBeVisible();
+    await expect(page.locator('#page-loading')).toHaveText('正在加载今天的学习任务...');
+    for (const id of ['#summary-status', '#weekly-status', '#task-status']) {
+      await expect(page.locator(id)).toBeHidden();
+    }
+    releasePlans();
+    await expect(page.locator('#page-loading')).toBeHidden({ timeout: 10000 });
+    await expect(page.locator('#summary-status')).toHaveText('还没有学习计划');
+    await expect(page.locator('#weekly-status')).toHaveText('还没有学习计划，暂无周趋势');
+    await expect(page.locator('#task-status')).toHaveText('还没有学习计划');
+  });
+
   test('A-E2E-TD-1 空数据根：三区独立空态与下一步出口', async ({ page }) => {
     await page.goto(`${BASE}/app/today.html`);
     await expect(page.locator('#summary-status')).toHaveText('还没有学习计划', { timeout: 10000 });
     await expect(page.locator('#weekly-status')).toHaveText('还没有学习计划，暂无周趋势');
     await expect(page.locator('#task-status')).toHaveText('还没有学习计划');
+    await expect(page.locator('#quick-start')).toBeHidden();
     const exits = page.locator('#today-exits');
     await expect(exits.getByRole('link', { name: '创建学习计划' })).toHaveAttribute('href', '/app/plans.html');
     await expect(page.locator('#retry-today')).toBeHidden();
@@ -121,9 +142,17 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await page.goto(`${BASE}/app/today.html`);
     const task = page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE });
     await expect(task).toContainText(`计划 25 分钟 · ${today()}`, { timeout: 10000 });
-    await expect(task).toContainText('来源状态: 未关联来源');
-    await expect(task.getByRole('link', { name: '开始学习' })).toHaveAttribute('href',
+    await expect(page.locator('#quick-start')).toBeVisible();
+    await expect(page.locator('#quick-start-title')).toHaveText(ITEM_TITLE);
+    await expect(page.locator('#quick-start-time')).toHaveText('预计 25 分钟');
+    await expect(page.locator('#continue-btn')).toHaveAttribute('href',
       new RegExp(`plan-detail\\.html\\?plan_id=.+item_id=.+local_date=${today()}&return_to=today`));
+    await expect(task).toContainText('来源状态: 未关联来源');
+    await page.locator('#continue-btn').click();
+    await expect(page).toHaveURL(/plan-detail\.html\?plan_id=.+item_id=.+return_to=today/);
+    const detailItem = page.locator('#plan-detail article.card').filter({ hasText: ITEM_TITLE });
+    await expect(detailItem).toBeVisible();
+    await expect(detailItem.getByRole('button', { name: '开始学习' })).toBeVisible();
     await assertNoSensitiveVisibleText(page);
   });
 

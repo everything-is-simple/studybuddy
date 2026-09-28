@@ -34,7 +34,7 @@ test.afterEach(stop);
 test('E2E: Complete study workflow - import → QA → cards → review', async ({ page }) => {
   // Step 1: User arrives at homepage and gets redirected to today page
   await page.goto(BASE + '/');
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Step 2: Navigate to materials and import a file
   await page.click('nav a[href="/app/materials.html"]');
@@ -102,7 +102,7 @@ test('E2E: Complete study workflow - import → QA → cards → review', async 
   
   // Step 9: Return to today page to see task summary
   await page.click('nav a[href="/app/today.html"]');
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   await expect(page.locator('#summary-status')).not.toContainText('正在加载', { timeout: 5000 });
 });
 
@@ -230,7 +230,7 @@ test('E2E: Classroom capture workflow', async ({ page }) => {
 test('E2E: Cross-page navigation and state consistency', async ({ page }) => {
   // Start from root
   await page.goto(BASE + '/');
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Navigate through all pages
   const pages = [
@@ -242,7 +242,7 @@ test('E2E: Cross-page navigation and state consistency', async ({ page }) => {
     { href: '/app/notes.html', title: '学习笔记' },
     { href: '/app/practice.html', title: '限时练习与错题复盘' },
     { href: '/app/classroom.html', title: '音频转写与学习报告' },
-    { href: '/app/today.html', title: '你的学习日程' }
+    { href: '/app/today.html', title: '今天学什么？' }
   ];
   
   for (const { href, title } of pages) {

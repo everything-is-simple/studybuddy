@@ -48,7 +48,7 @@ test('A3-6: root route redirects to new static frontend', async ({ page }) => {
   expect(page.url()).toMatch(/\/app\/today\.html$/);
   
   // Should show the new UI
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   await expect(page.locator('.app-shell')).toBeVisible();
   await expect(page.locator('nav[data-nav]')).toBeVisible();
 });
@@ -68,7 +68,7 @@ test('formal app aliases and brand links resolve to the single Today entry', asy
   for (const path of ['/app/', '/app/index.html']) {
     await page.goto(`${BASE}${path}`);
     await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    await expect(page.locator('h1')).toContainText('你的学习日程');
+    await expect(page.locator('h1')).toContainText('今天学什么？');
   }
 
   const pages = [
@@ -94,7 +94,7 @@ test('A3-6: navigation from root works correctly', async ({ page }) => {
   await page.goto(BASE + '/');
   
   // Should land on today page
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Navigate to materials via nav
   await page.click('nav a[href="/app/materials.html"]');

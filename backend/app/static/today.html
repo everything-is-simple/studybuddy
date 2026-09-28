@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBuddy · 今天</title>
 <link rel="stylesheet" href="/app/css/tokens.css"><link rel="stylesheet" href="/app/css/app.css">
+<style>
+#continue-btn{display:inline-flex;align-items:center;min-height:56px;padding:12px 24px;font-size:20px;font-weight:700}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -18,9 +21,7 @@
 <main class="main">
 <div class="hero">
 <div>
-<p class="eyebrow">今日任务</p>
-<h1>你的学习日程</h1>
-<p class="lead">查看今日分配的学习任务和进度。</p>
+<h1>今天学什么？</h1>
 </div>
 <div class="stack-actions">
 <a class="btn" href="/app/plans.html">管理计划</a>
@@ -28,16 +29,23 @@
 </div>
 </div>
 
+<div id="page-loading" class="notice" role="status" aria-live="polite">正在加载今天的学习任务...</div>
+<section id="quick-start" class="card" data-od-id="today-quick-start" hidden aria-labelledby="quick-start-heading">
+<h2 id="quick-start-heading">继续学习</h2>
+<p id="quick-start-title" class="item-title"></p>
+<p id="quick-start-time" class="muted"></p>
+<a id="continue-btn" class="btn btn-primary" href="#" data-od-id="today-continue-learning">开始学习</a>
+</section>
 <section class="card" data-od-id="today-summary">
 <h2>今日概览</h2>
-<div id="summary-status" class="notice" role="status" aria-live="polite">正在加载今日概览...</div>
+<div id="summary-status" class="notice" role="status" aria-live="polite" hidden></div>
 <div id="summary" class="rhythm-summary" hidden></div><div id="today-onboarding" class="notice muted" hidden><strong>开始学习只需三步</strong><ol><li><a href="/app/materials.html">导入教材</a>：先导入五年级上册当前课程。</li><li><a href="/app/plans.html">建立学习计划</a>：安排当前学习、预习和复习内容。</li><li><a href="/app/practice.html">开始练习</a>：完成今天的任务并查看进度。</li></ol></div>
-<div id="weekly-status" class="notice mt-16" role="status" aria-live="polite">正在加载近七天趋势…</div><div id="weekly-trend" class="rhythm-summary" hidden></div>
+<div id="weekly-status" class="notice mt-16" role="status" aria-live="polite" hidden></div><div id="weekly-trend" class="rhythm-summary" hidden></div>
 </section>
 
 <section class="card mt-24" data-od-id="today-tasks">
-<h2>今日任务</h2>
-<div id="task-status" class="notice" role="status" aria-live="polite">正在加载任务列表...</div>
+<h2>今天的学习</h2>
+<div id="task-status" class="notice" role="status" aria-live="polite" hidden></div>
 <ul id="tasks" class="task-list"></ul>
 <div id="today-exits" class="stack-actions" hidden></div>
 </section>
@@ -48,10 +56,15 @@
 <script>
 (async function(){
 const pageRequest=sbApi.setPageScope('today');
+const pageLoading=document.querySelector('#page-loading');
 const summaryStatus=document.querySelector('#summary-status');
 const onboarding=document.querySelector('#today-onboarding');
 const summary=document.querySelector('#summary');
 const taskStatus=document.querySelector('#task-status');
+const quickStart=document.querySelector('#quick-start');
+const quickStartTitle=document.querySelector('#quick-start-title');
+const quickStartTime=document.querySelector('#quick-start-time');
+const continueButton=document.querySelector('#continue-btn');
 const weeklyStatus=document.querySelector('#weekly-status');const weeklyTrend=document.querySelector('#weekly-trend');
 const tasks=document.querySelector('#tasks');
 const exits=document.querySelector('#today-exits');
@@ -132,6 +145,7 @@ const allocations=await sbApi.json(`/api/study/plans/${encodeURIComponent(plan.i
 const allocationByItem=new Map(allocations.filter(item=>item.local_date===localDate).map(item=>[item.item_id,item]));
 const items=(detail.items||[]).filter(item=>item.status!=='archived'&&allocationByItem.has(item.id));
 if(!items.length){
+quickStart.hidden=true;
 settled(taskStatus,`计划「${text(plan.title)||'未命名计划'}」今日没有安排学习项`);
 showExits([
  {href:`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}`,label:'查看计划详情'},
@@ -140,6 +154,13 @@ showExits([
 return
 }
 taskStatus.hidden=true;
+const nextItem=items.find(item=>item.status!=='completed')||items[0];
+const nextAllocation=allocationByItem.get(nextItem.id);
+quickStartTitle.textContent=text(nextItem.title||nextItem.item_title||'未命名任务');
+quickStartTime.textContent=`预计 ${nextAllocation.planned_minutes} 分钟`;
+continueButton.href=`/app/plan-detail.html?plan_id=${encodeURIComponent(plan.id)}&item_id=${encodeURIComponent(nextItem.id)}&local_date=${encodeURIComponent(localDate)}&return_to=today`;
+continueButton.textContent=nextItem.status==='completed'?'查看进度':'开始学习';
+quickStart.hidden=false;
 items.forEach(item=>{
 const allocation=allocationByItem.get(item.id);
 const li=document.createElement('li');
@@ -181,15 +202,15 @@ fail(taskStatus,e)
 
 function resetSections(){
 retry.hidden=true;
+pageLoading.hidden=false;
+quickStart.hidden=true;
 activePlanRequest=null;
 tasks.replaceChildren();
 exits.hidden=true;
 exits.replaceChildren();
 summary.hidden=true;
 weeklyTrend.hidden=true;
-pending(summaryStatus,'正在加载今日概览...');
-pending(weeklyStatus,'正在加载近七天趋势…');
-pending(taskStatus,'正在加载任务列表...')
+[summaryStatus,weeklyStatus,taskStatus].forEach(el=>{el.hidden=true;el.replaceChildren()})
 }
 
 async function loadAll(){
@@ -199,6 +220,7 @@ sbUi.busy(retry,true,'重新加载');
 try{
 await Promise.all([loadSummary(generation),loadWeeklyTrend(generation),loadTasks(generation)])
 }finally{
+if(generation===loadGeneration)pageLoading.hidden=true;
 sbUi.busy(retry,false,'重新加载')
 }
 }

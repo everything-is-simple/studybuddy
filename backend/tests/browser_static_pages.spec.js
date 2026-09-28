@@ -52,7 +52,7 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     expect(page.url()).toMatch(/\/app\/today\.html$/);
     await expect(page).toHaveTitle(/StudyBuddy/i);
     await expect(page.locator('.app-shell')).toBeVisible();
-    await expect(page.locator('h1')).toContainText('你的学习日程');
+    await expect(page.locator('h1')).toContainText('今天学什么？');
     await expect(page.locator('nav[data-nav]')).toBeVisible();
     stopServer(server); server = null;
     await new Promise(r => setTimeout(r, 500));
@@ -63,12 +63,12 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     await page.goto(`${BASE}/app/`);
     await expect(page).toHaveURL(`${BASE}/app/today.html`);
     await expect(page).toHaveTitle(/StudyBuddy.*今天/i);
-    await expect(page.locator('h1')).toContainText('你的学习日程');
+    await expect(page.locator('h1')).toContainText('今天学什么？');
     await expect(page.locator('.brand')).toHaveText('StudyBuddy');
     await expect(page.locator('.brand')).toHaveAttribute('href', '/app/today.html');
     await expect(page.locator('[data-nav]')).toBeVisible();
     await expect(page.locator('[data-system-status]')).toBeVisible();
-    await expect(page.locator('#summary-status')).toBeVisible();
+    await expect(page.locator('#page-loading')).toHaveCount(1);
     await expect(page.locator('a[href="/app/materials.html"]').first()).toBeVisible();
 
     // Nav links all resolve

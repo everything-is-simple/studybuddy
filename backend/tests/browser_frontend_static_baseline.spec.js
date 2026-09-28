@@ -9,7 +9,7 @@ const PAGES = [
   ['plan-detail.html', '#plan-status'], ['note-detail.html', '#note-status'],
   ['practice-session.html', '#session-status'], ['practice-result.html', '#result-status'],
   ['review.html', '#review-status'], ['reports.html', '#report-status'], ['settings.html', '#capability-summary'],
-  ['today.html', '#summary-status'], ['materials.html', '#state'], ['material-detail.html', '#state'],
+  ['today.html', '#summary-status', '#page-loading'], ['materials.html', '#state'], ['material-detail.html', '#state'],
   ['qa.html', '#thread-status'], ['plans.html', '#plan-status'], ['notes.html', '#note-status'],
   ['cards.html', '#deck-status'], ['exercises.html', '#set-status'], ['practice.html', '#session-status'],
   ['capture.html', '#state'], ['classroom.html', '#capture-status'], ['tasks.html', '#state'],
@@ -23,4 +23,4 @@ test.beforeEach(async()=>{fs.rmSync(ROOT,{recursive:true,force:true});server=sta
 // 20 pages x 10 viewport widths = 200 full navigations; the default 30s
 // timeout is below this loop's real runtime (~52s on the dev host).
 test.slow();
-test('all static pages have safe initial states at mobile and desktop widths',async({page})=>{for(const [name,status] of PAGES){for(const width of [360,390,430,600,768,820,1024,1366,1440,1920]){await page.setViewportSize({width,height:844});await page.goto(`${BASE}/app/${name}`);await expect(page.locator('main')).toBeVisible();await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);if(status)await expect(page.locator(status)).not.toContainText(/正在加载|加载中|正在检查|检查中/,{timeout:5000});if(width===360){const toggle=page.getByRole('button',{name:'更多'});await expect(toggle).toBeVisible();await toggle.press('Enter');await expect(page.locator('#primary-navigation')).toHaveClass(/is-open/)}await expect(page.locator('body')).not.toContainText(/H:\\|SELECT\s|Traceback|api[_-]?key|secret|stored_path/i)}}});
+test('all static pages have safe initial states at mobile and desktop widths',async({page})=>{for(const [name,status,loading] of PAGES){for(const width of [360,390,430,600,768,820,1024,1366,1440,1920]){await page.setViewportSize({width,height:844});await page.goto(`${BASE}/app/${name}`);await expect(page.locator('main')).toBeVisible();if(loading)await expect(page.locator(loading)).toBeHidden({timeout:5000});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);if(status)await expect(page.locator(status)).not.toContainText(/正在加载|加载中|正在检查|检查中/,{timeout:5000});if(width===360){const toggle=page.getByRole('button',{name:'更多'});await expect(toggle).toBeVisible();await toggle.press('Enter');await expect(page.locator('#primary-navigation')).toHaveClass(/is-open/)}await expect(page.locator('body')).not.toContainText(/H:\\|SELECT\s|Traceback|api[_-]?key|secret|stored_path/i)}}});

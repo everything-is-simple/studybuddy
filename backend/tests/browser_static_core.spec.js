@@ -161,7 +161,7 @@ test('A3-4: qa page - submit question flow', async ({ page }) => {
 
 test('A3-4: today page - loads task summary', async ({ page }) => {
   await page.goto(`${BASE}/app/today.html`);
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Check summary loads (may be empty but should not error)
   const summaryStatus = page.locator('#summary-status');
@@ -179,7 +179,7 @@ test('A3-4: cross-page navigation flow', async ({ page }) => {
   
   // Test today page
   await page.goto(`${BASE}/app/today.html`);
-  await expect(page.locator('h1')).toContainText('你的学习日程');
+  await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Test QA page
   await page.goto(`${BASE}/app/qa.html`);
