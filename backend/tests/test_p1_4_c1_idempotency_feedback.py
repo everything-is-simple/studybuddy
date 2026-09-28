@@ -57,7 +57,7 @@ def test_error_mapping_covers_c0_discovered_codes():
     """
     api_js = (ROOT / "app" / "static" / "js" / "api.js").read_text(encoding="utf-8")
     known_start = api_js.index("safeError(error){const known={")
-    known_end = api_js.index("};return known[error.code", known_start)
+    known_end = api_js.index("};const code=", known_start)
     known_block = api_js[known_start:known_end]
     
     # C0 明确发现的码
@@ -90,7 +90,7 @@ def test_error_mapping_does_not_expose_sensitive_info():
     """
     api_js = (ROOT / "app" / "static" / "js" / "api.js").read_text(encoding="utf-8")
     known_start = api_js.index("safeError(error){const known={")
-    known_end = api_js.index("};return known[error.code", known_start)
+    known_end = api_js.index("};const code=", known_start)
     known_block = api_js[known_start:known_end]
     
     # 禁止的敏感信息
@@ -98,6 +98,22 @@ def test_error_mapping_does_not_expose_sensitive_info():
                  "api_key", "secret", "password", "stored_path"]
     for pattern in forbidden:
         assert pattern not in known_block, f"错误映射泄露敏感信息: {pattern}"
+
+
+def test_error_mapping_includes_next_step_advice_for_buddy_codes():
+    """P0-05: 高频用户错误必须同时给出可执行的下一步。"""
+    api_js = (ROOT / "app" / "static" / "js" / "api.js").read_text(encoding="utf-8")
+    for code in (
+        "study_plan_dependency_cycle",
+        "study_rhythm_allocation_duplicate",
+        "learning_goal_archived",
+    ):
+        assert f"{code}:" in api_js
+    assert "怎么办：调整学习项的先后顺序后再保存。" in api_js
+    assert "怎么办：改用其他日期，或先删除当天重复安排。" in api_js
+    assert "怎么办：去计划页面找到这个目标，重新激活后再继续。" in api_js
+    assert "操作没有完成" in api_js
+    assert "return message+' '+next" in api_js
 
 
 def test_idempotency_key_auto_addition_still_works():

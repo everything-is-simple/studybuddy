@@ -183,7 +183,8 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     const retry = page.getByRole('button', { name: '重新加载' });
     await expect(retry).toBeVisible();
     for (const id of ['#summary-status', '#weekly-status', '#task-status']) {
-      await expect(page.locator(id)).toContainText('请求失败');
+      await expect(page.locator(id)).toContainText('操作没有完成');
+      await expect(page.locator(id)).toContainText('怎么办：请重试');
     }
     // Injected backend traceback/path content must never reach the visible page.
     await expect(page.locator('body')).not.toContainText(/secret_traceback|H:\\|H:\//);
