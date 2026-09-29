@@ -186,6 +186,7 @@ test('A3-4: cross-page navigation flow', async ({ page }) => {
   await expect(page.locator('h1')).toContainText('围绕材料提问');
   
   // Verify navigation elements exist
-  await expect(page.locator('nav')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '学习视图' })).toBeVisible();
   await expect(page.locator('.brand')).toContainText('StudyBuddy');
 });

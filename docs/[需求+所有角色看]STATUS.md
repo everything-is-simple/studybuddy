@@ -1,5 +1,16 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-29：Buddy P1-04 现有页面入口重组
+
+- **implemented / scoped-browser-pass**：新增 `advanced.html` 高级功能目录，按“资料与课堂 / 学习与复盘 / 报告与设置”组织 15 个工作流入口；有 ID 的详情页继续从原列表进入。
+- 家长“进入完整后台”直达目录，在 Buddy 内嵌页中切换顶层页面；共享页面新增学生/家长/高级功能导航，保留原管理菜单。
+- 首页兼容已同步到 P1-04 任务说明：`/`、`/app`、`index.html` 保留 Today；Buddy 首次默认学生视图、后续恢复已保存视图。本轮不修改原首页跳转，也未新增 API/schema/migration。
+- **PASS（隔离自动化范围）**：P1-04 专项 **7 passed**，与学生/家长/Buddy/首页别名/共享导航/静态与宽度矩阵等合计 **58 passed**；定向 pytest **11 passed**；源码大小和 diff 检查通过。
+- 初轮相关测试 **38 passed / 1 failed**：旧用例将多个导航区域作为单元素查询；已明确断言“主导航”和“学习视图”，最终相关运行全部通过。
+- **LIMITED（整体交付）**：可视浏览器验收尚未执行。浏览器连接器返回 `unsupported Codex auth method: apikey`；computer-use 已初始化并能枚举 Chrome，隔离服务启动仍待本次明确授权，按 workflow 第 2 节暂停该步骤。
+- 证据：`H:\studybuddy-test\verification\2026-09-29-p1-04.md`；最终隔离运行目录：`H:\studybuddy-test\runs\browser-20260929-034552988-6880`。本轮没有重跑后端/浏览器全量，先前全量结果只解释其原提交范围。
+- **NOT_VERIFIED**：实际可视点击、正式运行态、真实 Provider/OCR/ASR、真实交付、跨浏览器、真实移动设备和屏幕阅读器。未提交推送。
+
 ## 2026-09-29：全量自动化测试修订与验证
 
 - **PASS（隔离自动化范围）**：后端全量 **678 passed / 3 skipped / 1 warning**；最终浏览器全量 **583 passed / 4 skipped / 0 failed / 0 did not run**，退出码均为 0。

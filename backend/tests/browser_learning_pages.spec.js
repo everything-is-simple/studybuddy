@@ -171,7 +171,8 @@ test('A3-5: cross-page navigation works for all learning pages', async ({ page }
   await expect(page.locator('h1')).toContainText('音频转写与学习报告');
   
   // Verify navigation bar exists on all pages
-  await expect(page.locator('nav')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '学习视图' })).toBeVisible();
   await expect(page.locator('.brand')).toContainText('StudyBuddy');
 });
 

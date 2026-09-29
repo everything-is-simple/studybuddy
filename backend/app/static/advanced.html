@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyBuddy · 高级功能</title>
+<link rel="stylesheet" href="/app/css/tokens.css">
+<link rel="stylesheet" href="/app/css/app.css">
+<link rel="stylesheet" href="/app/css/advanced.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/app/today.html">StudyBuddy</a>
+    <nav class="nav" data-nav aria-label="主导航"></nav>
+    <span class="status-dot" data-system-status>检查系统状态…</span>
+  </div>
+</header>
+<main class="main advanced-main" data-control="advanced-directory">
+  <header class="advanced-heading">
+    <h1>高级功能</h1>
+    <a class="btn" href="/app/parent.html" data-control="advanced-return-parent">返回家长视图</a>
+  </header>
+  <div class="advanced-directory">
+    <section class="advanced-group" aria-labelledby="advanced-materials">
+      <h2 id="advanced-materials">资料与课堂</h2>
+      <ul class="advanced-links">
+        <li><a href="/app/materials.html" data-control="advanced-page-link">资料</a></li>
+        <li><a href="/app/qa.html" data-control="advanced-page-link">问答</a></li>
+        <li><a href="/app/capture.html" data-control="advanced-page-link">课堂采集</a></li>
+        <li><a href="/app/classroom.html" data-control="advanced-page-link">课堂工作区</a></li>
+      </ul>
+    </section>
+    <section class="advanced-group" aria-labelledby="advanced-study">
+      <h2 id="advanced-study">学习与复盘</h2>
+      <ul class="advanced-links">
+        <li><a href="/app/today.html" data-control="advanced-page-link">今天</a></li>
+        <li><a href="/app/plans.html" data-control="advanced-page-link">计划</a></li>
+        <li><a href="/app/notes.html" data-control="advanced-page-link">笔记</a></li>
+        <li><a href="/app/practice.html" data-control="advanced-page-link">练习</a></li>
+        <li><a href="/app/cards.html" data-control="advanced-page-link">卡片</a></li>
+        <li><a href="/app/exercises.html" data-control="advanced-page-link">题目</a></li>
+        <li><a href="/app/review.html" data-control="advanced-page-link">复盘</a></li>
+      </ul>
+    </section>
+    <section class="advanced-group" aria-labelledby="advanced-settings">
+      <h2 id="advanced-settings">报告与设置</h2>
+      <ul class="advanced-links">
+        <li><a href="/app/reports.html" data-control="advanced-page-link">报告</a></li>
+        <li><a href="/app/tasks.html" data-control="advanced-page-link">任务</a></li>
+        <li><a href="/app/settings-provider.html" data-control="advanced-page-link">AI 与交付设置</a></li>
+        <li><a href="/app/settings.html" data-control="advanced-page-link">系统设置</a></li>
+      </ul>
+    </section>
+  </div>
+</main>
+</div>
+<script src="/app/js/api.js"></script>
+<script src="/app/js/state.js"></script>
+<script src="/app/js/shell.js"></script>
+</body>
+</html>

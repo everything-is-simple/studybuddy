@@ -385,33 +385,34 @@ _errors = {
 
 **改动方案**：
 
-在 `parent.html` 添加一个不显眼的链接：
+在 `parent.html` 添加一个不显眼的链接，进入独立高级功能目录；在 Buddy 内嵌家长页中点击时切换顶层页面：
 
 ```html
-<a href="/app/index.html" class="link-subtle">
-  需要更多功能？进入完整后台
+<a href="/app/advanced.html" target="_top" data-control="parent-advanced">
+  进入完整后台
 </a>
 ```
 
-在 `index.html`（原有首页）添加提示：
+**首页兼容约定**：
 
-```html
-<div class="notice">
-  <p>这是完整后台，功能较多。如果你是第一次使用，建议从 
-    <a href="/app/student.html">学生视图</a> 或 
-    <a href="/app/parent.html">家长视图</a> 开始。
-  </p>
-</div>
-```
+- `/`、`/app`、`/app/index.html` 保留到 Today 的统一跳转，与现行运行基线和旧书签兼容。
+- `/app/buddy.html` 为简化体验入口，首次默认学生视图，之后恢复已保存的学生/家长视图。
+- Today 和共享后台页面提供“学生视图 / 家长视图 / 高级功能”入口；学生与家长页保持简化布局。
+- `advanced.html` 按“资料与课堂 / 学习与复盘 / 报告与设置”组织 15 个工作流入口，保留现有页面；有 ID 的详情页仍从对应列表进入，不提供无上下文的详情深链。
+- 高级功能页可返回家长视图，共享页面可返回学生/家长视图；这些链接在内嵌页面中切换顶层页面。
 
 **改动清单**：
-1. 修改 `index.html`，添加提示横幅
-2. 修改 `parent.html`，添加"进入完整后台"链接
-3. 修改 `shell.js` 的导航逻辑，默认首页改为 `student.html` 或 `parent.html`
+1. 新增 `advanced.html` 和独立样式，复用现有共享导航和业务页面。
+2. 修改 `parent.html` 的“进入完整后台”链接。
+3. 修改 `shell.js`，增加学生/家长视图和高级功能返回入口，保留主导航和 Today 首页契约。
+4. 补充入口点击、浏览器返回、刷新、无 JavaScript 和窄屏键盘导航测试。
 
 **验收标准**：
-- 新用户打开系统，默认看到 `student.html` 或 `parent.html`
-- 打开 `index.html`，顶部有提示："如果你是第一次使用，建议从学生视图开始"
+- 新用户打开 Buddy，默认看到学生视图；重新打开 Buddy 恢复已保存视图。
+- 旧首页别名仍跳转 Today，且可以直接打开学生/家长视图。
+- 家长“进入完整后台”直达高级功能目录，目录中所有工作流入口可打开并返回。
+- 在 Buddy 家长视图内点击高级功能后顶层 URL 正确；浏览器返回和刷新恢复家长视图。
+- 390px 与桌面宽度无横向溢出，键盘和无 JavaScript 的目录返回路径可用。
 
 **工作量**：半天
 

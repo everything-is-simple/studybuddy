@@ -1,0 +1,6 @@
+.view-navigation{border-bottom:1px solid var(--border);background:var(--surface)}
+.view-navigation-inner{max-width:var(--content-max);margin:auto;padding:4px var(--space-6);display:flex;flex-wrap:wrap;gap:8px}
+.view-navigation a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;font-size:14px;color:var(--muted);letter-spacing:0}
+.view-navigation a[aria-current=page]{color:var(--accent);font-weight:700}
+.view-navigation a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media(max-width:920px){.view-navigation-inner{padding-inline:var(--space-4)}}

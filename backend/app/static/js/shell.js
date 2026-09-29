@@ -30,6 +30,31 @@
 
   window.addEventListener('pagehide', () => sbApi.cancelAll());
   document.addEventListener('DOMContentLoaded', () => {
+    const topbar = document.querySelector('.topbar');
+    if (topbar) {
+      const style = document.createElement('link');
+      style.rel = 'stylesheet';
+      style.href = '/app/css/view-navigation.css';
+      document.head.append(style);
+      const views = document.createElement('nav');
+      views.className = 'view-navigation';
+      views.setAttribute('aria-label', '学习视图');
+      const inner = document.createElement('div');
+      inner.className = 'view-navigation-inner';
+      [
+        ['student', '学生视图'], ['parent', '家长视图'], ['advanced', '高级功能'],
+      ].forEach(([view, label]) => {
+        const link = document.createElement('a');
+        link.href = `/app/${view}.html`;
+        link.target = '_top';
+        link.dataset.control = `view-${view}`;
+        link.textContent = label;
+        if (page === `${view}.html`) link.setAttribute('aria-current', 'page');
+        inner.append(link);
+      });
+      views.append(inner);
+      topbar.after(views);
+    }
     if (!document.querySelector('link[data-chat-widget-style]')) {
       const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/app/css/chat-widget.css'; style.dataset.chatWidgetStyle = 'true'; document.head.append(style);
     }
