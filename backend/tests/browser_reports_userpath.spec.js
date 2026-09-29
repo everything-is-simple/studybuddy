@@ -150,7 +150,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await page.fill('#report-create-start', '2026-09-15');
     await page.fill('#report-create-end', '2026-09-16');
     await page.getByRole('button', { name: '生成报告' }).click();
-    await expect(page.locator('#report-create-status')).toHaveText('请求失败，请重试');
+    await expect(page.locator('#report-create-status')).toContainText('请求失败，请重试');
     await expect(page.locator('#report-create-submit')).toBeEnabled();
     expect(posts).toBe(1);
     failing = false;

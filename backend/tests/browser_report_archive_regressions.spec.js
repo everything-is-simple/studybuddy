@@ -184,7 +184,7 @@ for (const width of [1280, 390]) {
         });
         await archive.focus();
         await page.keyboard.press('Space');
-        await expect(status).toContainText('可重试');
+        await expect(status).toContainText(kind === 'note' ? '笔记操作失败，可重试' : '怎么办：刷新页面后重试');
         expect(writes).toBe(1);
         await expect(archive).toBeEnabled();
         await expect(detail).not.toContainText('状态：已归档');

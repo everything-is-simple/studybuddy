@@ -28,17 +28,13 @@ test('plans to today to progress keeps the allocated task, event state, and retu
   await page.goto(`${BASE}/app/today.html`);
   const task=page.locator('#tasks .task-item').filter({hasText:'当天分配的学习项'});
   await expect(task).toContainText(`计划 30 分钟 · ${localDate}`);
-  await expect(task.getByRole('link',{name:'开始学习'})).toHaveAttribute('href',new RegExp(`plan_id=${encodeURIComponent(plan.id)}.*item_id=${encodeURIComponent(item.id)}.*return_to=today`));
-  await task.getByRole('link',{name:'开始学习'}).click();
-  await expect(page).toHaveURL(/plan-detail\.html.*return_to=today/);
-  await page.getByRole('button',{name:'开始学习'}).click();
-  await expect(page.locator('#progress-status')).toHaveText('已开始学习');
-  await page.getByRole('button',{name:'记录完成'}).click();
-  await expect(page.locator('#progress-status')).toHaveText('已完成学习');
-  await page.getByRole('link',{name:'返回计划'}).click();
-  await expect(page).toHaveURL(`${BASE}/app/today.html`);
-  await expect(task).toContainText('当天分配的学习项');
-  await expect(task.getByRole('link',{name:'查看进度'})).toBeVisible();
+  await expect(task.getByRole('button',{name:'开始学习'})).toBeVisible();
+  const todayUrl=page.url();
+  await task.getByRole('button',{name:'开始学习'}).click();
+  await expect(page).toHaveURL(todayUrl);
+  await expect(task.getByRole('button',{name:'记录完成'})).toBeVisible();
+  await task.getByRole('button',{name:'记录完成'}).click();
+  await expect(task.getByRole('button',{name:'查看进度'})).toBeVisible();
 
   const progress=await (await request.get(`${BASE}/api/study/plans/${plan.id}/progress?item_id=${item.id}`)).json();
   expect(progress.events.map(event=>event.event_type)).toEqual(['started','completed']);
@@ -155,9 +151,9 @@ test('today surfaces a retry control that recovers every section after a failed 
     ?route.fulfill({status:500,contentType:'application/json',body:'{"detail":"H:/studybuddy/secret_traceback"}'})
     :route.continue());
   await page.goto(`${BASE}/app/today.html`);
-  const retry=page.getByRole('button',{name:'重新加载'});
+  const retry=page.locator('#retry-today');
   await expect(retry).toBeVisible();
-  for(const id of ['#summary-status','#weekly-status','#task-status'])await expect(page.locator(id)).toContainText('请求失败');
+  for(const id of ['#summary-status','#weekly-status','#task-status'])await expect(page.locator(id)).toContainText('操作没有完成');
   await expect(page.locator('body')).not.toContainText(/secret_traceback|Traceback|SELECT |H:\\|H:\//);
 
   failing=false;

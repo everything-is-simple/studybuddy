@@ -53,9 +53,6 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
       try {
         await page.getByRole('button', { name: label }).click({ timeout: 3000 });
         await expect(notice).toContainText(expectedStatus, { timeout: 3000 });
-        // The success status is set only after the full reload + detail
-        // re-render finishes and the page busy guard is cleared. Without this
-        // wait, the next mutation click can be silently dropped (by design).
         await expect(status(page)).toHaveText(`${label}成功`, { timeout: 5000 });
         return;
       } catch (_) { }
@@ -91,7 +88,7 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await page.click('#goal-form button[type=submit]');
     const goal = page.locator('#goals li.goal-item').first();
     await expect(goal).toContainText('丁玲玲-2026年秋季学期-进到班上前十');
-    await expect(goal.locator('.status-badge')).toHaveText('进行中');
+    await expect(goal.locator('.status-badge')).toHaveText('可用');
     const dialogs = armDialogs(page);
     await page.getByRole('button', { name: '查看目标' }).click();
     await expect(page.locator('#goal-detail')).toContainText('目标：丁玲玲-2026年秋季学期-进到班上前十');
@@ -108,7 +105,6 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await expect(page.locator('#goals li.goal-item')).toHaveCount(2);
     dialogs.push({ accept: true });
     await page.locator('#goals li.goal-item', { hasText: '临时归档目标' }).getByRole('button', { name: '归档目标' }).click();
-    // archived goals are excluded from the default goals list entirely
     await expect(page.locator('#goals li.goal-item', { hasText: '临时归档目标' })).toHaveCount(0, { timeout: 5000 });
     await expect(page.locator('#goals li.goal-item')).toHaveCount(1);
     await expect(page.locator('#plan-goal option', { hasText: '临时归档目标' })).toHaveCount(0);
@@ -121,7 +117,7 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await page.click('#module-form button[type=submit]');
     const mod = page.locator('#modules li.module-item').first();
     await expect(mod).toContainText('语文');
-    await expect(mod.locator('.status-badge')).toHaveText('进行中');
+    await expect(mod.locator('.status-badge')).toHaveText('可用');
     const dialogs = armDialogs(page);
     await page.getByRole('button', { name: '查看模块' }).click();
     await expect(page.locator('#module-detail')).toContainText('模块：语文');
@@ -157,10 +153,10 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     const planItem = page.locator('#plans li.plan-item').first();
     await expect(planItem).toContainText('丁玲玲八上学习计划');
     await expect(planItem).toContainText('0 个项目');
-    await expect(planItem).toContainText('草稿');
+    await expect(planItem).toContainText('处理中');
     await expect(page.locator('#plan-detail')).toBeVisible();
     await expect(page.locator('#plan-detail > h3')).toHaveText('丁玲玲八上学习计划');
-    await expect(page.locator('#plan-detail .notice').first()).toContainText('状态：草稿');
+    await expect(page.locator('#plan-detail .notice').first()).toContainText('状态：处理中');
     await expect(status(page)).toHaveText('计划草稿已创建');
   });
 
@@ -204,7 +200,7 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await page.getByRole('button', { name: '添加学习项' }).click();
     await expect(status(page)).toHaveText('学习项已添加');
     await expect(editor.locator('.plan-item-entry')).toHaveCount(1);
-    await expect(editor.locator('.plan-item-entry').first()).toContainText('待处理');
+    await expect(editor.locator('.plan-item-entry').first()).toContainText('处理中');
     await page.fill('#plan-item-title', '说明文');
     await modSelect.selectOption({ label: '语文（上册）' });
     await page.getByRole('button', { name: '添加学习项' }).click();
@@ -304,14 +300,14 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     const tRow = page.locator('.plan-item-entry', { has: page.locator('input[aria-label="学习项 临时项"]') });
     await tRow.getByRole('button', { name: '归档学习项' }).click();
     await expect(status(page)).toHaveText('学习项已归档');
-    await expect(tRow).toContainText('已归档');
+    await expect(tRow).toContainText('有问题');
     await expect(tRow.getByRole('button', { name: '保存学习项' })).toHaveCount(0);
-    await transition(page, '确认草稿', '状态：已确认');
-    await transition(page, '激活计划', '状态：进行中');
+    await transition(page, '确认草稿', '状态：可用');
+    await transition(page, '激活计划', '状态：可用');
     await expect(page.getByRole('button', { name: '暂停计划' })).toBeVisible();
     await expect(page.getByRole('button', { name: '完成计划' })).toBeVisible();
-    await transition(page, '暂停计划', '状态：已暂停');
-    await transition(page, '恢复计划', '状态：进行中');
+    await transition(page, '暂停计划', '状态：有问题');
+    await transition(page, '恢复计划', '状态：可用');
     await expect(page.locator('#plan-dependency-predecessor')).toHaveCount(0);
   });
 
@@ -322,16 +318,15 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await page.locator('#plan-goal').selectOption({ index: 0 });
     await page.click('#plan-form button[type=submit]');
     await expect(status(page)).toHaveText('计划草稿已创建');
-    await transition(page, '确认草稿', '状态：已确认');
-    await transition(page, '激活计划', '状态：进行中');
-    await transition(page, '完成计划', '状态：已完成');
+    await transition(page, '确认草稿', '状态：可用');
+    await transition(page, '激活计划', '状态：可用');
+    await transition(page, '完成计划', '状态：可用');
     await expect(page.locator('[aria-label="计划名称"]')).toBeDisabled();
     await expect(page.locator('[aria-label="计划描述"]')).toBeDisabled();
     await expect(page.getByRole('button', { name: '保存计划编辑' })).toBeDisabled();
     const dialogs = armDialogs(page);
     dialogs.push({ accept: true });
     await page.getByRole('button', { name: '归档计划' }).click();
-    // archived plans leave the default plan list and close the detail panel
     await expect(page.locator('#plans li.plan-item', { hasText: '归档演练计划' })).toHaveCount(0, { timeout: 5000 });
     await expect(page.locator('#plan-detail')).toBeHidden();
   });
@@ -339,13 +334,13 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
   test('P-E27 complete item on active plan', async ({ page }) => {
     const planId = await planIdByTitle(page.request, '丁玲玲八上冲刺计划');
     await page.goto(`${BASE}/app/plans.html?plan_id=${planId}`);
-    await expect(page.locator('#plan-detail .notice').first()).toContainText('状态：进行中', { timeout: 5000 });
+    await expect(page.locator('#plan-detail .notice').first()).toContainText('状态：可用', { timeout: 5000 });
     const row = page.locator('.plan-item-entry', { has: page.locator('input[aria-label="学习项 记叙文（重点）"]') });
-    await expect(row).toContainText('待处理');
+    await expect(row).toContainText('处理中');
     await row.getByRole('button', { name: '完成学习项' }).click();
     await expect(status(page)).toHaveText('学习进度已保存');
     const done = page.locator('.plan-item-entry', { has: page.locator('input[aria-label="学习项 记叙文（重点）"]') });
-    await expect(done).toContainText('已完成');
+    await expect(done).toContainText('可用');
     await expect(done.getByRole('button', { name: '完成学习项' })).toHaveCount(0);
   });
 
@@ -515,7 +510,6 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await page.goto(`${BASE}/app/plan-detail.html?plan_id=${planId}`);
     await expect(page.locator('#plan-status')).not.toHaveText('', { timeout: 8000 });
     await expect(page.locator('#retry-plan')).toBeVisible();
-    // progress history still loads independently and hides its loading banner
     await expect(page.locator('#history-status')).toBeHidden();
     await expect(page.locator('#progress-events li')).toHaveCount(3);
     failPlan = false;

@@ -1,5 +1,14 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-29：全量自动化测试修订与验证
+
+- **PASS（隔离自动化范围）**：后端全量 **678 passed / 3 skipped / 1 warning**；最终浏览器全量 **583 passed / 4 skipped / 0 failed / 0 did not run**，退出码均为 0。
+- 修订：安全错误文案兼容、Buddy 对话状态语义、Today 样式外置、Plans 错误动作判定；浏览器断言同步 Today 内联学习与三类状态标签，并等待冲刺表单就绪后执行键盘提交。
+- 前两轮浏览器全量分别遇到夹具清理 EPERM 和冲刺表单尚未就绪的提交竞态；专项重跑分别 **16 passed**、**7 passed**，最终完整运行已通过。Windows 夹具清理偶发占用风险保留，不以重跑抹去失败记录。
+- 门禁：`git diff --check`、`D:\miniconda\py310\python.exe backend/scripts/check-source-size.py` 通过。
+- 命令与证据：`H:\studybuddy-test\verification\2026-09-29-full-tests.md`；最终隔离运行目录：`H:\studybuddy-test\runs\browser-20260929-020217226-22100`。
+- **NOT_VERIFIED**：真实 Provider/OCR/ASR、真实 Email/飞书交付、正式运行态、完整原生 Chromium 兼容性、跨浏览器、可视浏览器人工验收、真实移动设备和屏幕阅读器。后端 warning 为 Starlette TestClient 的 httpx 弃用提示。
+
 ## 2026-09-28：Buddy P0 修订
 
 - **P0-01：PASS（保持）**；**P0-02：PASS（保持）**。

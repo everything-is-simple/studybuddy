@@ -57,7 +57,7 @@ test('C2 source links drive plans and today without false valid fallback',async(
   await post(request,`/api/study/plans/${plan.id}/rhythm/allocations`,{item_id:item.id,local_date:localDate,planned_minutes:30});
 
   await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`);
-  await expect(page.locator('#plan-detail')).toContainText('来源: 来源有效');
+  await expect(page.locator('#plan-detail')).toContainText('来源: 可用');
   await page.goto(`${BASE}/app/today.html`);
   await expect(page.locator('#tasks')).toContainText('来源：可用');
   const task=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'});
@@ -68,7 +68,7 @@ test('C2 source links drive plans and today without false valid fallback',async(
   expect((await request.delete(`${BASE}/api/materials/${source.material_id}`)).status()).toBe(204);
   await stopServer();server=startServer();await ready();
   await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`);
-  await expect(page.locator('#plan-detail')).toContainText('来源: 来源已删除');
+  await expect(page.locator('#plan-detail')).toContainText('来源: 有问题');
   await page.goto(`${BASE}/app/today.html`);
   const deleted=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'});
   await expect(deleted).toContainText('来源：有问题');

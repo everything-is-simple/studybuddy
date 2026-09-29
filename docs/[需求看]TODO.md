@@ -1,5 +1,14 @@
 # StudyBuddy TODO 清单
 
+## 2026-09-29：全量自动化测试
+
+- [x] 安全错误文案、对话状态语义和页面资产门禁修订；浏览器契约同步 Today 内联学习及三类状态。
+- [x] 冲刺目标键盘提交等待表单就绪，保留“已创建”和目标卡出现断言；练习专项 **7 passed**。
+- [x] 后端全量 **678 passed / 3 skipped / 1 warning**；最终浏览器全量 **583 passed / 4 skipped / 0 failed / 0 did not run**；源码大小与 diff 检查通过。
+- [x] 证据及历史失败记录：`H:\studybuddy-test\verification\2026-09-29-full-tests.md`。
+- [ ] 后续若 Windows 夹具清理 EPERM 再现，修订服务退出等待或夹具隔离策略；本次受影响专项及最终全量均通过。
+- [ ] 真实 Provider/OCR/ASR、真实交付、正式运行态、完整原生 Chromium 兼容性、跨浏览器、人工可视验收、真实移动设备和屏幕阅读器继续 **NOT_VERIFIED**。
+
 ## 2026-09-28：Buddy P0 修订结果
 
 - [x] P0-03：Today 内联开始/完成学习，现有 progress API、幂等键和 busy 状态复用完成。

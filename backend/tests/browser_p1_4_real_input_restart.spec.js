@@ -177,7 +177,7 @@ test('P1-4 C0 unsupported real formats stay honest in the /app import result', a
   await expect(page.locator('#upload-status')).toHaveClass(/warn/);
   await expect(page.locator('#items li')).toHaveCount(2, {timeout: 20000});
   await expect(page.locator('#items')).toContainText('legacy.doc');
-  await expect(page.locator('#items')).toContainText('已拒绝');
+  await expect(page.locator('#items')).toContainText('有问题');
   // C2 maps parser rejection codes to actionable user-facing guidance.
   await expect(page.locator('.upload-failures')).toContainText('请转换为 PDF 或 DOCX');
   await expect(page.locator('.upload-failures')).not.toContainText('requires_converter');

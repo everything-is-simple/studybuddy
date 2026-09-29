@@ -10,6 +10,7 @@
     const panel = root.querySelector('.chat-panel');
     const close = root.querySelector('.chat-close');
     const messages = root.querySelector('.chat-messages');
+    messages.setAttribute('role', 'status');
     const input = root.querySelector('.chat-input');
     const send = root.querySelector('.chat-send');
     const form = root.querySelector('.chat-form');

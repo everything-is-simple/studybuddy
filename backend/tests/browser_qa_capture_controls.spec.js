@@ -156,7 +156,7 @@ for (const width of [1280, 390]) {
         await capture(page, label + '-reloaded');
         if (action === 'confirm') {
           await page.goto(BASE + '/app/materials.html');
-          await page.locator('#items li').filter({ hasText: label + '.wav' }).filter({ hasText: '解析完成' }).getByRole('button', { name: /详情/ }).click();
+          await page.locator('#items li').filter({ hasText: label + '.wav' }).filter({ hasText: '可用' }).getByRole('button', { name: /详情/ }).click();
           await expect(page.locator('#state')).toHaveText('材料已加载');
           await expect(page.locator('#body')).not.toBeEmpty();
         }

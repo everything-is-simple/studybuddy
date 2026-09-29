@@ -249,7 +249,7 @@ test.describe.serial('practice + practice-session pure user path (A-class)', () 
 
     // Boundary: unknown exercise id shows a safe message, not an internal code.
     await page.goto(`${BASE}/app/practice.html?exercise_id=nonexistent-exercise`);
-    await expect(page.locator('#exercise-entry-status')).toHaveText('题目不存在', { timeout: 10000 });
+    await expect(page.locator('#exercise-entry-status')).toContainText('题目不存在', { timeout: 10000 });
     await assertNoSensitiveVisibleText(page);
   });
 
@@ -303,6 +303,7 @@ test.describe.serial('practice + practice-session pure user path (A-class)', () 
     await page.goto(`${BASE}/app/practice.html`);
     await expect(page.locator('#sessions .session-item').first()).toBeVisible({ timeout: 15000 });
     // Keyboard: create a cram goal via Enter submit with a 100-char title.
+    await expect(page.locator('#create-cram-goal')).toBeEnabled();
     await page.locator('#cram-title').focus();
     await page.locator('#cram-title').fill(LONG_TITLE);
     await page.fill('#cram-date', '2099-12-31');
