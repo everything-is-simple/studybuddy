@@ -10,6 +10,24 @@ async function fixture(request){const uploaded=await request.post(`${BASE}/api/m
 
 test.beforeEach(async()=>{await stop();fs.rmSync(ROOT,{recursive:true,force:true});server=start();await ready()});test.afterEach(async()=>stop());
 
+test('C4-2 module sources load without selecting a plan',async({page,request})=>{
+  const f=await fixture(request);
+  await page.goto(`${BASE}/app/plans.html`);
+  await expect(page.locator('#plan-status')).toHaveText('请选择或创建学习计划');
+  await expect(page.locator('#source-owner')).toHaveValue(`module:${f.module.id}`);
+  await expect(page.locator('#source-owner option')).toHaveCount(1);
+  await expect(page.locator('#source-status')).toHaveText('暂无来源链接');
+  await expect(page.locator('#source-add')).toBeEnabled();
+  await page.getByRole('button',{name:'刷新数据',exact:true}).click();
+  await expect(page.locator('#plan-status')).toHaveText('请选择或创建学习计划');
+  await expect(page.locator('#source-owner')).toHaveValue(`module:${f.module.id}`);
+  await expect(page.locator('#source-status')).toHaveText('暂无来源链接');
+  await page.locator('#plans .plan-item').press('Enter');
+  await expect(page.locator('#plan-detail')).toBeVisible();
+  await page.getByRole('link',{name:'打开详情',exact:true}).press('Enter');
+  await expect(page).toHaveURL(`${BASE}/app/plan-detail.html?plan_id=${f.plan.id}`);
+});
+
 test('C4-2 /app source workspace adds, refreshes and deletes scoped links',async({page,request})=>{
   const f=await fixture(request);page.on('dialog',dialog=>dialog.accept());await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(f.plan.id)}`);
   await expect(page.locator('#source-owner')).toContainText('学习项：C4-2 item');await expect(page.locator('#source-candidate')).toContainText('C4-2 实验资料.txt');

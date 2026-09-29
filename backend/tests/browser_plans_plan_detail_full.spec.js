@@ -76,6 +76,7 @@ test.describe.serial('plans + plan-detail full coverage (B-class API-assisted, n
     await expect(page.locator('#source-candidate')).toBeVisible();
     await expect(page.locator('#source-add')).toBeDisabled();
     await expect(page.locator('#source-links')).toBeEmpty();
+    await expect(page.locator('#source-status')).toHaveText('暂无可关联的模块或学习项');
   });
 
   test('P-B goal create, view, rename, rename-empty, archive', async ({ page }) => {

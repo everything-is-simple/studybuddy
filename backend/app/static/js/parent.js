@@ -46,6 +46,7 @@
         setStatus('还没有可选教材。请先导入一份教材，再回来安排学习。');
       } else {
         materialSelect.insertBefore(new Option('请选择教材', ''), materialSelect.firstChild);
+        materialSelect.value = '';
         materialSelect.disabled = false;
         setStatus('');
       }
@@ -55,7 +56,14 @@
     }
   }
   function selectedMaterial() { return state.materials.find(item => String(item.id || item.material_id) === materialSelect.value) || null; }
-  function chooseMinutes(value) { minutes.value = String(value); document.querySelectorAll('.minute-option').forEach(button => button.classList.toggle('selected', button.dataset.minutes === String(value))); }
+  function syncMinuteOptions() {
+    document.querySelectorAll('.minute-option').forEach(button => {
+      const selected = minutes.value !== '' && Number(button.dataset.minutes) === Number(minutes.value);
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+  }
+  function chooseMinutes(value) { minutes.value = String(value); syncMinuteOptions(); }
   function validateMinutes() { const value = Number(minutes.value); return Number.isInteger(value) && value >= 5 && value <= 240; }
   async function createPlan() {
     if (state.busy || !state.selected || !validateMinutes()) return;
@@ -95,5 +103,8 @@
   document.querySelector('#parent-review-back').addEventListener('click', () => showStep(2));
   createButton.addEventListener('click', createPlan);
   document.querySelectorAll('.minute-option').forEach(button => button.addEventListener('click', () => chooseMinutes(button.dataset.minutes)));
+  minutes.addEventListener('input', syncMinuteOptions);
+  minutes.addEventListener('change', syncMinuteOptions);
+  syncMinuteOptions();
   document.querySelector('#parent-new-plan').addEventListener('click', showWizard);
 }());

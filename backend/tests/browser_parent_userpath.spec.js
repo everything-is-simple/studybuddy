@@ -50,3 +50,50 @@ test('parent view keeps material loading errors safe and retryable', async ({ pa
   await page.locator('#parent-status').getByRole('button', { name: '重新加载' }).click();
   await expect(page.locator('#parent-material')).toContainText('恢复教材.txt');
 });
+
+test('parent requires explicit selection and keeps minute controls aligned without writes', async ({ page }) => {
+  await mockCreation(page);
+  const writes = [];
+  page.on('request', request => {
+    if (request.url().includes('/api/') && request.method() !== 'GET') writes.push(request.method());
+  });
+  await page.goto(`${BASE}/app/parent.html`);
+  await page.getByRole('button', { name: '开始安排', exact: true }).click();
+  await expect(page.locator('#parent-material')).toBeEnabled();
+  await expect(page.locator('#parent-material')).toHaveValue('');
+  await page.locator('#parent-material-next').click();
+  await expect(page.locator('#parent-status')).toHaveText('请先选择一份教材。');
+  await expect(page.locator('#parent-step-material')).toBeVisible();
+  await page.locator('#parent-material').selectOption('material-parent');
+  await page.locator('#parent-material-next').click();
+  for (const value of ['15', '20', '30']) {
+    await page.getByRole('button', { name: `${value} 分钟`, exact: true }).click();
+    await expect(page.locator('#parent-minutes')).toHaveValue(value);
+    await expect(page.locator('.minute-option.selected')).toHaveAttribute('data-minutes', value);
+    await expect(page.locator('.minute-option[aria-pressed="true"]')).toHaveAttribute('data-minutes', value);
+  }
+  await page.locator('#parent-minutes').fill('15');
+  await expect(page.locator('.minute-option.selected')).toHaveAttribute('data-minutes', '15');
+  await page.locator('#parent-minutes').fill('30');
+  await expect(page.locator('.minute-option.selected')).toHaveAttribute('data-minutes', '30');
+  await page.locator('#parent-minutes').fill('25');
+  await expect(page.locator('.minute-option.selected, .minute-option[aria-pressed="true"]')).toHaveCount(0);
+  for (const value of ['4', '241', '5.5', '']) {
+    await page.locator('#parent-minutes').fill(value);
+    await page.locator('#parent-time-next').click();
+    await expect(page.locator('#parent-status')).toHaveText('请输入 5 到 240 之间的学习分钟数。');
+    await expect(page.locator('#parent-step-time')).toBeVisible();
+  }
+  for (const value of ['5', '240']) {
+    await page.locator('#parent-minutes').fill(value);
+    await page.locator('#parent-time-next').click();
+    await expect(page.locator('#parent-review-minutes')).toHaveText(`${value} 分钟`);
+    await page.locator('#parent-review-back').click();
+    await expect(page.locator('#parent-minutes')).toHaveValue(value);
+  }
+  await page.locator('#parent-time-back').click();
+  await expect(page.locator('#parent-material')).toHaveValue('material-parent');
+  await page.getByRole('button', { name: '返回', exact: true }).click();
+  await expect(page.locator('#parent-home')).toBeVisible();
+  expect(writes).toEqual([]);
+});

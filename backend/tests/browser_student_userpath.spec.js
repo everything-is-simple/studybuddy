@@ -23,7 +23,7 @@ async function mockTask(page, state = 'pending') {
 test('student view shows a focused task and starts the learning path', async ({ page }) => {
   await mockTask(page);
   await page.goto(`${BASE}/app/student.html`);
-  await expect(page.locator('#student-greeting')).toHaveText('早上好！');
+  await expect(page.locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
   await expect(page.locator('#student-task-title')).toHaveText('五年级语文 · 第三课');
   await expect(page.locator('#student-task-time')).toHaveText('预计 20 分钟');
   await expect(page.locator('#student-streak')).toHaveText('2');
@@ -59,3 +59,21 @@ test('student view handles no task and safe retryable failures', async ({ page }
   await expect(page.locator('#student-task')).toBeVisible();
   await expect(page.locator('#student-start')).toHaveText('开始');
 });
+
+for (const [hour, greeting] of [[0, '晚上好！'], [4, '晚上好！'], [5, '早上好！'], [11, '早上好！'], [12, '下午好！'], [17, '下午好！'], [18, '晚上好！'], [23, '晚上好！']]) {
+  test(`student greeting matches browser-local hour ${hour}`, async ({ page }) => {
+    await page.addInitScript(hour => {
+      const RealDate = Date;
+      window.Date = class extends RealDate {
+        constructor(...args) {
+          super(...(args.length ? args : [2026, 8, 29, hour]));
+        }
+      };
+    }, hour);
+    await page.route('**/api/study/plans', route => route.fulfill(json([])));
+    await page.goto(`${BASE}/app/student.html`);
+    await expect(page.locator('#student-greeting')).toHaveText(greeting);
+    await expect(page.locator('#student-date')).toHaveText('9月29日');
+    await expect(page.locator('#student-empty')).toBeVisible();
+  });
+}

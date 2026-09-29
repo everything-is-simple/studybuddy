@@ -122,6 +122,27 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
     await assertNoSensitiveVisibleText(page);
   });
 
+  test('A-E2E-RP-3b 快捷周期采用半开区间并包含今天', async ({ page }) => {
+    await page.addInitScript(() => {
+      const RealDate = Date;
+      window.Date = class extends RealDate {
+        constructor(...args) {
+          super(...(args.length ? args : [2026, 8, 29, 12]));
+        }
+      };
+    });
+    await page.goto(`${BASE}/app/reports.html`);
+    for (const [name, start] of [['今天', '2026-09-29'], ['本周', '2026-09-23'], ['本月', '2026-09-01']]) {
+      await page.getByRole('button', { name, exact: true }).press('Enter');
+      await expect(page.locator('#report-create-start')).toHaveValue(start);
+      await expect(page.locator('#report-create-end')).toHaveValue('2026-09-30');
+    }
+    await page.getByRole('button', { name: '今天', exact: true }).press('Enter');
+    await page.getByRole('button', { name: '生成报告', exact: true }).press('Enter');
+    await expect(page.locator('#report-create-status')).toHaveText('报告已生成');
+    await expect(page.locator('#report-list')).toContainText('2026-09-29 至 2026-09-30');
+  });
+
   test('A-E2E-RP-4 报告 API 周期错误走专用用户文案', async ({ page }) => {
     await page.route('**/api/study/reports', route => route.request().method() === 'POST'
       ? route.fulfill({ status: 400, contentType: 'application/json', body: '{"detail":"report_invalid_period","traceback":"hidden","path":"H:/secret"}' })

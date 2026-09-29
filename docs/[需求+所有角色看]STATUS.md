@@ -1,5 +1,16 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-29：正式系统内置浏览器检查（阶段性）
+
+- **LIMITED**：已用 Codex In-app Browser 实际观察/激活全部 25 个 HTML 入口，含详情缺少标识状态；Advanced 的 15 个链接及一处共享菜单的 15 个链接已逐项激活核实。不是每个按钮、每处菜单或处理逻辑的全量验收，也不等于原生 Chrome 验收。
+- **PASS（本次精确修复范围）**：F001-F009：Plans 无选中计划时来源初始化、详情链接 Enter 跳转、Reports 快捷周期包含今天、Buddy 后备链接文案与落点一致、材料详情无标识时终止加载、Buddy 后退/前进外壳与实际 iframe 内容一致、家长显式选择教材、分钟输入与预设高亮同步、学生本地时间问候语；正式页面已实际复核。家长边界校验、返回与取消已检查，未点击“安排完成”；未在正式数据上执行创建、保存、删除或真实生成。
+- **LIMITED（缓存与时钟边界）**：Buddy/家长/学生显式刷新后引用版本化脚本并验证通过；旧缓存 HTML 曾继续引用旧脚本。未验证旧标签页自动刷新、学生页面长期打开后的时钟切换，不扩大为所有已打开页面即时生效。
+- **PASS（F010 隔离恢复修复范围）**：发布演练在恢复阶段重复失败；脱敏探针确认 `restore_replace_failed`、三处 `WinError 206` 和 250 字符暂存目录路径。仅对 Windows 文件树复制使用扩展路径，保留确认、目标检查、哈希校验和暂存替换；精确目录边界用例先失败后通过，相关备份/恢复/CLI 回归 **23 passed**。未恢复正式数据、未重启正式进程加载此后端模块，正式恢复与浏览器写操作仍 **NOT_VERIFIED**；UNC 用例仅检查字符串，不表示共享存储支持。
+- **PASS（最新隔离后端全量回归）**：**710 passed / 3 skipped / 1 warning**，退出码 0，223.20 秒；运行期间应用/测试代码未修改。修复前 **1 failed / 704 passed / 3 skipped / 1 warning** 的历史保留，失败项为发布演练恢复步骤。前端定向回归 **37 passed**；中途 697 passed 的运行与编辑重叠，不是最终回归。新增/扩展浏览器回归尚未运行；跳过项为 opt-in 真实 ASR/Provider，自动化测试不能代替真实能力验收。
+- **PASS（时点运行态）**：19:00:59 +08 正式单实例 PID、解释器、正式数据根、`127.0.0.1:8787` 和三个健康端点匹配；不代表长期稳定或所有能力已验证。
+- **BLOCKED（写操作验收）**：暂未明确授权停止正式实例并在同一 8787 使用 `H:\studybuddy-test\data_root` 验收合成创建/保存/状态流转后恢复正式服务。真实 Provider/OCR/ASR、Email/飞书、删除操作另设门禁。
+- 证据：`H:\studybuddy-test\verification\full-system-20260929\report.md`、`coverage.md`、`findings.md`、`execution.md`、`runtime.md`、`runtime-backup-paths.json`、`gate_failure_probe.json`、`pytest-full-backup-paths.log`、`pytest-backup-paths-final.log`；此前失败日志继续保留。本任务未提交、未推送，完整目标仍未完成。
+
 ## 2026-09-29：Buddy P1-04 现有页面入口重组
 
 - **implemented / scoped-browser-pass**：新增 `advanced.html` 高级功能目录，按“资料与课堂 / 学习与复盘 / 报告与设置”组织 15 个工作流入口；有 ID 的详情页继续从原列表进入。

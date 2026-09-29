@@ -208,6 +208,9 @@ test.describe.serial('materials -> material-detail pure user path (A-class)', ()
 
     await page.goto(`${BASE}/app/material-detail.html`);
     await expect(page.locator('#state')).toContainText('请从资料库进入', { timeout: 10000 });
+    await expect(page.locator('#content')).toHaveText('请先从资料库选择一份材料。');
+    await expect(page.locator('#body')).toHaveText('需要先选择材料。');
+    await expect(page.locator('#content')).not.toContainText('正在加载');
     await expect(page.locator('#export-original')).toBeDisabled();
     await expect(page.locator('#export-text')).toBeDisabled();
     await expect(page.locator('#candidate-status')).toContainText('需要先选择材料');

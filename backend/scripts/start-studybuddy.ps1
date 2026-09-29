@@ -21,6 +21,16 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $resolvedRoot = [System.IO.Path]::GetFullPath($DataRoot)
 New-Item -ItemType Directory -Force -Path $resolvedRoot | Out-Null
 $pidPath = Join-Path $resolvedRoot '.studybuddy.pid'
+
+function Test-StudyBuddyCommand([string]$commandLine, [string]$dataRoot) {
+    if (-not $commandLine) { return $false }
+    $escapedRoot = [regex]::Escape($dataRoot)
+    $rootArg = '"' + $escapedRoot + '"'
+    if ($dataRoot -notmatch '\s') { $rootArg += '|' + $escapedRoot }
+    $pattern = '(?:^|\s)-m\s+backend\.app\s+serve\s+--data-root\s+(?:' + $rootArg + ')(?=\s|$)'
+    return $commandLine -match $pattern
+}
+
 $existingListener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($existingListener) {
     $existingProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($existingListener.OwningProcess)" -ErrorAction SilentlyContinue
@@ -34,7 +44,11 @@ if ($existingListener) {
 if (Test-Path $pidPath) {
     $oldPid = 0
     [int]::TryParse((Get-Content -Raw -LiteralPath $pidPath), [ref]$oldPid) | Out-Null
-    if ($oldPid -gt 0 -and (Get-Process -Id $oldPid -ErrorAction SilentlyContinue)) { throw 'data_root_in_use' }
+    if ($oldPid -gt 0 -and (Get-Process -Id $oldPid -ErrorAction SilentlyContinue)) {
+        $oldProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$oldPid" -ErrorAction SilentlyContinue
+        if (-not $oldProcess -or -not $oldProcess.CommandLine) { throw 'data_root_in_use' }
+        if (Test-StudyBuddyCommand $oldProcess.CommandLine $resolvedRoot) { throw 'data_root_in_use' }
+    }
     Remove-Item -Force -LiteralPath $pidPath -ErrorAction SilentlyContinue
 }
 $env:STUDYBUDDY_DATA_ROOT = $resolvedRoot

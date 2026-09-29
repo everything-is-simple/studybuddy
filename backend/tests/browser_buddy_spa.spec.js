@@ -24,16 +24,22 @@ test.describe('Buddy native SPA shell', () => {
     await page.goto(`${BASE}/app/buddy.html?view=today`);
     await expect(page.locator('#buddy-status')).toHaveText('今天页面已打开');
     await expect(page.locator('#buddy-frame')).toHaveAttribute('src', '/app/today.html');
+    await expect(page.locator('#buddy-fallback-link')).toHaveText('直接打开今天页面');
+    await expect(page.locator('#buddy-fallback-link')).toHaveAttribute('href', '/app/today.html');
     const frame = page.frameLocator('#buddy-frame');
     await expect(frame.locator('h1')).toHaveText('今天学什么？');
     await page.getByRole('link', { name: '学生' }).click();
     await expect(page).toHaveURL(/buddy\.html\?view=student/);
     await expect(page.locator('#buddy-status')).toHaveText('学生页面已打开');
     await expect(page.locator('#buddy-frame')).toHaveAttribute('src', '/app/student.html');
-    await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText('早上好！');
+    await expect(page.locator('#buddy-fallback-link')).toHaveText('直接打开学生页面');
+    await expect(page.locator('#buddy-fallback-link')).toHaveAttribute('href', '/app/student.html');
+    await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
     await page.getByRole('link', { name: '家长' }).click();
     await expect(page).toHaveURL(/buddy\.html\?view=parent/);
     await expect(page.locator('#buddy-frame')).toHaveAttribute('src', '/app/parent.html');
+    await expect(page.locator('#buddy-fallback-link')).toHaveText('直接打开家长页面');
+    await expect(page.locator('#buddy-fallback-link')).toHaveAttribute('href', '/app/parent.html');
     await expect(page.frameLocator('#buddy-frame').locator('h1')).toHaveText('学习安排');
     expect(topLoads).toBe(1);
   });
@@ -49,6 +55,38 @@ test.describe('Buddy native SPA shell', () => {
     await page.reload();
     await expect(page).toHaveURL(/buddy\.html\?view=parent/);
     await expect(page.locator('[data-switch-view="parent"]')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('后退和前进保持地址、视图按钮、状态和真实 iframe 内容一致', async ({ page }) => {
+    async function assertView(view, label, heading) {
+      await expect(page).toHaveURL(new RegExp(`buddy\\.html\\?view=${view}$`));
+      await expect(page.locator('#buddy-status')).toHaveText(`${label}页面已打开`);
+      await expect(page.locator('#buddy-frame')).toHaveAttribute('src', `/app/${view}.html`);
+      await expect(page.locator('#buddy-fallback-link')).toHaveText(`直接打开${label}页面`);
+      await expect(page.frameLocator('#buddy-frame').locator('h1')).toHaveText(heading);
+      for (const mode of ['student', 'parent']) {
+        await expect(page.locator(`[data-switch-view="${mode}"]`))
+          .toHaveAttribute('aria-pressed', String(mode === view));
+      }
+    }
+    await page.goto(`${BASE}/app/buddy.html?view=today`);
+    await assertView('today', '今天', '今天学什么？');
+    await page.locator('[data-switch-view="student"]').click();
+    await assertView('student', '学生', /^(早上|下午|晚上)好！$/);
+    await page.locator('[data-switch-view="parent"]').click();
+    await assertView('parent', '家长', '学习安排');
+    await page.goBack();
+    await assertView('student', '学生', /^(早上|下午|晚上)好！$/);
+    await page.goBack();
+    await assertView('today', '今天', '今天学什么？');
+    await page.goForward();
+    await assertView('student', '学生', /^(早上|下午|晚上)好！$/);
+    await page.goForward();
+    await assertView('parent', '家长', '学习安排');
+    await page.locator('[data-switch-view="parent"]').click();
+    await assertView('parent', '家长', '学习安排');
+    await page.goBack();
+    await assertView('student', '学生', /^(早上|下午|晚上)好！$/);
   });
 
   test('390px 视口使用汉堡导航且无横向溢出', async ({ page }) => {

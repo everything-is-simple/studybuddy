@@ -270,6 +270,18 @@ def _copy_atomic(source: Path, target: Path, error: str = "backup_create_failed"
         raise BackupError(error) from None
 
 
+def _copytree_path(path: Path) -> str:
+    value = os.fspath(path)
+    if os.name != "nt":
+        return value
+    absolute = os.path.abspath(value)
+    if absolute.startswith("\\\\?\\"):
+        return absolute
+    if absolute.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + absolute[2:]
+    return "\\\\?\\" + absolute
+
+
 def _referenced_hashes(database: Path) -> tuple[set[str], dict[str, int]]:
     connection: sqlite3.Connection | None = None
     try:
@@ -596,7 +608,12 @@ def restore_backup(data_root: Path, backup: Path, confirm: bool = False) -> dict
         staging.mkdir(parents=True)
         shutil.copy2(backup / _DB_NAME, staging / _DB_NAME)
         shutil.copy2(backup / "manifest.json", staging / "manifest.json")
-        shutil.copytree(backup / "originals", staging / "originals")
+        # Staging adds path depth; Windows directory limits can fail before
+        # the original file reaches the ordinary maximum file-path length.
+        shutil.copytree(
+            _copytree_path(backup / "originals"),
+            _copytree_path(staging / "originals"),
+        )
         verify_backup(staging)
         (staging / _DB_NAME).rename(staging / "studybuddy.sqlite3")
         (staging / "manifest.json").unlink()

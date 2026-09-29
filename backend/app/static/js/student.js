@@ -96,7 +96,10 @@
       if (run === generation) showError(reason);
     }
   }
-  document.querySelector('#student-date').textContent = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' }).format(new Date());
+  const now = new Date();
+  const hour = now.getHours();
+  document.querySelector('#student-greeting').textContent = hour >= 5 && hour < 12 ? '早上好！' : hour >= 12 && hour < 18 ? '下午好！' : '晚上好！';
+  document.querySelector('#student-date').textContent = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' }).format(now);
   retry.addEventListener('click', () => sbSubmit.once('student-reload', load));
   load();
 }());
