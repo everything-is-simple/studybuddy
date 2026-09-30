@@ -1,5 +1,12 @@
 # StudyBuddy 项目状态记录
 
+## 2026-09-30：计划来源空态修复
+
+- **PASS（隔离自动化范围）**：无选中计划时清空来源拥有者列表并禁用添加按钮；选中计划后仍显示有效学习项和模块。回归覆盖刷新后的空态、来源候选及 Tab 焦点路径。
+- 聚焦来源回归 **3 passed**，计划详情两项专项 **24 passed / 5 passed**；后端全量 **712 passed / 3 skipped / 1 warning**；修改后浏览器 100 个 spec 串行 **100 PASS / 0 FAIL**。浏览器日志：`H:\studybuddy-test\verification\browser-full-postfix-20260930.txt`。源码大小及 `git diff --check` 通过。
+- **LIMITED**：可视 Chrome 控制受工具认证及 URL 确认限制，用户手册逐按钮、逐链接验收未完成；自动化与 fake Provider 不等于真实能力通过。真实 Provider/OCR/ASR、Email/飞书均未调用，保持 **NOT_VERIFIED**。
+- 正式服务已恢复：PID 26892、`H:\studybuddy-data`、`127.0.0.1:8787`，三个健康端点均为 HTTP 200（本次时点核验）。
+
 ## 2026-09-29：正式系统内置浏览器检查（阶段性）
 
 - **LIMITED**：已用 Codex In-app Browser 实际观察/激活全部 25 个 HTML 入口，含详情缺少标识状态；Advanced 的 15 个链接及一处共享菜单的 15 个链接已逐项激活核实。不是每个按钮、每处菜单或处理逻辑的全量验收，也不等于原生 Chrome 验收。

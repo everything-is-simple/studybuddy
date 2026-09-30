@@ -1,5 +1,12 @@
 # StudyBuddy TODO 清单
 
+## 2026-09-30：计划来源空态回归
+
+- [x] 无选中计划时清空来源拥有者并禁用添加；选中计划时保留有效学习项与模块，补充刷新和键盘焦点回归。
+- [x] 聚焦来源 3 passed、计划详情 24 + 5 passed、后端全量 712 passed / 3 skipped、浏览器 100 个 spec 串行 100 PASS / 0 FAIL；源码大小与 diff 检查通过。证据：`H:\studybuddy-test\verification\browser-full-postfix-20260930.txt`。
+- [x] 恢复正式数据根服务并核对进程、端口及三个健康端点。
+- [ ] 可视 Chrome 用户手册逐控件和主要流程仍 **LIMITED/NOT_VERIFIED**；工具认证和 URL 确认阻塞不能以自动化结果替代。真实 Provider/OCR/ASR、Email/飞书另行验证。
+
 ## 2026-09-29：正式系统逐项交互检查
 
 - [x] 原样启动正式 8787 实例，并核对进程、解释器、正式数据根和三个健康端点。
