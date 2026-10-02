@@ -44,13 +44,11 @@ test.afterEach(stop);
 test('A3-6: root route redirects to new static frontend', async ({ page }) => {
   const response = await page.goto(BASE + '/');
   
-  // Should redirect to /app/today.html
-  expect(page.url()).toMatch(/\/app\/today\.html$/);
+  // Buddy resolves the first visit to the student view.
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
   
-  // Should show the new UI
-  await expect(page.locator('h1')).toContainText('今天学什么？');
-  await expect(page.locator('.app-shell')).toBeVisible();
-  await expect(page.locator('nav[data-nav]')).toBeVisible();
+  await expect(page.locator('.buddy-shell')).toBeVisible();
+  await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
 });
 
 test('A3-6: legacy route still accessible', async ({ page }) => {
@@ -64,11 +62,11 @@ test('A3-6: legacy route still accessible', async ({ page }) => {
   expect(bodyText).toContain('材料');
 });
 
-test('formal app aliases and brand links resolve to the single Today entry', async ({ page }) => {
+test('formal app aliases and brand links resolve to the Buddy entry', async ({ page }) => {
   for (const path of ['/app/', '/app/index.html']) {
     await page.goto(`${BASE}${path}`);
-    await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    await expect(page.locator('h1')).toContainText('今天学什么？');
+    await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+    await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
   }
 
   const pages = [
@@ -80,12 +78,13 @@ test('formal app aliases and brand links resolve to the single Today entry', asy
   ];
   for (const name of pages) {
     await page.goto(`${BASE}/app/${name}`);
-    await expect(page.locator('.brand')).toHaveAttribute('href', '/app/today.html');
+    await expect(page.locator('.brand')).toHaveAttribute('href', '/app/buddy.html');
+    await expect(page.locator('.brand')).toHaveAttribute('target', '_top');
   }
 
   await page.goto(`${BASE}/app/materials.html`);
   await page.locator('.brand').click();
-  await expect(page).toHaveURL(`${BASE}/app/today.html`);
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
   await page.goBack();
   await expect(page).toHaveURL(`${BASE}/app/materials.html`);
 });
@@ -93,8 +92,10 @@ test('formal app aliases and brand links resolve to the single Today entry', asy
 test('A3-6: navigation from root works correctly', async ({ page }) => {
   await page.goto(BASE + '/');
   
-  // Should land on today page
-  await expect(page.locator('h1')).toContainText('今天学什么？');
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+  await page.locator('[data-switch-view="parent"]').click();
+  await page.getByRole('link', { name: '高级功能', exact: true }).click();
+  await expect(page).toHaveURL(`${BASE}/app/advanced.html`);
   
   // Navigate to materials via nav
   await page.click('nav a[href="/app/materials.html"]');

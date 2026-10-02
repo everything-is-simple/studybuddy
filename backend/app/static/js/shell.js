@@ -30,6 +30,8 @@
 
   window.addEventListener('pagehide', () => sbApi.cancelAll());
   document.addEventListener('DOMContentLoaded', () => {
+    const brand = document.querySelector('.brand');
+    if (brand) { brand.href = '/app/buddy.html'; brand.target = '_top'; }
     const topbar = document.querySelector('.topbar');
     if (topbar) {
       const style = document.createElement('link');

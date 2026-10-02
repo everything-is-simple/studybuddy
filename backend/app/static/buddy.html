@@ -9,7 +9,7 @@
 <body>
 <main class="buddy-shell" data-control="buddy-spa">
   <header class="buddy-header">
-    <a class="buddy-brand" href="/app/buddy.html?view=today">StudyBuddy</a>
+    <a class="buddy-brand" href="/app/buddy.html">StudyBuddy</a>
     <div class="view-switcher" role="group" aria-label="切换视图">
       <button type="button" class="switch-btn" data-switch-view="student">学生视图</button>
       <button type="button" class="switch-btn" data-switch-view="parent">家长视图</button>
@@ -19,12 +19,14 @@
       <a href="/app/buddy.html?view=today" data-view="today" data-management-link="true">今天</a>
       <a href="/app/buddy.html?view=student" data-view="student">学生</a>
       <a href="/app/buddy.html?view=parent" data-view="parent">家长</a>
+      <a href="/app/advanced.html" target="_top" data-management-link="true">高级功能</a>
     </nav>
   </header>
   <div id="buddy-status" class="buddy-status" role="status" aria-live="polite">正在打开 Buddy…</div>
-  <iframe id="buddy-frame" title="Buddy 页面" loading="eager"></iframe>
-  <p class="buddy-fallback">页面没有打开？<a id="buddy-fallback-link" href="/app/today.html">直接打开今天页面</a></p>
+  <iframe id="buddy-frame" title="Buddy 页面" src="/app/student.html" loading="eager"></iframe>
+  <p class="buddy-fallback">页面没有打开？<a id="buddy-fallback-link" href="/app/student.html">直接打开学生页面</a></p>
+  <p id="buddy-script-help" class="buddy-fallback">请启用 JavaScript 以加载学习安排和记住视图。也可以直接打开<a href="/app/parent.html">家长页面</a>、<a href="/app/today.html">完整任务页面</a>或<a href="/app/advanced.html">高级功能</a>。</p>
 </main>
-<script src="/app/js/buddy-spa.js?v=20260929-history"></script>
+<script src="/app/js/buddy-spa.js?v=20261002-homepage"></script>
 </body>
 </html>

@@ -68,4 +68,5 @@
   });
   window.addEventListener('popstate', () => load(viewFromUrl(), true));
   load(viewFromUrl(), true);
+  document.querySelector('#buddy-script-help')?.remove();
 }());

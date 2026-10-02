@@ -1,5 +1,14 @@
 # StudyBuddy 项目状态记录
 
+## 2026-10-02：Buddy 正式默认首页
+
+- **implemented / PASS（首页自动化范围）**：根地址、`/app`、`/app/`、`/app/index.html` 统一进入 Buddy；首次默认学生视图，后续恢复学生/家长选择。家长可切到学生开始学习；家长模式提供高级功能入口，目录可进入资料、模型配置和任务管理。共享后台品牌链接返回 Buddy；学生、家长与 Today 保留直接访问。
+- **PASS（隔离测试范围）**：入口与路由聚焦 **34 passed**；后端全量 **723 passed / 3 skipped / 0 failed**（244.94 秒），验证基线为当前工作区，含此前尚未提交的环境适配。跳过真实 ASR 1 项和真实 Provider 2 项，不扩展为真实能力通过。
+- **PASS（相关浏览器自动化范围）**：29 个相关用例均获得通过结果。初轮缺少受管 Chromium 无法启动；安装后 **28 passed / 1 failed**，失败为禁用脚本时提示不可见。提示改为默认显示、脚本成功启动后移除，并更新脚本版本；受影响的首页与 Buddy 用例重跑 **12 passed / 0 failed**。其他 17 个用例沿用前轮通过结果；不是可视浏览器人工验收，也不是浏览器全量。
+- **PASS（时点正式运行态）**：按正式启动命令恢复服务，PID 15320、D 盘 Python、正式数据根和 8787 监听一致；三个健康端点均为 HTTP 200，根地址实际返回 302 到 `/app/buddy.html`。源码大小与 diff 检查通过。
+- **NOT_VERIFIED**：可视浏览器人工验收、真实 Provider/OCR/ASR、发送 Email/飞书、跨浏览器、真实移动设备及屏幕阅读器。
+- 证据：`H:\studybuddy-test\verification\buddy-homepage-20261002` 下的 `pytest-focused.log`、`pytest-full.log`、`browser-final.log`、`browser-fallback-final.log`、`runtime-final.json`、`root-runtime.json`、`source-size-final.log` 和 `diff-check.log`；保留初轮失败日志。
+
 ## 2026-09-30：计划来源空态修复
 
 - **PASS（隔离自动化范围）**：无选中计划时清空来源拥有者列表并禁用添加按钮；选中计划后仍显示有效学习项和模块。回归覆盖刷新后的空态、来源候选及 Tab 焦点路径。

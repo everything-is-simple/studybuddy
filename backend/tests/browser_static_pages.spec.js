@@ -49,23 +49,23 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
 
     // ── 1. Root / uses the migrated static frontend ────────────────────────
     await page.goto(BASE);
-    expect(page.url()).toMatch(/\/app\/today\.html$/);
+    await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
     await expect(page).toHaveTitle(/StudyBuddy/i);
-    await expect(page.locator('.app-shell')).toBeVisible();
-    await expect(page.locator('h1')).toContainText('今天学什么？');
-    await expect(page.locator('nav[data-nav]')).toBeVisible();
+    await expect(page.locator('.buddy-shell')).toBeVisible();
+    await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
     stopServer(server); server = null;
     await new Promise(r => setTimeout(r, 500));
     server = startServer();
     await waitReady();
 
-    // ── 2. /app/ is a compatibility alias for the single Today page ──────
+    // ── 2. /app/ opens Buddy; Today remains a direct task page ──────
     await page.goto(`${BASE}/app/`);
-    await expect(page).toHaveURL(`${BASE}/app/today.html`);
+    await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+    await page.goto(`${BASE}/app/today.html`);
     await expect(page).toHaveTitle(/StudyBuddy.*今天/i);
     await expect(page.locator('h1')).toContainText('今天学什么？');
     await expect(page.locator('.brand')).toHaveText('StudyBuddy');
-    await expect(page.locator('.brand')).toHaveAttribute('href', '/app/today.html');
+    await expect(page.locator('.brand')).toHaveAttribute('href', '/app/buddy.html');
     await expect(page.locator('[data-nav]')).toBeVisible();
     await expect(page.locator('[data-system-status]')).toBeVisible();
     await expect(page.locator('#page-loading')).toHaveCount(1);
@@ -176,7 +176,7 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
       /Traceback|File ".*\.py"/i,
     ];
     await page.goto(`${BASE}/app/`);
-    await expect(page).toHaveURL(`${BASE}/app/today.html`);
+    await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
     const rootText = await page.locator('body').textContent();
     for (const pat of privacyPatterns) {
       expect(rootText).not.toMatch(pat);

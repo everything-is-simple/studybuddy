@@ -32,12 +32,14 @@ test.beforeEach(async () => { fs.rmSync(RUN_ROOT, { recursive: true, force: true
 test.afterEach(stop);
 
 test('E2E: Complete study workflow - import → QA → cards → review', async ({ page }) => {
-  // Step 1: User arrives at homepage and gets redirected to today page
+  // Step 1: User arrives at Buddy and chooses parent management
   await page.goto(BASE + '/');
-  await expect(page.locator('h1')).toContainText('今天学什么？');
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+  await page.locator('[data-switch-view="parent"]').click();
+  await page.getByRole('link', { name: '高级功能', exact: true }).click();
   
   // Step 2: Navigate to materials and import a file
-  await page.click('nav a[href="/app/materials.html"]');
+  await page.locator('.advanced-directory').getByRole('link', { name: '资料', exact: true }).click();
   await expect(page.locator('h1')).toContainText('你的学习材料');
   
   const testFile = path.join(FIXTURES, 'sample.txt');
@@ -230,7 +232,9 @@ test('E2E: Classroom capture workflow', async ({ page }) => {
 test('E2E: Cross-page navigation and state consistency', async ({ page }) => {
   // Start from root
   await page.goto(BASE + '/');
-  await expect(page.locator('h1')).toContainText('今天学什么？');
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+  await page.locator('[data-switch-view="parent"]').click();
+  await page.getByRole('link', { name: '高级功能', exact: true }).click();
   
   // Navigate through all pages
   const pages = [

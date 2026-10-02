@@ -502,10 +502,10 @@ def test_purge_active_and_missing_return_404(tmp_path: Path):
 
 def test_page_is_real_multi_file_picker_and_shows_materials(tmp_path: Path):
     with make_client(tmp_path) as client:
-        # Root now redirects to /app/today.html
+        # Root enters Buddy; material management remains available from Advanced.
         root = client.get("/", follow_redirects=False)
         assert root.status_code == 302
-        assert root.headers["location"] == "/app/today.html"
+        assert root.headers["location"] == "/app/buddy.html"
         
         # Legacy UI still available at /legacy
         page = client.get("/legacy")

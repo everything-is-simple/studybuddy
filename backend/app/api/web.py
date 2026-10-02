@@ -30,9 +30,9 @@ def register_routes(app, context: dict[str, object]) -> None:
         """将根路径重定向到新版静态前端首页。
         
         Returns:
-            302 重定向到 /app/today.html
+            302 重定向到 /app/buddy.html，由浏览器恢复学生/家长视图
         """
-        return RedirectResponse(url="/app/today.html", status_code=302)
+        return RedirectResponse(url="/app/buddy.html", status_code=302)
     
     @app.get("/favicon.ico", include_in_schema=False)
     def favicon() -> Response:

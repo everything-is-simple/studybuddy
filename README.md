@@ -16,7 +16,7 @@
 `PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
 
 ### 统一路径和运行基线
-源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`。
+源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/buddy.html`。
 
 正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
 
@@ -27,6 +27,9 @@
 
 
 ## 当前入口与状态
+
+默认首页为 [Buddy](http://127.0.0.1:8787/app/buddy.html)：首次进入学生视图，后续恢复上次选择的学生/家长视图。家长模式通过“高级功能”进入资料、模型配置和任务管理。[学生页](http://127.0.0.1:8787/app/student.html)、[家长页](http://127.0.0.1:8787/app/parent.html) 和 [Today 完整任务页](http://127.0.0.1:8787/app/today.html) 可直接访问。
+
 StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v15；运行和开发环境的唯一入口基线见 [`docs/[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md`](docs/[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md)。系统仍不是全局 production `real-pass`，未验证范围必须按能力单独标记。
 
 - 运行 local v1 API：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`；检查与停止分别使用 `health-studybuddy.ps1`、`stop-studybuddy.ps1`。用户和验证任务必须使用该启动脚本；`python -m backend.app serve` 仅是实现层的显式单进程入口，不得替换任务中指定的启动脚本。应用工厂为 `backend.app.main:create_app`。开发期直接使用 Uvicorn reload 不属于 release runtime。

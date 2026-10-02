@@ -48,10 +48,10 @@ test.describe('Buddy native SPA shell', () => {
     await page.goto(`${BASE}/app/buddy.html`);
     await expect(page).toHaveURL(/buddy\.html\?view=student/);
     await expect(page.locator('[data-switch-view="student"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('[data-management-link="true"]')).toBeHidden();
+    for (const link of await page.locator('[data-management-link="true"]').all()) await expect(link).toBeHidden();
     await page.locator('[data-switch-view="parent"]').click();
     await expect(page).toHaveURL(/buddy\.html\?view=parent/);
-    await expect(page.locator('[data-management-link="true"]')).toBeVisible();
+    for (const link of await page.locator('[data-management-link="true"]').all()) await expect(link).toBeVisible();
     await page.reload();
     await expect(page).toHaveURL(/buddy\.html\?view=parent/);
     await expect(page.locator('[data-switch-view="parent"]')).toHaveAttribute('aria-pressed', 'true');

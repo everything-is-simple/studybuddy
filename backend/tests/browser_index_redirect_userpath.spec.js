@@ -1,7 +1,7 @@
 // index.html 兼容跳转页 A/B 边界审查（Prompt 1 任务 B，A/B 收尾定稿 v2）。
-// 口径：index.html 是 510 字节纯兼容跳转页（meta refresh + canonical +
+// 口径：index.html 是 纯兼容跳转页（meta refresh + canonical +
 // location.replace + 兜底链接），不是业务工作区。本 spec 只验证
-// 「兼容跳转页边界」：三入口统一落到 today、无 JS 时 meta refresh 仍可达、
+// 「兼容跳转页边界」：四入口统一落到 Buddy、无 JS 时 meta refresh 仍可达、
 // 兜底锚点存在且目标可达、query/hash 与开放重定向边界、响应式跳转、
 // 静态结构无样式/脚本依赖、不进入 /legacy、不暴露内部路径。
 // 分类：IDX-1/2/4/5 为纯用户路径 A 类（页面导航与断言，无 API 直调、无数据创建）；
@@ -54,21 +54,52 @@ async function stop() {
 test.beforeAll(async () => { server = startServer(); await ready(); });
 test.afterAll(stop);
 
-test('IDX-1 三入口统一落到 /app/today.html（A 类）', async ({ page }) => {
-  for (const path of ['/', '/app/', '/app/index.html']) {
+test('IDX-1 四入口统一落到 /app/buddy.html（A 类）', async ({ page }) => {
+  for (const path of ['/', '/app', '/app/', '/app/index.html']) {
     await page.goto(`${BASE}${path}`);
-    await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    await expect(page.locator('h1')).toContainText('今天学什么？');
+    await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+    await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
   }
 });
 
-test('IDX-2 无 JavaScript 时 meta refresh 仍可达 today（降级路径，A 类）', async ({ page }) => {
+test('IDX-7 所有首页别名恢复最后一次学生或家长选择', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+  for (const view of ['parent', 'student']) {
+    await page.locator(`[data-switch-view="${view}"]`).click();
+    for (const path of ['/', '/app', '/app/', '/app/index.html']) {
+      await page.goto(`${BASE}${path}`);
+      await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=${view}`);
+      await expect(page.locator('#buddy-frame')).toHaveAttribute('src', `/app/${view}.html`);
+      await expect(page.locator(`[data-switch-view="${view}"]`)).toHaveAttribute('aria-pressed', 'true');
+    }
+  }
+});
+
+test('IDX-8 高级功能和品牌链接连接 Buddy 与完整后台', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await page.locator('[data-switch-view="parent"]').click();
+  await page.getByRole('link', { name:'高级功能', exact:true }).click();
+  await expect(page).toHaveURL(`${BASE}/app/advanced.html`);
+  for (const name of ['资料', '系统设置', '任务']) {
+    await expect(page.locator('.advanced-directory').getByRole('link', {name,exact:true})).toBeVisible();
+  }
+  await page.locator('.advanced-directory').getByRole('link', {name:'今天',exact:true}).click();
+  await expect(page).toHaveURL(`${BASE}/app/today.html`);
+  await expect(page.locator('h1')).toHaveText('今天学什么？');
+  await page.locator('.brand').click();
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=parent`);
+  await expect(page.frameLocator('#buddy-frame').locator('h1')).toHaveText('学习安排');
+});
+
+test('IDX-2 无 JavaScript 时 meta refresh 仍可达 Buddy（降级路径，A 类）', async ({ page }) => {
   const context = page.context();
   const noJsPage = await context.browser().newContext({ javaScriptEnabled: false }).then(c => c.newPage());
   try {
     await noJsPage.goto(`${BASE}/app/index.html`);
-    await expect(noJsPage).toHaveURL(`${BASE}/app/today.html`);
-    await expect(noJsPage.locator('h1')).toContainText('今天学什么？');
+    await expect(noJsPage).toHaveURL(`${BASE}/app/buddy.html`);
+    await expect(noJsPage.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText('你好！');
+    await expect(noJsPage.getByText('请启用 JavaScript', {exact:false})).toBeVisible();
   } finally {
     await noJsPage.context().close();
   }
@@ -80,27 +111,27 @@ test('IDX-3 兜底锚点存在且目标可达（B 类要素：page.request 读�
   const response = await page.request.get(`${BASE}/app/index.html`);
   expect(response.status()).toBe(200);
   const src = await response.text();
-  expect(src).toContain('href="/app/today.html"');
+  expect(src).toContain('href="/app/buddy.html"');
   expect(src).toContain('如果没有自动跳转，请点击这里');
 });
 
 test('IDX-4 query/hash 边界且无开放重定向（A 类）', async ({ page }) => {
   await page.goto(`${BASE}/app/index.html?x=1#y`);
-  await expect(page).toHaveURL(`${BASE}/app/today.html`);
-  await expect(page.locator('h1')).toContainText('今天学什么？');
-  // index.html 的跳转目标是硬编码的 today，query 不得改变落点（防开放重定向）。
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+  await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
+  // index.html 的跳转目标是硬编码的 Buddy，query 不得改变落点（防开放重定向）。
   await page.goto(`${BASE}/app/index.html?next=${encodeURIComponent('/app/qa.html')}`);
-  await expect(page).toHaveURL(`${BASE}/app/today.html`);
+  await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
 });
 
 test('IDX-5 390 与 1920 两档视口跳转均正常（A 类）', async ({ page }) => {
   // index 自身为瞬时跳转页且仅一段文本，无自身溢出面；本用例验证两档视口下
-  // 跳转链路完整、落点 today 正常渲染（today 自身响应式由其 A 类 spec 覆盖）。
+  // 跳转链路完整、落点 Buddy 正常渲染（Buddy 自身响应式由其 A 类 spec 覆盖）。
   for (const viewport of [{ width: 390, height: 844 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(viewport);
     await page.goto(`${BASE}/app/index.html`);
-    await expect(page).toHaveURL(`${BASE}/app/today.html`);
-    await expect(page.locator('h1')).toContainText('今天学什么？');
+    await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
+    await expect(page.frameLocator('#buddy-frame').locator('#student-greeting')).toHaveText(/^(早上|下午|晚上)好！$/);
   }
 });
 
@@ -108,12 +139,12 @@ test('IDX-6 静态结构与依赖边界（B 类要素：page.request 读静态�
   const response = await page.request.get(`${BASE}/app/index.html`);
   expect(response.status()).toBe(200);
   const src = await response.text();
-  // 结构：meta refresh + canonical + 脚本跳转，目标全部为 /app/today.html。
+  // 结构：meta refresh + canonical + 脚本跳转，目标全部为 /app/buddy.html。
   expect(src).toContain('http-equiv="refresh"');
-  expect(src).toContain('url=/app/today.html');
+  expect(src).toContain('url=/app/buddy.html');
   expect(src).toContain('rel="canonical"');
-  expect(src).toContain('href="/app/today.html"');
-  expect(src).toContain("location.replace('/app/today.html')");
+  expect(src).toContain('href="/app/buddy.html"');
+  expect(src).toContain("location.replace('/app/buddy.html')");
   // 依赖边界：无内联样式、不加载共享 CSS/JS（页面必须零依赖可达）。
   expect(src).not.toContain('<style');
   expect(src).not.toMatch(/css\/(tokens|app)\.css/);

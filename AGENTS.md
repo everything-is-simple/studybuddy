@@ -16,7 +16,7 @@
 `PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
 
 ### 统一路径和运行基线
-源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`。
+源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/buddy.html`。
 
 正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
 
@@ -60,7 +60,7 @@ StudyBuddy is a local, single-process FastAPI + SQLite capability-integration sy
 
 AI 必须原样使用任务指定的工具、命令、URL、端口、数据根和输入。工具或路径不可用、真实页面与参考文档不一致、需要未授权副作用或证据无法落盘时，立即返回 `BLOCKED`，列出实际错误并等待确认；不得用 curl、API 请求、HTML 解析、headless 运行、其他路径或推测结果替代指定的浏览器真实操作。浏览器任务的专项参考为 `H:\studybuddy\docs\[测试看]BROWSER_VERIFICATION_TASK_TEMPLATE.md`。
 
-统一路径基线如下：源码根 `H:\studybuddy`；正式数据根 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离测试数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读，Token 不得暴露）；组件测试 `H:\studybuddy-composer`；组件组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`；健康端点 `/api/liveness`、`/api/health`、`/api/readiness`。
+统一路径基线如下：源码根 `H:\studybuddy`；正式数据根 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离测试数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读，Token 不得暴露）；组件测试 `H:\studybuddy-composer`；组件组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/buddy.html`；健康端点 `/api/liveness`、`/api/health`、`/api/readiness`。
 
 用户运行和验证任务的启动脚本分别使用已授权的数据根：正式运行命令为 `powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`；隔离验证命令为 `powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。未在任务中明确授权时，不得启动服务、调用真实 Provider/OCR/ASR、发送 Email/飞书、修改配置、删除数据或扩大文件范围。
 
