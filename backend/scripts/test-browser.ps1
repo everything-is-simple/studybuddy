@@ -2,6 +2,7 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)][string[]]$Spec,
     [switch]$Install,
+    [switch]$List,
     [string]$Python = $env:STUDYBUDDY_PYTHON,
     [string]$TestRoot = $env:STUDYBUDDY_TEST_ROOT
 )
@@ -38,7 +39,9 @@ $pythonCandidates = @(
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
 if ($pythonCandidates) { $env:STUDYBUDDY_PYTHON = @($pythonCandidates)[0] }
 $python = if ($env:STUDYBUDDY_PYTHON) { $env:STUDYBUDDY_PYTHON } else { (Get-Command python -ErrorAction Stop).Source }
-$npx = if ($env:STUDYBUDDY_NPX) { $env:STUDYBUDDY_NPX } else { (Get-Command 'npx.cmd' -ErrorAction Stop).Source }
+$nodeRoot = 'D:/nodejs'
+if (Test-Path -LiteralPath (Join-Path $nodeRoot 'node.exe')) { $env:PATH = $nodeRoot + ';' + $env:PATH }
+$npx = if ($env:STUDYBUDDY_NPX) { $env:STUDYBUDDY_NPX } elseif (Test-Path -LiteralPath (Join-Path $nodeRoot 'npx.cmd')) { Join-Path $nodeRoot 'npx.cmd' } else { (Get-Command 'npx.cmd' -ErrorAction Stop).Source }
 if ($Install) {
     & $npx playwright install chromium
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -50,6 +53,10 @@ $paths = foreach ($item in $Spec) {
 Push-Location $root
 $sharedService = $null
 try {
+    if ($List) {
+        & $npx playwright test $paths '--list' '--workers=1' '--reporter=line'
+        exit $LASTEXITCODE
+    }
     $sharedPort = 0
     foreach ($candidate in 8800..8899) {
         if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $candidate -State Listen -ErrorAction SilentlyContinue)) {

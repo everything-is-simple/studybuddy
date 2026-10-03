@@ -24,6 +24,9 @@ $pidPath = Join-Path $resolvedRoot '.studybuddy.pid'
 
 function Test-StudyBuddyCommand([string]$commandLine, [string]$dataRoot) {
     if (-not $commandLine) { return $false }
+    # Windows and Cygwin launchers can spell the same absolute path differently.
+    $commandLine = $commandLine.Replace('/', '\')
+    $dataRoot = $dataRoot.Replace('/', '\')
     $escapedRoot = [regex]::Escape($dataRoot)
     $rootArg = '"' + $escapedRoot + '"'
     if ($dataRoot -notmatch '\s') { $rootArg += '|' + $escapedRoot }
@@ -31,10 +34,14 @@ function Test-StudyBuddyCommand([string]$commandLine, [string]$dataRoot) {
     return $commandLine -match $pattern
 }
 
-$existingListener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+$listenerErrors = @()
+$existingListener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue -ErrorVariable listenerErrors | Select-Object -First 1
+if (@($listenerErrors | Where-Object { $_.CategoryInfo.Category -ne 'ObjectNotFound' }).Count -gt 0) {
+    throw 'listener_query_failed'
+}
 if ($existingListener) {
     $existingProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($existingListener.OwningProcess)" -ErrorAction SilentlyContinue
-    if ($existingProcess -and $existingProcess.CommandLine -match 'backend\.app\s+serve' -and $existingProcess.CommandLine -match [regex]::Escape($resolvedRoot)) {
+    if ($existingProcess -and (Test-StudyBuddyCommand $existingProcess.CommandLine $resolvedRoot)) {
         Set-Content -LiteralPath $pidPath -Value ([string]$existingListener.OwningProcess) -NoNewline
         Write-Output 'studybuddy_already_running'
         exit 0

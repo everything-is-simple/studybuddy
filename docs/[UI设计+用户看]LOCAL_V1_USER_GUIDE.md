@@ -51,7 +51,7 @@ StudyBuddy 现在不是一个云端 SaaS，也不是需要安装 Windows 客户�
 ### 必需
 
 - Windows 机器；
-- 可用的 Python 3.10 环境。当前项目默认优先使用 `C:\miniconda\py310\python.exe`；
+- 可用的 Python 3.10 环境。当前项目默认优先使用 `D:\miniconda\py310\python.exe`；
 - 一个浏览器（当前正式验收路径是 Chromium；日常使用可先用你本机的现代浏览器）；
 - 一个仅给 StudyBuddy 使用的本地 data root，例如 `D:\StudyBuddy\data`；
 - 一个**不在 data root 内**的 backup 根目录，例如 `D:\StudyBuddy\backups`。
@@ -168,7 +168,7 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\stop-study
 选择一个从未使用过的 restore 目录。例如：
 
 ```powershell
-$python = 'C:\miniconda\py310\python.exe'
+$python = 'D:\miniconda\py310\python.exe'
 $data = 'D:\StudyBuddy\data'
 $backup = 'D:\StudyBuddy\backups\first-verified-backup'
 $restore = 'D:\StudyBuddy\restore-check'
@@ -247,7 +247,7 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\start-stud
 ### 需要诊断时
 
 ```powershell
-C:\miniconda\py310\python.exe -m backend.app diagnostics --data-root 'D:\StudyBuddy\data'
+D:\miniconda\py310\python.exe -m backend.app diagnostics --data-root 'D:\StudyBuddy\data'
 ```
 
 如果 health/readiness 不是 200、diagnostics 显示 degraded，或 backup/verify 失败：**先停止服务、保留 data root 和已验证 backup，不要手改数据库，不要尝试覆盖恢复。** 参考 [`BACKUP_RESTORE.md`]([运维看]BACKUP_RESTORE.md) 和 [`MIGRATIONS.md`]([架构师+运维看]MIGRATIONS.md)。

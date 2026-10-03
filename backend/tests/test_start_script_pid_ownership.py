@@ -35,6 +35,8 @@ $cases = @(
     @{ line = 'C:\\Python\\python.exe -m backend.app serve --data-root C:\\study root'; expected = $false },
     @{ line = 'C:\\Python\\python.exe -m backend.app serve --data-root C:\\study'; root = 'C:\\study'; expected = $true },
     @{ line = 'C:\\Python\\python.exe -m backend.app serve --data-root "C:\\study root-other"'; expected = $false },
+    @{ line = 'C:/Python/python.exe -m backend.app serve --data-root "C:/study root"'; expected = $true },
+    @{ line = 'C:/Python/python.exe -m backend.app serve --data-root "C:/study root-other"'; expected = $false },
     @{ line = 'C:\\Python\\python.exe -m backend.app other --data-root "C:\\study root"'; expected = $false },
     @{ line = 'C:\\other.exe -m another.backend.app serve --data-root "C:\\study root"'; expected = $false },
     @{ line = ''; expected = $false }

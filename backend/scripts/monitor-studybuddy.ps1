@@ -27,7 +27,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $DataRoot) { throw 'data_root_required' }
 if ($Port -lt 1024 -or $Port -gt 65535) { throw 'invalid_port' }
 if (-not $Python) {
-    $candidate = 'C:/miniconda/py310/python.exe'
+    $candidate = 'D:/miniconda/py310/python.exe'
     $Python = if (Test-Path $candidate) { $candidate } else { 'python' }
 }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path

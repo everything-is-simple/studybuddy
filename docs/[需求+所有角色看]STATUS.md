@@ -9,6 +9,17 @@
 - **NOT_VERIFIED**：可视浏览器人工验收、真实 Provider/OCR/ASR、发送 Email/飞书、跨浏览器、真实移动设备及屏幕阅读器。
 - 证据：`H:\studybuddy-test\verification\buddy-homepage-20261002` 下的 `pytest-focused.log`、`pytest-full.log`、`browser-final.log`、`browser-fallback-final.log`、`runtime-final.json`、`root-runtime.json`、`source-size-final.log` 和 `diff-check.log`；保留初轮失败日志。
 
+## 2026-10-01：本机运行与测试环境适配
+
+- **PASS（环境探针范围）**：确认 `D:\PowerShell\7`、`D:\cygwin64`、`D:\Git`、`D:\miniconda\py310`、`D:\nodejs` 和 `C:\Users\Administrator\.pi`；版本分别为 PowerShell 7.6.6、Cygwin Bash 5.2.21、Git 2.56.0.windows.1、Python 3.10.16、Node 24.10.0/npm 11.6.1、Pi 1.0.0。最终环境检查 `status=ok`，核心 Python 导入、pip check 和 local-v1/schema-15 通过。
+- **implemented / PASS（聚焦范围）**：环境检查使用明确路径；浏览器测试入口优先使用 D 盘 Node/npx，新增 `-List` 无服务测试发现模式；运维和 Provider 专用入口更新 D 盘 Python。修正启动脚本的 Windows/Cygwin 路径分隔符匹配，端口查询权限失败时拒绝继续启动；同步旧路径断言。启动/健康/Provider 入口聚焦 **10 passed**；Playwright 发现 Today **8 tests**，没有执行浏览器动作。
+- **PASS（时点正式运行态）**：规定启动命令最终返回 `studybuddy_already_running`；PID 20800、PID 文件、D 盘 Python、正式数据根与 `127.0.0.1:8787` 匹配，三个健康端点均为 HTTP 200。前次受限调用误记已退出 PID，最终已校正，不将前次 `studybuddy_started` 单独作为成功依据。
+- **LIMITED（初轮回归）**：初轮全量 **700 passed / 4 failed / 11 skipped**；其中一项为旧 C 盘路径断言，已修正；一项为文档读取权限；两项为 capability 状态断言不匹配。初轮与启动测试编辑有时间重叠，不作为最终代码基线。最终代码的全量回归另行记录。
+- **PASS（测试环境隔离修订）**：两项 capability 失败定位为测试仅替换检测模块函数，应用工厂的已导入函数仍扫描本机组件。夹具同步替换工厂调用位置，保留能力断言；能力配置和相关入口聚焦 **40 passed**。未执行真实 OCR/ASR。
+- **PASS（最终隔离后端回归）**：**709 passed / 6 skipped / 0 failed**，235.19 秒，退出码 0；最终日志 `pytest-full-verified.txt`。跳过真实 ASR 1 项、真实 Provider 2 项、缺少受管 Chromium 的 PDF 夹具 3 项；不代表真实能力或浏览器用户路径通过。最终 `git diff --check`、源码大小和八项脚本解析检查通过。
+- **NOT_VERIFIED**：用户可视点击、链接跳转、材料处理完整链路、真实 Provider/OCR/ASR 和 Email/飞书发送。本次仅适配工具配置，不扩展功能通过结论。
+- 证据：`H:\studybuddy-test\verification\environment-update-20261001` 下的 `environment-final.json`、`startup-final.txt`、`runtime-final.json`、`health-final.json`、`pytest-scripts-final.txt`、`playwright-list-final.txt` 和两轮全量日志。已同步环境基线、Pi 开发说明与用户指南；源码大小检查通过。
+
 ## 2026-09-30：计划来源空态修复
 
 - **PASS（隔离自动化范围）**：无选中计划时清空来源拥有者列表并禁用添加按钮；选中计划后仍显示有效学习项和模块。回归覆盖刷新后的空态、来源候选及 Tab 焦点路径。

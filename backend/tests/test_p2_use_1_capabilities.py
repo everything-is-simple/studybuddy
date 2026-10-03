@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 from fastapi.testclient import TestClient
 
 from app import capability_detect as detect
+from app import app_factory
 from app.capabilities import capability_snapshot, resolve_config
 from app.capability_detect import (STATUS_AVAILABLE, STATUS_NOT_CONFIGURED, STATUS_NOT_INSTALLED,
                                    DetectedComponent, DetectionResult)
@@ -348,8 +349,11 @@ def test_ocr_fallback_stays_outside_formal_gate(tmp_path: Path) -> None:
 
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    monkeypatch.setattr(detect, "detect_all",
-                        lambda **_kwargs: _detection(ocr_root=tmp_path / "models"))
+    detection_probe = lambda **_kwargs: _detection(ocr_root=tmp_path / "models")
+    monkeypatch.setattr(detect, "detect_all", detection_probe)
+    # The factory imports this function directly; patch its lookup as well so
+    # API tests use the same synthetic detection as configuration refreshes.
+    monkeypatch.setattr(app_factory, "detect_all", detection_probe)
     root = tmp_path / "data"
     root.mkdir(parents=True, exist_ok=True)
     with TestClient(create_app(_config(tmp_path))) as test_client:

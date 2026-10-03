@@ -26,6 +26,9 @@
 """
 from __future__ import annotations
 
+from ..capability_verify import SavedCapabilityCheckRequest, verify_saved_capability
+from starlette.concurrency import run_in_threadpool
+
 
 def register_routes(app, context: dict[str, object]) -> None:
     globals().update({name: value for name, value in context.items() if not name.startswith("__")})
@@ -261,6 +264,21 @@ def register_routes(app, context: dict[str, object]) -> None:
             raise HTTPException(status_code=400, detail=error.code) from None
         except Exception:
             raise HTTPException(status_code=500, detail="connection_test_failed") from None
+
+    @app.post("/api/system/capabilities/verify-saved")
+    async def verify_saved_provider(raw_request: Request) -> dict[str, object]:
+        """Explicit real adapter check with synthetic data and server-held keys."""
+        try:
+            request = SavedCapabilityCheckRequest.model_validate(await raw_request.json())
+        except Exception:
+            raise HTTPException(status_code=400, detail="invalid_capability_check") from None
+        config = refresh_config()
+        try:
+            return await run_in_threadpool(verify_saved_capability, config, request.capability)
+        except (ProviderError, EmbeddingError) as error:
+            raise HTTPException(status_code=400, detail=error.code) from None
+        except Exception:
+            raise HTTPException(status_code=500, detail="capability_verification_failed") from None
 
     @app.post("/api/system/email-connection-test")
     def email_connection_test(request: EmailConnectionTestRequest) -> dict[str, str]:

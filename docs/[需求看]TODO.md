@@ -9,6 +9,17 @@
 - [x] 正式服务恢复到正式数据根和 8787；健康端点均为 200，根地址实测跳到 Buddy。证据：`H:\studybuddy-test\verification\buddy-homepage-20261002`。
 - [ ] 可视浏览器人工验收及真实 Provider/OCR/ASR、外部发送、跨浏览器与真实移动设备继续 NOT_VERIFIED。
 
+## 2026-10-01：本机运行与测试配置
+
+- [x] 按用户更正的 `D:\cygwin64` 核对六项工具，更新实际安装位置与版本；环境检查 `status=ok`。
+- [x] 更新运维/Provider 入口的 D 盘 Python、浏览器测试入口的 D 盘 Node/npx，并新增 `-List` 模式；环境基线、Pi 开发说明和用户指南已同步。
+- [x] 修复启动脚本路径分隔符匹配和端口查询失败门禁；规定命令返回 `studybuddy_already_running`，PID 与正式监听实例一致，三个健康端点为 200。
+- [x] 入口聚焦 **10 passed**；Playwright 发现 Today **8 tests**，未执行浏览器动作；源码大小检查通过。证据：`H:\studybuddy-test\verification\environment-update-20261001`。
+- [x] 修正能力测试夹具的应用工厂函数替换位置，隔离本机 OCR/ASR 安装状态；能力配置与相关入口聚焦 **40 passed**，原有能力断言保留。
+- [x] 最终后端全量 **709 passed / 6 skipped / 0 failed**；日志 `pytest-full-verified.txt`。`git diff --check`、源码大小和脚本解析检查通过；验证采用批准的读取权限，不改文件 ACL 或全局 Git 配置。
+- [ ] 6 项跳过仍未验证：真实 ASR 1 项、真实 Provider 2 项、缺少受管 Chromium 的 PDF 夹具 3 项；不得由其他测试通过补足。
+- [ ] 用户手动验证功能、链接与处理逻辑；真实 Provider/OCR/ASR 和 Email/飞书需独立授权与验证，保持 **NOT_VERIFIED**。
+
 ## 2026-09-30：计划来源空态回归
 
 - [x] 无选中计划时清空来源拥有者并禁用添加；选中计划时保留有效学习项与模块，补充刷新和键盘焦点回归。

@@ -26,7 +26,7 @@
 <!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 
 
-更新时间：2026-09-22
+更新时间：2026-10-01
 
 本文是 StudyBuddy 本地开发入口的当前基线。它记录本机已经安装并验证的运行工具，以及正式系统实际使用的功能组件。历史阶段报告、fake provider 和候选组件不能单独把能力标记为 `available`。
 
@@ -54,18 +54,23 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\check-deve
 
 | 组件 | 当前标准位置/版本 | 用途 | 状态 |
 |---|---|---|---|
-| Miniconda Python | `D:\miniconda\py310` / Python 3.10 | StudyBuddy 运行、CLI、后端测试 | `available`，依赖已安装，`pip check` 通过 |
-| Node.js / npm | `D:\nodejs` / 24.14.0 / 11.9.0 | 浏览器测试工具链 | `available` |
-| Playwright | `@playwright/test` 1.62.1 | Chromium 浏览器门禁 | `available`，Chromium、Headless Shell、FFmpeg、Winldd 已安装 |
-| PowerShell | `C:\Program Files\PowerShell\7` / 7.6.3 | 启动、健康、测试脚本 | `available` |
-| Git | `C:\Program Files\Git` / 2.55.0 | 版本管理和推送 | `available` |
-| Pi | `C:\Users\Administrator\.pi` / 0.87.0 | 项目开发会话 | `available`，已信任本仓库 |
-| pi-desktop | `C:\Users\Administrator\.percho` | Pi 桌面后代运行目录 | `available` |
-| OMP | `C:\Users\Administrator\.omp` / 18.2.8 | shell/开发环境辅助 | `available` |
-| Codex CLI | `C:\Users\Administrator\.codex` / 0.155.1 | 代码任务辅助 | `available` |
-| Claude Code | `C:\Users\Administrator\.claude` / 2.1.278 | 代码任务辅助 | `available` |
+| Miniconda Python | `D:\miniconda\py310` / Python 3.10.16 | StudyBuddy 运行、CLI、后端测试 | `available`，核心导入及 `pip check` 通过 |
+| Node.js / npm | `D:\nodejs` / 24.10.0 / 11.6.1 | 浏览器测试工具链 | 版本命令通过；功能测试按本次证据解释 |
+| Playwright | `@playwright/test` 1.62.1 | Chromium 浏览器门禁 | CLI 版本和测试发现可用；本次未执行浏览器动作 |
+| PowerShell | `D:\PowerShell\7` / 7.6.6 | 开发和检查脚本 | 版本命令通过；规定启动命令仍使用 Windows PowerShell |
+| Git | `D:\Git` / 2.56.0.windows.1 | 版本管理 | 版本命令通过；推送未验证 |
+| Cygwin Bash | `D:\cygwin64` / 5.2.21 | Bash 开发入口 | 版本命令通过；正式启动不依赖它 |
+| Pi | `C:\Users\Administrator\.pi` / 1.0.0 | 项目开发会话 | 版本命令通过；会话功能和信任状态本次未验证 |
+| pi-desktop | `C:\Users\Administrator\.percho` | Pi 桌面后代运行目录 | 2026-09-22 历史记录；本次 NOT_VERIFIED |
+| OMP | `C:\Users\Administrator\.omp` / 18.2.8 | shell/开发环境辅助 | 2026-09-22 历史记录；本次 NOT_VERIFIED |
+| Codex CLI | `C:\Users\Administrator\.codex` / 0.155.1 | 代码任务辅助 | 2026-09-22 历史记录；本次 NOT_VERIFIED |
+| Claude Code | `C:\Users\Administrator\.claude` / 2.1.278 | 代码任务辅助 | 2026-09-22 历史记录；本次 NOT_VERIFIED |
 
 StudyBuddy 的 Python 运行依赖为：FastAPI、Uvicorn、Pydantic、python-multipart、python-docx、pypdf、PyMuPDF、python-pptx、pytest、httpx。它们是当前代码和正式测试使用的依赖；只安装但未被正式代码调用的包不列入功能能力。
+
+本机 PATH 中的 `python` 指向 `C:\Python314\python.exe`，`bash` 指向 Git Bash；它们不是本项目的 Python 3.10 与 Cygwin 入口。运行和测试脚本优先选择上表路径，不要求修改系统 PATH。`STUDYBUDDY_PYTHON`、`STUDYBUDDY_NPX` 的显式覆盖优先保留；浏览器测试入口在子进程 PATH 中优先加入 `D:\nodejs`。
+
+可用 `test-browser.ps1 browser_today_userpath.spec.js -List` 检查 Playwright 配置和测试发现；该模式不会启动隔离服务或执行浏览器动作。实际测试结果与用户手动验收仍需分别记录。
 
 ## StudyBuddy 实际功能组件
 
@@ -94,4 +99,4 @@ Composer、Integration 和 Test 的关系不是“把实验代码 import 进正�
 
 ## 自动复核
 
-从 `H:\studybuddy` 运行 `backend/scripts/check-development-environment.ps1`。脚本只输出脱敏的 JSON 状态；它检查工具可执行性、Python 导入、`pip check`、应用 version、当前服务三项健康端点和项目 Playwright CLI，不读取配置文件中的 secret，也不触发外部网络副作用。
+从 `H:\studybuddy` 运行 `backend/scripts/check-development-environment.ps1`。脚本只输出脱敏的 JSON 状态；按指定路径检查 PowerShell、Git、Cygwin、Python、Node/npm、Pi，检查 Python 导入、`pip check`、应用 version、当前服务三项健康端点和项目 Playwright CLI，不读取配置文件中的 secret，也不触发真实 Provider。`-SkipService` 仅检查本机工具；其他开发辅助工具只在 `-IncludeOptionalTools` 下检查。`available` 只描述本次探针可用，不表示全局 real-pass。

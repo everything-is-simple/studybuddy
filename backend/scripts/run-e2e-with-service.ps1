@@ -19,6 +19,9 @@ $productionRoot = [System.IO.Path]::GetFullPath((Join-Path $workspaceParent 'stu
 $pythonCandidates = @($env:STUDYBUDDY_PYTHON, 'D:/miniconda/py310/python.exe', 'C:/miniconda/py310/python.exe') |
     Where-Object { $_ -and (Test-Path -LiteralPath $_) }
 $python = if ($pythonCandidates) { @($pythonCandidates)[0] } else { (Get-Command python -ErrorAction Stop).Source }
+$nodeRoot = 'D:/nodejs'
+if (Test-Path -LiteralPath (Join-Path $nodeRoot 'node.exe')) { $env:PATH = $nodeRoot + ';' + $env:PATH }
+$npx = if ($env:STUDYBUDDY_NPX) { $env:STUDYBUDDY_NPX } elseif (Test-Path -LiteralPath (Join-Path $nodeRoot 'npx.cmd')) { Join-Path $nodeRoot 'npx.cmd' } else { (Get-Command npx.cmd -ErrorAction Stop).Source }
 
 if (-not $DataRoot) {
     $DataRoot = Join-Path $testRootBase ('runs/e2e-service-{0}-{1}' -f [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmssfff'), $PID)
@@ -83,7 +86,7 @@ try {
         throw 'e2e_service_health_failed'
     }
     $paths = if ($Spec -match '[\\/]') { $Spec } else { "backend/tests/$Spec" }
-    & (Get-Command npx.cmd -ErrorAction Stop).Source playwright test $paths '--workers=1' '--reporter=line' '--timeout=60000'
+    & $npx playwright test $paths '--workers=1' '--reporter=line' '--timeout=60000'
     $testExitCode = $LASTEXITCODE
 } finally {
     if ($serviceJob) { Remove-Job -Job $serviceJob -Force -ErrorAction SilentlyContinue }

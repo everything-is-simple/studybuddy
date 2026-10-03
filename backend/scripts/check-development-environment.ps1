@@ -1,8 +1,14 @@
 [CmdletBinding()]
 param(
     [string]$Python = 'D:\miniconda\py310\python.exe',
+    [string]$NodeRoot = 'D:\nodejs',
+    [string]$PowerShellRoot = 'D:\PowerShell\7',
+    [string]$GitRoot = 'D:\Git',
+    [string]$CygwinRoot = 'D:\cygwin64',
+    [string]$PiRoot = 'C:\Users\Administrator\.pi',
     [string]$BaseUrl = 'http://127.0.0.1:8787',
-    [switch]$SkipService
+    [switch]$SkipService,
+    [switch]$IncludeOptionalTools
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -17,11 +23,27 @@ function Add-Check([string]$Name, [string]$Status, [string]$Detail = '') {
 function Get-VersionText([string]$Command, [string[]]$Arguments) {
     try {
         $output = (& $Command @Arguments 2>$null | Select-Object -First 3) -join ' '
+        if ($LASTEXITCODE -ne 0) { return $null }
         $match = [regex]::Match($output, 'v?\d+\.\d+(?:\.\d+)?')
         if ($match.Success) { return $match.Value }
         if ($output) { return 'installed' }
     } catch {}
     return $null
+}
+
+function Get-HttpStatus([string]$Uri) {
+    $response = $null
+    try {
+        $request = [System.Net.HttpWebRequest]::Create($Uri)
+        $request.Method = 'GET'
+        $request.Timeout = 5000
+        $request.ReadWriteTimeout = 5000
+        $request.KeepAlive = $false
+        $response = $request.GetResponse()
+        return [int]$response.StatusCode
+    } catch { return $null } finally {
+        if ($response) { $response.Dispose() }
+    }
 }
 
 if (-not (Test-Path -LiteralPath $Python)) {
@@ -45,17 +67,25 @@ if (-not (Test-Path -LiteralPath $Python)) {
     } catch { Add-Check 'python_checks' 'failed' } finally { Pop-Location }
 }
 
-foreach ($tool in @(
-    @{ name = 'node'; command = 'node'; args = @('--version') },
-    @{ name = 'npm'; command = 'npm'; args = @('--version') },
-    @{ name = 'pi'; command = 'pi'; args = @('--version') },
-    @{ name = 'omp'; command = 'omp'; args = @('--version') },
-    @{ name = 'codex'; command = 'codex'; args = @('--version') },
-    @{ name = 'claude'; command = 'claude'; args = @('--version') }
-)) {
-    $commandInfo = Get-Command $tool.command -ErrorAction SilentlyContinue
-    if (-not $commandInfo) { Add-Check $tool.name 'not_installed'; continue }
-    $version = Get-VersionText $commandInfo.Source $tool.args
+$node = Join-Path $NodeRoot 'node.exe'
+if (Test-Path -LiteralPath $node) { $env:PATH = $NodeRoot + ';' + $env:PATH }
+$tools = @(
+    @{ name = 'powershell7'; command = (Join-Path $PowerShellRoot 'pwsh.exe'); args = @('-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()') },
+    @{ name = 'git'; command = (Join-Path $GitRoot 'cmd/git.exe'); args = @('--version') },
+    @{ name = 'cygwin_bash'; command = (Join-Path $CygwinRoot 'bin/bash.exe'); args = @('--version') },
+    @{ name = 'node'; command = $node; args = @('--version') },
+    @{ name = 'npm'; command = (Join-Path $NodeRoot 'npm.cmd'); args = @('--version') },
+    @{ name = 'pi'; command = (Join-Path $PiRoot 'agent/bin/pi.cmd'); args = @('--version') }
+)
+if ($IncludeOptionalTools) {
+    foreach ($name in @('omp', 'codex', 'claude')) {
+        $commandInfo = Get-Command $name -ErrorAction SilentlyContinue
+        if ($commandInfo) { $tools += @{ name = $name; command = $commandInfo.Source; args = @('--version') } }
+    }
+}
+foreach ($tool in $tools) {
+    if (-not (Test-Path -LiteralPath $tool.command)) { Add-Check $tool.name 'not_installed'; continue }
+    $version = Get-VersionText $tool.command $tool.args
     Add-Check $tool.name ($(if ($version) { 'available' } else { 'failed' })) $version
 }
 
@@ -67,16 +97,12 @@ if (Test-Path -LiteralPath $playwright) {
 
 if (-not $SkipService) {
     foreach ($endpoint in @('liveness', 'health', 'readiness')) {
-        try {
-            $response = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/api/$endpoint" -UseBasicParsing -TimeoutSec 5
-            Add-Check "service_$endpoint" ($(if ([int]$response.StatusCode -eq 200) { 'available' } else { 'failed' })) ([string]$response.StatusCode)
-        } catch { Add-Check "service_$endpoint" 'unavailable' }
+        $httpStatus = Get-HttpStatus "$($BaseUrl.TrimEnd('/'))/api/$endpoint"
+        Add-Check "service_$endpoint" ($(if ($httpStatus -eq 200) { 'available' } else { 'unavailable' })) ([string]$httpStatus)
     }
     foreach ($endpoint in @('system/settings', 'system/capabilities', 'ai/capabilities')) {
-        try {
-            $response = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/api/$endpoint" -UseBasicParsing -TimeoutSec 5
-            Add-Check ("api_" + ($endpoint -replace '/', '_')) ($(if ([int]$response.StatusCode -eq 200) { 'available' } else { 'failed' })) ([string]$response.StatusCode)
-        } catch { Add-Check ("api_" + ($endpoint -replace '/', '_')) 'unavailable' }
+        $httpStatus = Get-HttpStatus "$($BaseUrl.TrimEnd('/'))/api/$endpoint"
+        Add-Check ("api_" + ($endpoint -replace '/', '_')) ($(if ($httpStatus -eq 200) { 'available' } else { 'unavailable' })) ([string]$httpStatus)
     }
 }
 

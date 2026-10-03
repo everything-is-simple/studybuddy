@@ -192,6 +192,16 @@
 
 **归档说明**：归档文档仅供追溯参考，不作为当前事实源。完整归档索引见 [`.archive/README.md`](../.archive/README.md)。
 
+## 📚 原始产品文档提取
+
+两个上游仓库的原始 PRD、设计和任务文档已归档到 [`legacy-product-references/`](legacy-product-references/)。
+
+- [原始文档提取映射](legacy-product-references/PRD-DESIGN-TASK-MAP.md)：优先阅读，说明 PRD、设计、任务与当前 StudyBuddy 的关系
+- [ai-studybuddy 原始文档](legacy-product-references/ai-studybuddy/)
+- [pi-studybuddy 原始文档](legacy-product-references/pi-studybuddy/)
+
+这些文档是历史产品输入，不替代当前 STATUS、ARCHITECTURE、TODO 和正式测试证据。
+
 ---
 
 ## 📏 文档维护规则

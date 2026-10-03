@@ -35,8 +35,8 @@ StudyBuddy 的正式开发根目录是 `H:\studybuddy`。
 - Python 3.10：`D:\miniconda\py310`
 - Node.js：`D:\nodejs`
 - Cygwin：`D:\cygwin64`
-- PowerShell 7：`C:\Program Files\PowerShell\7`
-- Git：`C:\Program Files\Git`
+- PowerShell 7：`D:\PowerShell\7`
+- Git：`D:\Git`
 - Pi 用户目录：`C:\Users\Administrator\.pi`
 - Pi-desktop 后代目录：`C:\Users\Administrator\.percho`
 - OMP：`C:\Users\Administrator\.omp`
