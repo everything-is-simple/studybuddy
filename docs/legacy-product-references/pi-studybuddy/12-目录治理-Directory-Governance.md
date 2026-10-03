@@ -3,7 +3,7 @@
 **版本**：v0.1.4
 **日期**：2026-08-15
 **状态**：✅ 已审查批准；T-M5-011 执行中
-**上游**：[AGENTS.md §9.5](../AGENTS.md)、[01-TRD §7 决策 3](./01-TRD-技术需求-Technical-Requirements.md)、[04-Todo §4](./04-任务清单-Todo-List.md)、[11-组件装配 §3](./11-组件装配-Component-Assembly.md)
+**上游**：[AGENTS.md §9.5](https://github.com/everything-is-simple/pi-studybuddy/blob/3135a7cd2307084374d705ae1799ea0b015d8818/AGENTS.md)、[01-TRD §7 决策 3](./01-TRD-技术需求-Technical-Requirements.md)、[04-Todo §4](./04-任务清单-Todo-List.md)、[11-组件装配 §3](./11-组件装配-Component-Assembly.md)
 **用途**：pi-studybuddy 所有目录的职责定义与边界隔离——每个目录有唯一职责，不越界
 
 ---

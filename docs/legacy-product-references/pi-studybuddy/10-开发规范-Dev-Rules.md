@@ -3,7 +3,7 @@
 **版本**：v0.1.3
 **日期**：2026-08-19
 **状态**：✅ 已审查批准；T-M5-011 执行中
-**上游**：[AGENTS.md](../AGENTS.md)、[04-Todo §5](./04-任务清单-Todo-List.md)、[08-Test §11](./08-测试验收-Test-Plan.md)、[03-Architecture §9](./03-架构设计-Architecture-Design.md)
+**上游**：[AGENTS.md](https://github.com/everything-is-simple/pi-studybuddy/blob/3135a7cd2307084374d705ae1799ea0b015d8818/AGENTS.md)、[04-Todo §5](./04-任务清单-Todo-List.md)、[08-Test §11](./08-测试验收-Test-Plan.md)、[03-Architecture §9](./03-架构设计-Architecture-Design.md)
 **用途**：从任务登记到提交交付的 16 步标准化开发流程——每个开发任务的执行操作骨架
 
 ---

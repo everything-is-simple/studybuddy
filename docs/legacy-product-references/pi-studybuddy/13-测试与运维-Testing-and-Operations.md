@@ -3,7 +3,7 @@
 **版本**：v0.1.4
 **日期**：2026-08-15
 **状态**：✅ 已审查批准；T-M5-011 执行中。当前测试与运维口径为：先在开发机跑通真实主路径，再复制同一运行拓扑到使用机；历史 UAT、组件阶段和自动化证据不替代主路径结果。
-**上游**：[AGENTS.md §2、§5、§7、§9、§11](../AGENTS.md)、[01-TRD](./01-TRD-技术需求-Technical-Requirements.md)、[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-Architecture](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)、[06-API](./06-API契约-API-Contracts.md)、[07-Workflow](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)、[09-使用者介面](./09-使用者介面-UI-Design.md)
+**上游**：[AGENTS.md §2、§5、§7、§9、§11](https://github.com/everything-is-simple/pi-studybuddy/blob/3135a7cd2307084374d705ae1799ea0b015d8818/AGENTS.md)、[01-TRD](./01-TRD-技术需求-Technical-Requirements.md)、[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-Architecture](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)、[06-API](./06-API契约-API-Contracts.md)、[07-Workflow](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)、[09-使用者介面](./09-使用者介面-UI-Design.md)
 **下游**：[04-Todo](./04-任务清单-Todo-List.md)、任务唯一计划、实施记录、测试资产、发布与运维记录
 **用途**：把用户动作、界面、运行时、领域逻辑、数据资产、错误处理、自动化测试、真机 UAT 与运维收敛为一条可追溯的交付链；它不是具体任务计划，也不取代 08-测试验收的测试分层与验收条款。
 

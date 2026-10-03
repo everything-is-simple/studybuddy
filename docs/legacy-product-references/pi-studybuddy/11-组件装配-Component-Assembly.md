@@ -3,7 +3,7 @@
 **版本**：v0.1.1
 **日期**：2026-08-15
 **状态**：✅ 已审查批准；T-M5-011 执行中
-**上游**：[AGENTS.md §6](../AGENTS.md)、[01-TRD §2](./01-TRD-技术需求-Technical-Requirements.md)、[03-Architecture §3/§9](./03-架构设计-Architecture-Design.md)、[04-Todo §3.3/§4](./04-任务清单-Todo-List.md)
+**上游**：[AGENTS.md §6](https://github.com/everything-is-simple/pi-studybuddy/blob/3135a7cd2307084374d705ae1799ea0b015d8818/AGENTS.md)、[01-TRD §2](./01-TRD-技术需求-Technical-Requirements.md)、[03-Architecture §3/§9](./03-架构设计-Architecture-Design.md)、[04-Todo §3.3/§4](./04-任务清单-Todo-List.md)
 **用途**：pi-studybuddy "先分解，再组合"的单一事实来源（SoT）——组件从识别到装配的标准化流程
 
 ---
