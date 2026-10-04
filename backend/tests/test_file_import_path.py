@@ -4,6 +4,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,10 @@ from app.main import create_app
 from app.repository import connect
 
 FIXTURES = Path("H:/studybuddy-test/fixtures/kaobuddy-foundation")
+pytestmark = pytest.mark.skipif(
+    not FIXTURES.exists(),
+    reason="requires H:/studybuddy-test/fixtures"
+)
 
 
 def make_client(root: Path) -> TestClient:

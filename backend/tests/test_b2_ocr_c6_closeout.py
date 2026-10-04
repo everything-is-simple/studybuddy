@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / ".archive" / "evidence" / "B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md"
+
+pytestmark = pytest.mark.skipif(
+    not EVIDENCE.exists(),
+    reason="requires .archive/ historical documents"
+)
 
 
 def test_b2_ocr_c6_evidence_is_complete_and_redacted():

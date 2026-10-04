@@ -20,6 +20,7 @@ import inspect
 import re
 from pathlib import Path
 import sys
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -28,6 +29,12 @@ from app.config import AppConfig  # noqa: E402
 
 APP_ROOT = ROOT / "backend" / "app"
 MIGRATIONS_ROOT = APP_ROOT / "migrations"
+EVALUATION_DOC = ROOT / ".archive" / "contracts" / "P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md"
+
+pytestmark = pytest.mark.skipif(
+    not EVALUATION_DOC.exists(),
+    reason="requires .archive/ historical documents"
+)
 EVALUATION_DOC = ROOT / ".archive" / "contracts" / "P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md"
 
 # 契约 §1.2 排除 SQLite 作为配置载体。这些名字代表"系统配置表"，

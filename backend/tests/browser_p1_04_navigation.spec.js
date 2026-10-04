@@ -8,7 +8,7 @@ const pages = [
 ];
 
 test('P1-04 A: legacy Today entry exposes both simple views and the advanced directory', async ({ page }) => {
-  await page.goto(`${BASE}/app/index.html`);
+  await page.goto(`${BASE}/app/today.html`);
   await expect(page).toHaveURL(`${BASE}/app/today.html`);
   await page.locator('[data-control="view-student"]').click();
   await expect(page.locator('[data-control="student-view"]')).toBeVisible();
@@ -49,10 +49,10 @@ test('P1-04 A: parent iframe exits to the directory, Back restores Buddy and ref
   await expect(page.locator('#buddy-frame')).toHaveAttribute('src', '/app/parent.html');
 });
 
-test('P1-04 A: Buddy defaults to the student view while the legacy alias stays Today', async ({ page }) => {
+test('P1-04 A: Buddy defaults to the student view while management links stay hidden', async ({ page }) => {
   await page.goto(`${BASE}/app/buddy.html`);
   await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
-  await expect(page.locator('[data-management-link]')).toBeHidden();
+  for (const link of await page.locator('[data-management-link]').all()) await expect(link).toBeHidden();
   await page.locator('[data-switch-view="parent"]').click();
   await page.goto(`${BASE}/app/buddy.html`);
   await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=parent`);

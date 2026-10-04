@@ -3,8 +3,15 @@ import sys
 import zipfile
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_file_import_path import make_client, upload_text
+from test_file_import_path import make_client, upload_text, FIXTURES
+
+pytestmark = pytest.mark.skipif(
+    not FIXTURES.exists(),
+    reason="requires H:/studybuddy-test/fixtures"
+)
 
 
 def entries(response):

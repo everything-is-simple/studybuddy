@@ -18,6 +18,10 @@ from app.repository import connect, save_extraction
 from app.storage import sha256_file, store_original
 
 FIXTURES = Path("H:/studybuddy-test/fixtures/kaobuddy-foundation")
+pytestmark = pytest.mark.skipif(
+    not FIXTURES.exists(),
+    reason="requires H:/studybuddy-test/fixtures"
+)
 CASES = {
     "sample.txt": "success", "sample.md": "success", "chinese.txt": "success", "empty.txt": "empty",
     "sample.pdf": "success", "corrupt.pdf": "failed", "sample.docx": "success", "empty.docx": "failed",

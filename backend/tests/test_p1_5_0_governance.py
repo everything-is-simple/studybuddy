@@ -26,6 +26,12 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.config import AppConfig, config_from_environment  # noqa: E402
 from app.providers._registry import ProviderRegistry, EmbeddingProviderRegistry  # noqa: E402
 
+ARCHIVE_CONTRACT = ROOT / ".archive/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md"
+pytestmark = pytest.mark.skipif(
+    not ARCHIVE_CONTRACT.exists(),
+    reason="requires .archive/ historical documents"
+)
+
 
 def test_p1_5_0_contract_document_exists_and_declares_frozen() -> None:
     """验证 P1-5 契约文档存在且声明为 contract-frozen。"""

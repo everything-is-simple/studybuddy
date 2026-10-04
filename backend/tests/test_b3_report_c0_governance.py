@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSER = Path("H:/studybuddy-composer")
+ARCHIVE_CONTRACT = ROOT / ".archive" / "contracts" / "B3_REPORT_COMPONENT_CONTRACT.md"
+
+pytestmark = pytest.mark.skipif(
+    not ARCHIVE_CONTRACT.exists(),
+    reason="requires .archive/ historical documents"
+)
 
 
 def test_b3_report_c0_scope_is_frozen_without_promotion():

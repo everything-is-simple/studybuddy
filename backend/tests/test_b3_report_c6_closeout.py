@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSER = Path("H:/studybuddy-composer")
 INTEGRATION = Path("H:/studybuddy-integration")
 EVIDENCE = ROOT / ".archive" / "evidence" / "B3_REPORT_C6_SCOPED_CLOSEOUT_EVIDENCE.md"
+
+pytestmark = pytest.mark.skipif(
+    not EVIDENCE.exists(),
+    reason="requires .archive/ historical documents"
+)
 
 
 def test_b3_c6_evidence_is_complete_redacted_and_keeps_delivery_blocked():

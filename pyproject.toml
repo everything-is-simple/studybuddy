@@ -7,6 +7,8 @@ addopts = "-ra"
 # Real network/provider tests are opt-in through their own environment gates.
 markers = [
   "real_provider: opt-in tests that call a configured external provider",
+  "requires_fixtures: tests that require H:/studybuddy-test/fixtures",
+  "requires_archive: tests that require .archive/ historical documents",
 ]
 filterwarnings = [
   "ignore::DeprecationWarning:httpx.*",

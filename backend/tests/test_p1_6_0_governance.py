@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -12,6 +13,11 @@ APP = ROOT / "backend" / "app"
 
 CONTRACT = ARCHIVE / "contracts" / "P1_6_VERIFICATION_SCOPE_CONTRACT.md"
 EVIDENCE = ARCHIVE / "evidence" / "P1_6_0_AUDIT_EVIDENCE.md"
+
+pytestmark = pytest.mark.skipif(
+    not CONTRACT.exists(),
+    reason="requires .archive/ historical documents"
+)
 
 
 def read(path: Path) -> str:

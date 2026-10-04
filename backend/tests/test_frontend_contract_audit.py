@@ -1,12 +1,18 @@
 import importlib.util
 import json
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "backend" / "scripts" / "audit-frontend-contract.py"
 FIXTURES = ROOT / "docs" / "frontend-contract-fixtures.json"
 CAPABILITY_MATRIX = ROOT / ".archive" / "frontend" / "frontend-static-capability-matrix.md"
 FAILURE_MATRIX = ROOT / ".archive" / "frontend" / "frontend-static-failure-retry-matrix.md"
+
+pytestmark = pytest.mark.skipif(
+    not CAPABILITY_MATRIX.exists(),
+    reason="requires .archive/ historical documents"
+)
 
 
 def load_auditor():

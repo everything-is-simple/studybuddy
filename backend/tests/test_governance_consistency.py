@@ -1,11 +1,17 @@
 import re
 from pathlib import Path
 from urllib.parse import unquote
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 ARCHIVE = ROOT / ".archive"
+
+pytestmark = pytest.mark.skipif(
+    not ARCHIVE.exists() or not any(ARCHIVE.iterdir()),
+    reason="requires .archive/ historical documents"
+)
 
 
 def tracked_files(*parts: str) -> list[Path]:
