@@ -80,6 +80,7 @@
     document.querySelector('#knowledge-content-tab').setAttribute('aria-selected','true');
   };
   const tabs=[document.querySelector('#knowledge-content-tab'),document.querySelector('#knowledge-tab')];
+  if(new URLSearchParams(location.search).get('tab')==='knowledge')tabs[1].click();
   tabs.forEach((tab,index)=>tab.addEventListener('keydown',event=>{
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();const target=event.key==='Home'?tabs[0]:event.key==='End'?tabs[1]:tabs[1-index];target.click();target.focus();

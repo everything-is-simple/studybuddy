@@ -64,7 +64,7 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
     // ── 2. /app/ opens Buddy; Today remains a direct task page ──────
     await page.goto(`${BASE}/app/`);
     await expect(page).toHaveURL(`${BASE}/app/buddy.html?view=student`);
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page).toHaveTitle(/StudyBuddy.*今天/i);
     await expect(page.locator('h1')).toContainText('今天学什么？');
     await expect(page.locator('.brand')).toHaveText('StudyBuddy');

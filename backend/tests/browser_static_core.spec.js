@@ -160,7 +160,7 @@ test('A3-4: qa page - submit question flow', async ({ page }) => {
 });
 
 test('A3-4: today page - loads task summary', async ({ page }) => {
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Check summary loads (may be empty but should not error)
@@ -178,7 +178,7 @@ test('A3-4: cross-page navigation flow', async ({ page }) => {
   await expect(page.locator('h1')).toContainText('你的学习材料');
   
   // Test today page
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('h1')).toContainText('今天学什么？');
   
   // Test QA page

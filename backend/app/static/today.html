@@ -27,6 +27,18 @@
 </div>
 
 <div id="page-loading" class="notice" role="status" aria-live="polite">正在加载今天的学习任务...</div>
+<section id="pending-work" class="card" aria-labelledby="pending-heading">
+<div class="section-heading"><h2 id="pending-heading">今日待闭合项</h2><button id="refresh-pending" class="btn" type="button">刷新待办</button></div>
+<p class="muted">先做最重要的几件事。每项都来自已有安排或学习记录，最多显示 5 项。</p>
+<div id="pending-status" class="notice" role="status" aria-live="polite">正在整理今日待办…</div>
+<ul id="pending-items" class="pending-list"></ul>
+<div id="pending-error" class="notice warn" role="alert" hidden></div>
+<p id="pending-overflow" class="notice" hidden></p>
+<div id="pending-empty-actions" class="stack-actions" hidden><a class="btn" href="/app/practice.html">开始练习</a><a class="btn" href="/app/plans.html">安排学习</a></div>
+</section>
+<details id="more-tasks" class="mt-24">
+<summary class="btn">更多任务与学习进度</summary>
+<div class="stack-actions mb-16"><a class="btn" href="/app/plans.html">全部计划</a><a class="btn" href="/app/materials.html">资料待办</a><a class="btn" href="/app/review.html">错题复习</a><a class="btn" href="/app/practice.html">备考与练习</a></div>
 <section id="quick-start" class="card" data-od-id="today-quick-start" hidden aria-labelledby="quick-start-heading">
 <h2 id="quick-start-heading"><button id="quick-toggle" class="btn" type="button" aria-expanded="true" aria-controls="quick-start-body">继续学习</button></h2>
 <div id="quick-start-body">
@@ -58,10 +70,12 @@
 <ul id="tasks" class="task-list"></ul>
 <div id="today-exits" class="stack-actions" hidden></div>
 </section>
+</details>
 </main>
 </div>
 <script src="/app/js/api.js"></script><script src="/app/js/state.js"></script>
 <script src="/app/js/shell.js"></script><script src="/app/js/templates.js"></script>
+<script src="/app/js/today-pending.js?v=20261005"></script>
 <script>
 (async function(){
 const pageRequest=sbApi.setPageScope('today');
@@ -104,6 +118,7 @@ quickError.hidden=true;
 try{
 await sbSubmit.once(key,()=>sbApi.json(`/api/study/plans/${encodeURIComponent(planId)}/items/${encodeURIComponent(itemId)}/progress`,{method:'POST',body:JSON.stringify({event_type:eventType,metadata:{local_date:localDate}}),signal:pageRequest.signal}));
 await loadAll();
+document.dispatchEvent(new CustomEvent('sb-today-reload'));
 }catch(error){
 sbUi.errorAction(quickError,error,{retry:()=>submitProgress(planId,itemId,localDate,eventType)});
 }finally{progressBusy.delete(key);buttons.forEach(button=>{button.disabled=false;if(button.textContent==='处理中…')button.textContent=button.dataset.idleLabel||'开始学习'})}
@@ -266,6 +281,7 @@ sbUi.busy(retry,false,'重新加载')
 }
 
 retry.addEventListener('click',()=>sbSubmit.once('today-reload',loadAll));
+document.addEventListener('sb-today-progress',loadAll);
 await loadAll()
 })();
 </script>

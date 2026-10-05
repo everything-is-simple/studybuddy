@@ -71,7 +71,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
       await plansResponse;
       await route.continue();
     });
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#page-loading')).toBeVisible();
     await expect(page.locator('#page-loading')).toHaveText('正在加载今天的学习任务...');
     for (const id of ['#summary-status', '#weekly-status', '#task-status']) {
@@ -85,7 +85,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
   });
 
   test('A-E2E-TD-1 空数据根：三区独立空态与下一步出口', async ({ page }) => {
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#summary-status')).toHaveText('还没有学习计划', { timeout: 10000 });
     await expect(page.locator('#weekly-status')).toHaveText('还没有学习计划，暂无周趋势');
     await expect(page.locator('#task-status')).toHaveText('还没有学习计划');
@@ -116,7 +116,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await expect(page.locator('#plan-status')).toHaveText('激活计划成功');
 
     // 2) Activated but nothing allocated: today must say so and offer next steps.
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#summary')).toContainText(PLAN_TITLE, { timeout: 10000 });
     await expect(page.locator('#weekly-trend .rhythm-card')).toHaveCount(7);
     await expect(page.locator('#today-progress-visual')).toBeVisible();
@@ -143,7 +143,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await expect(page.locator('#plan-status')).toHaveText('学习项已分配');
 
     // 4) Today now shows the real task card with the return link.
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     const task = page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE });
     await expect(task).toContainText(`计划 25 分钟 · ${today()}`, { timeout: 10000 });
     await expect(page.locator('#quick-start')).toBeVisible();
@@ -162,7 +162,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
   });
 
   test('A-E2E-TD-3 Today 内联记录完成 → 状态即时反映', async ({ page }) => {
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     const task = page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE });
     await expect(task).toBeVisible({ timeout: 10000 });
     await expect(task.getByRole('button', { name: '记录完成' })).toBeVisible();
@@ -179,7 +179,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await page.route('**/api/study/plans', route => failing
       ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"H:/studybuddy/secret_traceback"}' })
       : route.continue());
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     const retry = page.locator('#retry-today');
     await expect(retry).toBeVisible();
     for (const id of ['#summary-status', '#weekly-status', '#task-status']) {
@@ -198,7 +198,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
   });
 
   test('A-E2E-TD-5 刷新恢复 + 窄屏无横向溢出', async ({ page }) => {
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE })).toContainText('查看进度', { timeout: 10000 });
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
@@ -211,7 +211,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await stopServer();
     server = startServer();
     await ready();
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE })).toContainText('查看进度', { timeout: 15000 });
     await expect(page.locator('#summary')).toContainText(PLAN_TITLE);
     await expect(page.locator('#weekly-trend .rhythm-card')).toHaveCount(7);
@@ -226,7 +226,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await page.getByRole('button', { name: '暂停计划' }).click();
     await expect(page.locator('#plan-status')).toHaveText('暂停计划成功');
 
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#summary-status')).toHaveText('计划尚未启动', { timeout: 10000 });
     await expect(page.locator('#weekly-status')).toHaveText('计划尚未启动，暂无周趋势');
     await expect(page.locator('#task-status')).toHaveText('计划尚未启动');
@@ -239,7 +239,7 @@ test.describe.serial('today.html pure user path (A-class)', () => {
     await expect(page).toHaveURL(/plans\.html\?plan_id=.+/);
     await page.getByRole('button', { name: '恢复计划' }).click();
     await expect(page.locator('#plan-status')).toHaveText('恢复计划成功');
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('#summary')).toContainText(PLAN_TITLE, { timeout: 10000 });
     await expect(page.locator('#tasks .task-item').filter({ hasText: ITEM_TITLE })).toContainText('查看进度');
     await assertNoSensitiveVisibleText(page);

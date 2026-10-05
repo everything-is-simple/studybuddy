@@ -33,7 +33,7 @@ test('B3 shared templates are loaded by six migrated pages', async ({ page }) =>
 });
 
 test('B3 templates preserve base classes and provide state/retry APIs', async ({ page }) => {
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   const result = await page.evaluate(() => {
     const box = document.createElement('div');
     box.className = 'notice mt-12';

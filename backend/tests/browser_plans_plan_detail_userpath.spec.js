@@ -154,7 +154,7 @@ test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
     await expect(status(page)).toHaveText('学习项已分配');
     await transition(page, '确认草稿', '状态：可用');
     await transition(page, '激活计划', '状态：可用');
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     const task = page.locator('.task-item', { hasText: '记叙文' });
     await expect(task).toBeVisible({ timeout: 8000 });
     const todayUrl = page.url();
@@ -374,7 +374,7 @@ test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
     await expect(page.locator('.plan-item-entry', { hasText: '已分配 45 分钟' })).toHaveCount(1);
     await transition(page, '确认草稿', '状态：可用');
     await transition(page, '激活计划', '状态：可用');
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     const persistedTask = page.locator('.task-item', { hasText: '持久化学习项' });
     await expect(persistedTask).toBeVisible({ timeout: 8000 });
     await persistedTask.getByRole('button', { name: '开始学习' }).click();
@@ -400,7 +400,7 @@ test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
     await expect(page.locator('#rhythm-period-start')).toHaveValue(TODAY);
     await expect(page.locator('#rhythm-target-minutes')).toHaveValue('120');
     await expect(page.locator('.plan-item-entry', { hasText: '已分配 45 分钟' })).toHaveCount(1);
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     await expect(page.locator('.task-item', { hasText: '持久化学习项' })).toBeVisible({ timeout: 8000 });
   });
 });

@@ -755,3 +755,11 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 材料详情知识模块工作区、模块出题入口和掌握度事实投影。
 - [x] 全量后端、浏览器和恢复门禁通过并登记最终证据：后端 670 passed／78 skipped；浏览器 101 个套件汇总 607 passed／4 skipped，均 0 failed；S2 专项 3 passed，备份恢复与迁移失败回滚通过。source-size、diff-check 通过。证据 `H:\studybuddy-test\verification\s2-knowledge-modules-20261005\acceptance.md`；历史文档治理及真实能力 opt-in 跳过范围保持独立。
 - [ ] 真实 Provider 质量与可视人工验收（独立 opt-in，不计入自动化通过）。
+
+## 2026-10-05 S1 Today 每日少量待闭合项
+
+- [x] 五类规则和 `GET /api/today/pending-items`：真实来源、稳定优先级、去重、五项上限、显式溢出数量；不新增表、不伪造课表或确认考试日期。
+- [x] Today 主待办卡片、P0/P1/P2 文案与标签、默认折叠更多任务和进度、现有进度事件闭合、空态、失败重试和窄屏可达；S2 模块下一步与错题入口装配。
+- [x] 聚焦 35 passed；S1 浏览器专项 3 passed；既有完整任务用户路径显式展开折叠区域。
+- [x] 最终验收：后端全量 **686 passed / 78 skipped / 0 failed**；S1 浏览器专项 **4 passed**；source-size、JavaScript 语法、diff-check 和改动范围检查通过。完整浏览器长跑另有既有材料回收站套件的浏览器生命周期失败，未归因于 S1。证据：`H:\studybuddy-test\verification\s1-today-20261005\acceptance.md`。
+- [ ] 当前尚无正式课程课表／确认考试对象；独立需求补齐前保持不可用，不据备考目标伪造考试提醒。

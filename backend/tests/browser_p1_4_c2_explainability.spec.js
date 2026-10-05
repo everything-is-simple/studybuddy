@@ -58,7 +58,7 @@ test('C2 source links drive plans and today without false valid fallback',async(
 
   await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`);
   await expect(page.locator('#plan-detail')).toContainText('来源: 可用');
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('#tasks')).toContainText('来源：可用');
   const task=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'});
   const action=task.getByRole('link',{name:'查看资料'});
@@ -69,7 +69,7 @@ test('C2 source links drive plans and today without false valid fallback',async(
   await stopServer();server=startServer();await ready();
   await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`);
   await expect(page.locator('#plan-detail')).toContainText('来源: 有问题');
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   const deleted=page.locator('#tasks .task-item').filter({hasText:'阅读来源材料'});
   await expect(deleted).toContainText('来源：有问题');
   await expect(deleted.getByRole('link',{name:'查看资料'})).toHaveAttribute('aria-disabled','true');

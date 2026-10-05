@@ -96,7 +96,7 @@ test('P2-FE-4 plans page exposes goal/module management and dependency removal a
   await page.goto(`${BASE}/app/plan-detail.html?plan_id=${plan.id}`);
   await expect(page.locator('#plan-detail')).toContainText('跨页计划');
   await expect(page.locator('#plan-detail')).toContainText('暂无学习项依赖');
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('#summary')).toContainText('跨页计划');
   await expect(page.locator('body')).not.toContainText(/traceback|private_backend|H:\\|SELECT/i);
 });

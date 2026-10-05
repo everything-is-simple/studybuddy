@@ -25,7 +25,7 @@ test('plans to today to progress keeps the allocated task, event state, and retu
 
   await page.goto(`${BASE}/app/plans.html?plan_id=${encodeURIComponent(plan.id)}`);
   await expect(page.getByRole('link',{name:'打开详情'})).toHaveAttribute('href',new RegExp(`plan_id=${encodeURIComponent(plan.id)}`));
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   const task=page.locator('#tasks .task-item').filter({hasText:'当天分配的学习项'});
   await expect(task).toContainText(`计划 30 分钟 · ${localDate}`);
   await expect(task.getByRole('button',{name:'开始学习'})).toBeVisible();
@@ -102,14 +102,14 @@ test('today excludes unallocated, inactive, and foreign-plan items',async({page,
   await request.put(`${BASE}/api/study/plans/${active.id}/rhythm`,{data:{cadence:'daily',timezone:'Asia/Shanghai',period_start:localDate,target_minutes:60}});
   await post(request,`/api/study/plans/${active.id}/rhythm/allocations`,{item_id:allocated.id,local_date:localDate,planned_minutes:20});
   expect(unallocated.id).toBeTruthy();expect(pausedItem.id).toBeTruthy();
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('#tasks')).toContainText('应该显示');
   await expect(page.locator('#tasks')).not.toContainText('未分配项目');
   await expect(page.locator('#tasks')).not.toContainText('暂停项目');
 });
 
 test('today separates no-active-plan from nothing-allocated and offers the next step',async({page,request})=>{
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('#task-status')).toHaveText('还没有学习计划');
   await expect(page.locator('#summary-status')).toHaveText('还没有学习计划');
   await expect(page.locator('#weekly-status')).toHaveText('还没有学习计划，暂无周趋势');
@@ -118,7 +118,7 @@ test('today separates no-active-plan from nothing-allocated and offers the next 
   const goal=await post(request,'/api/study/goals',{title:'空态目标'});
   const plan=await post(request,'/api/study/plans',{title:'没有分配的计划',goal_id:goal.id});
   await post(request,`/api/study/plans/${plan.id}/items`,{title:'尚未分配的学习项'});
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('#task-status')).toHaveText('计划尚未启动');
   await expect(page.locator('#summary-status')).toHaveText('计划尚未启动');
   await expect(page.locator('#weekly-status')).toHaveText('计划尚未启动，暂无周趋势');
@@ -128,7 +128,7 @@ test('today separates no-active-plan from nothing-allocated and offers the next 
   await post(request,`/api/study/plans/${plan.id}/activate`,{});
   await request.put(`${BASE}/api/study/plans/${plan.id}/rhythm`,{data:{cadence:'daily',timezone:'Asia/Shanghai',period_start:today(),target_minutes:60}});
 
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   await expect(page.locator('#task-status')).toHaveText('计划「没有分配的计划」今日没有安排学习项');
   const exits=page.locator('#today-exits');
   await expect(exits.getByRole('link',{name:'查看计划详情'})).toHaveAttribute('href',new RegExp(`plan-detail\\.html\\?plan_id=${encodeURIComponent(plan.id)}$`));
@@ -150,7 +150,7 @@ test('today surfaces a retry control that recovers every section after a failed 
   await page.route('**/api/study/plans',route=>failing
     ?route.fulfill({status:500,contentType:'application/json',body:'{"detail":"H:/studybuddy/secret_traceback"}'})
     :route.continue());
-  await page.goto(`${BASE}/app/today.html`);
+  await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
   const retry=page.locator('#retry-today');
   await expect(retry).toBeVisible();
   for(const id of ['#summary-status','#weekly-status','#task-status'])await expect(page.locator(id)).toContainText('操作没有完成');

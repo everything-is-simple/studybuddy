@@ -1,2 +1,12 @@
 #continue-btn{display:inline-flex;align-items:center;min-height:56px;padding:12px 24px;font-size:20px;font-weight:700}
 #today-progress-visual{margin-top:16px}
+.pending-list{list-style:none;padding:0;margin:16px 0;display:grid;gap:16px}
+.pending-item-card{padding:20px;border:1px solid var(--border);border-radius:12px;overflow-wrap:anywhere}
+.pending-item-card h3,.pending-item-card p{margin:0}
+.priority-badge{align-self:flex-start;padding:4px 10px;border-radius:6px;font-weight:700;font-size:14px}
+.priority-p0{background:#fee2e2;color:#991b1b}
+.priority-p1{background:#fef3c7;color:#92400e}
+.priority-p2{background:#e0f2fe;color:#075985}
+#more-tasks>summary{cursor:pointer;margin-bottom:16px;list-style:revert}
+#pending-overflow .btn{margin:4px}
+@media(max-width:480px){.pending-item-card{padding:16px}.pending-item-card .stack-actions{align-items:stretch}.pending-item-card .btn{white-space:normal}}

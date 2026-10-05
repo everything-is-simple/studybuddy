@@ -350,7 +350,7 @@ test.describe.serial('reports.html pure user path (A-class)', () => {
 
     // Cross-page: the mobile nav is rebuilt after navigation and must be
     // explicitly re-expanded before the reports link is reachable.
-    await page.goto(`${BASE}/app/today.html`);
+    await page.goto(`${BASE}/app/today.html`); await page.locator('#more-tasks > summary').click();
     const toggle = page.locator('.nav-toggle');
     await expect(toggle).toBeVisible();
     await expect(page.locator('#primary-navigation')).toBeHidden();
