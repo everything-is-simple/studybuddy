@@ -24,6 +24,9 @@
   function render(module) {
     const row=el('article','', 'card stack'); row.dataset.moduleId=module.id;
     row.append(el('h3',module.title),el('p',module.description));
+    if(window.sbTts&&module.source_status==='valid'){
+      row.append(button('朗读模块',()=>{const text=`${module.title}。${module.description||''}`;window.sbTts.setTarget(text,module.title);window.sbTts.speak(text,module.title);}));
+    }
     const labels={draft:'AI 草稿，待确认',confirmed:'已确认',rejected:'已拒绝'};
     row.append(el('p',(labels[module.lifecycle]||module.lifecycle)+' · 重要性 '+module.importance+' · 难度 '+module.difficulty+' · '+Math.round(module.mastery_level*100)+'%（基于已评分练习）'));
     const sourceLabels={valid:'来源可用',source_deleted:'来源已删除',source_unavailable:'来源不可用',stale:'来源已变更'};

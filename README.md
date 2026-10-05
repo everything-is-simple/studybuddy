@@ -1,6 +1,8 @@
 # StudyBuddy
 
 Today（`/app/today.html`）优先展示最多 5 个有来源的待闭合项，按紧急／重要／建议排序；开始和完成学习即时回读进度。完整任务与学习进度在“更多任务与学习进度”中展开，溢出事项保留计划、资料、错题和练习入口。当前支持计划安排、备考目标、材料问题、知识草稿确认和错题；备考目标不等同于已确认考试日期。
+
+材料详情的知识模块工作区现在提供 TTS 朗读入口。TTS 默认关闭真实 Provider；隔离测试可使用 deterministic fake WAV，真实 SAPI/edge-tts 需显式配置并单独验收。朗读音频仅缓存于 data root 下的 `tts-cache`，不写 SQLite 学习事实。
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
 

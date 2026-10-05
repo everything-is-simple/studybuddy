@@ -38,9 +38,10 @@ from . import materials_detail
 from . import web
 from . import knowledge_modules
 from . import today
+from . import tts
 
 
-ROUTE_MODULES = (system, materials_collection, ai_retrieval_qa, ai_indexing, tasks, study_generation, study_practice, study_plans, study_rhythm, study_notes, study_learning, study_capture_reports, materials_detail, web, knowledge_modules, today)
+ROUTE_MODULES = (system, materials_collection, ai_retrieval_qa, ai_indexing, tasks, study_generation, study_practice, study_plans, study_rhythm, study_notes, study_learning, study_capture_reports, materials_detail, web, knowledge_modules, today, tts)
 
 
 def register_all_routes(app, context: dict[str, object]) -> None:

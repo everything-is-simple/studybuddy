@@ -86,6 +86,7 @@
 | 文档 | 说明 | 是否可写 |
 |------|------|---------|
 | [`[架构师看]ARCHITECTURE.md`]([架构师看]ARCHITECTURE.md) | **正式系统架构、支持边界与核心不变量** | ✅ 可写 |
+| [`[架构师看]TTS_DESIGN.md`]([架构师看]TTS_DESIGN.md) | TTS skill 接口、缓存、Provider、装配和验收边界 | ✅ 可写 |
 | [`[架构师看]AI_LEARNING_ARCHITECTURE.md`]([架构师看]AI_LEARNING_ARCHITECTURE.md) | AI/学习功能架构和实施边界 | ✅ 可写 |
 | [`[架构师+测试看]CODE_TEST_GOVERNANCE.md`]([架构师+测试看]CODE_TEST_GOVERNANCE.md) | 代码边界、测试层级、证据等级和提交门禁 | ✅ 可写 |
 | [`[架构师+运维看]MIGRATIONS.md`]([架构师+运维看]MIGRATIONS.md) | schema version、migration runner 与升级规则 | ✅ 可写 |

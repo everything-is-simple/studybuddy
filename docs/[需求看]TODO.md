@@ -1,5 +1,14 @@
 # StudyBuddy TODO 清单
 
+## 2026-10-05：TTS Skill（隔离自动化验收完成）
+
+- [x] TTS skill 接口、Provider 边界、缓存哈希、能力发现、播放控制、失败错误码与默认关闭策略设计。
+- [x] 当前 FastAPI 装配：`/api/tts/speak`、`control`、`status`、`audio`、`capabilities`；材料详情知识模块朗读入口。
+- [x] fake Provider WAV 产物、缓存命中、API 状态机、安全错误、设置 schema 与热更新测试；TTS/API/能力专项 41 passed。
+- [x] S2 浏览器关联测试 3 passed；验证知识模块朗读按钮与 fake 音频播放。最终后端全量 693 passed / 78 skipped / 0 failed。
+- [x] 生成 TTS 验收记录：`H:\studybuddy-test\verification\tts-20261005\acceptance.md`；源码大小、JavaScript 语法和 diff-check 通过。
+- [ ] 真实 SAPI/edge-tts 的独立授权、组件测试、真实音频质量和设备播放验收。
+
 ## 2026-10-02：Buddy 默认首页
 
 - [x] 首页别名统一进入 Buddy，首次学生视图、后续记住学生/家长选择；家长可切到学生。
@@ -552,7 +561,7 @@ revision → chunks → retrieval → citations → Q&A
   **提前启动（2026-08-31）**：不再等待 P1-6 完成，与 P1-USE 并行。连续 7 天使用自己的真实资料与课程，记录每个卡壳点、误解点和放弃点。
   产出：卡壳记录，回流进 TODO 作为 bug 直接修复，不新开审计切片。
   该项不是 P1-4 的勾选门槛；`real-pass` 声明需要它，`P1-4 completed` 不需要。
-- [ ] TTS：独立重新立项；edge-tts 7.2.8 是免费但在线的显式用户操作候选，先冻结网络 opt-in、音频保留/清理、隐私和失败契约，再决定 Composer -> Integration -> Formal。
+- [x] TTS：已独立重新立项并完成当前 Web/FastAPI 隔离自动化实现；网络 Provider、音频质量、设备播放和 Composer -> Integration -> Formal 真实验收仍保持独立未验证。
 - [ ] D0-D2：明确暂缓。只有 P1-4 完成、现有 Web 功能均已正式 `/app` 集成并通过正常与失败用户路径验证后，才可重新评审 Tauri Windows threat-model/spike、最小安装包或 macOS 可行性；当前不得启动桌面施工。
 - [ ] E0-E6：现代前端框架迁移仅为第二步 draft；只有维护复杂度、复杂交互或多用户 Web 产品决策触发后，才按 `ROADMAP_CAPABILITIES.md` 评估和实施。
 

@@ -22,6 +22,10 @@ test('S2 manual module -> selected evidence exercise -> scored session -> master
   await page.locator('#knowledge-save').click();
   const module = page.locator('#knowledge-list article').filter({hasText:'Newton force module'});
   await expect(module).toContainText('已确认');
+  await expect(module.getByRole('button',{name:'朗读模块'})).toBeVisible();
+  await module.getByRole('button',{name:'朗读模块'}).click();
+  await expect(page.locator('#tts-player p[data-tts-title]')).toHaveText('Newton force module');
+  await expect(page.locator('#tts-player [data-tts-status]')).toContainText(/播放|准备/);
   await module.getByRole('link',{name:'按此模块练习'}).click();
   await page.waitForURL(/exercises/);
   await expect(page.locator('#exercise-module-status')).toContainText('已加载');

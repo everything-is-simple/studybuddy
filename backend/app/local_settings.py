@@ -50,11 +50,12 @@ _TEXT_KEYS = frozenset({
     "embedding_provider_id", "embedding_model_id", "embedding_base_url",
     "ocr_provider_id", "ocr_model_id", "ocr_model_root",
     "asr_provider_id", "asr_model_id", "asr_runtime_path", "asr_model_path",
+    "tts_provider_id", "tts_voice", "tts_sapi_path", "tts_edge_command",
     "report_delivery_smtp_host", "report_delivery_smtp_username", "report_delivery_smtp_targets",
     "report_delivery_feishu_webhook",
 })
 _SECRET_KEYS = frozenset({"ai_api_key", "embedding_api_key", "report_delivery_smtp_password"})
-_BOOL_KEYS = frozenset({"ocr_enabled", "asr_enabled", "report_delivery_smtp_secure"})
+_BOOL_KEYS = frozenset({"ocr_enabled", "asr_enabled", "tts_enabled", "tts_fallback_to_sapi", "report_delivery_smtp_secure"})
 _INT_KEYS = frozenset({"report_delivery_smtp_port"})
 ALLOWED_KEYS = _TEXT_KEYS | _SECRET_KEYS | _BOOL_KEYS | _INT_KEYS
 

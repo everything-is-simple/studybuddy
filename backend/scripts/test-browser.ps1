@@ -74,6 +74,9 @@ try {
         $env:PYTHONPATH = $BackendRoot
         $env:STUDYBUDDY_DATA_ROOT = $DataRoot
         $env:STUDYBUDDY_AI_PROVIDER = 'fake'
+        # Browser integration uses a deterministic WAV Provider; production defaults remain off.
+        $env:STUDYBUDDY_TTS_ENABLED = '1'
+        $env:STUDYBUDDY_TTS_PROVIDER = 'fake'
         Remove-Item Env:STUDYBUDDY_AI_API_KEY,Env:STUDYBUDDY_AI_BASE_URL,Env:STUDYBUDDY_AI_MODEL -ErrorAction SilentlyContinue
         $env:STUDYBUDDY_ASR_PROVIDER = 'fake'
         $env:STUDYBUDDY_ASR_MODEL = 'fake-capture-v1'

@@ -1,5 +1,13 @@
 # StudyBuddy 项目状态记录
 
+## 2026-10-05：TTS Skill（隔离自动化验收完成）
+
+- `implemented / PASS（fake Provider 隔离范围）`：已建立 `backend/app/tts.py`、TTS API、`tts-cache` WAV 产物、能力发现和材料详情知识模块朗读入口；播放控制由浏览器 Audio API 执行，服务端只管理短生命周期会话。
+- 设计与边界见 [`docs/[架构师看]TTS_DESIGN.md`](TTS_DESIGN.md)：默认关闭真实 Provider；fake 仅用于测试/演示；SAPI/edge-tts 需要显式配置；朗读不写 SQLite 学习事实。
+- TTS/API/能力专项 **41 passed**；S2 浏览器关联专项 **3 passed**；最终后端全量 **693 passed / 78 skipped / 0 failed**。证据见 `H:\studybuddy-test\verification\tts-20261005\acceptance.md`、`tts-backend-final.log` 和 `tts-s2-browser-final.log`。
+- 设置 schema、TTS manager 热更新和 fake WAV 产物均在最终回归中覆盖；未重启进程即可验证设置保存后启用、清除后禁用。
+- `NOT_VERIFIED`：真实 SAPI、真实 edge-tts 网络质量、真实设备扬声器、音频质量、跨浏览器/屏幕阅读器和正式数据根运行态。
+
 ## 2026-10-05：S1 Today 每日少量待闭合项（已完成）
 
 - `implemented / PASS（聚焦自动化）`：Today 主区域最多显示 5 个来源明确的待闭合项，P0→P1→P2 稳定排序；P2 仅在较高优先级不足 3 项时补充。真实候选不足时不编造任务；超过上限显示剩余总数和 P0 数量，完整任务与学习进度默认折叠。

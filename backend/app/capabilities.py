@@ -10,7 +10,7 @@
 
 出站交付故意排除在外，保持为运行时、默认关闭、每次使用需授权。
 
-七项核心能力：
+八项核心能力：
 - import_parse: 文件解析（TXT/PDF/DOCX/PPTX）
 - ocr: 图像文字识别（PaddleOCR/RapidOCR）
 - asr: 语音转录（Whisper.cpp）
@@ -55,7 +55,7 @@ STATUS_DEGRADED = "degraded"
 STATUS_CONFIGURED = "configured"
 STATUS_DEMO = "demo"
 
-CAPABILITY_KEYS = ("import_parse", "ocr", "asr", "index", "qa", "generation", "report")
+CAPABILITY_KEYS = ("import_parse", "ocr", "asr", "tts", "index", "qa", "generation", "report")
 
 
 def _env_present(name: str) -> bool:
@@ -213,6 +213,25 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
     if not _env_present("STUDYBUDDY_REPORT_DELIVERY_FEISHU_WEBHOOK") and stored.get("report_delivery_feishu_webhook"):
         delivery_feishu_webhook = str(stored["report_delivery_feishu_webhook"])
 
+    tts_enabled = base.tts_enabled
+    tts_provider = base.tts_provider_id
+    tts_voice = base.tts_voice
+    tts_sapi_path = base.tts_sapi_path
+    tts_edge_command = base.tts_edge_command
+    tts_fallback = base.tts_fallback_to_sapi
+    if not _env_present("STUDYBUDDY_TTS_ENABLED") and "tts_enabled" in stored:
+        tts_enabled = bool(stored["tts_enabled"])
+    if not _env_present("STUDYBUDDY_TTS_PROVIDER") and stored.get("tts_provider_id"):
+        tts_provider = str(stored["tts_provider_id"])
+    if not _env_present("STUDYBUDDY_TTS_VOICE") and stored.get("tts_voice"):
+        tts_voice = str(stored["tts_voice"])
+    if not _env_present("STUDYBUDDY_TTS_SAPI_PATH") and stored.get("tts_sapi_path"):
+        tts_sapi_path = str(stored["tts_sapi_path"])
+    if not _env_present("STUDYBUDDY_TTS_EDGE_COMMAND") and stored.get("tts_edge_command"):
+        tts_edge_command = str(stored["tts_edge_command"])
+    if not _env_present("STUDYBUDDY_TTS_FALLBACK_TO_SAPI") and "tts_fallback_to_sapi" in stored:
+        tts_fallback = bool(stored["tts_fallback_to_sapi"])
+
     return replace(
         base,
         ai_provider_id=ai_provider, ai_model_id=ai_model, ai_base_url=ai_base_url,
@@ -230,6 +249,9 @@ def resolve_config(base: AppConfig, *, settings: dict[str, object] | None = None
         report_delivery_smtp_password_runtime=delivery_smtp_password,
         report_delivery_smtp_targets=delivery_smtp_targets,
         report_delivery_feishu_webhook=delivery_feishu_webhook,
+        tts_enabled=tts_enabled, tts_provider_id=tts_provider, tts_voice=tts_voice,
+        tts_sapi_path=tts_sapi_path, tts_edge_command=tts_edge_command,
+        tts_fallback_to_sapi=tts_fallback,
     )
 
 
@@ -390,7 +412,7 @@ def _index_state(config: AppConfig, embedding: dict[str, object]) -> dict[str, o
 
 
 def capability_snapshot(config: AppConfig, detection: DetectionResult | None = None) -> dict[str, object]:
-    """七项能力灯为仪表盘显示。不包含路径、不包含密钥。
+    """八项能力灯为仪表盘显示。不包含路径、不包含密钥。
     
     返回结构：
     {
@@ -408,7 +430,7 @@ def capability_snapshot(config: AppConfig, detection: DetectionResult | None = N
         "ocr_fallback_installed": bool,  # 检测到 RapidOCR 包模型，不代表正式 API 已启用
         "ready_count": int,  # 可用能力数
         "degraded_count": int,  # 降级能力数
-        "total_count": 7
+        "total_count": 8
     }
     
     Args:
@@ -442,11 +464,28 @@ def capability_snapshot(config: AppConfig, detection: DetectionResult | None = N
                         config.report_delivery_smtp_host and config.report_delivery_smtp_username
                         and config.report_delivery_smtp_password_runtime
                         and config.report_delivery_smtp_targets)})
+    if not config.tts_enabled:
+        tts = _state(STATUS_DISABLED, provider_id=config.tts_provider_id, model_id="local-cache",
+                      detail={"network_required": False, "supports": {"speak": False, "pause": True, "retry": True}})
+    elif config.tts_provider_id == "fake":
+        tts = _state(STATUS_DEMO, provider_id="fake", model_id="fake-wav-v1",
+                     detail={"network_required": False, "supports": {"speak": True, "pause": True, "retry": True}})
+    elif config.tts_provider_id == "sapi":
+        tts = _state(STATUS_CONFIGURED, provider_id="sapi", model_id="system-speech",
+                     detail={"network_required": False, "supports": {"speak": True, "pause": True, "retry": True}})
+    elif config.tts_provider_id == "edge-tts" and config.tts_edge_command:
+        tts = _state(STATUS_CONFIGURED, provider_id="edge-tts", model_id="edge-tts",
+                     detail={"network_required": True, "supports": {"speak": True, "pause": True, "retry": True}})
+    else:
+        tts = _state(STATUS_NOT_CONFIGURED, provider_id=config.tts_provider_id, model_id=None,
+                     detail={"network_required": config.tts_provider_id == "edge-tts",
+                             "supports": {"speak": False, "pause": True, "retry": True}})
     capabilities = {
         "import_parse": _state(STATUS_AVAILABLE, provider_id="local",
                                model_id="txt+md+pdf+docx+pptx"),
         "ocr": _ocr_state(config, detection),
         "asr": _asr_state(config, detection),
+        "tts": tts,
         "index": _index_state(config, embedding),
         "qa": llm,
         "generation": llm,

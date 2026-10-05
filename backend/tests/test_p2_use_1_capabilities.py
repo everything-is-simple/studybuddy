@@ -285,7 +285,7 @@ def test_snapshot_reports_seven_capabilities_with_honest_degradation(tmp_path: P
     snapshot = capability_snapshot(resolved, _detection())
     capabilities = snapshot["capabilities"]
 
-    assert set(capabilities) == {"import_parse", "ocr", "asr", "index", "qa", "generation", "report"}
+    assert set(capabilities) == {"import_parse", "ocr", "asr", "tts", "index", "qa", "generation", "report"}
     assert capabilities["import_parse"]["status"] == STATUS_AVAILABLE
     assert capabilities["ocr"]["status"] == "configured"
     assert capabilities["asr"]["status"] == "configured"
@@ -298,7 +298,7 @@ def test_snapshot_reports_seven_capabilities_with_honest_degradation(tmp_path: P
     assert capabilities["qa"]["status"] == STATUS_NOT_CONFIGURED
     assert capabilities["generation"]["status"] == STATUS_NOT_CONFIGURED
     assert snapshot["ready_count"] == 2 and snapshot["configured_count"] == 2
-    assert snapshot["total_count"] == 7
+    assert snapshot["total_count"] == 8
     assert snapshot["delivery_mode"] == "off"
 
 

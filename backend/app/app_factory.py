@@ -84,6 +84,7 @@ from .observability import (correlation, emit_event, increment, metrics_snapshot
 from .providers import (EmbeddingProviderRegistry, ProviderError, ProviderRequest,
                         provider_registry)
 from .delivery import execute_report_delivery
+from .tts import TtsManager
 from .embedding import EmbeddingError, FakeEmbeddingProvider
 from .recovery import reconcile
 from .startup_preflight import StartupPreflightError, preflight
@@ -253,6 +254,7 @@ def create_app(config: AppConfig | None = None, *, index_html: str) -> FastAPI:
     except OSError:
         app.state.detection = None
     app.state.config = resolve_config(base_config, detection=app.state.detection)
+    app.state.tts_manager = TtsManager(app.state.config)
     app.state.ready = False
     app.state.startup_state = "not_started"
     app.state.audit_reasons = ()

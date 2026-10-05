@@ -57,6 +57,12 @@ class LocalSettingsRequest(BaseModel):
     asr_runtime_path: str | None = None
     asr_model_path: str | None = None
     asr_enabled: bool | Clearable | None = None
+    tts_provider_id: str | None = None
+    tts_voice: str | None = None
+    tts_sapi_path: str | None = None
+    tts_edge_command: str | None = None
+    tts_enabled: bool | Clearable | None = None
+    tts_fallback_to_sapi: bool | Clearable | None = None
     report_delivery_smtp_host: str | None = None
     report_delivery_smtp_port: int | Clearable | None = None
     report_delivery_smtp_secure: bool | Clearable | None = None

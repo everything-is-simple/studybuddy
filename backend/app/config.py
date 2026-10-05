@@ -110,6 +110,10 @@ DEFAULT_OCR_MAX_OUTPUT_BYTES = 524288
 # locally detected, structurally valid component turns the capability on.
 DEFAULT_OCR_ENABLED = False
 DEFAULT_AUTO_DETECT = True
+DEFAULT_TTS_ENABLED = False
+DEFAULT_TTS_TIMEOUT_SECONDS = 30.0
+DEFAULT_TTS_FALLBACK_TO_SAPI = False
+DEFAULT_TTS_CACHE_MAX_BYTES = 128 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -204,6 +208,15 @@ class AppConfig:
     report_delivery_feishu_target_label: str | None = None
     report_delivery_timeout_seconds: float = DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS
     report_delivery_feishu_webhook: str | None = field(default=None, repr=False)
+    # TTS is opt-in. Runtime audio is cached below data_root and never persisted in SQLite.
+    tts_enabled: bool = DEFAULT_TTS_ENABLED
+    tts_provider_id: str | None = None
+    tts_voice: str | None = None
+    tts_sapi_path: str | None = field(default=None, repr=False)
+    tts_edge_command: str | None = field(default=None, repr=False)
+    tts_timeout_seconds: float = DEFAULT_TTS_TIMEOUT_SECONDS
+    tts_fallback_to_sapi: bool = DEFAULT_TTS_FALLBACK_TO_SAPI
+    tts_cache_max_bytes: int = DEFAULT_TTS_CACHE_MAX_BYTES
 
     @property
     def originals_root(self) -> Path:
@@ -486,4 +499,13 @@ def config_from_environment() -> AppConfig:
         report_delivery_feishu_target_label=_env_delivery_label("STUDYBUDDY_REPORT_DELIVERY_FEISHU_TARGET_LABEL"),
         report_delivery_timeout_seconds=_env_float("STUDYBUDDY_REPORT_DELIVERY_TIMEOUT_SECONDS", DEFAULT_REPORT_DELIVERY_TIMEOUT_SECONDS, minimum=0.1, maximum=60.0),
         report_delivery_feishu_webhook=_env_delivery_feishu_webhook(),
+        tts_enabled=_env_bool("STUDYBUDDY_TTS_ENABLED", DEFAULT_TTS_ENABLED),
+        tts_provider_id=os.environ.get("STUDYBUDDY_TTS_PROVIDER") or None,
+        tts_voice=os.environ.get("STUDYBUDDY_TTS_VOICE") or None,
+        tts_sapi_path=os.environ.get("STUDYBUDDY_TTS_SAPI_PATH") or None,
+        tts_edge_command=os.environ.get("STUDYBUDDY_TTS_EDGE_COMMAND") or None,
+        tts_timeout_seconds=_env_float("STUDYBUDDY_TTS_TIMEOUT_SECONDS", DEFAULT_TTS_TIMEOUT_SECONDS, minimum=0.1, maximum=120.0),
+        tts_fallback_to_sapi=_env_bool("STUDYBUDDY_TTS_FALLBACK_TO_SAPI", DEFAULT_TTS_FALLBACK_TO_SAPI),
+        tts_cache_max_bytes=_env_int("STUDYBUDDY_TTS_CACHE_MAX_BYTES", DEFAULT_TTS_CACHE_MAX_BYTES,
+                                     minimum=1024 * 1024, maximum=1024 * 1024 * 1024),
     )
