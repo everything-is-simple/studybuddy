@@ -100,7 +100,8 @@ try {
     # Pass the resolved array as a native-command argument value.  `@paths`
     # is not PowerShell array splatting and silently caused Playwright to
     # ignore the requested spec after the environment rebuild.
-    & $npx playwright test $paths '--workers=1' '--reporter=line'
+    $browserOutput = Join-Path $testRoot 'playwright-output'
+    & $npx playwright test $paths '--workers=1' '--reporter=line' '--output' $browserOutput
     exit $LASTEXITCODE
 } finally {
     if ($sharedService) { Remove-Job -Job $sharedService -Force -ErrorAction SilentlyContinue }

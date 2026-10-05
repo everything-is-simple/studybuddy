@@ -1,10 +1,9 @@
 const { test, expect } = require('@playwright/test');
 const { spawn } = require('child_process');
 const fs = require('fs');
-const path = require('path');
 
 const RUN_ROOT = 'H:/studybuddy-test/runs/e2e';
-const FIXTURES = 'H:/studybuddy-test/fixtures/kaobuddy-foundation';
+const SAMPLE_FILE = {name:'sample.txt',mimeType:'text/plain',buffer:Buffer.from('This controlled document describes study material and a stable learning result.')};
 const PORT = 8818;
 const BASE = `http://127.0.0.1:${PORT}`;
 let server;
@@ -42,8 +41,7 @@ test('E2E: Complete study workflow - import → QA → cards → review', async 
   await page.locator('.advanced-directory').getByRole('link', { name: '资料', exact: true }).click();
   await expect(page.locator('h1')).toContainText('你的学习材料');
   
-  const testFile = path.join(FIXTURES, 'sample.txt');
-  await page.setInputFiles('#file-input', testFile);
+  await page.setInputFiles('#file-input', SAMPLE_FILE);
   await expect(page.locator('#upload-status')).toContainText('已导入', { timeout: 10000 });
   
   // Verify material appears in list
@@ -111,8 +109,7 @@ test('E2E: Complete study workflow - import → QA → cards → review', async 
 test('E2E: Material lifecycle - import → rename → export → delete', async ({ page }) => {
   // Import material
   await page.goto(`${BASE}/app/materials.html`);
-  const testFile = path.join(FIXTURES, 'sample.txt');
-  await page.setInputFiles('#file-input', testFile);
+  await page.setInputFiles('#file-input', SAMPLE_FILE);
   await expect(page.locator('#upload-status')).toContainText('已导入', { timeout: 10000 });
   
   // Verify material appears in list
@@ -128,9 +125,8 @@ test('E2E: Material lifecycle - import → rename → export → delete', async 
 test('E2E: Multi-material QA workflow', async ({ page }) => {
   // Import a material
   await page.goto(`${BASE}/app/materials.html`);
-  const file = path.join(FIXTURES, 'sample.txt');
   
-  await page.setInputFiles('#file-input', file);
+  await page.setInputFiles('#file-input', SAMPLE_FILE);
   await expect(page.locator('#upload-status')).toContainText('已导入', { timeout: 10000 });
   
   // Wait for material to appear
@@ -272,8 +268,7 @@ test('E2E: Error recovery - network failure handling', async ({ page }) => {
   await page.context().setOffline(true);
   
   // Try to upload a file - should fail gracefully
-  const testFile = path.join(FIXTURES, 'sample.txt');
-  await page.setInputFiles('#file-input', testFile);
+  await page.setInputFiles('#file-input', SAMPLE_FILE);
   await page.waitForTimeout(2000);
   
   // Status should show some kind of error or waiting state

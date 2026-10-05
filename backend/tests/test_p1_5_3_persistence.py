@@ -286,6 +286,7 @@ def test_schema_version_unchanged_by_this_slice() -> None:
     runner_source = (MIGRATIONS_ROOT / "runner.py").read_text(encoding="utf-8")
     match = re.search(r"CURRENT_SCHEMA_VERSION\s*=\s*(\d+)", runner_source)
     assert match is not None, "无法读取 CURRENT_SCHEMA_VERSION"
-    assert int(match.group(1)) == 15, (
-        "P1-5-3 评估必须匹配当前 schema 版本（应为 15）"
-    )
+    # This historical evaluation introduced no configuration migration. Later
+    # approved capability migrations (v15 scheduling, v16 S2) are independent.
+    assert int(match.group(1)) >= 15
+    assert 'configuration_persistence' not in runner_source

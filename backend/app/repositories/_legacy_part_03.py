@@ -30,7 +30,7 @@ def persist_generated_draft(connection: sqlite3.Connection, *, project_id: str, 
                             context_blocks: list[dict[str, object]], provider_id: str, model_id: str,
                             prompt_tokens: int | None, completion_tokens: int | None, latency_ms: int,
                             provider_request_id: str | None, total_tokens: int | None,
-                            finish_reason: str | None) -> list[dict[str, object]]:
+                            finish_reason: str | None, knowledge_module_ids: list[str] | None = None) -> list[dict[str, object]]:
     if not items or len(items) != len(citation_groups) or any(not isinstance(item, dict) for item in items):
         raise ValueError("generation_schema_invalid")
     with connection:
@@ -57,6 +57,14 @@ def persist_generated_draft(connection: sqlite3.Connection, *, project_id: str, 
         prepared.append((item, citations_payload))
     artifact_ids: list[str] = []
     with connection:
+        if knowledge_module_ids:
+            if not connection.in_transaction:
+                connection.execute('BEGIN IMMEDIATE')
+            from .knowledge_modules import module_context
+            selected_modules, selected_blocks = module_context(connection, project_id=project_id, module_ids=knowledge_module_ids)
+            selected_keys = {b['citation_key'] for b in selected_blocks}
+            if any(key not in selected_keys for group in citation_groups for key in group):
+                raise ValueError('citation_verification_failed')
         operation = connection.execute("SELECT status,source_revision FROM ai_operations WHERE id=? AND project_id=?", (operation_id, project_id)).fetchone()
         if operation is None or operation["status"] != "running" or operation["source_revision"] != source_revision:
             raise ValueError("generation_stale_source")
@@ -88,6 +96,13 @@ def persist_generated_draft(connection: sqlite3.Connection, *, project_id: str, 
                      json.dumps(answer_key, ensure_ascii=False), explanation, source_revision, operation_id, utc_now(), utc_now()),
                 )
                 connection.executemany("INSERT INTO exercise_citations VALUES (?,?,?,?,?,?,?,?,?,?,?)", citation_rows)
+                if knowledge_module_ids:
+                    # Attribute a question only to modules whose evidence it actually cites.
+                    for module in selected_modules:
+                        module_chunks = set(module['source_evidence']['chunk_ids'])
+                        if any(entry['chunk_id'] in module_chunks for entry in citations_payload):
+                            connection.execute('INSERT INTO s2_module_exercises(module_id,exercise_id) VALUES (?,?)',
+                                               (module['id'], artifact_id))
             artifact_ids.append(artifact_id)
         connection.execute(
             "UPDATE ai_operations SET status='succeeded',output_artifact_id=?,provider_id=?,model_id=?,provider_request_id=?,"

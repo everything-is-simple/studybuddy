@@ -118,7 +118,7 @@ def test_phase9a_contract_migration_and_status_are_consistent():
     assert "Phase 9A" in status
     assert "v9" in status
     assert "contracts/PHASE9A_DOMAIN_CONTRACT.md" in status
-    assert "Current schema version: **15**." in migration_doc
+    assert "Current schema version: **16**." in migration_doc
     assert "9 | phase9a_learning_plan_schema" in migration_doc
     assert "10 | phase9b_material_learning_schema" in migration_doc
     assert "11 | phase9c_exercise_feedback_schema" in migration_doc

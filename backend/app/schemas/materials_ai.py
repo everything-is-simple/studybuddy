@@ -154,7 +154,8 @@ class ExerciseUpdateRequest(BaseModel):
 
 class GenerationRequest(BaseModel):
     topic: str
-    material_ids: list[str]
+    material_ids: list[str] = []
+    knowledge_module_ids: list[str] = []
     retrieval_mode: str = "lexical"
     allow_retrieval_fallback: bool = True
     count: int = 1

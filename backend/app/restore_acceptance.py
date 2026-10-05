@@ -200,6 +200,7 @@ def _study_checks(connection: sqlite3.Connection) -> dict[str, Any]:
         "note_block_source_links", "rhythm_settings", "rhythm_allocations",
         "practice_sessions", "practice_session_items", "exercise_attempt_reviews",
         "mistake_cases", "mistake_occurrences", "mistake_feedback_events", "cram_goals",
+        "s2_knowledge_modules", "s2_module_exercises",
     )
     placeholders = ",".join("?" for _ in required_tables)
     present = {

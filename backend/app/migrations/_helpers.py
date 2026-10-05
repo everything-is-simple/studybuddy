@@ -296,6 +296,13 @@ def _baseline_complete(connection: sqlite3.Connection, current_schema_version: i
             return False
         if "idempotency_key" not in _columns(connection, "card_reviews"):
             return False
+    if current_schema_version >= 16:
+        if not {"id", "material_id", "source_evidence", "lifecycle", "provenance", "deleted_at"}.issubset(_columns(connection, "s2_knowledge_modules")):
+            return False
+        if not {"module_id", "exercise_id"}.issubset(_columns(connection, "s2_module_exercises")):
+            return False
+        if "s2_knowledge_modules_fts" not in _objects(connection):
+            return False
     return True
 
 

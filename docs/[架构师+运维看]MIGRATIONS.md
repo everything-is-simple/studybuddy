@@ -26,7 +26,7 @@
 <!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 
 
-Current schema version: **15**.
+Current schema version: **16**.
 
 The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_version` must match it. The execution engine and public migration API remain at `backend/app/migrations/runner.py`; individual migration bodies are maintained in the adjacent `_vNN_*.py` modules, with shared helpers in `_helpers.py`.
 
@@ -46,6 +46,7 @@ The authoritative migration history is `schema_migrations`; SQLite `PRAGMA user_
 13 | phase10_operation_task_schema
 14 | fix_revision_fingerprint_material_id
 15 | card_review_schedule
+16 | knowledge_modules_source_evidence
 ```
 
 ## Repository layout
@@ -56,7 +57,7 @@ backend/app/migrations/
   _helpers.py               # schema inspection and shared migration helpers
   _canonical.py             # canonical schema helper
   _ai_schema.py             # shared AI schema helper
-  _v01_*.py ... _v15_*.py   # one idempotent body per registered version
+  _v01_*.py ... _v16_*.py   # one idempotent body per registered version
 ```
 
 Use `runner.py` as the only public execution entry point. Version modules are internal implementation modules and must not be invoked independently by application startup, backup, restore, or read paths.
@@ -70,6 +71,7 @@ Use `runner.py` as the only public execution entry point. Version modules are in
 - v13 adds Phase 10 task envelopes (`operation_tasks`) and append-only task-attempt audit (`operation_task_attempts`). It preserves existing `ai_operations`, does not backfill historical operations or alter legacy synchronous APIs, and never persists raw content, secrets, paths, raw Provider payloads, answer keys, or submitted answers. The 10-3 runner uses the v13 schema but is explicit-only: startup, backup, restore and reads do not start or execute it. Composite project-scoped FKs, status/progress/retry checks, one-task-per-operation and at-most-one-running-attempt indexes provide structural protection; state transitions, progress monotonicity, lease compare-and-set, cancellation and retry policy remain repository/runner behavior.
 - v14 fixes P14-P0-05: `revision_fingerprint` now includes `material_id` in its hash, so two materials with identical content get distinct fingerprints. This is an in-place UPDATE migration (no table rebuild, no CASCADE risk). All existing fingerprints are recomputed with the new formula during upgrade. The UNIQUE constraint remains on the same column and continues enforcing one revision per (material, content, parser) combination. Rollback recomputes fingerprints using the old 4-tuple formula (without `material_id`).
 - v15 adds card review scheduling (`due_at`, `interval_days`) and per-card review idempotency keys. Review writes are transactional, duplicate retries replay the original result, and reusing a key for a different result is rejected.
+- v16 extends existing v9 module identities with S2 source evidence, draft confirmation metadata, FTS search and exercise links. It never creates a competing knowledge module namespace. Mastery is a read-only projection of scored exercise attempts. DDL and triggers remain inside the runner transaction; backup/restore preserves all facts.
 - A failure rolls back; the service never becomes ready with a half-upgraded schema.
 - Migration history and `PRAGMA user_version` are never edited manually.
 - There is no automatic down migration. Preserve the failed database and restore a verified backup into a new empty target when recovery is required.

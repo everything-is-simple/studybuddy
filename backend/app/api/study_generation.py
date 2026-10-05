@@ -22,6 +22,8 @@ failed 后转换为稳定 HTTP 错误码；SQLite 错误收敛为 500。
 
 from __future__ import annotations
 
+from ..repositories.knowledge_modules import module_context
+
 
 def register_routes(app, context: dict[str, object]) -> None:
     """注册学习内容生成共享逻辑。
@@ -117,16 +119,34 @@ def register_routes(app, context: dict[str, object]) -> None:
         operation: dict[str, object] | None = None
         try:
             with connect(app.state.config.database_path) as connection:
+                selected_modules = []
+                if request.knowledge_module_ids:
+                    if artifact_kind != 'exercise' or request.retrieval_mode != 'lexical':
+                        raise ValueError('knowledge_module_invalid_payload')
+                    selected_modules, _ = module_context(connection, project_id=app.state.config.project_id,
+                                                         module_ids=request.knowledge_module_ids)
+                    material_ids = list(dict.fromkeys(m['material_id'] for m in selected_modules))
+                    if request.material_ids and set(request.material_ids) != set(material_ids):
+                        raise ValueError('knowledge_module_scope_conflict')
+                else:
+                    material_ids = request.material_ids
+                operation_topic = request.topic
+                if selected_modules:
+                    operation_topic += ' [modules:' + ','.join(sorted(request.knowledge_module_ids)) + ']'
                 operation = create_generation_operation(
                     connection, project_id=app.state.config.project_id, artifact_kind=artifact_kind,
-                    container_id=container_id, topic=request.topic, material_ids=request.material_ids,
+                    container_id=container_id, topic=operation_topic, material_ids=material_ids,
                     retrieval_mode=request.retrieval_mode, allow_fallback=request.allow_retrieval_fallback,
                     count=request.count, exercise_type=request.exercise_type, source_revision=request.source_revision,
                     request_id=request_id, idempotency_key=idempotency_key,
                 )
                 if operation.get("replay"):
                     return operation
-                if request.retrieval_mode == "lexical":
+                if selected_modules:
+                    selected_chunks = list(dict.fromkeys(c for m in selected_modules for c in m['source_evidence']['chunk_ids']))
+                    retrieval = {'status': 'succeeded', 'policy_version': 's2-module-context-v1',
+                                 'run_id': None, 'hits': [{'chunk_id': cid} for cid in selected_chunks]}
+                elif request.retrieval_mode == "lexical":
                     retrieval = run_chunk_retrieval(connection, project_id=app.state.config.project_id,
                                                     query=request.topic, material_ids=request.material_ids, top_k=5)
                 else:
@@ -189,6 +209,7 @@ def register_routes(app, context: dict[str, object]) -> None:
                     completion_tokens=result.completion_tokens, latency_ms=latency_ms,
                     provider_request_id=result.provider_request_id, total_tokens=result.total_tokens,
                     finish_reason=result.finish_reason,
+                    knowledge_module_ids=request.knowledge_module_ids,
                 )
                 return {"status": "succeeded", "operation_id": operation["operation_id"],
                         "retrieval_run_id": retrieval["run_id"], "artifacts": artifact, "replay": False}
@@ -204,7 +225,7 @@ def register_routes(app, context: dict[str, object]) -> None:
             if operation is not None:
                 with connect(app.state.config.database_path) as connection:
                     fail_generation_operation(connection, str(operation["operation_id"]), code)
-            status = 404 if code in {"deck_not_found", "exercise_set_not_found", "material_not_found", "source_deleted"} else 409 if code in {"retrieval_not_ready", "retrieval_empty", "generation_in_progress", "generation_idempotency_key_mismatch"} else 400
+            status = 404 if code in {"deck_not_found", "exercise_set_not_found", "material_not_found", "source_deleted", "knowledge_module_not_found"} else 409 if code in {"retrieval_not_ready", "retrieval_empty", "generation_in_progress", "generation_idempotency_key_mismatch", "knowledge_module_not_ready", "knowledge_source_invalid"} else 400
             raise HTTPException(status_code=status, detail=code) from None
         except sqlite3.Error:
             if operation is not None:

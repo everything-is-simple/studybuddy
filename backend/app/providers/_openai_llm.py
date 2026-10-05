@@ -142,9 +142,11 @@ class OpenAICompatibleLLMProvider:
             raise ProviderError("provider_invalid_request")
         system = "Answer only from the supplied context. Your answer must include at least one exact citation key copied from the supplied context, using the format [ctx-...]. Do not invent or alter citation keys."
         if request.generation_kind:
-            if request.generation_kind not in {"card", "exercise"} or not 1 <= request.generation_count <= 10:
+            if request.generation_kind not in {"card", "exercise", "knowledge_module"} or not 1 <= request.generation_count <= 10:
                 raise ProviderError("provider_invalid_request")
-            if request.generation_kind == "card":
+            if request.generation_kind == "knowledge_module":
+                shape = '{"items":[{"title":"string","description":"string","importance":1,"difficulty":3,"tags":["string"],"citations":["ctx-key"]}]}'
+            elif request.generation_kind == "card":
                 shape = '{"items":[{"front":"string","back":"string","explanation":"string","tags":["string"],"citations":["ctx-key"]}]}'
             elif request.exercise_type in {"multiple_choice", "true_false", "short_answer"}:
                 shape = '{"items":[{"exercise_type":"requested type","prompt":"string","options":["string"],"answer_key":"type-specific","explanation":"string","citations":["ctx-key"]}]}'

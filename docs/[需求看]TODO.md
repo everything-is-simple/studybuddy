@@ -746,3 +746,12 @@ revision → chunks → retrieval → citations → Q&A
 - [x] 新增报告 `docs/roles/UI_CONTROL_E2E_REPORT.md`；`check-source-size.py` 与 `git diff --check` 通过；无生产代码变更。
 - [ ] `not_verified` 保持：真实外部 Provider、真实 SMTP/飞书投递、OCR/ASR 实机、跨浏览器、屏幕阅读器、极端内容与长时稳定性。
 - [ ] 建议后续：`browser_tasks_userpath.spec.js` TK-6 依赖 TK-5 生成的成功任务，应改为自建前置数据以消除用例间顺序依赖；设置页旧 spec 的 Node 夹具可迁移到 Python 夹具，避免再次误报。
+
+
+## 2026-10-05 S2 知识模块闭环
+
+- [x] v16 迁移：扩展 v9 模块身份、FTS、来源绑定与练习关联；新库／升级／幂等／失败回滚测试。
+- [x] 手动创建、AI 引用草稿、编辑／确认／拒绝、筛选搜索和软删除 API。
+- [x] 材料详情知识模块工作区、模块出题入口和掌握度事实投影。
+- [x] 全量后端、浏览器和恢复门禁通过并登记最终证据：后端 670 passed／78 skipped；浏览器 101 个套件汇总 607 passed／4 skipped，均 0 failed；S2 专项 3 passed，备份恢复与迁移失败回滚通过。source-size、diff-check 通过。证据 `H:\studybuddy-test\verification\s2-knowledge-modules-20261005\acceptance.md`；历史文档治理及真实能力 opt-in 跳过范围保持独立。
+- [ ] 真实 Provider 质量与可视人工验收（独立 opt-in，不计入自动化通过）。

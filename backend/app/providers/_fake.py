@@ -85,7 +85,7 @@ class FakeLLMProvider:
             raise ProviderError("provider_invalid_request")
         fingerprint = hashlib.sha256((question + "\x1f" + "\x1f".join(citation_keys)).encode("utf-8")).hexdigest()[:12]
         if request.generation_kind:
-            if request.generation_kind not in {"card", "exercise", "note"} or not 1 <= request.generation_count <= 10:
+            if request.generation_kind not in {"card", "exercise", "note", "knowledge_module"} or not 1 <= request.generation_count <= 10:
                 raise ProviderError("provider_invalid_request")
             if request.generation_kind == "note" and request.generation_count != 1:
                 raise ProviderError("provider_invalid_request")
@@ -93,7 +93,13 @@ class FakeLLMProvider:
                 raise ProviderError("provider_invalid_request")
             if not citation_keys or not snippets:
                 raise ProviderError("provider_invalid_request")
-            if request.generation_kind == "note":
+            if request.generation_kind == "knowledge_module":
+                answer = json.dumps({"items": [
+                    {"title": f"知识要点 {i+1}", "description": snippets[i % len(snippets)],
+                     "importance": 1, "difficulty": 3, "tags": [],
+                     "citations": [citation_keys[i % len(citation_keys)]]}
+                    for i in range(request.generation_count)]}, ensure_ascii=False)
+            elif request.generation_kind == "note":
                 blocks = [
                     {"block_kind": "heading", "content": f"Notes on {question}", "citation_keys": [citation_keys[0]]},
                     {"block_kind": "text", "content": f"The retrieved material contains evidence relevant to {question}.", "citation_keys": [citation_keys[0]]},

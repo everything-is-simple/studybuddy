@@ -65,10 +65,14 @@ test.describe.serial('plans + plan-detail pure user path (A-class)', () => {
       try {
         await page.getByRole('button', { name: label }).click({ timeout: 3000 });
         await expect(notice).toContainText(expectedStatus, { timeout: 3000 });
+        // Confirmation and activation share the same notice text. Wait for
+        // the transition controls to change before navigating away.
+        await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0, { timeout: 3000 });
         return;
       } catch (_) { }
     }
     await expect(notice).toContainText(expectedStatus, { timeout: 5000 });
+    await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0, { timeout: 5000 });
   }
   async function openDetail(page, planTitle) {
     await page.goto(`${BASE}/app/plans.html`);

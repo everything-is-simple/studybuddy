@@ -219,6 +219,8 @@ def create_knowledge_module(connection: sqlite3.Connection, *, project_id: str, 
 def list_knowledge_modules(connection: sqlite3.Connection, *, project_id: str,
                            include_archived: bool = False) -> list[dict[str, object]]:
     where = "project_id = ?" if include_archived else "project_id = ? AND status = 'active'"
+    if not include_archived and int(connection.execute('PRAGMA user_version').fetchone()[0]) >= 16:
+        where += " AND NOT EXISTS (SELECT 1 FROM s2_knowledge_modules s WHERE s.id=knowledge_modules.id AND (s.lifecycle!='confirmed' OR s.deleted_at IS NOT NULL))"
     return [dict(row) for row in connection.execute(
         "SELECT * FROM knowledge_modules WHERE " + where + " ORDER BY updated_at DESC, id DESC", (project_id,)
     ).fetchall()]
@@ -429,4 +431,8 @@ def _study_optional_reference(connection: sqlite3.Connection, *, table: str, val
     row = connection.execute(f"SELECT project_id,status FROM {table} WHERE id=?", (value,)).fetchone()
     if row is None or row["project_id"] != project_id or (not archived_allowed and row["status"] != "active"):
         raise ValueError("study_plan_item_invalid_payload")
+    if table == 'knowledge_modules' and int(connection.execute('PRAGMA user_version').fetchone()[0]) >= 16:
+        metadata = connection.execute('SELECT lifecycle,deleted_at FROM s2_knowledge_modules WHERE id=?', (value,)).fetchone()
+        if metadata is not None and (metadata['lifecycle'] != 'confirmed' or metadata['deleted_at'] is not None):
+            raise ValueError('study_plan_item_invalid_payload')
 

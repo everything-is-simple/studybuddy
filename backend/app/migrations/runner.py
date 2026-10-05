@@ -13,7 +13,7 @@
 - 事务性：每个迁移在事务中执行，失败时回滚
 - 一致性：schema_migrations 和 PRAGMA user_version 必须一致
 
-当前版本: 15（对应 v15: card_review_schedule）
+当前版本: 16（对应 v16: knowledge_modules_source_evidence）
 
 迁移清单：
 - v01: canonical_material_schema - 规范化材料 Schema
@@ -31,6 +31,7 @@
 - v13: phase10_operation_task_schema - 后台任务
 - v14: fix_revision_fingerprint_material_id - 修订指纹修复
 - v15: card_review_schedule - 卡片复习排程与幂等
+- v16: knowledge_modules_source_evidence - 知识模块与来源证据
 
 错误码：
 - database_schema_version_unknown: 版本未知或不一致
@@ -69,9 +70,10 @@ from . import (
     _v13_phase10_tasks as v13,
     _v14_fix_revision_fingerprint as v14,
     _v15_card_review_schedule as v15,
+    _v16_knowledge_modules as v16,
 )
 
-CURRENT_SCHEMA_VERSION = 15
+CURRENT_SCHEMA_VERSION = 16
 HISTORY_TABLE = "schema_migrations"
 
 
@@ -116,6 +118,7 @@ _MIGRATIONS: tuple[tuple[int, str, Callable[[sqlite3.Connection], None]], ...] =
     (13, "phase10_operation_task_schema", v13.migrate),
     (14, "fix_revision_fingerprint_material_id", v14.migrate),
     (15, "card_review_schedule", v15.migrate),
+    (16, "knowledge_modules_source_evidence", v16.migrate),
 )
 
 # Compatibility aliases for tests that monkeypatch migration functions
@@ -125,6 +128,7 @@ _migration_v11 = v11.migrate
 _migration_v12 = v12.migrate
 _migration_v13 = v13.migrate
 _migration_v14 = v14.migrate
+_migration_v16 = v16.migrate
 
 
 def schema_version(connection: sqlite3.Connection) -> int:

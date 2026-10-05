@@ -39,6 +39,9 @@ test('A3-2 static pages: route reachability, content, narrow screen, keyboard, p
       const url = response.url();
       // Intentional 404s for invalid material ID tests
       if (url.includes('/api/materials/nonexistent') || url.includes('/api/materials/fake')) return;
+      const target = new URL(url);
+      if (target.pathname === '/api/knowledge-modules/sources' &&
+          ['nonexistent-id-xyz', 'fake'].includes(target.searchParams.get('material_id'))) return;
       consoleErrors.push(`404: ${url}`);
     }
   });
