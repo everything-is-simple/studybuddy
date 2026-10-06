@@ -1,6 +1,6 @@
 # S7 课堂采集（ClassCapture）
 
-> 状态以 [capabilities.json](../capabilities.json) 中 id=S7 为准；本文不写测试通过数。
+> 状态以 [capabilities.json](../capabilities.json) 中 `id=s7-classroom-capture` 与 `id=x-asr-whisper` 为准。
 
 原始意图参考 [S7 ClassCapture PRD](../archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md)。
 
@@ -55,6 +55,8 @@
 - 确认是唯一写入学习材料的路径；确认后不会自动生成笔记或知识模块，后续由学生在 S2 操作。
 - 是否录音、是否已获允许、是否保存，都由学生决定；原件只在本机。
 - 家长报告只读"不确定转写片段数"等计数，不看原件或转写文本。
+- Whisper 适配器使用显式配置的本地 CLI 与模型；官方 whisper.cpp 的输出名是 `input.wav.txt` / `input.wav.srt`，旧 Windows port 则是 `input.txt` / `input.srt`，两者均可读取。UTF-8 BOM 不属于转写正文，只有 BOM 的输出必须拒绝，不生成空草稿。
+- `whisper-cpp` Provider 名称不证明所配置的二进制支持某个模型；安装及配置必须选择已验证的运行时/模型组合。运行时路径和学生原文不进入公开错误。
 
 ## 6. 验收标准
 
@@ -63,7 +65,8 @@
 - 修改并确认后，对应材料出现新的解析正文，可在 `material-detail.html` 抽取知识模块；Today 随后可能出现"知识草稿待确认"。
 - 拒绝后会话显示已拒绝，材料正文不变。
 - 不支持的文件类型或超大文件被拒绝并提示原因。
+- 真实 ASR 验收需同时核对已知输入的有意义文本、草稿确认边界与材料修订；退出码为零、模型加载成功或出现输出文件均不能单独判定通过。
 
 ## 7. 状态来源
 
-本页不维护当前缺口或验证结论；以 [`capabilities.json`](../capabilities.json) 的 `id=S7` 为准。第一版产品目标和边界见文首链接的 S7 PRD。
+本页不维护当前缺口或验证结论；以 [`capabilities.json`](../capabilities.json) 的 `id=s7-classroom-capture` 与 `id=x-asr-whisper` 为准。第一版产品目标和边界见文首链接的 S7 PRD。

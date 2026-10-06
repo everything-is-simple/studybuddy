@@ -1,6 +1,6 @@
 # X 横切能力：材料问答 / 朗读 / 备份恢复
 
-> 状态以 [capabilities.json](../capabilities.json) 中 id=X-QA、X-TTS、X-BACKUP 为准；本文不写测试通过数。
+> 状态以 [capabilities.json](../capabilities.json) 中 `id=x-qa`、`id=x-tts`、`id=x-backup-restore` 为准。
 
 三项能力不属于主闭环的某一跳，但服务所有子系统。设计细节见 [TTS_DESIGN](../03-ARCHITECTURE.md#6-横切能力) 与 [BACKUP_RESTORE](../06-OPERATIONS.md#2-备份校验恢复)。
 
@@ -45,8 +45,8 @@
 - 材料中找不到相关内容时提示检索为空。
 - Provider 未配置时页面提示未配置，不报未知错误。
 
-### 7. 已知缺口
-- 不是通用对话，不调用 S1–S7 工具。
+### 7. 状态来源
+验收结论、证据和当前缺口读取 `capabilities.json` 的 `id=x-qa`。
 
 ## X-TTS 朗读
 
@@ -74,14 +74,15 @@
 - 默认关闭（`STUDYBUDDY_TTS_ENABLED=0`），引擎需显式配置；edge-tts 失败时只有在 SAPI 已配置且允许 fallback 时才降级。
 - 只朗读页面已展示的模块标题和描述，不绕过材料 API 读取原文。
 - 错误只映射为稳定错误码（如 `tts_not_configured`、`tts_timeout`），不暴露命令路径或原始输出。
+- SAPI 通过 Windows PowerShell 加载 `System.Speech`，文本通过标准输入传入，输出路径通过子进程环境变量传入；路径不拼接到脚本中。
 
 ### 6. 验收标准
 - 未配置时按钮旁显示未配置，点击后提示而不报错。
 - 配置后选中模块可朗读、暂停、继续、停止；失败可重试。
+- 真实引擎需产生可解码的非空音频；设备播放调用成功与使用者确认听感分别记录，不能互相代替。
 
-### 7. 已知缺口
-- 只接入 S2 知识模块。
-- 真实 SAPI/edge-tts 与设备播放未验证。
+### 7. 状态来源
+验收结论、引擎范围、设备证据和当前缺口读取 `capabilities.json` 的 `id=x-tts`。
 
 ## X-BACKUP 备份恢复
 
@@ -111,7 +112,7 @@
 - 备份后 `verify-backup` 通过；篡改任一文件后校验失败。
 - 恢复到空目录并通过 `verify-restored-data` 后，用新数据根启动，Today、材料、错题与备份前一致。
 - 向非空目录恢复或缺少 `--confirm` 时拒绝执行。
+- Windows 实机验收通过正式启停脚本执行，检查重复启动和数据根锁；恢复前后比较持久化事实和原件哈希。Today 查询时间戳属于即时投影，比较时不把它当作持久化事实。
 
-### 7. 已知缺口
-- 真实 Windows 数据根恢复未验证。
-- 无页面入口，学生无法自助备份。
+### 7. 状态来源
+验收结论、数据根范围和当前缺口读取 `capabilities.json` 的 `id=x-backup-restore`。

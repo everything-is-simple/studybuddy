@@ -1,5 +1,5 @@
 {
-  "$comment": "StudyBuddy capability state after isolated P0 student loop browser acceptance (2026-10-06)",
+  "$comment": "Current implementation truth with scoped S6/S7, real local components and Windows release acceptance (2026-10-06); no global real-pass claim.",
   "updated": "2026-10-06",
   "source_of_truth": {
     "product_requirements": "docs/archive/legacy-product-references/ai-studybuddy/subsystems/",
@@ -51,13 +51,12 @@
       ],
       "gaps": [
         "没有课程表和考试日期实体，Today 返回 unavailable_sources",
-        "只读 rhythm_allocations；有计划但未排日程时 Today 为空",
         "真实 Provider/OCR/ASR 未验证",
         "可视浏览器人工验收未完成",
         "正式运行态、跨浏览器、屏幕阅读器、真实设备未验证"
       ],
       "status_date": "2026-10-06",
-      "test_baseline": "735 passed / 3 skipped (full backend); 8 passed (browser_today_userpath); continuous P0 browser evidence retained",
+      "test_baseline": "740 passed / 3 skipped (full backend); 8 passed (browser_today_userpath); continuous P0 browser evidence retained",
       "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S1学习节奏子系统PRD-StudyRhythm.md"
     },
     {
@@ -96,7 +95,7 @@
         "跨材料/修订组合练习生成明确拒绝"
       ],
       "status_date": "2026-10-06",
-      "test_baseline": "735 passed / 3 skipped (full backend); 3 passed (browser_s2_knowledge_modules); continuous P0 browser evidence retained",
+      "test_baseline": "740 passed / 3 skipped (full backend); 3 passed (browser_s2_knowledge_modules); continuous P0 browser evidence retained",
       "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S2-资料笔记子系统PRD-NoteBuilder.md"
     },
     {
@@ -124,12 +123,11 @@
       ],
       "gaps": [
         "从知识模块进入练习需多步手工操作",
-        "直接作答（非 session）不自动生成错题",
         "Practice workflow 第三阶段推荐 API 已实现但集成未完整",
         "真实 Provider 生成质量未验证"
       ],
       "status_date": "2026-10-06",
-      "notes": "Practice workflow phase two scoped closeout 已完成; 8 passed (browser_practice_userpath), 735 passed / 3 skipped (full backend)",
+      "notes": "Practice workflow phase two scoped closeout 已完成; 8 passed (browser_practice_userpath), 740 passed / 3 skipped (full backend)",
       "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S3-限时练习子系统PRD-PracticeRunner.md"
     },
     {
@@ -157,7 +155,7 @@
         "错题聚合逻辑未完全集成到主学习循环"
       ],
       "status_date": "2026-10-06",
-      "test_baseline": "735 passed / 3 skipped (full backend); 12 passed (browser_review_userpath)",
+      "test_baseline": "740 passed / 3 skipped (full backend); 12 passed (browser_review_userpath)",
       "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S4-错题改错子系统PRD-ErrorFixer.md"
     },
     {
@@ -186,7 +184,7 @@
         "没有确认考试日期实体（当前备考目标不是考试日期）"
       ],
       "status_date": "2026-10-06",
-      "test_baseline": "735 passed / 3 skipped (full backend); 2 passed (browser_p1_4_c4_cram)",
+      "test_baseline": "740 passed / 3 skipped (full backend); 2 passed (browser_p1_4_c4_cram)",
       "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/08-S5-期末冲刺子系统PRD-ExamCrammer.md"
     },
     {
@@ -210,17 +208,16 @@
         "backend/tests/browser_reports_userpath.spec.js"
       ],
       "evidence": [
-        "H:\\studybuddy-test\\verification\\B3_REPORT_C6_SCOPED_CLOSEOUT_EVIDENCE.md"
+        "H:\\studybuddy-test\\verification\\s6-s7-20261006\\acceptance.md"
       ],
       "gaps": [
-        "无固定日报/周报/月报/考前提醒定时推送",
-        "真实邮件/飞书外发继续 NOT_VERIFIED (B4 scoped closeout 仅限 fixed-synthetic channel)",
-        "报告完成不自动批准 delivery",
-        "报告内容不适用于医学、教育评估或高风险决策"
+        "固定周期自动推送尚未实现",
+        "真实邮件/飞书外发 NOT_VERIFIED；报告完成不批准 delivery"
       ],
-      "status_date": "2026-10-05",
-      "notes": "B3 C0-C6 scoped closeout complete for local deterministic JSON/Markdown reports",
-      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md"
+      "status_date": "2026-10-06",
+      "notes": "PASS：本机脱敏报告及隔离 Chromium 用户路径；外发保持关闭。",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md",
+      "test_baseline": "15 passed (reports browser); full backend 740 passed / 3 opt-in skips"
     },
     {
       "id": "s7-classroom-capture",
@@ -244,18 +241,17 @@
         "backend/tests/browser_qa_capture_controls.spec.js"
       ],
       "evidence": [
-        "H:\\studybuddy-test\\verification\\FORMAL_ASR_ACCEPTANCE_EVIDENCE.md"
+        "H:\\studybuddy-test\\verification\\s6-s7-20261006\\acceptance.md"
       ],
       "gaps": [
-        "真实 ASR 为 opt-in，C5 仅限 whisper-cpp/ggml-large-v3-turbo/jfk.wav scope",
-        "官方 asset hash、其他格式/语言/环境未验证",
-        "取消与子进程树清理、并发/容量未验证",
-        "ASR 不接入 task runner",
-        "通用 real-pass 仍为 NOT_VERIFIED"
+        "课堂录音质量、中文 ASR、其他媒体和环境 NOT_VERIFIED",
+        "取消与子进程树清理、并发/容量未验证；ASR 不接入 task runner",
+        "SRT 分段 confidence=0.95 是适配器占位值，未校准；不代表真实识别置信度"
       ],
-      "status_date": "2026-10-05",
-      "notes": "B1 ASR C0-C6 scoped closeout complete in precise Windows/whisper-cpp/jfk.wav scope",
-      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md"
+      "status_date": "2026-10-06",
+      "notes": "PASS：隔离 Chromium 采集用户路径；真实 OCR/ASR 精确范围分别见 x-ocr-paddleocr、x-asr-whisper。",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md",
+      "test_baseline": "12 passed (capture/classroom browser); full backend 740 passed / 3 opt-in skips"
     },
     {
       "id": "x-qa",
@@ -305,24 +301,22 @@
         "backend/tests/browser_s2_knowledge_modules.spec.js"
       ],
       "evidence": [
-        "H:\\studybuddy-test\\verification\\tts-20261005\\acceptance.md"
+        "H:\\studybuddy-test\\verification\\real-components-20261006\\acceptance.md"
       ],
       "gaps": [
-        "只接入 S2 知识模块朗读入口",
-        "真实 SAPI/edge-tts 与设备播放未验证",
-        "真实 Provider 独立授权、组件测试、音频质量验收未完成",
-        "朗读不写 SQLite 学习事实（设计边界）",
-        "跨浏览器/屏幕阅读器未验证"
+        "只接入 S2 知识模块朗读；其他入口未扩展",
+        "edge-tts、跨浏览器/屏幕阅读器 NOT_VERIFIED",
+        "操作系统播放调用通过；使用者听感与实际扬声器可听性 NOT_VERIFIED"
       ],
-      "status_date": "2026-10-05",
-      "test_baseline": "41 passed (TTS/API/capability focused), 3 passed (S2 browser), 693 passed / 78 skipped (full backend)",
-      "notes": "默认关闭真实 Provider；fake 仅用于测试/演示",
+      "status_date": "2026-10-06",
+      "test_baseline": "7 passed (TTS); 3 passed (S2 browser); full backend 740 passed / 3 opt-in skips",
+      "notes": "真实 SAPI API smoke PASS：200、3554 ms、156778 音频字节，SoundPlayer.PlaySync 返回成功；S2 浏览器仍用 fake TTS，不外推为全局 real-pass。",
       "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "x-backup-restore",
       "name": "备份恢复",
-      "doc": "archive/[运维看]BACKUP_RESTORE.md",
+      "doc": "subsystems/X-横切能力.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
@@ -336,17 +330,17 @@
         "backend/tests/test_ai_backup_restore.py"
       ],
       "evidence": [
-        "docs/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md"
+        "H:\\studybuddy-test\\verification\\windows-release-20261006\\acceptance.md"
       ],
       "gaps": [
-        "真实 Windows 数据根恢复仅在 F010 精确目录边界验证",
-        "正式恢复与浏览器写操作仍 NOT_VERIFIED",
-        "UNC 用例仅检查字符串，不表示共享存储支持",
-        "生产环境备份计划（定期自动备份、异地存储）未实施"
+        "正式 data_root 的升级/恢复未执行，正式数据未改动",
+        "共享数据根、多 worker、真实断电恢复不受支持",
+        "自动备份计划与学生自助备份页面未实现"
       ],
-      "status_date": "2026-09-29",
-      "test_baseline": "23 passed (backup/restore/CLI focused)",
-      "product_source": "archive/legacy-product-references/pi-studybuddy/02-PRD-产品需求-Product-Requirements.md"
+      "status_date": "2026-10-06",
+      "test_baseline": "24 Windows acceptance checks; full backend 740 passed / 3 opt-in skips",
+      "product_source": "archive/legacy-product-references/pi-studybuddy/02-PRD-产品需求-Product-Requirements.md",
+      "notes": "PASS：Windows 正式启停/健康脚本、两层单实例门禁、备份校验与新空目录恢复、离线/在线验收及 P0 学习事实一致性；仅隔离 synthetic 数据根。"
     },
     {
       "id": "x-ocr-paddleocr",
@@ -355,25 +349,22 @@
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
-        "backend/app/providers/_capture.py",
+        "backend/app/providers/_ocr.py",
         "backend/app/capability_detect.py"
       ],
       "tests": [
         "backend/tests/test_phase_b2_ocr_c4.py"
       ],
       "evidence": [
-        "H:\\studybuddy-test\\verification\\B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md"
+        "H:\\studybuddy-test\\verification\\real-components-20261006\\acceptance.md"
       ],
       "gaps": [
-        "B2 C0-C6 仅限精确 PaddleOCR/模型/Windows/Python 3.10/CPU/local synthetic scope",
-        "一次真实图片 smoke 不外推为通用 OCR real-pass",
-        "结果先作为 draft，未经确认不得覆盖材料或成为引用来源",
-        "RapidOCR 严格 C2 已通过但未进入 Formal",
-        "Tesseract 为兼容后备",
-        "TTS/PPTX 图片页 OCR 尚未进入 Formal"
+        "真实教材、中文图片、手写、扫描质量和容量 NOT_VERIFIED",
+        "单图 smoke 不外推为通用 OCR real-pass",
+        "RapidOCR 后备与 PPTX 图片页 OCR 不在本轮范围"
       ],
-      "status_date": "2026-09-26",
-      "notes": "C0-C6 scoped closeout complete; RapidOCR fallback contract/adapter needs independent formal pipeline",
+      "status_date": "2026-10-06",
+      "notes": "真实 OCR API smoke PASS：本机 CPU、PP-OCRv5 det+rec、已知 synthetic 英文 PNG；核对文本、draft-first 与带引用确认修订。",
       "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
@@ -390,19 +381,18 @@
         "backend/tests/test_formal_asr.py"
       ],
       "evidence": [
-        "H:\\studybuddy-test\\verification\\FORMAL_ASR_ACCEPTANCE_EVIDENCE.md"
+        "H:\\studybuddy-test\\verification\\real-components-20261006\\acceptance.md"
       ],
       "gaps": [
-        "C0-C6 仅限 Windows/whisper-cpp/ggml-large-v3-turbo/jfk.wav 精确 scope",
-        "官方 asset hash、其他格式/语言/环境未验证",
-        "取消与子进程树清理、并发/容量未验证",
-        "ASR 不接入 task runner",
-        "通用 real-pass 仍为 NOT_VERIFIED",
-        "FunASR、SenseVoice 保持未选备选"
+        "旧 Const-me main.exe + large-v3-turbo 输出 BOM-only，FAIL；旧运行时保留，不能沿用历史 jfk.wav PASS 声明",
+        "中文/课堂录音、其他格式、质量、并发与取消 NOT_VERIFIED",
+        "正式配置未修改；使用者须显式选择已验证的新运行时",
+        "SRT confidence 占位值未校准；通用 real-pass NOT_VERIFIED"
       ],
-      "status_date": "2026-09-26",
-      "notes": "唯一 canonical runtime: H:\\Whisper\\cli\\main.exe + ggml-large-v3-turbo.bin",
-      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md"
+      "status_date": "2026-10-06",
+      "notes": "真实 ASR API smoke PASS：official whisper.cpp 1.8.4 CPU + large-v3-turbo + synthetic 英文 WAV；Composer 独立、Integration 组合、Formal 文本/确认/引用/幂等/备份恢复均核对。 新运行时：H:\\Whisper\\whisper-cpp-1.8.4\\whisper-cli.exe；官方 archive SHA256 已核对。",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md",
+      "test_baseline": "12 passed (formal ASR, real opt-in enabled, no skips)"
     },
     {
       "id": "x-delivery-smtp",
@@ -665,5 +655,18 @@
       "notes": "已修复 Provider gzip 兼容 + 思考型模型预算耗尽缺陷；外部连接配置处理记录不纳入治理文档",
       "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     }
-  ]
+  ],
+  "release_acceptance": {
+    "status": "PASS",
+    "scope": "Windows isolated synthetic roots; real SAPI/OCR/ASR smokes; relevant Chromium automation; no production configuration/data or external delivery changes",
+    "evidence": "H:\\studybuddy-test\\verification\\windows-release-20261006\\acceptance.md",
+    "backend": "740 passed / 3 explicit opt-in skips; real ASR separately 12 passed / 0 skipped",
+    "browser": "S6 15 passed; S7 12 passed; S2/TTS 3 passed",
+    "limits": [
+      "not a full-browser-suite run",
+      "real cloud Provider and delivery NOT_VERIFIED",
+      "physical audibility/listening quality NOT_VERIFIED",
+      "global product real-pass NOT_VERIFIED"
+    ]
+  }
 }

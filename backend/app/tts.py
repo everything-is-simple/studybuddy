@@ -79,13 +79,17 @@ class SapiTtsProvider:
                    timeout_seconds: float) -> None:
         if os.name != "nt":
             raise TtsError("tts_provider_unavailable")
-        script = ("$text=[Console]::In.ReadToEnd(); "
+        script = ("Add-Type -AssemblyName System.Speech; "
+                  "$text=[Console]::In.ReadToEnd(); "
                   "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
                   f"$s.Rate={max(-10, min(10, round((rate - 1) * 10)))}; "
-                  "$s.SetOutputToWaveFile($args[0]); $s.Speak($text); $s.Dispose()")
+                  "$s.SetOutputToWaveFile($env:STUDYBUDDY_TTS_OUTPUT); "
+                  "$s.Speak($text); $s.Dispose()")
+        environment = os.environ.copy()
+        environment["STUDYBUDDY_TTS_OUTPUT"] = str(output)
         try:
             result = subprocess.run([self.executable, "-NoProfile", "-NonInteractive",
-                                     "-Command", script, str(output)], input=text,
+                                     "-Command", script], input=text, env=environment,
                                     text=True, stdout=subprocess.DEVNULL,
                                     stderr=subprocess.DEVNULL, timeout=timeout_seconds,
                                     check=False)

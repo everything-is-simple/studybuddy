@@ -138,7 +138,7 @@ class WhisperCliCaptureProvider:
             input_path = temporary_root / "input.wav"
             input_path.write_bytes(request.content)
             command = [str(self.executable), "-f", str(input_path), "-m", str(self.model_path),
-                       "--language", "en", "-otxt", "-osrt", "-nc"]
+                       "--language", "en", "-otxt", "-osrt"]
             try:
                 subprocess.run(command, cwd=temporary_root, stdout=subprocess.DEVNULL,
                                stderr=subprocess.DEVNULL, timeout=self.timeout_seconds, check=False)
@@ -147,10 +147,16 @@ class WhisperCliCaptureProvider:
             output_files = [*temporary_root.glob("*.txt"), *temporary_root.glob("*.srt")]
             if sum(path.stat().st_size for path in output_files if path.is_file()) > self.max_output_bytes:
                 raise CaptureProviderError("payload_too_large")
-            txt_path = temporary_root / "input.txt"
-            srt_path = temporary_root / "input.srt"
-            text = txt_path.read_text(encoding="utf-8", errors="replace").strip() if txt_path.is_file() else ""
-            segments = _parse_srt(srt_path.read_text(encoding="utf-8", errors="replace")) if srt_path.is_file() else []
+            # Upstream whisper.cpp appends extensions to the full input name;
+            # the older Windows port replaces the .wav extension instead.
+            txt_path = temporary_root / "input.wav.txt"
+            srt_path = temporary_root / "input.wav.srt"
+            if not txt_path.is_file():
+                txt_path = temporary_root / "input.txt"
+            if not srt_path.is_file():
+                srt_path = temporary_root / "input.srt"
+            text = txt_path.read_text(encoding="utf-8-sig", errors="replace").strip() if txt_path.is_file() else ""
+            segments = _parse_srt(srt_path.read_text(encoding="utf-8-sig", errors="replace")) if srt_path.is_file() else []
             if not segments and text:
                 segments = [{"text": line.strip(), "confidence": None} for line in text.splitlines() if line.strip()]
             if not segments:

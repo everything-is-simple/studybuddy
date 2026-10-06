@@ -6,13 +6,15 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787
-powershell -NoProfile -File H:\studybuddy\backend\scripts\health-studybuddy.ps1 -Port 8787
-powershell -NoProfile -File H:\studybuddy\backend\scripts\stop-studybuddy.ps1 -DataRoot H:\studybuddy-data
+powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\health-studybuddy.ps1 -Port 8787
+powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\stop-studybuddy.ps1 -DataRoot H:\studybuddy-data
 ```
 
 隔离验证把 `-DataRoot` 换成 `H:\studybuddy-test\data_root`。启动脚本固定回环地址、单进程、外发关闭；停止只按 data_root 下的 PID 文件操作，不按端口杀进程。
 
 健康检查：`/api/liveness`（进程能应答）、`/api/health` 与 `/api/readiness`（数据库/审计降级时返回 503）。只读诊断：`python -m app.cli diagnostics --data-root <root>`。
+
+重复启动同数据根、同端口时返回 `studybuddy_already_running` 并复用已有进程；同数据根另一个端口返回 `data_root_in_use`。应用本身另有操作系统数据根锁，绕过启动脚本也不能打开第二个实例。
 
 ## 2. 备份、校验、恢复
 
@@ -46,6 +48,14 @@ python -m app.cli rotate-backups --backup-root <dir> --retain <n> [--confirm]
 6. 启动正式 data_root，三个健康端点返回 200。
 7. 只通过设置页保存 Provider/邮件/飞书配置；不把密钥写进 Git、日志、提示词。
 8. 外发保持 off；真实 Provider、邮件、飞书需单独授权验证。
+
+### 本地 OCR / ASR / TTS 配置
+
+设置页只接受显式选择的本地组件与模型。ASR Provider 为 `whisper-cpp` 时，配置支持所选模型的官方 CLI 路径与模型路径；不能把旧 Windows port 的二进制名称当作模型兼容性证明。已验证版本与范围读取 [`capabilities.json`](capabilities.json) 的 `x-asr-whisper`，不自动替换运行时或下载模型。
+
+真实 ASR smoke 须先明确隔离测试目录和已知内容的 WAV，再设置 `STUDYBUDDY_RUN_REAL_ASR_SMOKE=1`、`STUDYBUDDY_ASR_RUNTIME`、`STUDYBUDDY_ASR_MODEL_PATH`、`STUDYBUDDY_ASR_FIXTURE`，可用 `STUDYBUDDY_ASR_EXPECTED_TEXT` 指定必须识别的文字；运行 `python -m pytest backend/tests/test_formal_asr.py --basetemp=<隔离目录>`。运行结束后撤销本次测试环境变量，不写回正式配置。
+
+SAPI 使用 Windows 自带的 `powershell.exe` 和 `System.Speech`；OCR 使用显式配置的本地模型目录。真实组件测试成功不隐式开启正式配置，也不批准报告外发。
 
 ## 5. 目录保留与清理
 

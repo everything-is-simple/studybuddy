@@ -1,6 +1,6 @@
 # S6 家长观察报告（ParentReport）
 
-> 状态以 [capabilities.json](../capabilities.json) 中 id=S6 为准；本文不写测试通过数。
+> 状态以 [capabilities.json](../capabilities.json) 中 `id=s6-parent-report` 为准。
 
 原始意图参考 [S6 ParentReport PRD](../archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md)。
 
@@ -71,4 +71,4 @@
 
 ## 7. 状态来源
 
-本页不维护当前缺口或验证结论；以 [`capabilities.json`](../capabilities.json) 的 `id=S6` 为准。第一版产品目标和边界见文首链接的 S6 PRD。
+本页不维护当前缺口或验证结论；以 [`capabilities.json`](../capabilities.json) 的 `id=s6-parent-report` 为准。第一版产品目标和边界见文首链接的 S6 PRD。

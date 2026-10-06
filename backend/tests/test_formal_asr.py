@@ -25,7 +25,7 @@ from app.repository import connect, create_capture_session, get_capture_session,
 from app.restore_acceptance import verify_restored_data
 
 REAL_ASR_SMOKE = os.environ.get("STUDYBUDDY_RUN_REAL_ASR_SMOKE") == "1"
-REAL_ASR_RUNTIME = Path(os.environ.get("STUDYBUDDY_ASR_RUNTIME", "H:/Whisper/cli/main.exe"))
+REAL_ASR_RUNTIME = Path(os.environ.get("STUDYBUDDY_ASR_RUNTIME", "H:/Whisper/whisper-cpp-1.8.4/whisper-cli.exe"))
 REAL_ASR_MODEL = Path(os.environ.get("STUDYBUDDY_ASR_MODEL_PATH", "H:/Whisper/Models/ggml-large-v3-turbo.bin"))
 REAL_ASR_FIXTURE = Path(os.environ.get("STUDYBUDDY_ASR_FIXTURE", "H:/Whisper/Whisper-1.12.0/SampleClips/jfk.wav"))
 
@@ -47,12 +47,14 @@ def _request() -> CaptureTranscriptionRequest:
     )
 
 
-def test_whisper_cli_adapter_parses_outputs_and_removes_temporary_files(tmp_path: Path, monkeypatch):
+@pytest.mark.parametrize("output_stem", ["input", "input.wav"])
+def test_whisper_cli_adapter_parses_outputs_and_removes_temporary_files(tmp_path: Path, monkeypatch, output_stem):
     executable, model = _runtime(tmp_path)
 
     def run(_command, *, cwd, stdout, stderr, timeout, check):
-        Path(cwd, "input.txt").write_text("First line\nSecond line\n", encoding="utf-8")
-        Path(cwd, "input.srt").write_text(
+        assert "-nc" not in _command
+        Path(cwd, output_stem + ".txt").write_text("First line\nSecond line\n", encoding="utf-8")
+        Path(cwd, output_stem + ".srt").write_text(
             "1\n00:00:00,000 --> 00:00:01,000\nFirst line\n", encoding="utf-8"
         )
 
@@ -61,6 +63,34 @@ def test_whisper_cli_adapter_parses_outputs_and_removes_temporary_files(tmp_path
     assert result.language == "en"
     assert result.segments[0]["text"] == "First line"
     assert not list(tmp_path.glob("studybuddy-asr-*"))
+
+
+@pytest.mark.parametrize("output", ["\ufeff", "\ufeff \n\t"])
+def test_whisper_cli_rejects_bom_only_output(tmp_path: Path, monkeypatch, output):
+    executable, model = _runtime(tmp_path)
+
+    def run(_command, **kwargs):
+        for extension in ("txt", "srt"):
+            Path(kwargs["cwd"], f"input.{extension}").write_text(output, encoding="utf-8")
+
+    monkeypatch.setattr(capture_module.subprocess, "run", run)
+    with pytest.raises(CaptureProviderError, match="transcript_empty_or_invalid"):
+        WhisperCliCaptureProvider(executable, model).transcribe(_request())
+
+
+def test_whisper_cli_reads_bom_prefixed_transcript(tmp_path: Path, monkeypatch):
+    executable, model = _runtime(tmp_path)
+
+    def run(_command, **kwargs):
+        Path(kwargs["cwd"], "input.txt").write_text("First line", encoding="utf-8-sig")
+        Path(kwargs["cwd"], "input.srt").write_text(
+            "1\n00:00:00,000 --> 00:00:01,000\nFirst line\n", encoding="utf-8-sig"
+        )
+
+    monkeypatch.setattr(capture_module.subprocess, "run", run)
+    result = WhisperCliCaptureProvider(executable, model).transcribe(_request())
+    assert result.segments == [{"text": "First line", "start": "00:00:00,000",
+                                "end": "00:00:01,000", "confidence": 0.95}]
 
 
 def test_whisper_cli_adapter_timeout_and_output_limit_are_safe(tmp_path: Path, monkeypatch):
@@ -216,6 +246,11 @@ def test_real_asr_api_lifecycle_and_backup_restore_are_scoped(tmp_path: Path, mo
         draft = first.json()["draft"]
         assert draft["status"] == "draft"
         assert draft["segments"]
+        transcript = " ".join(segment["text"] for segment in draft["segments"])
+        assert any(character.isalnum() for character in transcript)
+        expected_text = os.environ.get("STUDYBUDDY_ASR_EXPECTED_TEXT")
+        if expected_text:
+            assert "".join(expected_text.lower().split()) in "".join(transcript.lower().split())
         replay = client.post(
             f"/api/study/capture-sessions/{capture_id}/transcribe",
             headers={"Idempotency-Key": "formal-real-asr-api"},

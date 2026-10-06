@@ -1,12 +1,15 @@
 """TTS skill tests: fake audio only, no real SAPI or network Provider."""
 import os
 import wave
+from types import SimpleNamespace
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from app.capabilities import resolve_config
 from app.config import AppConfig, config_from_environment
 from app.main import create_app
+from app.tts import SapiTtsProvider
 
 
 def test_tts_is_disabled_by_default_and_discoverable(tmp_path):
@@ -31,6 +34,25 @@ def test_fake_tts_creates_valid_wav_and_cache_hit(tmp_path):
         assert len(list(cache.glob('*.wav'))) == 1 and second['audio_url'] != first['audio_url']
         audio = api.get(first['audio_url'])
         assert audio.status_code == 200 and audio.headers['content-type'].startswith('audio/wav')
+
+
+def test_sapi_provider_passes_output_path_via_environment(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_run(args, **kwargs):
+        seen['args'] = args
+        seen['env'] = kwargs['env']
+        Path(kwargs['env']['STUDYBUDDY_TTS_OUTPUT']).write_bytes(b'RIFF')
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr('app.tts.subprocess.run', fake_run)
+    output = tmp_path / 'sapi.wav'
+    SapiTtsProvider('powershell.exe').synthesize('hello', output, voice=None, rate=1.0,
+                                                  timeout_seconds=5)
+    assert seen['args'][-1].endswith("$s.SetOutputToWaveFile($env:STUDYBUDDY_TTS_OUTPUT); $s.Speak($text); $s.Dispose()")
+    assert str(output) not in seen['args']
+    assert seen['env']['STUDYBUDDY_TTS_OUTPUT'] == str(output)
+    assert output.is_file()
 
 
 def test_tts_control_status_retry_and_safe_boundaries(tmp_path):

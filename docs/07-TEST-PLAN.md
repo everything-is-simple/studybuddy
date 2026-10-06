@@ -28,8 +28,13 @@ H:\studybuddy-test\verification\<主题>-<YYYYMMDD>\
 
 证据目录不进 Git。`capabilities.json` 的 `evidence` 字段引用这里的文件。
 
-## 3. 尚未覆盖（NOT_VERIFIED）
+## 3. Windows 与真实组件验收
 
-- 正式 data_root 上的 real-pass。
-- 真实 Provider 内容质量、真实 OCR/ASR、SAPI/edge-tts、真实邮件/飞书外发。
-- 可视浏览器人工验收、跨浏览器、屏幕阅读器、真实扬声器。
+- S6/S7 分别执行相关后端与浏览器用户路径，检查报告脱敏、外发默认关闭、转写草稿确认和来源绑定。
+- TTS：显式选择真实引擎，核对音频接口、音频时长及设备播放返回；听感需使用者确认。
+- OCR/ASR：使用已知内容的 synthetic 输入，核对有意义文本，再验证草稿 → 学生确认 → 带引用的材料修订；不能只检查退出码或文件存在。
+- Windows：在独立数据根与隔离端口运行正式启动/健康/停止脚本，检查同端口重复启动、同数据根其他端口拒绝、操作系统实例锁、停机重启及事实保留。
+- 恢复：停止隔离服务后 backup → verify → restore 到空目录 → 离线验收 → 用恢复数据根启动 → 在线验收；比较材料、错题、Today 和原件哈希，确认备份没有被修改。
+- 发布：相关浏览器 spec、全量后端、源码大小与 `git diff --check` 门禁通过后提交推送。
+
+当前实现、验证结论、精确范围、未验证项和证据只读取 [`capabilities.json`](capabilities.json)。验收脚本与报告放在 §2 的证据目录，不构成第三份状态源。
