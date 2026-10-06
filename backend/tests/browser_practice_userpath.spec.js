@@ -189,6 +189,7 @@ test.describe.serial('practice + practice-session pure user path (A-class)', () 
         await expect(page.locator('.practice-question h3')).toHaveText('第 2 题 / 2', { timeout: 15000 });
       } else {
         await expect(page.locator('#session-status')).toContainText('答案已提交', { timeout: 15000 });
+        await expect(page.locator('#session-detail')).toContainText('进度：2/2', { timeout: 15000 });
       }
     }
     await page.getByRole('button', { name: '完成会话' }).click();
@@ -243,6 +244,7 @@ test.describe.serial('practice + practice-session pure user path (A-class)', () 
     await page.locator('#answer').selectOption('1');
     await page.getByRole('button', { name: '提交答案' }).click();
     await expect(page.locator('#session-status')).toContainText('答案已提交', { timeout: 15000 });
+    await expect(page.locator('#session-detail')).toContainText('进度：1/1', { timeout: 15000 });
     await page.getByRole('button', { name: '完成会话' }).click();
     await page.waitForURL(/practice-result\.html\?session_id=/, { timeout: 15000 });
     await expect(page.locator('#result-detail')).toContainText('得分：0 / 1', { timeout: 15000 });
