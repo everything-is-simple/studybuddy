@@ -640,20 +640,26 @@
       "code": [],
       "tests": [],
       "evidence": [
-        "H:\\studybuddy-test\\artifacts\\vector-quality-baseline-20260919.json"
+        "H:\\studybuddy-test\\verification\\real-course-self-use-20261006\\session.md",
+        "H:\\studybuddy-test\\verification\\real-course-self-use-20261006\\preflight.json"
       ],
       "gaps": [
-        "观察期 2026-09-18 ~ 2026-09-25（7 天）进行中",
-        "由使用者本人连续使用真实资料与课程",
-        "记录卡壳点、误解点和放弃点，回流到 P1-4 台账",
-        "不是 P1-4 的编码或机器验收门槛",
-        "在 P1-7 完成前不得声明完整产品达到任何形式的 real-pass",
-        "服务商侧凭据撤销/轮换无证据",
-        "向量检索质量基线 14/14 通过但仅限 6 本教材范围"
+        "本轮真实课程和章节、资料路径及操作环境待用户确定；8787 可视页面连接被拒绝",
+        "实际学习尚未开始，完成观察日 0；连续本人学习及反馈无证据",
+        "每一步下一步是否清晰、来源是否可核对、卡壳/误解/放弃点待实际记录",
+        "扬声器听感、中文课堂录音质量及真实外发仍 NOT_VERIFIED；外发需逐次授权",
+        "工程验收不能替代真实自用，完整产品 real-pass 仍 NOT_VERIFIED"
       ],
-      "status_date": "2026-09-19",
-      "notes": "已修复 Provider gzip 兼容 + 思考型模型预算耗尽缺陷；外部连接配置处理记录不纳入治理文档",
-      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
+      "status_date": "2026-10-06",
+      "notes": "已备好课程主闭环与逐日记录；这是待执行的计划，不是试用完成证据。撤销无当前证据支撑的旧观察期“进行中”日期声明。",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md",
+      "observation": {
+        "start_date": null,
+        "course": null,
+        "completed_learning_days": 0,
+        "target_learning_days": 7,
+        "preflight_status": "BLOCKED"
+      }
     }
   ],
   "release_acceptance": {
