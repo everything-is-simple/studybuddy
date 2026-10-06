@@ -76,7 +76,6 @@
 - 确认的模块出现在练习页模块选择中；作答后模块显示掌握度变化。
 - 笔记可编辑、绑定来源、导出；AI 生成的笔记先是草稿。
 
-## 7. 已知缺口
+## 7. 状态来源
 
-- 真实 Provider 抽取质量未验证。
-- 存在两套"模块"接口：`/api/study/modules`（S1 计划用，canonical `knowledge_modules`）与 `/api/knowledge-modules`（S2 元数据），页面分别使用，概念需统一说明。
+本页不维护当前缺口或验证结论；以 [`capabilities.json`](../capabilities.json) 的 `id=S2` 为准。第一版产品目标和边界见文首链接的 S2 PRD。

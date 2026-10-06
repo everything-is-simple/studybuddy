@@ -83,9 +83,6 @@ Today 投影（`backend/app/repositories/today.py`）不落库，按优先级排
 - 任何时刻最多 5 项；超出时页面提示剩余数量。
 - 待办少于 3 项时补一个"建议学习 / 继续练习"下一步。
 
-## 7. 已知缺口
+## 7. 状态来源
 
-- 没有课程表和考试日期实体，Today 返回 `unavailable_sources`。
-- 只读 `rhythm_allocations`；有计划但未排日程时 Today 为空。
-- 薄弱点（S4）不直接进入 Today，只以错题计数出现。
-- 冲刺目标只在目标日为明天时提示（见 S5）。
+本页不维护当前缺口或验证结论；以 [`capabilities.json`](../capabilities.json) 的 `id=S1` 为准。第一版产品目标和边界见文首链接的 S1 PRD。

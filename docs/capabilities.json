@@ -1,13 +1,18 @@
 {
-  "$comment": "StudyBuddy 唯一能力状态源。其他文档只引用本文件，不复述状态。字段含义见 docs/05-GOVERNANCE.md §2。",
+  "$comment": "StudyBuddy 唯一能力状态源。产品需求来自第一版 ai-studybuddy 子系统 PRD；其他当前文档只引用本文件，不复述状态。字段含义见 docs/05-GOVERNANCE.md §2。",
   "updated": "2026-10-05",
+  "source_of_truth": {
+    "product_requirements": "archive/legacy-product-references/ai-studybuddy/subsystems/",
+    "implementation_status": "capabilities.json",
+    "verification_evidence": "H:\\studybuddy-test\\verification\\"
+  },
   "status_vocabulary": {
     "implementation": ["implemented", "partial", "not_implemented", "deferred"],
     "verification": ["real-pass", "browser-pass", "backend-pass", "not_verified"]
   },
   "capabilities": [
     {
-      "id": "S1", "name": "学习节奏 / Today", "doc": "subsystems/S1-学习节奏-Today.md",
+      "id": "S1", "name": "学习节奏 / Today", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S1学习节奏子系统PRD-StudyRhythm.md", "doc": "subsystems/S1-学习节奏-Today.md",
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_plans.py", "backend/app/api/study_rhythm.py", "backend/app/api/today.py", "backend/app/repositories/today.py", "backend/app/static/today.html"],
       "tests": ["backend/tests/test_s1_today.py", "backend/tests/browser_s1_today.spec.js", "backend/tests/browser_today_userpath.spec.js"],
@@ -15,7 +20,7 @@
       "gaps": ["没有课程表和考试日期实体，Today 返回 unavailable_sources", "只读 rhythm_allocations；有计划但未排日程时 Today 为空"]
     },
     {
-      "id": "S2", "name": "资料笔记 / 知识模块", "doc": "subsystems/S2-资料笔记-NoteBuilder.md",
+      "id": "S2", "name": "资料笔记 / 知识模块", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S2-资料笔记子系统PRD-NoteBuilder.md", "doc": "subsystems/S2-资料笔记-NoteBuilder.md",
       "implementation": "implemented", "verification": "browser-pass",
       "code": ["backend/app/api/materials_detail.py", "backend/app/api/materials_collection.py", "backend/app/api/ai_indexing.py", "backend/app/api/knowledge_modules.py", "backend/app/api/study_notes.py"],
       "tests": ["backend/tests/test_s2_knowledge_modules_api.py", "backend/tests/test_knowledge_modules_repository.py", "backend/tests/test_v16_knowledge_modules_migration.py", "backend/tests/browser_s2_knowledge_modules.spec.js"],
@@ -23,7 +28,7 @@
       "gaps": ["真实 Provider 抽取质量未验证"]
     },
     {
-      "id": "S3", "name": "限时练习", "doc": "subsystems/S3-限时练习-PracticeRunner.md",
+      "id": "S3", "name": "限时练习", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S3-限时练习子系统PRD-PracticeRunner.md", "doc": "subsystems/S3-限时练习-PracticeRunner.md",
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_learning.py", "backend/app/api/study_practice.py"],
       "tests": ["backend/tests/test_phase9c_api.py", "backend/tests/test_practice_recommendations_api.py", "backend/tests/browser_practice_userpath.spec.js"],
@@ -31,7 +36,7 @@
       "gaps": ["从知识模块进入练习需多步手工操作", "直接作答（非 session）不自动生成错题"]
     },
     {
-      "id": "S4", "name": "错题改错", "doc": "subsystems/S4-错题改错-ErrorFixer.md",
+      "id": "S4", "name": "错题改错", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S4-错题改错子系统PRD-ErrorFixer.md", "doc": "subsystems/S4-错题改错-ErrorFixer.md",
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_practice.py"],
       "tests": ["backend/tests/test_phase9c_api.py", "backend/tests/browser_review_userpath.spec.js"],
@@ -39,7 +44,7 @@
       "gaps": ["重做答对不会关闭错题", "薄弱点不进入 Today"]
     },
     {
-      "id": "S5", "name": "期末冲刺", "doc": "subsystems/S5-期末冲刺-ExamCrammer.md",
+      "id": "S5", "name": "期末冲刺", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/08-S5-期末冲刺子系统PRD-ExamCrammer.md", "doc": "subsystems/S5-期末冲刺-ExamCrammer.md",
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_practice.py", "backend/app/static/js/cram.js"],
       "tests": ["backend/tests/browser_p1_4_c4_cram.spec.js"],
@@ -47,7 +52,7 @@
       "gaps": ["冲刺不按薄弱点选题", "Today 只在目标日为明天时提示", "冲刺结果不回写计划进度"]
     },
     {
-      "id": "S6", "name": "家长观察报告", "doc": "subsystems/S6-家长报告-ParentReport.md",
+      "id": "S6", "name": "家长观察报告", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md", "doc": "subsystems/S6-家长报告-ParentReport.md",
       "implementation": "partial", "verification": "backend-pass",
       "code": ["backend/app/api/study_capture_reports.py"],
       "tests": ["backend/tests/test_phase9d_report.py", "backend/tests/test_phase9d_delivery.py", "backend/tests/test_report_quick_period.py", "backend/tests/browser_reports_userpath.spec.js"],
@@ -55,7 +60,7 @@
       "gaps": ["无固定日报/周报/月报/考前提醒定时推送", "真实邮件/飞书外发未验证"]
     },
     {
-      "id": "S7", "name": "课堂采集", "doc": "subsystems/S7-课堂采集-ClassCapture.md",
+      "id": "S7", "name": "课堂采集", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md", "doc": "subsystems/S7-课堂采集-ClassCapture.md",
       "implementation": "implemented", "verification": "browser-pass",
       "code": ["backend/app/api/study_capture_reports.py"],
       "tests": ["backend/tests/test_phase9d_capture.py", "backend/tests/test_phase9d_capture_ingest.py", "backend/tests/test_formal_asr.py", "backend/tests/browser_capture_classroom_userpath.spec.js"],
@@ -63,7 +68,7 @@
       "gaps": ["真实 ASR 为 opt-in，未验证"]
     },
     {
-      "id": "X-QA", "name": "材料问答", "doc": "subsystems/X-横切能力.md",
+      "id": "X-QA", "name": "材料问答", "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md", "doc": "subsystems/X-横切能力.md",
       "implementation": "implemented", "verification": "browser-pass",
       "code": ["backend/app/api/ai_retrieval_qa.py", "backend/app/static/js/chat-widget.js"],
       "tests": ["backend/tests/test_qa_api.py", "backend/tests/browser_chat_widget.spec.js"],
@@ -71,7 +76,7 @@
       "gaps": ["不是通用对话，不调用 S1–S7 工具"]
     },
     {
-      "id": "X-TTS", "name": "朗读", "doc": "subsystems/X-横切能力.md",
+      "id": "X-TTS", "name": "朗读", "product_source": "archive/legacy-product-references/pi-studybuddy/02-PRD-产品需求-Product-Requirements.md", "doc": "subsystems/X-横切能力.md",
       "implementation": "partial", "verification": "backend-pass",
       "code": ["backend/app/tts.py", "backend/app/api/tts.py", "backend/app/static/js/tts.js"],
       "tests": ["backend/tests/test_tts.py"],
@@ -79,7 +84,7 @@
       "gaps": ["只接入 S2 知识模块", "真实 SAPI/edge-tts 与设备播放未验证"]
     },
     {
-      "id": "X-BACKUP", "name": "备份恢复", "doc": "06-OPERATIONS.md",
+      "id": "X-BACKUP", "name": "备份恢复", "product_source": "archive/legacy-product-references/pi-studybuddy/02-PRD-产品需求-Product-Requirements.md", "doc": "06-OPERATIONS.md",
       "implementation": "implemented", "verification": "backend-pass",
       "code": ["backend/app/backup.py", "backend/app/cli.py"],
       "tests": ["backend/tests/test_backup_restore.py", "backend/tests/test_restore_acceptance.py", "backend/tests/test_backup_windows_paths.py"],

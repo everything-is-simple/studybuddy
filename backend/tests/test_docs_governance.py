@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 MANIFEST = DOCS / "capabilities.json"
 HISTORICAL_DIRS = ("archive", "legacy-product-references")
-REQUIRED_FIELDS = ("id", "name", "doc", "implementation", "verification", "code", "tests", "evidence", "gaps")
+REQUIRED_FIELDS = ("id", "name", "product_source", "doc", "implementation", "verification", "code", "tests", "evidence", "gaps")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 
 
@@ -46,6 +46,7 @@ def test_manifest_entries_have_required_fields_and_legal_status_words() -> None:
             assert cap["evidence"], f"{cap['id']} 标 real-pass 但没有证据"
         if cap["implementation"] != "implemented":
             assert cap["gaps"], f"{cap['id']} 未完成但没有列出缺口"
+        assert (DOCS / cap["product_source"]).is_file(), f"{cap['id']} 产品来源不存在"
 
 
 def test_manifest_paths_exist() -> None:

@@ -2,6 +2,22 @@
 
 > 本文件只写"为什么、为谁、做什么、不做什么"。当前完成到哪里，以 [`capabilities.json`](capabilities.json) 为准，本文不复述状态。
 
+## 0. 需求来源
+
+本 PRD 的 S1–S7 产品语义以第一版 ai-studybuddy 的子系统 PRD 为准：
+
+| 子系统 | 产品需求来源 |
+|---|---|
+| S1 学习节奏 | [`S1 StudyRhythm PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/03-S1学习节奏子系统PRD-StudyRhythm.md) |
+| S2 资料笔记 | [`S2 NoteBuilder PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/03-S2-资料笔记子系统PRD-NoteBuilder.md) |
+| S3 限时练习 | [`S3 PracticeRunner PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/03-S3-限时练习子系统PRD-PracticeRunner.md) |
+| S4 错题改错 | [`S4 ErrorFixer PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/03-S4-错题改错子系统PRD-ErrorFixer.md) |
+| S5 期末冲刺 | [`S5 ExamCrammer PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/08-S5-期末冲刺子系统PRD-ExamCrammer.md) |
+| S6 家长观察 | [`S6 ParentReport PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md) |
+| S7 课堂采集 | [`S7 ClassCapture PRD`](archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md) |
+
+第二版 pi-studybuddy 只作为 TTS、备份恢复和通用对话等增量需求的参考。第一版 PRD 的产品目标、流程和边界不因当前实现缺口而改变；当前实现、验证、证据和缺口只读取 [`capabilities.json`](capabilities.json)。
+
 ## 1. 为何而生、为谁而做
 
 **为何而生**：大学学习常见的问题不是没有资料，而是课程、考试目标、每天的节奏、资料整理、练习、错题复盘和考前冲刺彼此脱节。StudyBuddy 要把这些动作组织成一个学生能长期使用、**始终看得见下一步**的本机学习闭环。
