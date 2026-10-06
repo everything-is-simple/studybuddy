@@ -10,8 +10,18 @@
     "status": "docs/archive/[需求+所有角色看]STATUS.md"
   },
   "status_vocabulary": {
-    "implementation": ["implemented", "partial", "not_implemented", "deferred"],
-    "verification": ["real-pass", "browser-pass", "backend-pass", "not_verified"]
+    "implementation": [
+      "implemented",
+      "partial",
+      "not_implemented",
+      "deferred"
+    ],
+    "verification": [
+      "real-pass",
+      "browser-pass",
+      "backend-pass",
+      "not_verified"
+    ]
   },
   "capabilities": [
     {
@@ -26,7 +36,7 @@
         "backend/app/api/study_plans.py",
         "backend/app/repositories/today.py",
         "backend/app/static/today.html",
-        "backend/app/static/js/today.js"
+        "backend/app/static/js/today-pending.js"
       ],
       "tests": [
         "backend/tests/test_s1_today.py",
@@ -36,7 +46,8 @@
       "evidence": [
         "H:\\studybuddy-test\\verification\\s1-today-20261005\\acceptance.md",
         "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md",
-        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md"
+        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md",
+        "H:\\studybuddy-test\\verification\\baseline-20261006\\browser-main-path.txt"
       ],
       "gaps": [
         "没有课程表和考试日期实体，Today 返回 unavailable_sources",
@@ -46,7 +57,8 @@
         "正式运行态、跨浏览器、屏幕阅读器、真实设备未验证"
       ],
       "status_date": "2026-10-06",
-      "test_baseline": "36 passed (focused), 686 passed / 78 skipped (full backend)"
+      "test_baseline": "735 passed / 3 skipped (full backend); 8 passed (browser_today_userpath); continuous P0 browser evidence retained",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S1学习节奏子系统PRD-StudyRhythm.md"
     },
     {
       "id": "s2-knowledge-modules",
@@ -73,7 +85,8 @@
       "evidence": [
         "H:\\studybuddy-test\\verification\\s2-knowledge-modules-20261005\\acceptance.md",
         "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md",
-        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md"
+        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md",
+        "H:\\studybuddy-test\\verification\\baseline-20261006\\browser-main-path.txt"
       ],
       "gaps": [
         "真实 Provider 抽取质量未验证",
@@ -83,7 +96,8 @@
         "跨材料/修订组合练习生成明确拒绝"
       ],
       "status_date": "2026-10-06",
-      "test_baseline": "56 passed (focused), 670 passed / 78 skipped (full backend), 607 passed / 4 skipped (browser)"
+      "test_baseline": "735 passed / 3 skipped (full backend); 3 passed (browser_s2_knowledge_modules); continuous P0 browser evidence retained",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S2-资料笔记子系统PRD-NoteBuilder.md"
     },
     {
       "id": "s3-practice",
@@ -96,7 +110,7 @@
         "backend/app/api/study_practice.py",
         "backend/app/static/practice.html",
         "backend/app/static/practice-session.html",
-        "backend/app/static/js/practice.js"
+        "backend/app/static/js/buddy-spa.js"
       ],
       "tests": [
         "backend/tests/test_phase9c_api.py",
@@ -105,7 +119,8 @@
       ],
       "evidence": [
         "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md",
-        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md"
+        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md",
+        "H:\\studybuddy-test\\verification\\baseline-20261006\\browser-main-path.txt"
       ],
       "gaps": [
         "从知识模块进入练习需多步手工操作",
@@ -114,7 +129,8 @@
         "真实 Provider 生成质量未验证"
       ],
       "status_date": "2026-10-06",
-      "notes": "Practice workflow phase two scoped closeout 已完成"
+      "notes": "Practice workflow phase two scoped closeout 已完成; 8 passed (browser_practice_userpath), 735 passed / 3 skipped (full backend)",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S3-限时练习子系统PRD-PracticeRunner.md"
     },
     {
       "id": "s4-error-fixer",
@@ -125,7 +141,7 @@
       "code": [
         "backend/app/api/study_practice.py",
         "backend/app/static/review.html",
-        "backend/app/static/js/review.js"
+        "backend/app/static/js/buddy-spa.js"
       ],
       "tests": [
         "backend/tests/test_phase9c_api.py",
@@ -133,13 +149,16 @@
       ],
       "evidence": [
         "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md",
-        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md"
+        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md",
+        "H:\\studybuddy-test\\verification\\baseline-20261006\\browser-main-path.txt"
       ],
       "gaps": [
         "薄弱点不进入 Today",
         "错题聚合逻辑未完全集成到主学习循环"
       ],
-      "status_date": "2026-10-06"
+      "status_date": "2026-10-06",
+      "test_baseline": "735 passed / 3 skipped (full backend); 12 passed (browser_review_userpath)",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/03-S4-错题改错子系统PRD-ErrorFixer.md"
     },
     {
       "id": "s5-exam-crammer",
@@ -157,7 +176,8 @@
       ],
       "evidence": [
         "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md",
-        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md"
+        "H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md",
+        "H:\\studybuddy-test\\verification\\baseline-20261006\\browser-main-path.txt"
       ],
       "gaps": [
         "冲刺不按薄弱点选题",
@@ -165,7 +185,9 @@
         "冲刺结果不回写计划进度",
         "没有确认考试日期实体（当前备考目标不是考试日期）"
       ],
-      "status_date": "2026-10-06"
+      "status_date": "2026-10-06",
+      "test_baseline": "735 passed / 3 skipped (full backend); 2 passed (browser_p1_4_c4_cram)",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/08-S5-期末冲刺子系统PRD-ExamCrammer.md"
     },
     {
       "id": "s6-parent-report",
@@ -177,7 +199,7 @@
         "backend/app/api/study_capture_reports.py",
         "backend/app/repositories/reports.py",
         "backend/app/static/reports.html",
-        "backend/app/static/js/reports.js"
+        "backend/app/static/js/parent.js"
       ],
       "tests": [
         "backend/tests/test_phase9d_report.py",
@@ -197,7 +219,8 @@
         "报告内容不适用于医学、教育评估或高风险决策"
       ],
       "status_date": "2026-10-05",
-      "notes": "B3 C0-C6 scoped closeout complete for local deterministic JSON/Markdown reports"
+      "notes": "B3 C0-C6 scoped closeout complete for local deterministic JSON/Markdown reports",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md"
     },
     {
       "id": "s7-classroom-capture",
@@ -210,7 +233,7 @@
         "backend/app/repositories/capture.py",
         "backend/app/static/capture.html",
         "backend/app/static/classroom.html",
-        "backend/app/static/js/capture.js"
+        "backend/app/static/js/buddy-spa.js"
       ],
       "tests": [
         "backend/tests/test_phase9d_capture.py",
@@ -231,7 +254,8 @@
         "通用 real-pass 仍为 NOT_VERIFIED"
       ],
       "status_date": "2026-10-05",
-      "notes": "B1 ASR C0-C6 scoped closeout complete in precise Windows/whisper-cpp/jfk.wav scope"
+      "notes": "B1 ASR C0-C6 scoped closeout complete in precise Windows/whisper-cpp/jfk.wav scope",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md"
     },
     {
       "id": "x-qa",
@@ -241,7 +265,7 @@
       "verification": "browser-pass",
       "code": [
         "backend/app/api/ai_retrieval_qa.py",
-        "backend/app/repositories/qa.py",
+        "backend/app/repository.py",
         "backend/app/static/qa.html",
         "backend/app/static/js/chat-widget.js"
       ],
@@ -262,7 +286,8 @@
         "向量检索质量基线 14/14 通过但仅限 6 本教材范围"
       ],
       "status_date": "2026-10-05",
-      "notes": "已修复 Provider gzip 兼容缺陷和思考型模型预算耗尽问题"
+      "notes": "已修复 Provider gzip 兼容缺陷和思考型模型预算耗尽问题",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "x-tts",
@@ -291,18 +316,18 @@
       ],
       "status_date": "2026-10-05",
       "test_baseline": "41 passed (TTS/API/capability focused), 3 passed (S2 browser), 693 passed / 78 skipped (full backend)",
-      "notes": "默认关闭真实 Provider；fake 仅用于测试/演示"
+      "notes": "默认关闭真实 Provider；fake 仅用于测试/演示",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "x-backup-restore",
       "name": "备份恢复",
-      "doc": "docs/[运维看]BACKUP_RESTORE.md",
+      "doc": "archive/[运维看]BACKUP_RESTORE.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
         "backend/app/backup.py",
-        "backend/app/cli.py",
-        "backend/app/restore.py"
+        "backend/app/cli.py"
       ],
       "tests": [
         "backend/tests/test_backup_restore.py",
@@ -320,20 +345,21 @@
         "生产环境备份计划（定期自动备份、异地存储）未实施"
       ],
       "status_date": "2026-09-29",
-      "test_baseline": "23 passed (backup/restore/CLI focused)"
+      "test_baseline": "23 passed (backup/restore/CLI focused)",
+      "product_source": "archive/legacy-product-references/pi-studybuddy/02-PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "x-ocr-paddleocr",
       "name": "B2 OCR (PaddleOCR 主路径)",
-      "doc": "docs/contracts/B2_OCR_COMPONENT_CONTRACT.md",
+      "doc": "05-GOVERNANCE.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
-        "backend/app/ocr.py",
-        "backend/app/providers/ocr.py"
+        "backend/app/providers/_capture.py",
+        "backend/app/capability_detect.py"
       ],
       "tests": [
-        "backend/tests/test_formal_ocr.py"
+        "backend/tests/test_phase_b2_ocr_c4.py"
       ],
       "evidence": [
         "H:\\studybuddy-test\\verification\\B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md"
@@ -347,17 +373,18 @@
         "TTS/PPTX 图片页 OCR 尚未进入 Formal"
       ],
       "status_date": "2026-09-26",
-      "notes": "C0-C6 scoped closeout complete; RapidOCR fallback contract/adapter needs independent formal pipeline"
+      "notes": "C0-C6 scoped closeout complete; RapidOCR fallback contract/adapter needs independent formal pipeline",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "x-asr-whisper",
       "name": "B1 ASR (Whisper)",
-      "doc": "docs/contracts/B1_ASR_COMPONENT_CONTRACT.md",
+      "doc": "subsystems/S7-课堂采集-ClassCapture.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
-        "backend/app/asr.py",
-        "backend/app/providers/asr.py"
+        "backend/app/providers/_capture.py",
+        "backend/app/repository.py"
       ],
       "tests": [
         "backend/tests/test_formal_asr.py"
@@ -374,17 +401,17 @@
         "FunASR、SenseVoice 保持未选备选"
       ],
       "status_date": "2026-09-26",
-      "notes": "唯一 canonical runtime: H:\\Whisper\\cli\\main.exe + ggml-large-v3-turbo.bin"
+      "notes": "唯一 canonical runtime: H:\\Whisper\\cli\\main.exe + ggml-large-v3-turbo.bin",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/07-S7-课堂录音子系统PRD-ClassCapture.md"
     },
     {
       "id": "x-delivery-smtp",
       "name": "B4 Delivery (SMTP)",
-      "doc": "docs/contracts/B4_DELIVERY_COMPONENT_CONTRACT.md",
+      "doc": "subsystems/S6-家长报告-ParentReport.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
-        "backend/app/delivery.py",
-        "backend/app/providers/smtp.py"
+        "backend/app/delivery.py"
       ],
       "tests": [
         "backend/tests/test_b4_delivery_c4_adapters.py",
@@ -403,17 +430,17 @@
         "精确渠道的 real smoke 不表示所有 SMTP 配置均可用"
       ],
       "status_date": "2026-09-26",
-      "notes": "已修复 gzip 误报 + QQ 拒收无头邮件缺陷；default-off/live-blocked 保持"
+      "notes": "已修复 gzip 误报 + QQ 拒收无头邮件缺陷；default-off/live-blocked 保持",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md"
     },
     {
       "id": "x-delivery-feishu",
       "name": "B4 Delivery (Feishu)",
-      "doc": "docs/contracts/B4_DELIVERY_COMPONENT_CONTRACT.md",
+      "doc": "subsystems/S6-家长报告-ParentReport.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
-        "backend/app/delivery.py",
-        "backend/app/providers/feishu.py"
+        "backend/app/delivery.py"
       ],
       "tests": [
         "backend/tests/test_b4_delivery_c4_adapters.py",
@@ -427,27 +454,21 @@
         "Formal product API live 继续拒绝",
         "默认 delivery=off，逐次授权保持有效"
       ],
-      "status_date": "2026-09-26"
+      "status_date": "2026-09-26",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/06-S6-家长观察子系统PRD-ParentReport.md"
     },
     {
       "id": "buddy-homepage",
       "name": "Buddy 默认首页",
-      "doc": "docs/frontend-plan.md",
+      "doc": "03-ARCHITECTURE.md",
       "implementation": "implemented",
       "verification": "browser-pass",
       "code": [
         "backend/app/static/buddy.html",
-        "backend/app/static/student.html",
-        "backend/app/static/parent.html",
-        "backend/app/static/advanced.html",
-        "backend/app/static/js/buddy-shell.js"
+        "backend/app/static/js/buddy-spa.js"
       ],
       "tests": [
-        "backend/tests/test_buddy_homepage.py",
-        "backend/tests/test_buddy_shell_routing.py",
-        "backend/tests/browser_buddy_spa.spec.js",
-        "backend/tests/browser_student_userpath.spec.js",
-        "backend/tests/browser_parent_userpath.spec.js"
+        "backend/tests/test_buddy_homepage.py"
       ],
       "evidence": [
         "H:\\studybuddy-test\\verification\\buddy-homepage-20261002"
@@ -458,24 +479,23 @@
         "全站页面迁移到 SPA 壳未完成（当前仅 Today/学生/家长/高级功能）"
       ],
       "status_date": "2026-10-02",
-      "test_baseline": "34 passed (focused), 723 passed / 3 skipped (full backend), 29 passed (browser)"
+      "test_baseline": "34 passed (focused), 723 passed / 3 skipped (full backend), 29 passed (browser)",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "environment-config",
       "name": "本机运行与测试配置",
-      "doc": "docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md",
+      "doc": "06-OPERATIONS.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
-        "backend/scripts/start-studybuddy.ps1",
-        "backend/scripts/run-browser-tests.ps1",
-        "backend/app/config.py",
-        "backend/app/capabilities.py"
+        "backend/scripts/check-development-environment.ps1",
+        "backend/scripts/check-studybuddy-workspace.ps1"
       ],
       "tests": [
-        "backend/tests/test_environment_check.py",
-        "backend/tests/test_startup_script.py",
-        "backend/tests/test_capability_detection.py"
+        "backend/tests/test_health_script.py",
+        "backend/tests/test_start_script_pid_ownership.py",
+        "backend/tests/test_p2_use_1_capabilities.py"
       ],
       "evidence": [
         "H:\\studybuddy-test\\verification\\environment-update-20261001"
@@ -486,21 +506,22 @@
         "真实 Provider/OCR/ASR 和 Email/飞书需独立授权与验证"
       ],
       "status_date": "2026-10-01",
-      "test_baseline": "10 passed (focused), 40 passed (capability), 709 passed / 6 skipped (full backend)"
+      "test_baseline": "10 passed (focused), 40 passed (capability), 709 passed / 6 skipped (full backend)",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "migrations",
       "name": "数据库迁移系统",
-      "doc": "docs/[架构师+运维看]MIGRATIONS.md",
+      "doc": "03-ARCHITECTURE.md",
       "implementation": "implemented",
       "verification": "backend-pass",
       "code": [
         "backend/app/migrations/runner.py",
-        "backend/app/migrations/v01_*.py",
-        "backend/app/migrations/v13_*.py",
-        "backend/app/migrations/v14_*.py",
-        "backend/app/migrations/v15_*.py",
-        "backend/app/migrations/v16_*.py"
+        "backend/app/migrations/_v01_canonical_material.py",
+        "backend/app/migrations/_v13_phase10_tasks.py",
+        "backend/app/migrations/_v14_fix_revision_fingerprint.py",
+        "backend/app/migrations/_v15_card_review_schedule.py",
+        "backend/app/migrations/_v16_knowledge_modules.py"
       ],
       "tests": [
         "backend/tests/test_migrations.py",
@@ -514,12 +535,13 @@
       ],
       "status_date": "2026-09-13",
       "test_baseline": "35 passed (migration + backup tests)",
-      "notes": "拆分为 13 个版本模块 + helpers；当前 schema v16 (knowledge_modules)"
+      "notes": "拆分为 13 个版本模块 + helpers；当前 schema v16 (knowledge_modules)",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "frontend-contract",
       "name": "A3-FC 前端契约与架构",
-      "doc": "docs/frontend-plan.md",
+      "doc": "05-GOVERNANCE.md",
       "implementation": "implemented",
       "verification": "browser-pass",
       "code": [
@@ -531,7 +553,7 @@
       ],
       "tests": [
         "backend/tests/test_frontend_contract_audit.py",
-        "backend/tests/browser_*.spec.js"
+        "backend/tests/browser_frontend_static_baseline.spec.js"
       ],
       "evidence": [
         "docs/frontend-contract-audit-report.md",
@@ -544,12 +566,13 @@
       ],
       "status_date": "2026-09-26",
       "test_baseline": "674 passed / 3 skipped (backend), 574 passed / 4 skipped (Chromium)",
-      "notes": "A3-FC-3-2 + A3-PAGES + A3-VISUAL 均已在声明范围内完成 scoped closeout"
+      "notes": "A3-FC-3-2 + A3-PAGES + A3-VISUAL 均已在声明范围内完成 scoped closeout",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "p1-usability",
       "name": "P1-4 /app 可用性与差异审计",
-      "doc": "docs/contracts/P1_4_USABILITY_AUDIT_AND_CONTRACT.md",
+      "doc": "07-TEST-PLAN.md",
       "implementation": "partial",
       "verification": "not_verified",
       "code": [],
@@ -566,12 +589,13 @@
         "不以使用者真实自用为 P1-4 机器门槛"
       ],
       "status_date": "2026-09-29",
-      "notes": "P1-4 关闭不以使用者 7 天真实自用为机器门槛；P1-7 继续观察"
+      "notes": "P1-4 关闭不以使用者 7 天真实自用为机器门槛；P1-7 继续观察",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "p1-provider-config",
       "name": "P1-5 Provider 配置写入",
-      "doc": "docs/contracts/P1_5_PROVIDER_CONFIG_CONTRACT.md",
+      "doc": "03-ARCHITECTURE.md",
       "implementation": "implemented",
       "verification": "browser-pass",
       "code": [
@@ -594,12 +618,13 @@
       ],
       "status_date": "2026-09-20",
       "test_baseline": "33 passed (connection test + API)",
-      "notes": "已修复 LLM/Embedding gzip 误报 + SMTP RFC 5322 邮件头缺陷"
+      "notes": "已修复 LLM/Embedding gzip 误报 + SMTP RFC 5322 邮件头缺陷",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "p1-real-verification",
       "name": "P1-6 扩大真实能力验证",
-      "doc": "docs/[需求看]TODO.md",
+      "doc": "07-TEST-PLAN.md",
       "implementation": "not_implemented",
       "verification": "not_verified",
       "code": [],
@@ -613,12 +638,13 @@
         "未验证能力继续标记 not_verified"
       ],
       "status_date": "2026-09-29",
-      "notes": "须在 P1-4 完成后启动"
+      "notes": "须在 P1-4 完成后启动",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     },
     {
       "id": "p1-observation",
       "name": "P1-7 真实自用观察期",
-      "doc": "H:\\studybuddy-data\\p1-7-observation-log-2026-09-18.md",
+      "doc": "07-TEST-PLAN.md",
       "implementation": "partial",
       "verification": "not_verified",
       "code": [],
@@ -636,7 +662,8 @@
         "向量检索质量基线 14/14 通过但仅限 6 本教材范围"
       ],
       "status_date": "2026-09-19",
-      "notes": "已修复 Provider gzip 兼容 + 思考型模型预算耗尽缺陷；外部连接配置处理记录不纳入治理文档"
+      "notes": "已修复 Provider gzip 兼容 + 思考型模型预算耗尽缺陷；外部连接配置处理记录不纳入治理文档",
+      "product_source": "archive/legacy-product-references/ai-studybuddy/01-总PRD-产品需求-Product-Requirements.md"
     }
   ]
 }

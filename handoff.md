@@ -1,8 +1,8 @@
 # StudyBuddy 交接文档
 
 **时间**：2026-10-06
-**状态**：P0 S1-S5 学生闭环已完成隔离浏览器路径验收；本轮测试尾巴已清理
-**下一步**：提交并推送清理变更；治理清单漂移另行修复
+**状态**：可维护基线已完成本轮验证，工作树待提交推送
+**下一步**：提交并推送本轮状态源、治理测试和验证证据索引
 
 ---
 
@@ -103,6 +103,37 @@
 3e430be docs: 按初衷重建文档结构与 P0 主闭环验收
 e963bc3 feat: 填充 capabilities.json 作为唯一能力状态源
 ```
+
+---
+
+## 本轮基线验证（2026-10-06）
+
+### 状态源与治理
+
+- `docs/capabilities.json` 已补齐 22 项 `product_source`，并修正归档文档、静态资源、迁移模块和组件路径漂移。
+- `backend/tests/test_docs_governance.py`：5 passed。
+- `backend/tests/test_governance_consistency.py`：14 passed；测试已改读当前 `docs/05-GOVERNANCE.md`。
+
+### 完整后端
+
+- 命令：`D:\\miniconda\\py310\\python.exe -m pytest backend/tests/`
+- 结果：`735 passed, 3 skipped`。
+- 跳过项仅为显式 opt-in 的真实 ASR/Provider smoke。
+
+### 浏览器主路径
+
+- `browser_today_userpath.spec.js`：8 passed
+- `browser_s2_knowledge_modules.spec.js`：3 passed
+- `browser_practice_userpath.spec.js`：8 passed
+- `browser_review_userpath.spec.js`：12 passed
+- `browser_p1_4_c4_cram.spec.js`：2 passed
+- 总计：33 passed；连续 S1→S2→S3→S4→S5 的单数据根验收证据：`H:\\studybuddy-test\\verification\\p0-student-loop-20261006\\acceptance.md`
+
+证据索引：`H:\\studybuddy-test\\verification\\baseline-20261006\\summary.md`。
+
+### 当前边界
+
+上述结果是隔离环境、deterministic fake Provider 范围的 `PASS`。正式数据根、真实 Provider/ASR/OCR、外发、跨浏览器和屏幕阅读器仍为 `NOT_VERIFIED`。
 
 ---
 
@@ -312,13 +343,13 @@ Start-Process "http://127.0.0.1:8788/app/today.html"
 |------|------|------|
 | 文档重建 | ✅ PASS | 00-08 + subsystems + archive |
 | capabilities.json | ✅ PASS | 22 个能力项，唯一状态源 |
-| P0 主闭环测试 | ✅ PASS | 自动化测试通过（7 passed） |
+| P0 主闭环测试 | ✅ PASS | 完整后端 735 passed / 3 skipped；P0 API 2 passed |
 | 隔离环境准备 | ✅ PASS | `H:\studybuddy-test\data_root` 上服务可用 |
 | P0 浏览器验收 | ✅ PASS（范围限定） | S1-S5 路径与最终 Today 下一步已观察；详见 2026-10-06 acceptance |
 | 初衷溯源 | ✅ PASS | 已补充并写入长期记忆 |
 | 优先级调整 | ✅ PASS | 已基于初衷重新排序 |
 | 代码修正 | ✅ PASS | 错题闭环、Today 新类型、回环示例 |
-| Git 提交 | ✅ PASS | 2 个提交，未推送 |
+| Git 提交 | ⏳ | 本轮状态源、治理测试和验证索引待提交推送 |
 
 ---
 

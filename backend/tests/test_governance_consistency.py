@@ -16,7 +16,7 @@ def read(name: str) -> str:
 
 def test_repository_has_one_executable_test_contract():
     config = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    governance = read("[架构师+测试看]CODE_TEST_GOVERNANCE.md")
+    governance = read("05-GOVERNANCE.md")
     assert 'testpaths = ["backend/tests"]' in config
     assert "test-backend.ps1" in governance
     assert "test-browser.ps1" in governance
