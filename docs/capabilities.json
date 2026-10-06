@@ -16,7 +16,7 @@
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_plans.py", "backend/app/api/study_rhythm.py", "backend/app/api/today.py", "backend/app/repositories/today.py", "backend/app/static/today.html"],
       "tests": ["backend/tests/test_s1_today.py", "backend/tests/browser_s1_today.spec.js", "backend/tests/browser_today_userpath.spec.js"],
-      "evidence": ["H:\\studybuddy-test\\verification\\s1-today-20261005\\acceptance.md"],
+      "evidence": ["H:\\studybuddy-test\\verification\\s1-today-20261005\\acceptance.md", "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md"],
       "gaps": ["没有课程表和考试日期实体，Today 返回 unavailable_sources", "只读 rhythm_allocations；有计划但未排日程时 Today 为空"]
     },
     {
@@ -24,7 +24,7 @@
       "implementation": "implemented", "verification": "browser-pass",
       "code": ["backend/app/api/materials_detail.py", "backend/app/api/materials_collection.py", "backend/app/api/ai_indexing.py", "backend/app/api/knowledge_modules.py", "backend/app/api/study_notes.py"],
       "tests": ["backend/tests/test_s2_knowledge_modules_api.py", "backend/tests/test_knowledge_modules_repository.py", "backend/tests/test_v16_knowledge_modules_migration.py", "backend/tests/browser_s2_knowledge_modules.spec.js"],
-      "evidence": ["H:\\studybuddy-test\\verification\\s2-knowledge-modules-20261005\\acceptance.md"],
+      "evidence": ["H:\\studybuddy-test\\verification\\s2-knowledge-modules-20261005\\acceptance.md", "H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md"],
       "gaps": ["真实 Provider 抽取质量未验证"]
     },
     {
@@ -32,7 +32,7 @@
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_learning.py", "backend/app/api/study_practice.py"],
       "tests": ["backend/tests/test_phase9c_api.py", "backend/tests/test_practice_recommendations_api.py", "backend/tests/browser_practice_userpath.spec.js"],
-      "evidence": [],
+      "evidence": ["H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md"],
       "gaps": ["从知识模块进入练习需多步手工操作", "直接作答（非 session）不自动生成错题"]
     },
     {
@@ -40,15 +40,15 @@
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_practice.py"],
       "tests": ["backend/tests/test_phase9c_api.py", "backend/tests/browser_review_userpath.spec.js"],
-      "evidence": [],
-      "gaps": ["重做答对不会关闭错题", "薄弱点不进入 Today"]
+      "evidence": ["H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md"],
+      "gaps": ["薄弱点不进入 Today"]
     },
     {
       "id": "S5", "name": "期末冲刺", "product_source": "archive/legacy-product-references/ai-studybuddy/subsystems/08-S5-期末冲刺子系统PRD-ExamCrammer.md", "doc": "subsystems/S5-期末冲刺-ExamCrammer.md",
       "implementation": "partial", "verification": "browser-pass",
       "code": ["backend/app/api/study_practice.py", "backend/app/static/js/cram.js"],
       "tests": ["backend/tests/browser_p1_4_c4_cram.spec.js"],
-      "evidence": [],
+      "evidence": ["H:\\studybuddy-test\\verification\\p0-student-loop-20261005\\acceptance.md"],
       "gaps": ["冲刺不按薄弱点选题", "Today 只在目标日为明天时提示", "冲刺结果不回写计划进度"]
     },
     {

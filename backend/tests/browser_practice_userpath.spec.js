@@ -350,6 +350,37 @@ test.describe.serial('practice + practice-session pure user path (A-class)', () 
     await expect(page.locator('#weak-points .item-card', { hasText: '出现 2 次' })).toBeVisible({ timeout: 15000 });
     await assertNoSensitiveVisibleText(page);
   });
+
+  test('A-E2E-PRAC-8 判断题在会话中以布尔答案提交并生成错题', async ({ page }) => {
+    const prompt = '判断题布尔答案提交回归';
+    await createAndSelectSetViaUi(page, '练习链路练习集');
+    await page.locator('#new-exercise-type').selectOption('true_false');
+    await page.fill('#new-exercise-prompt', prompt);
+    await page.fill('#new-exercise-answer', 'true');
+    await page.locator('#exercise-create-form button').click();
+    await expect(page.locator('#exercise-status')).toHaveText('题目已创建', { timeout: 15000 });
+    await confirmExerciseViaUi(page, prompt);
+
+    await page.goto(`${BASE}/app/practice.html`);
+    const recommendation = page.locator('#recommendations .recommendation-item', { hasText: prompt });
+    await expect(recommendation).toBeVisible({ timeout: 15000 });
+    await recommendation.locator('input').check();
+    await page.getByRole('button', { name: '创建练习会话' }).click();
+    await page.waitForURL(/practice-session\.html\?session_id=/, { timeout: 15000 });
+    await page.getByRole('button', { name: '开始练习' }).click();
+    await expect(page.locator('.practice-question')).toBeVisible({ timeout: 15000 });
+    await page.locator('#answer').selectOption('false');
+    await page.getByRole('button', { name: '提交答案' }).click();
+    await expect(page.locator('#session-status')).toContainText('答案已提交', { timeout: 15000 });
+    await page.getByRole('button', { name: '完成会话' }).click();
+    await page.waitForURL(/practice-result\.html\?session_id=/, { timeout: 15000 });
+    await expect(page.locator('#result-detail')).toContainText('得分：0 / 1', { timeout: 15000 });
+
+    await page.goto(`${BASE}/app/practice.html`);
+    const mistake = page.locator('#mistakes .mistake-item', { hasText: prompt });
+    await expect(mistake).toBeVisible({ timeout: 15000 });
+    await assertNoSensitiveVisibleText(page);
+  });
 });
 
 // Evaluated inside the page against document.activeElement.

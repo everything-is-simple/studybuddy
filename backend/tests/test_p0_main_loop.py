@@ -77,8 +77,13 @@ def test_main_loop_always_shows_a_next_step(tmp_path):
         assert generated.status_code == 200, generated.text
         exercise = generated.json()["artifacts"][0]["id"]
         assert api.post(f"/api/study/exercises/{exercise}/confirm").status_code == 200
-        wrong = api.post(f"/api/study/exercises/{exercise}/attempts", json={"answer": 1})
-        assert wrong.status_code == 201 and wrong.json()["is_correct"] is False
+        session = api.post("/api/study/practice-sessions", json={"title": "主路径错题练习", "exercise_ids": [exercise]})
+        assert session.status_code == 201, session.text
+        session_id = session.json()["id"]
+        assert api.post(f"/api/study/practice-sessions/{session_id}/start").status_code == 200
+        session_item = api.get(f"/api/study/practice-sessions/{session_id}").json()["items"][0]["id"]
+        wrong = api.post(f"/api/study/practice-sessions/{session_id}/items/{session_item}/submit", json={"answer": 1})
+        assert wrong.status_code in (200, 201) and wrong.json()["is_correct"] is False
         items = today(api)
         assert "mistake_review" in kinds(items)
         assert_links_open(api, items)
@@ -86,11 +91,11 @@ def test_main_loop_always_shows_a_next_step(tmp_path):
         # 5. 重做错题（练习会话）并答对 → 错题闭合，Today 不再提示
         mistake = api.get("/api/study/mistakes").json()
         mistake = (mistake.get("items") if isinstance(mistake, dict) else mistake)[0]["id"]
-        session = api.post(f"/api/study/mistakes/{mistake}/redo", json={}).json()
-        assert api.post(f"/api/study/practice-sessions/{session['id']}/start").status_code == 200
-        detail = api.get(f"/api/study/practice-sessions/{session['id']}").json()
-        session_item = detail["items"][0]["id"]
-        right = api.post(f"/api/study/practice-sessions/{session['id']}/items/{session_item}/submit", json={"answer": 0})
+        redo = api.post(f"/api/study/mistakes/{mistake}/redo", json={}).json()
+        assert api.post(f"/api/study/practice-sessions/{redo['id']}/start").status_code == 200
+        detail = api.get(f"/api/study/practice-sessions/{redo['id']}").json()
+        redo_item = detail["items"][0]["id"]
+        right = api.post(f"/api/study/practice-sessions/{redo['id']}/items/{redo_item}/submit", json={"answer": 0})
         assert right.status_code in (200, 201) and right.json()["is_correct"] is True
         assert api.get(f"/api/study/mistakes/{mistake}").json()["status"] == "fixed"
         assert "mistake_review" not in kinds(today(api))
