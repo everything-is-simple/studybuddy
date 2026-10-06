@@ -1,8 +1,8 @@
 # StudyBuddy 交接文档
 
 **时间**：2026-10-06
-**状态**：P0 S1-S5 学生闭环已完成隔离浏览器路径验收
-**下一步**：提交并推送本轮代码、测试、状态源和证据索引
+**状态**：P0 S1-S5 学生闭环已完成隔离浏览器路径验收；本轮测试尾巴已清理
+**下一步**：提交并推送清理变更；治理清单漂移另行修复
 
 ---
 
@@ -106,10 +106,10 @@ e963bc3 feat: 填充 capabilities.json 作为唯一能力状态源
 
 ---
 
-## 当前阻塞问题
+## 历史测试阻塞（2026-10-05）
 
 ### 症状
-执行 `prepare-p0-verification.ps1` 后，健康检查失败：
+上一轮使用临时 P0 验收脚本时，健康检查失败：
 - 等待服务就绪 10 次后超时
 - `/api/liveness` 和 `/api/readiness` 无响应
 
@@ -126,7 +126,7 @@ e963bc3 feat: 填充 capabilities.json 作为唯一能力状态源
 
 ---
 
-## 待执行命令（未完成）
+## 历史排障命令（仅供回顾，不作为当前操作）
 
 ### 1. 检查日志
 ```powershell
@@ -278,7 +278,7 @@ Start-Process "http://127.0.0.1:8788/app/today.html"
 
 ### 立即执行（优先级最高）
 1. **提交并推送当前变更**：代码、练习进度测试、S3 文档、`capabilities.json`、交接文档。
-2. **保留未纳入提交的辅助文件**：`PUSH.md`、`prepare-p0-verification.ps1`、`execute-p0-verification.ps1` 仍需单独决定是否进入版本库。
+2. **本轮已清理临时文件**：`PUSH.md`、`prepare-p0-verification.ps1`、`execute-p0-verification.ps1` 及旧的 Phase 1 辅助脚本已删除。
 
 ### 如果启动仍失败
 1. 检查数据库连接逻辑：
