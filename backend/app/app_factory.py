@@ -228,7 +228,7 @@ def create_app(config: AppConfig | None = None, *, index_html: str) -> FastAPI:
     示例：
         >>> app = create_app(index_html="<html>...</html>")
         >>> # 使用 uvicorn 启动：
-        >>> # uvicorn app.main:app --host 0.0.0.0 --port 8787
+        >>> # uvicorn app.main:app --host 127.0.0.1 --port 8787
     
     注意：
         - 检测只运行一次（每进程），结果缓存在 app.state.detection

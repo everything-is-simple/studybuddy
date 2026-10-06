@@ -12,13 +12,11 @@
 
 from __future__ import annotations
 
-import inspect
 import json
 import re
 from pathlib import Path
 import sys
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -26,39 +24,6 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.config import AppConfig, config_from_environment  # noqa: E402
 from app.providers._registry import ProviderRegistry, EmbeddingProviderRegistry  # noqa: E402
 
-ARCHIVE_CONTRACT = ROOT / ".archive/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md"
-pytestmark = pytest.mark.skipif(
-    not ARCHIVE_CONTRACT.exists(),
-    reason="requires .archive/ historical documents"
-)
-
-
-def test_p1_5_0_contract_document_exists_and_declares_frozen() -> None:
-    """验证 P1-5 契约文档存在且声明为 contract-frozen。"""
-    contract_path = ROOT / ".archive/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md"
-    assert contract_path.exists(), "P1-5 契约文档不存在"
-
-    contract_text = contract_path.read_text(encoding="utf-8")
-
-    # 验证契约状态声明
-    assert "contract-frozen" in contract_text, "契约未声明为 frozen 状态"
-    assert "2026-01-09" in contract_text or "2026-01" in contract_text, "契约缺少冻结日期"
-
-    # 验证关键章节存在
-    required_sections = [
-        "Provider 配置边界",
-        "Email 配置边界",
-        "Secret Source 契约",
-        "Connection-Test 契约",
-        "Backup/Restore 契约",
-    ]
-    for section in required_sections:
-        assert section in contract_text, f"契约缺少章节：{section}"
-
-    # 验证明确声明不修改代码
-    assert "P1-5-0" in contract_text
-    assert "不修改" in contract_text or "不新增" in contract_text
-    assert "backend/app/" in contract_text
 
 
 def test_p1_5_0_secret_fields_have_repr_false() -> None:
@@ -176,26 +141,6 @@ def test_p1_5_0_capabilities_api_does_not_expose_secrets() -> None:
     assert "SECRET_EMBEDDING_KEY" not in str(embedding_capabilities)
 
 
-def test_p1_5_0_backup_manifest_excludes_credentials() -> None:
-    """验证 backup manifest 不包含 credentials。"""
-    backup_module_path = ROOT / "backend/app/backup.py"
-    backup_source = backup_module_path.read_text(encoding="utf-8")
-
-    # 验证 manifest 元数据函数存在
-    assert "_manifest" in backup_source or "def manifest" in backup_source
-
-    # 验证 backup 文档明确声明不含 credentials
-    backup_doc_path = ROOT / "docs/[运维看]BACKUP_RESTORE.md"
-    backup_doc = backup_doc_path.read_text(encoding="utf-8")
-
-    # 关键断言：backup 不包含 credentials
-    assert "不包含" in backup_doc or "exclude" in backup_doc.lower()
-    assert "credential" in backup_doc.lower() or "secret" in backup_doc.lower() or "密钥" in backup_doc
-
-    # 验证 B4 契约也声明不含 credentials
-    b4_contract_path = ROOT / ".archive/contracts/B4_DELIVERY_COMPONENT_CONTRACT.md"
-    b4_contract = b4_contract_path.read_text(encoding="utf-8")
-    assert "backup" in b4_contract.lower()
     # B4 契约应该提及 backup 与 credentials 的关系（可能使用不同措辞）
     # 如果 B4 契约中没有明确声明，则通过 BACKUP_RESTORE.md 的声明即可
 
@@ -289,65 +234,3 @@ def test_p1_5_0_delivery_defaults_remain_closed() -> None:
         os.environ.update(original_env)
 
 
-def test_p1_5_0_no_production_code_modified() -> None:
-    """验证 P1-5-0 未修改 backend/app/ 生产代码（通过文档声明验证）。
-
-    注：本测试验证契约文档声明，实际代码未修改由 git diff 和 commit message 保证。
-    """
-    contract_path = ROOT / ".archive/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md"
-    contract_text = contract_path.read_text(encoding="utf-8")
-
-    # 验证契约明确声明不修改生产代码
-    assert "不修改" in contract_text and "backend/app/" in contract_text, \
-        "契约未明确声明不修改 backend/app/"
-
-    # 验证契约声明不新增 schema/migration
-    assert "schema" in contract_text.lower() and "migration" in contract_text.lower()
-
-    # 验证契约声明不新增 endpoint
-    assert "endpoint" in contract_text.lower() or "API" in contract_text
-
-    # 验证证据文档也确认此点
-    evidence_path = ROOT / ".archive/evidence/P1_5_0_CONTRACT_EVIDENCE.md"
-    evidence_text = evidence_path.read_text(encoding="utf-8")
-
-    assert "生产代码修改" in evidence_text and "无" in evidence_text, \
-        "证据文档未确认无生产代码修改"
-    assert "Schema/Migration 修改" in evidence_text and "无" in evidence_text, \
-        "证据文档未确认无 schema/migration 修改"
-
-
-def test_p1_5_0_stable_error_codes_documented() -> None:
-    """验证稳定错误码在契约和证据文档中有明确记录。"""
-    contract_path = ROOT / ".archive/contracts/P1_5_PROVIDER_EMAIL_CONFIGURATION_CONTRACT.md"
-    contract_text = contract_path.read_text(encoding="utf-8")
-
-    evidence_path = ROOT / ".archive/evidence/P1_5_0_CONTRACT_EVIDENCE.md"
-    evidence_text = evidence_path.read_text(encoding="utf-8")
-
-    # 验证 Provider 错误码
-    provider_error_codes = [
-        "provider_not_configured",
-        "provider_invalid_config",
-        "provider_connection_failed",
-        "provider_timeout",
-        "provider_unavailable",
-    ]
-
-    for error_code in provider_error_codes:
-        assert error_code in contract_text or error_code in evidence_text, \
-            f"错误码 {error_code} 未在契约或证据文档中记录"
-
-    # 验证 Delivery 错误码
-    delivery_error_codes = [
-        "delivery_disabled",
-        "delivery_target_not_allowed",
-        "delivery_authorization_required",
-        "delivery_configuration_invalid",
-        "delivery_timeout",
-        "delivery_failed",
-    ]
-
-    for error_code in delivery_error_codes:
-        assert error_code in contract_text or error_code in evidence_text, \
-            f"错误码 {error_code} 未在契约或证据文档中记录"

@@ -3,16 +3,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 PAGE = ROOT / "backend/app/static/settings-provider.html"
-EVIDENCE = ROOT / ".archive/evidence/P1_5_4_BROWSER_SECURITY_EVIDENCE.md"
-
-pytestmark = pytest.mark.skipif(
-    not EVIDENCE.exists(),
-    reason="requires .archive/ historical documents"
-)
 
 
 def test_p1_5_4_page_has_no_browser_persistence_or_config_save() -> None:
@@ -57,11 +50,3 @@ def test_p1_5_4_provider_export_uses_provider_id_and_email_export_is_complete() 
     assert 'id="email-copy"' in text
 
 
-def test_p1_5_4_schema_matches_current_version_and_evidence_exists() -> None:
-    runner = (ROOT / "backend/app/migrations/runner.py").read_text(encoding="utf-8")
-    assert re.search(r"CURRENT_SCHEMA_VERSION\s*=\s*15", runner)
-    assert EVIDENCE.exists()
-    evidence = EVIDENCE.read_text(encoding="utf-8")
-    assert "browser-pass" in evidence
-    assert "mock-tested" in evidence
-    assert "real provider/email pass" in evidence

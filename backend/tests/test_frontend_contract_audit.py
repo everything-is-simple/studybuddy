@@ -1,18 +1,10 @@
 import importlib.util
 import json
 from pathlib import Path
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "backend" / "scripts" / "audit-frontend-contract.py"
 FIXTURES = ROOT / "docs" / "frontend-contract-fixtures.json"
-CAPABILITY_MATRIX = ROOT / ".archive" / "frontend" / "frontend-static-capability-matrix.md"
-FAILURE_MATRIX = ROOT / ".archive" / "frontend" / "frontend-static-failure-retry-matrix.md"
-
-pytestmark = pytest.mark.skipif(
-    not CAPABILITY_MATRIX.exists(),
-    reason="requires .archive/ historical documents"
-)
 
 
 def load_auditor():
@@ -40,22 +32,6 @@ def test_frontend_contract_fixtures_define_required_resource_states():
         assert resource["endpoint"].startswith("/api/")
         assert resource["identity"] == "id"
         assert resource["states"]
-
-
-def test_static_capability_matrix_declares_all_current_pages():
-    matrix = CAPABILITY_MATRIX.read_text(encoding="utf-8")
-    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "plan-detail.html", "note-detail.html", "practice-session.html", "practice-result.html", "review.html", "reports.html", "settings.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
-        assert f"`{name}`" in matrix
-    for state in ("static_verified", "legacy_only", "not_exposed", "a3_pages"):
-        assert f"`{state}`" in matrix
-
-
-def test_static_failure_matrix_covers_all_current_pages():
-    matrix = FAILURE_MATRIX.read_text(encoding="utf-8")
-    for name in ("index.html", "today.html", "materials.html", "material-detail.html", "qa.html", "plans.html", "plan-detail.html", "note-detail.html", "practice-session.html", "practice-result.html", "review.html", "reports.html", "settings.html", "notes.html", "cards.html", "exercises.html", "practice.html", "capture.html", "classroom.html", "tasks.html", "settings-provider.html"):
-        assert f"`{name}`" in matrix
-    for status in ("covered", "baseline", "deferred"):
-        assert f"{status}" in matrix
 
 
 def test_shared_state_contract_exposes_fixture_statuses():

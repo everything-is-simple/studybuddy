@@ -245,6 +245,20 @@ def submit_exercise_attempt(connection: sqlite3.Connection, *, project_id: str, 
             (attempt_id, exercise_id, json.dumps(answer, ensure_ascii=False), score,
              int(correct) if correct is not None else None, grading, utc_now(), None, ""),
         )
+        # S3→S4 回流与练习会话保持一致：规则判错自动进错题本，判对则闭合未完成的错题。
+        if correct is False:
+            from ._legacy_part_05 import _phase9c_attempt_source, _phase9c_materialize_mistake
+            attempt = connection.execute("SELECT * FROM exercise_attempts WHERE id=?", (attempt_id,)).fetchone()
+            source_revision, source_status = _phase9c_attempt_source(connection, attempt)
+            _phase9c_materialize_mistake(connection, project_id=project_id, attempt_id=attempt_id, exercise_id=exercise_id,
+                                          reason_code="deterministic_incorrect", origin="deterministic",
+                                          source_revision=source_revision, source_status=source_status)
+        elif correct is True:
+            now = utc_now()
+            connection.execute(
+                "UPDATE mistake_cases SET status='fixed',fixed_at=?,updated_at=? "
+                "WHERE project_id=? AND exercise_id=? AND status IN ('open','in_review','reopened')",
+                (now, now, project_id, exercise_id))
     return {"id": attempt_id, "exercise_id": exercise_id, "score": score, "is_correct": correct, "grading_status": grading}
 
 PHASE9C_SESSION_TITLE_MAX = 200

@@ -1,122 +1,75 @@
 # StudyBuddy
 
-Today（`/app/today.html`）优先展示最多 5 个有来源的待闭合项，按紧急／重要／建议排序；开始和完成学习即时回读进度。完整任务与学习进度在“更多任务与学习进度”中展开，溢出事项保留计划、资料、错题和练习入口。当前支持计划安排、备考目标、材料问题、知识草稿确认和错题；备考目标不等同于已确认考试日期。
+本机单进程学习闭环系统：学生在 Windows 上导入资料、建计划、练习、改错、备考，家长收脱敏报告。
 
-材料详情的知识模块工作区现在提供 TTS 朗读入口。TTS 默认关闭真实 Provider；隔离测试可使用 deterministic fake WAV，真实 SAPI/edge-tts 需显式配置并单独验收。朗读音频仅缓存于 data root 下的 `tts-cache`，不写 SQLite 学习事实。
-<!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
-## 统一执行协议（2026-09-27）
+## 快速启动
 
-本文件与 `H:\studybuddy\docs\[所有角色看]AI_AGENT_TASK_DIALOGUE_TEMPLATES.md` v2.1 使用同一套执行口径。本文档中早于 2026-09-27 的报告、表格和历史标签保留其原始事实；历史标签只能在原日期、原范围和原证据路径下解释，不能升级为当前全局结论。
+```powershell
+# 启动（默认 127.0.0.1:8787）
+powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787
 
-### 可执行 Prompt 的必填字段
-- **角色**：本次执行者的职责。
-- **唯一目标**：一个可判定的结果，不把多个目标合并成“全部处理”。
-- **当前阶段**：只能填写 `P0`（边界确认）、`P1`（真实状态读取）、`P2`（真实操作执行）、`P3`（证据核对）、`P4`（交付与结论）之一，并按顺序推进。
-- **允许读取/写入**：逐项列出绝对路径、URL、端点、数据根和输入；未列出的对象禁止访问或修改。
-- **指定工具/命令/端口/输入**：必须原样执行；对象不可用时返回 `BLOCKED`，不得替换。
-- **禁止操作、停止条件和证据路径**：逐项写明；每个结论必须有实际命令/动作、结果和绝对证据路径。
+# 浏览器打开
+http://127.0.0.1:8787/app/today.html
+```
 
-### 统一状态与范围
-`PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
+健康检查 `/api/liveness` `/api/health` `/api/readiness`；停止用 `stop-studybuddy.ps1`。完整运维见 [`docs/06-OPERATIONS.md`](docs/06-OPERATIONS.md)。
 
-### 统一路径和运行基线
-源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/buddy.html`。
+## 当前能力
 
-正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
+- **Today**：待办 ≤ 5 项，按紧急/重要/建议排序；点"开始""完成"写进度事件。
+- **资料与知识模块**：导入、索引、AI 抽取草稿、人工确认、按模块练习、掌握度投影。
+- **限时练习、错题、冲刺**：规则批改、错题复盘、重做闭合、倒计时。
+- **计划与节奏**：激活计划、排日程、记录进度、依赖。
+- **朗读（TTS）**：知识模块入口、fake/SAPI/edge-tts Provider、缓存 WAV，不写学习事实。
 
-### 强制禁止
-不得凭推测输出；不得用 HTML 解析、按钮清单、curl/API 请求、静态检查或 headless 结果冒充可视浏览器点击；不得读取、复制、提交或展示密钥、Token、Cookie、真实教材正文、Provider 原始响应、SQL 或完整 traceback；不得在未授权时调用真实 Provider/OCR/ASR、发送 Email/飞书或扩大文件范围。工具、路径、页面、服务状态或证据不满足前置条件时，立即停止并报告 `BLOCKED`。
+外发报告、真实 OCR/ASR、真实邮件/飞书、Electron 壳、通用对话均未实现或已退出主线。状态见 [`docs/capabilities.json`](docs/capabilities.json)。
 
-<!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
+## 文档
 
+| 文档 | 用途 |
+|---|---|
+| [`docs/00-INDEX.md`](docs/00-INDEX.md) | 导航入口 |
+| [`docs/01-PRD.md`](docs/01-PRD.md) | 产品需求（为谁、解决什么） |
+| [`docs/02-SUBSYSTEMS.md`](docs/02-SUBSYSTEMS.md) | 七个子系统地图 |
+| [`docs/03-ARCHITECTURE.md`](docs/03-ARCHITECTURE.md) | 技术栈、代码布局、数据流 |
+| [`docs/05-GOVERNANCE.md`](docs/05-GOVERNANCE.md) | 代码、测试、组件、文档规则 |
+| [`docs/06-OPERATIONS.md`](docs/06-OPERATIONS.md) | 启动、备份恢复、迁移、新机器 |
+| [`docs/07-TEST-PLAN.md`](docs/07-TEST-PLAN.md) | P0 主闭环验收、证据位置 |
+| [`docs/08-DECISIONS.md`](docs/08-DECISIONS.md) | 决策记录 |
+| [`docs/subsystems/`](docs/subsystems/) | S1–S7 + 横切能力详细设计 |
+| [`docs/user/`](docs/user/) | 使用手册、新手指南 |
 
-## 当前入口与状态
+## 目录
 
-默认首页为 [Buddy](http://127.0.0.1:8787/app/buddy.html)：首次进入学生视图，后续恢复上次选择的学生/家长视图。家长模式通过“高级功能”进入资料、模型配置和任务管理。[学生页](http://127.0.0.1:8787/app/student.html)、[家长页](http://127.0.0.1:8787/app/parent.html) 和 [Today 完整任务页](http://127.0.0.1:8787/app/today.html) 可直接访问。
+| 目录 | 用途 |
+|---|---|
+| `H:\studybuddy` | 源码、测试、文档 |
+| `H:\studybuddy-data` | 正式 data_root（SQLite、原文件、配置） |
+| `H:\studybuddy-test` | 隔离测试、证据 |
+| `H:\studybuddy-composer` / `-integration` | 组件试炼 / 组合验证 |
+| `H:\studybuddy-ChinaTextbook` | 真实教材（只读；token 是密钥） |
 
-StudyBuddy 是本地单进程、单实例的 FastAPI + SQLite 学习材料系统。当前正式 schema 为 v16；运行和开发环境的唯一入口基线见 [`docs/[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md`](docs/[维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md)。系统仍不是全局 production `real-pass`，未验证范围必须按能力单独标记。
+## 测试
 
-- 运行 local v1 API：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`；检查与停止分别使用 `health-studybuddy.ps1`、`stop-studybuddy.ps1`。用户和验证任务必须使用该启动脚本；`python -m backend.app serve` 仅是实现层的显式单进程入口，不得替换任务中指定的启动脚本。应用工厂为 `backend.app.main:create_app`。开发期直接使用 Uvicorn reload 不属于 release runtime。
-- 运行 operator CLI：`/cygdrive/d/miniconda/py310/python -m backend.app`（入口实现：`backend/app/__main__.py` → `backend/app/cli.py`）；backup、verify、restore、schema 查询、`diagnostics`、`upgrade-preflight --data-root <root> --backup <verified-backup>` 和默认 dry-run 的 `rotate-backups` 均必须显式调用。
-- 后端门禁：`powershell -ExecutionPolicy Bypass -NoProfile -File .\\backend\\scripts\\test-backend.ps1`；浏览器门禁：`powershell -ExecutionPolicy Bypass -NoProfile -File .\\backend\\scripts\\test-browser.ps1 <spec>`。
-- 权威文档入口：[`docs/INDEX.md`](docs/INDEX.md)；新用户请先阅读 [`docs/[UI设计+用户看]LOCAL_V1_USER_GUIDE.md`](docs/[UI设计+用户看]LOCAL_V1_USER_GUIDE.md)，其中包含首次配置、启动、前端入口、验收清单和真实 AI 配置；状态、已完成阶段路线、已批准后续能力路线和 TODO 分别以 [`docs/[需求+所有角色看]STATUS.md`](docs/[需求+所有角色看]STATUS.md)、[`docs/PHASE_ROADMAP.md`](.archive/historical-roadmaps/PHASE_ROADMAP.md)、[`docs/[需求+架构看]ROADMAP_CAPABILITIES.md`](docs/[需求+架构看]ROADMAP_CAPABILITIES.md)、[`docs/[需求看]TODO.md`](docs/[需求看]TODO.md) 为准。
-- 核心设计与治理：[`docs/[架构师看]ARCHITECTURE.md`](docs/[架构师看]ARCHITECTURE.md)、[`docs/[架构师+测试看]CODE_TEST_GOVERNANCE.md`](docs/[架构师+测试看]CODE_TEST_GOVERNANCE.md)、[`docs/[架构师+运维看]MIGRATIONS.md`](docs/[架构师+运维看]MIGRATIONS.md)、[`docs/[运维看]BACKUP_RESTORE.md`](docs/[运维看]BACKUP_RESTORE.md)。
+```powershell
+# 后端（Python 3.10）
+powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\test-backend.ps1
 
-**本地单机 v1 已完成生产化和上线收口**，范围严格限于 local single-process / single-instance / SQLite / local-disk：Phase 10 Gates A-J 已通过，release candidate 已在隔离 data root 完成启动、导入、索引、学习路径、显式任务、backup、verify、restore、重启和 diagnostics 演练。runner 仍只由显式 API/CLI 调用，启动/backup/restore/read 不自动执行；只有 approved `embedding_index` 接入 runner，Q&A、generation、OCR/ASR、report/delivery 未接入。该完成不代表多用户、认证授权、云同步、协作、多进程共享 data root、真实断电恢复、所有真实 Provider/OCR/ASR/外发渠道、universal installer 或全局 production `real-pass`。
+# 浏览器（串行，一次一个 spec）
+powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\test-browser.ps1 <spec>
+```
 
-**当前验证基线（2026-09-26）**：后端 `674 passed, 3 skipped, 0 failed`（242.81s，D:\miniconda Python、每次运行唯一 basetemp）；Chromium 全量 `574 passed, 4 skipped, 0 failed`（21.1m、单 worker、隔离数据根、fake Provider／ASR 范围）。后端 3 个 skip 与 Chromium 4 个 skip 均为默认关闭的真实 Provider／ASR smoke；结果不构成正式运行时、真实 Provider／OCR／ASR、外发或全局 `real-pass`。前端当前实现事实（页面/共享层/测试/路由覆盖）见 [`docs/frontend-inventory-report.md`](.archive/frontend/frontend-inventory-report.md)。
+新代码 ≤ 32 KiB；schema 变更走 `migrations/runner.py`；生成内容先是草稿；不提交数据库/密钥/路径。详见 [`docs/05-GOVERNANCE.md`](docs/05-GOVERNANCE.md)。
 
-**A2.X 系列完成 (2025-01-28)**: 4 个超限核心文件（repositories/_legacy.py, main.py, migrations/runner.py, providers.py）已拆分为模块化结构，从 639KB 减少到 48KB（92.6% 减少），所有模块 ≤ 32 KiB，所有公共 API 保持向后兼容。413 passed, 2 skipped 是 A2.X 的历史基线；当前完整回归基线以 `docs/[需求+所有角色看]STATUS.md` 为准。详见 [`docs/archive/A2_X_SERIES_SUMMARY.md`](.archive/A2_X_SERIES_SUMMARY.md)。
+## 支持范围
 
-Operator backup / restore 已提供 CLI，详见 [`docs/[运维看]BACKUP_RESTORE.md`](docs/[运维看]BACKUP_RESTORE.md)。备份使用 SQLite Online Backup API，并对 database 与 hash-derived originals 生成带 SHA-256/size/integrity/continuous-history/schema-version metadata 的 manifest；`verify-backup` 只验证不 repair，`restore --confirm` 只恢复到不存在或空目标目录，`verify-restored-data` 提供 offline/online restore 后验收。`rotate-backups` 默认 dry-run、确认后仅删除较旧 verified sets；`upgrade-preflight` 需重新验证与 live schema 匹配的 rollback backup。备份保留、轮换、restore drill 和升级隔离见 `docs/operations/BACKUP_OPERATIONS.md`、`docs/operations/RESTORE_DRILL.md` 与 `docs/operations/OPERATOR_UPGRADE.md`。无法建立 integrity/schema/original/readiness 安全状态时 v1 停机并隔离证据，不提供 runtime read-only serving。应用启动不会自动 backup、restore 或 repair。
+✅ 本机单进程、单实例、SQLite、本地文件、Windows  
+❌ 多 worker、共享 data_root、云同步、多用户、真实断电恢复
 
-本地运行方式由 `backend/scripts/start-studybuddy.ps1`、`health-studybuddy.ps1` 和 `stop-studybuddy.ps1` 提供：固定 `127.0.0.1:8787` loopback、单进程、delivery off，使用 data root PID 文件和 `.studybuddy-instance.lock` 防止重复实例。用户和验证任务不得自行改用其他启动路径；`python -m backend.app serve` 与 `version` 仅保留为实现层/运维层显式入口。配置 key 只允许 runtime environment/OS secret source，不进入命令行、数据库、日志或 artifact。
+## 远端
 
-AI / 学习功能处于 staged implementation 阶段，设计文档见 [`docs/[架构师看]AI_LEARNING_ARCHITECTURE.md`](docs/[架构师看]AI_LEARNING_ARCHITECTURE.md)；项目阶段性总进度见 [`docs/[需求+所有角色看]STATUS.md`](docs/[需求+所有角色看]STATUS.md)。materials/extractions/text_spans 保持 source of truth；Phase 4 Q&A、Phase 5 OpenAI-compatible adapter、Phase 6 P6-A–P6-E，以及 Mistral 精确 embedding 配置范围的 Phase 7 均按各自 evidence 完成对应范围。P6-E fake Provider 已验证导入 → indexing → retrieval → thread → Q&A → citation → 定位 → 导出 → refresh/history 连续路径，相关 failure/source lifecycle/竞态 contract 见 [`docs/evidence/P6E_ACCEPTANCE_EVIDENCE.md`](.archive/evidence/P6E_ACCEPTANCE_EVIDENCE.md)。DeepSeek `deepseek-chat` 与 Agnes `agnes-2.5-flash` 已在各自精确 provider/model/gateway 配置下通过 adapter/API/UI smoke；本轮 P6-E real UI path 也已分别通过。Phase 8 Cards/Exercises 已在 deterministic fake-provider、Chromium 和 backup/restore 的精确范围完成：schema、draft generation、citation/source lifecycle、用户确认保护、review/attempt、隐私和 restore non-repair 均有验收，详见 [`docs/evidence/PHASE8_ACCEPTANCE_EVIDENCE.md`](.archive/evidence/PHASE8_ACCEPTANCE_EVIDENCE.md)。真实 Provider generation evidence、系统级辅助技术/极端运行条件、人工简答复核、完整学习计划产品能力，以及 Q&A/generation/OCR/ASR/report/delivery 的 runner 接入仍未实现；Phase 9A 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成。Phase 9A 当前已完成 9A-0 的 `planned/audit-draft` 代码审计和 9A-1 的 `planned/contract-frozen` 正式领域契约/状态机冻结，9A-2 已新增并测试 v9 schema migration，9A-3 已实现并测试 repository/domain transactions、DAG、append-only progress/projection 和 source identity refresh，9A-4 已实现并测试最小 API、project scope、稳定错误和输入边界，9A-5 已通过本地 Chromium 计划 workspace gate，9A-6 source lifecycle scoped backend/browser gates 已通过，9A-7 backup/restore `restore-gates-pass` 已通过；9A-8 acceptance/documentation closeout 已完成，限定范围和未验证边界见 [`docs/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md`](.archive/evidence/PHASE9A_ACCEPTANCE_EVIDENCE.md)。详见 [`docs/contracts/PHASE9A_DOMAIN_CONTRACT.md`](.archive/contracts/PHASE9A_DOMAIN_CONTRACT.md)、[`docs/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md`](.archive/evidence/PHASE9A_SOURCE_LIFECYCLE_EVIDENCE.md)、[`docs/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md`](.archive/evidence/PHASE9A_BACKUP_RESTORE_EVIDENCE.md)。Phase 9B 已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成：9B-9 已完成全量 backend/相关 Chromium 回归、Gate A-I 脱敏 evidence 与状态文档收口。证据见 [`docs/evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md`](.archive/evidence/PHASE9B_ACCEPTANCE_EVIDENCE.md)。Phase 9C 当前已在 deterministic fake-provider、单进程 SQLite、本地 Chromium 与 backup/restore 的明确范围内完成：9C-0 为 `planned/audit-draft`，9C-1 为 `planned/contract-frozen`，9C-2 至 9C-7 为 `implemented/backend-pass`，9C-8 为 `browser-pass`，9C-9 为 `scoped-gates-pass`/`restore-gates-pass`，9C-10 已完成 Gate A-J closeout。v11 migration/schema、共享 domain transaction、S3 PracticeRunner、S4 ErrorFixer、S5 ExamCrammer、最小安全 API、Chromium workspace、source lifecycle 和 backup/restore non-repair 已覆盖 immutable snapshot、server deadline、submit/finish/expire/result、deterministic/pending grading、review/mistake facts、redo、cram goal/session、weak-point、append-only/idempotency、project scope、failure/reload/narrow/keyboard/privacy；完整证据见 [`docs/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md`](.archive/evidence/PHASE9C_ACCEPTANCE_EVIDENCE.md)。范围是限时练习、错题改错/人工复核、期末冲刺。Phase 9D 当前为部分立项：9D-0 已完成 `planned/audit-draft`，9D-1 已完成 `planned/contract-frozen`，9D-2 已通过连续 v12 migration、rollback、幂等、schema history 和 backup version 门禁，9D-3 已实现并测试 project scope、capture/transcription operation、置信度/uncertain facts、可重算脱敏 report projection、append-only delivery audit、幂等、事务 rollback、secret/raw-response 边界和 material source 降级；9D-4 已实现并测试敏感音频/图片原件上传、hash-derived originals 绑定、deterministic fake/loopback OCR/ASR、confidence/uncertain、失败/超时、幂等 replay/retry、rollback 和 source lifecycle 安全读路径；9D-5 已实现并测试同一 capture material 的 confirmed transcript → extraction/revision/chunk/FTS retrieval/citation 管线接入、draft→edit→confirm/reject、uncertain 保留、用户编辑保护、citation identity 校验和 confirm rollback，均为 `implemented/backend-pass`。9D-6 已实现并测试 S6 daily/weekly/monthly/exam_alert 只读聚合、IANA timezone 半开窗口、白名单强制脱敏、source degradation 归一化、snapshot/fingerprint 幂等和 JSON/Markdown 安全导出；9D-7 已实现配置强制的默认 `off`、allowlisted 无网络 dry-run、live 授权检查后仍拒绝、append-only/idempotency/retry 审计和 runtime-only secret 边界。9D-9 Chromium workspace 已在 desktop/narrow/keyboard/reload/failure/privacy 范围通过；9D-10 source lifecycle（软删/硬删降级）与 backup/restore（verify→restore non-repair）已实现并通过。9D-11 已完成 9D-0 部分立项范围的 scoped closeout，证据见 [`docs/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md`](.archive/evidence/PHASE9D_ACCEPTANCE_EVIDENCE.md)。真实 OCR/ASR 和真实对外交付仍未立项。这不代表未立项能力、真实 Provider generation、scheduler/worker、人工复核或全局 production `real-pass` 已完成。暂不引入外部 vector DB、后台队列或自动 repair。
+`https://github.com/everything-is-simple/studybuddy.git`
 
-## S2 知识模块
+## Agent 执行门禁
 
-从资料库进入材料详情，建立 AI 索引后打开“知识模块”：选择来源片段手动添加，或 AI 辅助抽取草稿，编辑后逐项确认／拒绝。已确认模块可通过“按此模块练习”进入练习集，生成带引用题目并确认后作答；回到模块页可查看基于已评分练习的掌握度。支持搜索、元数据编辑和软删除。技术与验收范围见 ARCHITECTURE 和 STATUS；真实 Provider 质量仍需独立验证。
-
-## AI 任务执行门禁
-
-AI 任务必须遵循 `H:\studybuddy\docs\[所有角色看]AI_AGENT_TASK_DIALOGUE_TEMPLATES.md` v2.1：先在 `P0` 明确角色、唯一目标、阶段、真实读取对象、允许读写路径、指定工具/命令/URL/端口/输入、禁止项、停止条件和证据路径，再进入 `P1` 读取真实状态、`P2` 执行、`P3` 核证、`P4` 交付。工具、命令、路径和数据根不得擅自替换；不可用时返回 `BLOCKED` 并等待确认。没有本次精确真实证据时只能报告 `NOT_VERIFIED`，不能把 `implemented`、`configured`、`available` 或测试通过写成 `real-pass`。浏览器任务必须使用指定的真实浏览器动作，不能用 curl、API 请求或 HTML 解析替代；证据写入 `H:\studybuddy-test\verification`。
-
-个人学习系统主目录。
-
-远端仓库：`https://github.com/everything-is-simple/studybuddy.git`
-
-## 目录使用规范 (2026-09-18 新增，2026-09-19 修订)
-
-项目使用以下目录结构，各目录用途固定，不得混用：
-
-- **H:\studybuddy**：正式源码仓库，包含生产代码、正式测试和必要文档
-- **H:\studybuddy-data**：正式运行数据根目录（data_root），存放SQLite数据库、hash-derived原文件、配置文件
-- **H:\studybuddy-composer**：组件独立测试目录，组件必须先在此完成独立测试
-- **H:\studybuddy-integration**：组件组合测试目录，通过Composer测试的组件在此完成组合测试
-- **H:\studybuddy-test**：测试artifacts和fixtures目录，存放合成fixture、测试运行结果和脱敏artifact
-- **H:\studybuddy-ChinaTextbook**：真实教材与学习资料目录（`小学教材\<年级>\<科目>\`、`基础性作业\`、下载脚本、`教材清单.md`；`智慧教育token.txt` 为密钥，永不清扫）
-
-各目录定位、"必须保留 / 可清理"边界与清扫日志见 [`docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md`](docs/[架构师+运维看]WORKSPACE_DIRECTORIES.md)。
-
-新机器目录重建、组件证据边界和可直接交给 AI 的配置提示词见 [`docs/[维护者看]NEW_MACHINE_SETUP.md`](docs/[维护者看]NEW_MACHINE_SETUP.md) 与 [`docs/[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md`](docs/[维护者看]STUDYBUDDY_NEW_MACHINE_PROMPT.md)。
-
-**目录内部结构补充（2026-09-19）**：
-
-- `H:\studybuddy-data` 的**根目录**才是活跃 data_root；其下的 `live/` 是已废弃的历史 data_root 残留（业务表已归零），**禁止**把 `STUDYBUDDY_DATA_ROOT` 指向它。
-- `H:\studybuddy-e2e-test`、`H:\studybuddy-e2e-test-<时间戳>` 属一次性临时 data_root，不属于这六个正式目录，确认无进程占用后可整目录删除。
-
-**重要原则**：
-- 不得从Composer或Integration项目直接复制源码到正式系统
-- 测试使用studybuddy-test下的数据，不写入正式仓库的运行数据
-- 正式运行使用studybuddy-data作为data_root
-- 不要将data_root放在OneDrive/网盘同步目录、网络盘或Git仓库内
-- 不要让多个StudyBuddy实例共用同一个data_root
-
-本目录只存正式产品源码、正式测试和必要文档。组件必须先在 `H:\studybuddy-composer` 完成独立测试，再在 `H:\studybuddy-integration` 完成组合测试，最后由主系统重新实现或装配。不得从参考项目直接复制源码作为正式实现。后续 ASR、OCR、报告、外发、后端拆分、原生前端与 Tauri 桌面化的已批准门禁路线见 [`docs/[需求+架构看]ROADMAP_CAPABILITIES.md`](docs/[需求+架构看]ROADMAP_CAPABILITIES.md)；B0 组件治理 intake 已在 `H:\studybuddy-composer\B0-COMPONENT-GOVERNANCE.md` 建立。已选 C0 路径为 `H:\Whisper`/whisper.cpp `large-v3-turbo`（ASR）、PaddleOCR 主路径与 RapidOCR ONNX 回退（OCR）、edge-tts（免费在线 TTS 候选）及 formal-pptx + MarkItDown + 图片页 OCR（PPTX）；B1 ASR 与 B2 PaddleOCR 已分别在各自精确 scope 内完成 scoped closeout，RapidOCR、TTS、PPTX 图片页 OCR 仍未完成对应 Formal 门禁。真实 OCR/ASR/TTS 不得据此视为通用能力或全局 real-pass。B2 脱敏证据见 [`docs/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md`](.archive/evidence/B2_OCR_C6_SCOPED_CLOSEOUT_EVIDENCE.md)。详见 [`docs/contracts/MEDIA_CAPABILITY_DECISION.md`](.archive/contracts/MEDIA_CAPABILITY_DECISION.md)。
-
-## 当前正式实现
-
-正式文件解析 Adapter 位于 `backend/app/adapters/file_parsers/`，依据已通过的 Composer smoke 和 Integration 契约独立重实现。当前覆盖 TXT、Markdown、PDF、DOCX、PPTX；RTF、旧 DOC、旧 PPT 明确拒绝。Adapter 返回 SHA-256、版本、状态、结构化 page/slide span、warning、错误码和耗时，并执行文件大小与 ZIP/XML 容器资源限制。
-
-默认单文件上传上限为 200 MiB，可通过 `STUDYBUDDY_MAX_UPLOAD_BYTES` 调整；这不是免费版或解析组件的硬限制。ZIP/XML 容器仍执行 member 数量、解压总量和压缩比限制。`backend/app/storage.py` 提供最小原文件保存边界，`backend/app/repository.py` 提供最小 SQLite extraction/span 事务边界。`backend/app/main.py` 现在提供最小 FastAPI multipart 上传、材料查询和静态文件选择器页面：上传文件会保存原文件、调用 Parser、在同一 SQLite 事务写入 extraction/spans，并可在服务重启后通过 API 回读。
-
-正式文件导入基础链路已达到局部 `real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-file-import-final\latest.json`。真实 Chromium 已覆盖 TXT/Markdown/中文 TXT、合法空文件、PDF、DOCX、PPTX、损坏容器、RTF/旧 DOC/旧 PPT rejection；200 MiB 边界、重复 hash、原文件清理、刷新回读和服务重启回读均已通过。
-
-多文件导入与材料列表基础能力已实现：`POST /api/materials/batch` 接受多个 `files`，每个文件独立解析、保存和 SQLite 事务，允许 batch 部分成功；单文件超限仍返回 HTTP 413，batch 中超限文件返回 item-level `rejected/file_too_large`。`GET /api/materials?status=success|empty|rejected|failed` 只返回列表元数据，不返回正文；详情接口回读正文和 spans。页面支持真实多文件选择、批量摘要、逐文件结果、列表筛选、详情查看及刷新/重启回读。当前 `formal-multi-file-import = real-pass`，最终证据位于 `H:\studybuddy-test\artifacts\formal-multi-file-import\latest.json`。
-
-材料管理基础能力已达到局部 `real-pass`：`PATCH /api/materials/{material_id}` 只修改展示名称和 `updated_at`，不改变 source hash、stored path 或解析结果；`DELETE /api/materials/{material_id}` 使用 `deleted_at` 逻辑删除，默认列表隐藏、详情返回 404，但保留 extraction、text_spans 和 hash 派生原文件。同 hash 的其他 material 不受影响。
-
-材料回收站与恢复已达到局部 `real-pass`：`GET /api/materials/deleted` 只返回已删除材料元数据，`POST /api/materials/{material_id}/restore` 只清空 `deleted_at` 并更新 `updated_at`，不重新解析、不创建 original/material/extraction/span。页面支持正常材料与回收站切换、真实恢复和刷新/重启回读。
-
-材料导出已达到局部 `real-pass`：`GET /api/materials/{material_id}/original` 只允许 active material，使用数据库 stored_path，经 originals_root 路径边界和 SHA-256 校验后下载当前展示文件名的 immutable original；`GET /api/materials/{material_id}/text` 从 extraction.text 导出 UTF-8 的 `<original_name>.extracted.txt`，不重新解析。rename 后只改变下载文件名，不改变内容。deleted material 恢复前两个导出接口均返回 404，恢复后重新可用。
-
-材料搜索已达到局部 `real-pass`：`GET /api/materials?q=<query>` 搜索 active material 的展示名称和 extraction.text，可与 `status` 组合。ASCII token 使用 SQLite FTS5 的安全 AND 候选查询，中文或特殊 token 使用参数化 substring fallback；所有结果重新按 active source tables 过滤，返回元数据、match_fields 和最多 160 个字符的纯文本 snippet，不返回完整正文或 stored_path。浏览器搜索结果现在以安全的纯文本 DOM 节点显示命中字段和 snippet；进入 active 详情后会定位并标示首个正文命中，名称-only 命中不会伪造正文高亮；页面动态内容（批量文件名、warning、error_code、筛选按钮）统一使用安全 DOM 文本节点渲染；搜索计数和列表共用一次 API 响应；请求代数保护快速搜索、筛选和清除操作，已通过真实 Chromium 验证过期响应和过期错误不会覆盖新状态；详情请求同样受 generation 保护，快速切换材料时旧详情不会覆盖当前选择；rename、delete、restore 在 mutation 期间禁用重复操作，并使旧列表/详情响应失效；成功和失败后管理、详情与导出按钮状态会恢复一致；rename/delete/restore 的重复操作、错误状态和 active/deleted 边界已由真实 Chromium 验收；非搜索及回收站列表不显示搜索上下文。rename 同事务更新索引，delete/restore 通过 active lifecycle filter 控制可见性。本阶段不支持语义/向量/AI 搜索、搜索历史或 saved search。
-
-材料导出现在支持 active materials 的批量 original/text/bundle ZIP，安全处理同名 entry、shared hash、路径和 SHA-256 校验；active、搜索和 deleted 列表支持可选 limit/offset 分页，返回 total/has_more，页面提供稳定翻页，旧无参数请求仍返回数组；导出不调用 parser、不修改数据库，deleted/mixed 材料整体拒绝。回收站支持显式单材料永久删除：purge 仅接受已删除材料，事务清理 material/extraction/spans/search 行；仅当没有任何其他 material 引用同一 hash 时才 best-effort 删除经路径和 SHA-256 校验的 original，共享 hash 不会误删。该操作不可恢复且不自动触发。这不代表整个 StudyBuddy 已 real-pass。页面现支持 Chromium `webkitdirectory` 文件夹选择：浏览器递归枚举用户选定目录及子目录中的实际文件，并复用 `POST /api/materials/batch` 的逐文件 partial-success 语义；服务端绝不扫描用户目录、不接收服务器/客户端路径输入，也不保存 `webkitRelativePath`。材料名仍是安全 basename；同一批中嵌套目录的同 basename 文件按发送顺序独立导入，不会覆盖。页面仅在本次 batch 结果中以安全纯文本显示浏览器提供的相对路径，导入后回到 active 列表第一页并刷新分页；导入 busy guard 会阻止重复请求。未实现 ZIP 导入、文件夹导出、后台队列或服务器路径输入。
-
-应用启动时执行一次保守的存储 recovery：只清理 data root 顶层遗留的 `.incoming-*` 普通文件，并只删除严格 hash-derived layout 中、内容 hash 正确且没有 active/deleted SQLite material 引用的 orphan original；hash mismatch 与 unexpected-layout 文件保留，缺失 original 只记录诊断、不删除 material。临时写入、original 落盘和 SQLite 持久化失败均返回安全错误并清理新建且无引用的文件；单文件仍保持 413，batch 仍保持 item-level partial-success。故障注入测试使用 monkeypatch 模拟 OSError/数据库失败，不等于真实磁盘填满或网络盘验收。SQLite 中 material、extraction、spans 与 FTS search row 在同一导入事务内；batch 每个 item 独立 rollback。materials/extractions 是 source of truth，connect 会幂等补齐缺失的 FTS row 并删除孤立 FTS row，rename 与 search 替换、purge 与 search 删除也在事务内。所有 physical original 读写要求位于 configured originals_root，root、hash directory 和 original symlink 均不跟随；只有 hash 正确的 regular original 才复用，hash mismatch 与 unexpected layout 保留。download/export 对 unsafe、missing 或 mismatch original 安全失败，text export 仍可独立读取 SQLite extraction；purge 在数据库提交后才 best-effort 清理 physical original。路径竞态测试使用 controlled monkeypatch，不等于真实并发证明。同一应用进程内以 SHA-256 keyed synchronization 协调同 hash import；critical section 覆盖 original store、Parser、SQLite persist 与 newly-created original cleanup，因此失败导入不会删除 waiting/successful 同 hash import 的 original；不同 hash 不使用全局上传锁，且 multipart 网络读取不持锁。该机制不支持多个进程或多个服务实例共享 data_root。进程级崩溃恢复通过 controlled subprocess 验证：SQLite 未提交事务不会恢复半成品，original 已落盘但无引用时按 strict orphan 规则处理，已提交 material/original 在重启后继续可读；这不宣称真实断电、硬件损坏、磁盘损坏或网络文件系统故障恢复。启动顺序保持 `data_root mkdir → startup preflight（拒绝 data_root/originals_root/database_path symlink、data_root 普通文件、database directory 与非 SQLite database file）→ SQLite connect/schema/index init → db_audit.run_audit() → recovery.reconcile → ready/yield`。startup preflight 和数据库初始化失败均使用稳定错误码，不泄露路径、文件内容、SQLite/OSError 原文或 traceback；ready 仅在全部必要启动步骤完成后置为 true，health 在 ready 前返回 503，shutdown 后恢复 not ready。preflight 不跟随 symlink、不删除、不修复或迁移用户文件。SQLite audit 是一次性 diagnostic-only：检查 `integrity_check`、`foreign_key_check`、required objects 和核心关系，不自动修复业务数据；可连接但诊断非 ok 时记录安全事件并继续启动，connect 彻底失败时不伪造 healthy。SQLite 保持 WAL、foreign keys 与 2000 ms busy_timeout；controlled `BEGIN IMMEDIATE` write-contention 测试验证 lock timeout 的 import/mutation 安全失败、transaction rollback、batch item-level failure、new original cleanup 和 shared original 保护，lock release 后后续请求恢复。purge physical cleanup 与 import 使用相同 SHA-256 process-local lock；purge commit 后在锁内重新查询 active/deleted 引用，再执行 safe best-effort unlink，避免 purge/import race 误删 original。固定生命周期状态机回归覆盖 active/deleted/purged、shared hash、parser success/empty/rejected、搜索、分页、导出、失败后续操作和 restart 不变量；这是 deterministic system regression，不是性能基准，也不支持多进程共享 data_root。HTTP API 输入边界也通过固定矩阵覆盖 malformed multipart/JSON、非法 filename/ID、分页/status/export 参数、method/content-type 和 mutation 状态错误；单文件 413、batch partial-success、正常 response contract 与 list/search 隐私边界保持。前端 failure contract 使用固定安全中文提示，不显示 backend detail、路径、SQL、OSError 或 traceback；import/batch/folder/network/malformed payload 失败后 busy controls 恢复，后续导入可继续。材料 rename/delete/restore/purge 现在也对 500、网络失败及成功状态中的 malformed JSON 安全失败：保留当前有效 selection/view、解除 busy 并允许 retry；single original/text export 改为可控 fetch/blob 下载，失败响应不会被保存为文件。ZIP export 校验成功的 `application/zip` content type 和 ZIP signature，500、413、网络失败、错误 content type 或无效 body 都不会触发下载或成功文案，随后可 retry；导出和 mutation 的重复点击仍受 busy guard 保护，过期 export completion 不写入已切换的 UI。浏览器 route failure 是 UI contract 验证，不是实际磁盘故障证明。Startup preflight 现在在 SQLite connect 前检查配置与既有 storage topology：非法 max upload bytes、data_root/originals_root/database symlink、data_root 普通文件、database directory、非 SQLite database file 会固定安全失败；不存在的普通 data_root 可创建。preflight 不删除、不修复、不跟随 symlink，启动失败不伪造 health。recovery 不运行后台任务；ZIP、队列、AI/provider 仍不支持。
-
-整个 StudyBuddy 仍不是全局 `real-pass`；DeepSeek 和 Agnes 的精确 P6-E Provider UI path 已通过，但系统级 screen reader、真实 offline、极端长回答和长时整批 Chromium 稳定性仍按 evidence 记录为 `not_verified`。I4 中磁盘满真实压力、网络盘、长时间压力等未验证项已作为 v1 运行边界接受，不影响基础设施 v1 收口，但不得标记为已通过。
-
-测试使用 `H:\studybuddy-test` 下的合成 fixture、runs 和脱敏 artifact，不写入本目录运行数据库或原文件副本。
+开始前读 [`AGENTS.md`](AGENTS.md) 和 [`docs/00-INDEX.md`](docs/00-INDEX.md)。任务需写明：角色、唯一目标、允许读写路径、指定命令/数据根、禁止操作、证据路径。未写明的不是默认授权。

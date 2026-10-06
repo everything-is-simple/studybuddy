@@ -298,6 +298,13 @@ def submit_practice_session_item(connection: sqlite3.Connection, *, project_id: 
             _phase9c_materialize_mistake(connection, project_id=project_id, attempt_id=attempt_id,
                                           exercise_id=str(item["exercise_id"]), reason_code="deterministic_incorrect", origin="deterministic",
                                           source_revision=item["source_revision"], source_status=item["citation_status"])
+        elif correct is True:
+            # S4 回流：规则批改答对一道仍未闭合的错题，即视为重做通过的改正证据。
+            # 再次答错时 _phase9c_mistake_case 会把 fixed 重新打开为 reopened。
+            connection.execute(
+                "UPDATE mistake_cases SET status='fixed',fixed_at=?,updated_at=? "
+                "WHERE project_id=? AND exercise_id=? AND status IN ('open','in_review','reopened')",
+                (now_text, now_text, project_id, item["exercise_id"]))
         return {"id": attempt_id, "exercise_id": item["exercise_id"], "session_id": session_id, "session_item_id": item_id,
                 "score": score, "is_correct": correct, "grading_status": grading, "submitted_at": now_text, "replay": False}
 

@@ -1,10 +1,10 @@
 # StudyBuddy 本地单机 v1：竣工报告、首次使用与验收手册
 
-> 适用版本：StudyBuddy local v1，application version `local-v1`，schema v15。当前环境和功能组件基线见 [`DEVELOPMENT_ENVIRONMENT_BASELINE.md`]([维护者看]DEVELOPMENT_ENVIRONMENT_BASELINE.md)。
+> 适用版本：StudyBuddy local v1，application version `local-v1`，schema v15。安装与运维见 [`06-OPERATIONS.md`](../06-OPERATIONS.md)。
 >
 > 支持范围：Windows、本机浏览器、单进程、单实例、SQLite、本地磁盘、一个 `data_root`。
 >
-> 正式上线证据：[`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`](../.archive/evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md)。
+> 正式上线证据：[`evidence/PHASE10_RELEASE_CANDIDATE_EVIDENCE.md`]（历史归档，已不在仓库）。
 
 <!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
 ## 统一执行协议（2026-09-27）
@@ -250,7 +250,7 @@ powershell -ExecutionPolicy Bypass -NoProfile -File .\backend\scripts\start-stud
 D:\miniconda\py310\python.exe -m backend.app diagnostics --data-root 'D:\StudyBuddy\data'
 ```
 
-如果 health/readiness 不是 200、diagnostics 显示 degraded，或 backup/verify 失败：**先停止服务、保留 data root 和已验证 backup，不要手改数据库，不要尝试覆盖恢复。** 参考 [`BACKUP_RESTORE.md`]([运维看]BACKUP_RESTORE.md) 和 [`MIGRATIONS.md`]([架构师+运维看]MIGRATIONS.md)。
+如果 health/readiness 不是 200、diagnostics 显示 degraded，或 backup/verify 失败：**先停止服务、保留 data root 和已验证 backup，不要手改数据库，不要尝试覆盖恢复。** 参考 [`06-OPERATIONS.md`](../06-OPERATIONS.md)。
 
 ## 6. 当前不该期待它做什么
 

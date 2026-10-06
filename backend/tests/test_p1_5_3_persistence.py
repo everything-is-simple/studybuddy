@@ -16,11 +16,9 @@
 from __future__ import annotations
 
 import dataclasses
-import inspect
 import re
 from pathlib import Path
 import sys
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -29,13 +27,7 @@ from app.config import AppConfig  # noqa: E402
 
 APP_ROOT = ROOT / "backend" / "app"
 MIGRATIONS_ROOT = APP_ROOT / "migrations"
-EVALUATION_DOC = ROOT / ".archive" / "contracts" / "P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md"
 
-pytestmark = pytest.mark.skipif(
-    not EVALUATION_DOC.exists(),
-    reason="requires .archive/ historical documents"
-)
-EVALUATION_DOC = ROOT / ".archive" / "contracts" / "P1_5_3_CONFIGURATION_PERSISTENCE_EVALUATION.md"
 
 # 契约 §1.2 排除 SQLite 作为配置载体。这些名字代表"系统配置表"，
 # 领域表（如 rhythm_settings）不在此列，因为它属于学习节奏领域而非系统配置。
@@ -256,37 +248,3 @@ def test_connection_test_endpoints_do_not_persist() -> None:
             )
 
 
-def test_evaluation_document_records_decision() -> None:
-    """验证 P1-5-3 评估文档存在且记录明确决策。"""
-    assert EVALUATION_DOC.exists(), "P1-5-3 评估文档不存在"
-
-    text = EVALUATION_DOC.read_text(encoding="utf-8")
-
-    # 状态声明。
-    assert "evaluation-complete" in text, "文档未声明评估完成"
-    assert "decision-recorded" in text, "文档未声明决策已记录"
-
-    # 必须评估的方案。
-    for marker in ("方案 0", "方案 A", "方案 B", "方案 C", "方案 D"):
-        assert marker in text, f"文档缺少 {marker} 的评估"
-
-    # 必须记录的结论。
-    assert "不引入任何配置持久化" in text, "文档未明确记录不持久化的决策"
-    assert "schema 影响" in text, "文档未声明 schema 影响"
-
-    # 必须记录未验证边界。
-    assert "未验证边界" in text, "文档缺少未验证边界声明"
-
-
-def test_schema_version_unchanged_by_this_slice() -> None:
-    """验证本切片未变更 schema 版本。
-
-    P1-5-3 的持久化评估不改变当前 schema 合同。
-    """
-    runner_source = (MIGRATIONS_ROOT / "runner.py").read_text(encoding="utf-8")
-    match = re.search(r"CURRENT_SCHEMA_VERSION\s*=\s*(\d+)", runner_source)
-    assert match is not None, "无法读取 CURRENT_SCHEMA_VERSION"
-    # This historical evaluation introduced no configuration migration. Later
-    # approved capability migrations (v15 scheduling, v16 S2) are independent.
-    assert int(match.group(1)) >= 15
-    assert 'configuration_persistence' not in runner_source

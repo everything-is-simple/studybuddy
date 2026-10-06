@@ -46,12 +46,39 @@ def get_tomorrow_prep_items(conn, project_id, today, allocations, now=None, expl
                                local_date=tomorrow, planned_minutes=r['planned_minutes'], timezone=r['timezone']), tomorrow + '-1'))
     for r in conn.execute("SELECT id,title,target_date,timezone FROM cram_goals WHERE project_id=? AND status='active' ORDER BY id", (project_id,)):
         cram_today = today if explicit_date or now is None else now.astimezone(ZoneInfo(r['timezone'])).date()
-        if r['target_date'] != (cram_today + timedelta(days=1)).isoformat():
-            continue
-        rows.append(_item('prep-cram-' + r['id'], 'tomorrow_prep', 0, '明日备考目标：' + r['title'],
-                          '备考目标日期在明天；这是已设置的目标，不代表考试日期。', '查看备考目标',
-                          _url('practice.html') + '#cram-goals',
-                          dict(cram_goal_id=r['id'], target_date=r['target_date'], timezone=r['timezone']), r['target_date'] + '-0'))
+        days_left = (date.fromisoformat(r['target_date']) - cram_today).days
+        if days_left == 1:
+            rows.append(_item('prep-cram-' + r['id'], 'tomorrow_prep', 0, '明日备考目标：' + r['title'],
+                              '备考目标日期在明天；这是已设置的目标，不代表考试日期。', '查看备考目标',
+                              _url('practice.html') + '#cram-goals',
+                              dict(cram_goal_id=r['id'], target_date=r['target_date'], timezone=r['timezone']), r['target_date'] + '-0'))
+        elif 0 <= days_left <= CRAM_WINDOW_DAYS:
+            # S5 回流：冲刺窗口内每天给出倒计时，避免只在最后一天才看见。
+            rows.append(_item('cram-' + r['id'], 'cram_countdown', 1,
+                              ('今天是备考目标日：' if days_left == 0 else '备考倒计时 ' + str(days_left) + ' 天：') + r['title'],
+                              '这是你设置的备考目标，不代表考试日期。先练错题和掌握度低的模块。', '进入冲刺',
+                              _url('practice.html') + '#cram-goals',
+                              dict(cram_goal_id=r['id'], target_date=r['target_date'], days_left=days_left, timezone=r['timezone']),
+                              r['target_date']))
+    return rows
+
+
+CRAM_WINDOW_DAYS = 14
+
+
+def get_unscheduled_plan_items(conn, project_id):
+    """S1 回流：已激活的计划里还有没排日程的学习项时，提示去安排，而不是让 Today 空着。"""
+    rows = []
+    for r in conn.execute(
+        "SELECT p.id,p.title,COUNT(i.id) AS n,MIN(p.updated_at) AS updated_at FROM study_plans p "
+        "JOIN study_plan_items i ON i.plan_id=p.id AND i.project_id=p.project_id "
+        "WHERE p.project_id=? AND p.status='active' AND i.status IN ('pending','in_progress') "
+        "AND NOT EXISTS (SELECT 1 FROM rhythm_allocations a WHERE a.item_id=i.id AND a.project_id=p.project_id) "
+        "GROUP BY p.id ORDER BY updated_at,p.id", (project_id,)):
+        rows.append(_item('unscheduled-' + r['id'], 'plan_schedule', 1, '待安排日程：' + r['title'],
+                          str(r['n']) + ' 个学习项还没有安排到具体日期。', '安排日程',
+                          _url('plans.html', plan_id=r['id']),
+                          dict(plan_id=r['id'], unscheduled_count=r['n']), r['updated_at']))
     return rows
 
 
@@ -139,6 +166,7 @@ def get_daily_pending_items(conn, *, project_id, target_date=None, timezone_name
         raise ValueError('today_invalid_date_or_timezone') from None
     candidates = get_due_task_items(conn, project_id, today, allocations) + get_tomorrow_prep_items(conn, project_id, today, allocations, now, target_date is not None)
     candidates += get_quality_check_items(conn, project_id) + get_mistake_review_items(conn, project_id)
+    candidates += get_unscheduled_plan_items(conn, project_id)
     candidates.sort(key=lambda r: (r['priority'], r['_order'], r['id']))
     if len(candidates) < 3:
         candidates += get_next_step_items(conn, project_id, today, now)

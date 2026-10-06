@@ -1,30 +1,15 @@
-# StudyBuddy Decisions
-<!-- STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
-## 统一执行协议（2026-09-27）
+# 08 · 决策记录
 
-本文件与 `H:\studybuddy\docs\[所有角色看]AI_AGENT_TASK_DIALOGUE_TEMPLATES.md` v2.1 使用同一套执行口径。本文档中早于 2026-09-27 的报告、表格和历史标签保留其原始事实；历史标签只能在原日期、原范围和原证据路径下解释，不能升级为当前全局结论。
+新决策加在最上面。每条写：决定了什么、为什么、影响什么。执行规则见 [`05-GOVERNANCE.md`](05-GOVERNANCE.md)。
 
-### 可执行 Prompt 的必填字段
-- **角色**：本次执行者的职责。
-- **唯一目标**：一个可判定的结果，不把多个目标合并成“全部处理”。
-- **当前阶段**：只能填写 `P0`（边界确认）、`P1`（真实状态读取）、`P2`（真实操作执行）、`P3`（证据核对）、`P4`（交付与结论）之一，并按顺序推进。
-- **允许读取/写入**：逐项列出绝对路径、URL、端点、数据根和输入；未列出的对象禁止访问或修改。
-- **指定工具/命令/端口/输入**：必须原样执行；对象不可用时返回 `BLOCKED`，不得替换。
-- **禁止操作、停止条件和证据路径**：逐项写明；每个结论必须有实际命令/动作、结果和绝对证据路径。
+## 2026-10-05: 按初衷重建文档与优先级
 
-### 统一状态与范围
-`PASS`、`FAIL`、`BLOCKED`、`LIMITED`、`NOT_APPLICABLE`、`NOT_VERIFIED` 是本项目当前统一结果状态。`implemented`、`configured`、`available`、测试通过、隔离环境通过只能描述实现或可见性，不能单独写成 `real-pass`。`real-pass` 只能表示本次指定真实目标、真实路径、真实输入和真实动作均有证据；未覆盖范围必须写 `NOT_VERIFIED`。
-
-### 统一路径和运行基线
-源码 `H:\studybuddy`；正式数据 `H:\studybuddy-data`；验证证据 `H:\studybuddy-test\verification`；隔离数据 `H:\studybuddy-test\data_root`；真实教材 `H:\studybuddy-ChinaTextbook`（只读）；组件测试 `H:\studybuddy-composer`；组合测试 `H:\studybuddy-integration`；日志 `H:\studybuddy-log`；临时目录 `H:\studybuddy-tmp`；正式地址 `http://127.0.0.1:8787`；首页 `http://127.0.0.1:8787/app/today.html`。
-
-正式启动命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-data -Port 8787`。隔离验证命令为：`powershell -ExecutionPolicy Bypass -NoProfile -File H:\studybuddy\backend\scripts\start-studybuddy.ps1 -DataRoot H:\studybuddy-test\data_root -Port 8787`。不得把 `python -m backend.app serve`、其他端口、其他数据根或其他浏览器替换到已指定任务中。
-
-### 强制禁止
-不得凭推测输出；不得用 HTML 解析、按钮清单、curl/API 请求、静态检查或 headless 结果冒充可视浏览器点击；不得读取、复制、提交或展示密钥、Token、Cookie、真实教材正文、Provider 原始响应、SQL 或完整 traceback；不得在未授权时调用真实 Provider/OCR/ASR、发送 Email/飞书或扩大文件范围。工具、路径、页面、服务状态或证据不满足前置条件时，立即停止并报告 `BLOCKED`。
-
-<!-- /STUDYBUDDY-UNIFIED-EXECUTION-PROTOCOL -->
-
+- 以第一版 ai-studybuddy 的骨架重建 `docs/`：编号文档 + `subsystems/` 每个子系统一份。旧文档原样移入 `archive/`。
+- `capabilities.json` 成为唯一能力状态源，取代 STATUS / ROADMAP / TODO 的状态职责。
+- 治理测试改为结构化校验（字段、路径、链接、索引、回环绑定），不再锁定文档原句。依赖已删除 `.archive/` 的 skip 测试一并删除；仍有效的安全/边界断言保留。
+- 优先级按初衷重排：P0 主闭环 → P1 家长报告与 Windows 实机 → P2 文档治理 → P3 TTS/QA/S7/真实 OCR·ASR。
+- 退出主线：pi/Electron 壳、pi 原生通用对话。材料问答保留，但不再称为"对话"。
+- 规则批改答对一道未闭合错题即视为改正（`fixed`）；再次答错重新打开（`reopened`）。直接作答与练习会话的错题回流保持一致。
 
 ## 2026-08-28: formal successor versus feature breadth
 
@@ -37,7 +22,7 @@
 ## 2026-08-28: Phase 8.6 fake-provider closeout boundary
 
 - Phase 8 is completed only for its deterministic fake-provider, local single-process SQLite, Chromium and explicit backup/restore scope. `backend/tests/test_phase8_closeout.py` proves preservation of Cards/Exercises artifacts, citations, reviews, attempts and generation operations across backup → verify → restore into a new empty root.
-- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/PHASE8_ACCEPTANCE_EVIDENCE.md).
+- Restore/startup/read do not auto-generate artifacts, repair citations, rebuild indexes or promote an unavailable citation. Full backend, Phase 8 Chromium and frontend failure regressions passed; detailed commands/results are recorded in [`PHASE8_ACCEPTANCE_EVIDENCE.md`]（历史归档，已不在仓库）.
 - This decision does not establish real Provider generation, human short-answer review, system-level accessibility, extreme-content behavior, worker support, multi-process support, or global product `real-pass`.
 
 ## 2026-08-28: Phase 8.5 Cards / Exercises workspace boundary
@@ -70,7 +55,7 @@
 
 ## 2026-08-27: P6-E evidence and governance boundary
 
-- P6-A through P6-D remain implemented; P6-E fake Provider core workflow acceptance is complete and recorded in [`P6E_ACCEPTANCE_EVIDENCE.md`](../.archive/evidence/P6E_ACCEPTANCE_EVIDENCE.md).
+- P6-A through P6-D remain implemented; P6-E fake Provider core workflow acceptance is complete and recorded in [`P6E_ACCEPTANCE_EVIDENCE.md`]（历史归档，已不在仓库）.
 - The accepted fake workflow is import → ready → explicit indexing → retrieval → thread → Q&A → citation → body/source location → material/Q&A return → export → refresh/history. Empty retrieval, unconfigured Provider, timeout/retry, duplicate click, stale thread response, deleted source/export safety and related failure contracts are part of the acceptance boundary.
 - DeepSeek `deepseek-chat` and Agnes `agnes-ai-hub` / `agnes-2.5-flash` real Provider evidence remains scoped to exact provider/model/gateway configurations. A real Provider UI path is `not_verified` unless its explicit target, model, gateway and secret-backed runtime gate actually ran; fake/mock results never become real-pass.
 - No P6-E API, business table or migration is required. Existing generation/context checks are the cancellation boundary: synchronous Provider requests are not cancelled, stale responses are ignored.
@@ -84,7 +69,7 @@
 - 当前项目 Phase 4 的 AI 最小闭环已完成：material revision/chunk → SQLite FTS5 retrieval → citation → deterministic fake provider → Q&A/history/multi-material/citation navigation。下一产品优先级是 Phase 5 真实 Provider 接入。
 - I1 migration/schema versioning 是 AI Phase 4 的硬前置，现已满足；Cards / Exercises 仍必须等待可信 revision/chunk/retrieval/citation/Q&A 链路。
 - S1–S7、卡片、练习、学习计划、OCR、ASR、后台队列、多用户、云同步和多进程支持继续分阶段推进，不在同一阶段并行承诺。
-- 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`](../.archive/historical-roadmaps/PHASE_ROADMAP.md) 为准；进度总报告以 [`STATUS.md`]([需求+所有角色看]STATUS.md) 为汇总入口；具体执行勾选项以 [`TODO.md`]([需求看]TODO.md) 为准。
+- 长期 Phase 顺序、范围和完成标准以 [`PHASE_ROADMAP.md`]（历史归档，已不在仓库） 为准；进度总报告以 （2026-10-05 起由 [`capabilities.json`](capabilities.json) 取代 STATUS/TODO）。
 
 ## 2026-08-25: minimal observability boundary
 
@@ -157,7 +142,7 @@
 
 ## 2026-08-25: local environment governance map
 
-- 记录 StudyBuddy 全部本地目录职责、远端、Git 状态和相互关系于 [`LOCAL_ENVIRONMENT_MAP.md`](../.archive/operations/LOCAL_ENVIRONMENT_MAP.md)。
+- 记录 StudyBuddy 全部本地目录职责、远端、Git 状态和相互关系于 [`LOCAL_ENVIRONMENT_MAP.md`]（历史归档，已不在仓库）。
 - 核心四级目录：`studybuddy`（正式系统）、`studybuddy-composer`（组件实验工厂）、`studybuddy-integration`（集成装配工厂）、`studybuddy-test`（测试与 artifact）。
 - 参考与历史版本：`kaobuddy-remote-audit`、`pi-studybuddy`、`AIStudyBuddy`、`ai-studybuddy`、`ai-studybuddy-composer`、`pi-references`，只用于提取契约，不得直接复制源码。
 - `pi-references` 含 API key/token/account，绝不进入仓库、日志、数据库或前端；只用于 Provider 契约研究。

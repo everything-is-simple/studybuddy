@@ -7,7 +7,7 @@
   const busyItems=new Set();
   const el=(tag,text,cls='')=>Object.assign(document.createElement(tag),{textContent:text,className:cls});
   const labels=['紧急 · P0','重要 · P1','建议 · P2'];
-  const categories={tomorrow_prep:'明日准备',due_task:'到期安排',quality_check:'待核对',mistake_review:'错题复习',next_step:'下一步'};
+  const categories={tomorrow_prep:'明日准备',due_task:'到期安排',quality_check:'待核对',mistake_review:'错题复习',plan_schedule:'待安排',cram_countdown:'冲刺倒计时',next_step:'下一步'};
   function error(error){errorBox.hidden=false;errorBox.textContent=sbApi.safeError(error);}
   async function progress(item,button){
     if(busyItems.has(item.id))return;
