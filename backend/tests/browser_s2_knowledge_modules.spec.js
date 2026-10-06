@@ -46,6 +46,10 @@ test('S2 manual module -> selected evidence exercise -> scored session -> master
   await expect(page.locator('#session-status')).toContainText('答案已提交');
   await page.getByRole('button',{name:'完成会话',exact:true}).click();
   await page.waitForURL(/practice-result/);
+  // S2 confirmation and S3 scoring must feed the S1 Today next-step surface.
+  await page.goto(`${BASE}/app/today.html`);
+  await expect(page.locator('#pending-items')).toContainText('继续练习');
+  await expect(page.locator('#pending-items')).toContainText('Newton force module');
   await page.goto(url);
   await page.locator('#knowledge-tab').click();
   await expect(page.locator('#knowledge-list')).toContainText('10%');

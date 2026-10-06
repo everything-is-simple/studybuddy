@@ -1,6 +1,6 @@
 {
-  "$comment": "StudyBuddy complete capabilities extraction from STATUS, ROADMAP, TODO (2026-10-05)",
-  "updated": "2026-10-05",
+  "$comment": "StudyBuddy capability state after isolated P0 student loop browser acceptance (2026-10-06)",
+  "updated": "2026-10-06",
   "source_of_truth": {
     "product_requirements": "docs/archive/legacy-product-references/ai-studybuddy/subsystems/",
     "implementation_status": "docs/capabilities.json",
